@@ -76,7 +76,12 @@
   // ============================================================
   // INCLUDE/EXCLUDE PATTERNS
   // ============================================================
-  "include": ["src/**/*"],
+  // NOTE: glob patterns with explicit extensions are needed — TypeScript's
+  // default filter admits only .ts/.tsx/.d.ts (+ .js/.jsx with allowJs) under
+  // a bare `src/**/*`. `resolveJsonModule: true` in tsconfig.base.json opens
+  // the runtime door for JSON imports (first consumer: domains/email-validator.ts),
+  // but the JSON file must still be part of the project graph here.
+  "include": ["src/**/*", "src/**/*.json"],
 
   "exclude": [
     "node_modules",

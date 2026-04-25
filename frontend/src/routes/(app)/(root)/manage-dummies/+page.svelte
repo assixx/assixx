@@ -228,6 +228,10 @@
           <button
             type="button"
             class="btn btn-primary"
+            disabled={!data.tenantVerified}
+            title={data.tenantVerified ? undefined : (
+              'Verifiziere zuerst Deine Firmen-Domain unter /settings/company-profile/domains.'
+            )}
             onclick={openCreateModal}
           >
             <i class="fas fa-plus mr-1"></i>
@@ -295,7 +299,13 @@
 <button
   type="button"
   class="btn-float"
-  aria-label={messages.BTN_CREATE}
+  disabled={!data.tenantVerified}
+  title={data.tenantVerified ?
+    messages.BTN_CREATE
+  : 'Verifiziere zuerst Deine Firmen-Domain unter /settings/company-profile/domains.'}
+  aria-label={data.tenantVerified ?
+    messages.BTN_CREATE
+  : `${messages.BTN_CREATE} (deaktiviert: Domain nicht verifiziert)`}
   onclick={openCreateModal}
 >
   <i class="fas fa-plus"></i>

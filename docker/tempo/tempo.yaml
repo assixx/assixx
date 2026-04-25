@@ -1,0 +1,67 @@
+# =============================================================================
+# Grafana Tempo — Single-Binary Configuration
+# =============================================================================
+#
+# Single-binary mode runs all Tempo components (distributor, ingester, querier,
+# compactor) in one process. Appropriate for Dev + small Prod (≤50k spans/s).
+#
+# Architecture:
+#   OTel-Collector → OTLP gRPC :4317 (internal Docker network)
+#   Grafana        → HTTP API :3200 (for queries / TraceQL)
+#
+# Storage: local filesystem via Docker volume `tempo_data`. Switch to S3-compat
+# (`backend: s3`) for production with Object-Storage-class durability.
+#
+# Retention: 72h in dev — traces are debug artifacts, not audit records.
+# Bump for incident post-mortem windows (14d typical enterprise).
+#
+# Reference:
+#   - https://grafana.com/docs/tempo/latest/configuration/
+#   - ADR-048 Distributed Tracing with Tempo + OTel
+# =============================================================================
+
+server:
+  http_listen_port: 3200
+  log_level: info
+
+# Distributor receives spans from the OTel Collector via OTLP.
+# Internal-only — external clients always go through the collector (tail-sampling
+# + batch + memory-limit happen there, not here).
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+# Ingester flushes completed trace-blocks to storage every 5 min (or earlier
+# if block hits size limit). Tune `max_block_duration` lower for faster
+# trace availability in Grafana (tradeoff: more tiny blocks → more S3 ops).
+ingester:
+  max_block_duration: 5m
+
+# Compactor merges small blocks into larger ones + enforces retention.
+# 72h = 3 days, long enough for "why was yesterday's release slow?" workflows.
+compactor:
+  compaction:
+    block_retention: 72h
+
+# Storage: local disk. For Prod, switch to S3-compat (MinIO/Cloud):
+#   storage:
+#     trace:
+#       backend: s3
+#       s3:
+#         endpoint: minio:9000
+#         bucket: tempo-traces
+#         access_key: ${MINIO_ACCESS_KEY}
+#         secret_key: ${MINIO_SECRET_KEY}
+#         insecure: true
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks

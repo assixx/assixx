@@ -63,4 +63,41 @@ export class PermissionRegistryService {
     const mod = category.modules.find((m: PermissionModuleDef) => m.code === moduleCode);
     return mod?.allowedPermissions ?? [];
   }
+
+  /**
+   * Append modules to an already-registered category.
+   *
+   * Use case: a feature module (e.g. shift-handover) ships new permission
+   * modules that belong to an existing addon's category (e.g. shift_planning).
+   * Because `register()` is throw-on-duplicate, and we do NOT want to
+   * couple feature modules by sharing a single `PermissionCategoryDef`
+   * literal, this method lets a late-arriving registrar extend the owning
+   * category without touching the base feature's files.
+   *
+   * Caller MUST fire this hook AFTER the base category is registered. The
+   * recommended lifecycle is `OnApplicationBootstrap` (fires after all
+   * `OnModuleInit` hooks), which avoids fragile cross-module init ordering.
+   *
+   * Fails fast if: the category is missing, or a module code collides with
+   * one already registered under the same category.
+   *
+   * @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md
+   * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §2.7 + §Spec Deviation #2
+   */
+  addModulesToCategory(addonCode: string, modules: readonly PermissionModuleDef[]): void {
+    const category = this.categories.get(addonCode);
+    if (category === undefined) {
+      throw new Error(
+        `Cannot extend permission category "${addonCode}" — not registered. ` +
+          `Ensure the owning feature module registers the category before this hook runs.`,
+      );
+    }
+    for (const mod of modules) {
+      if (category.modules.some((m: PermissionModuleDef) => m.code === mod.code)) {
+        throw new Error(`Module "${mod.code}" already registered under category "${addonCode}"`);
+      }
+      category.modules.push(mod);
+    }
+    this.logger.log(`Extended permission category "${addonCode}" with ${modules.length} module(s)`);
+  }
 }

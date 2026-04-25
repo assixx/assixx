@@ -88,7 +88,12 @@ export const RESOURCE_TABLE_MAP: Record<string, { table: string; nameField: stri
   setting: { table: 'tenant_settings', nameField: 'setting_key' },
   role: { table: 'roles', nameField: 'name' },
   // Admin management resources
-  'admin-permission': { table: 'admin_permissions', nameField: 'id' },
+  // NOTE: 'admin-permission' intentionally NOT mapped here — it's an AGGREGATED
+  // resource (users.has_full_access + admin_area_permissions +
+  // admin_department_permissions). Handled by dedicated fetchers in
+  // AuditMetadataService (fetchAdminPermissionSnapshot / fetchAdminPermissionName).
+  // Previous entry pointed at non-existent table "admin_permissions" and
+  // caused spurious ERROR logs on every admin permission change.
   tenant: { table: 'tenants', nameField: 'company_name' },
   // Vacation module resources (ADR-023)
   request: { table: 'vacation_requests', nameField: 'id' },
@@ -100,6 +105,17 @@ export const RESOURCE_TABLE_MAP: Record<string, { table: string; nameField: stri
   'tpm-plan': { table: 'tpm_maintenance_plans', nameField: 'name' },
   'tpm-card': { table: 'tpm_cards', nameField: 'title' },
   'tpm-execution': { table: 'tpm_card_executions', nameField: 'id' },
+  // Additional single-table resources — verified 2026-04-22 (DB schema check):
+  // ADR-009 P0-3 fix — without these, DELETE/UPDATE pre-fetch returns null and
+  // the compliance audit loses the "what was changed/deleted" payload.
+  domain: { table: 'tenant_domains', nameField: 'domain' },
+  hall: { table: 'halls', nameField: 'name' },
+  approval: { table: 'approvals', nameField: 'title' },
+  'work-order': { table: 'work_orders', nameField: 'title' },
+  // NOTE: 'security-setting', 'dummy-user', 'organigram', 'user-permission'
+  // intentionally NOT mapped — they are AGGREGATED or config-store resources
+  // (security_settings has no single-table tenant scope; organigram is JSONB tree).
+  // See ADR-009 Open Items — needs dedicated fetchers per type.
 };
 
 /**
@@ -134,6 +150,11 @@ export const EXCLUDED_PREFIXES: readonly string[] = [
   '/_app/',
   '/chat',
   '/api/v2/chat',
+  // Addon-visit telemetry — UI tracking pings, not real user actions.
+  // ADR-009 P0-4 fix (2026-04-22): without this, every addon page load creates
+  // a CREATE entity=addon-visit audit entry → dozens per session, zero value.
+  '/addon-visits',
+  '/api/v2/addon-visits',
 ] as const;
 
 /**
@@ -233,6 +254,35 @@ export const PAGE_INIT_ENDPOINTS: readonly string[] = [
   '/e2e/keys/me',
   '/api/v2/e2e/escrow',
   '/e2e/escrow',
+  // ADR-009 P0-4 (2026-04-22) — empirically discovered noise (DB query showed
+  // 758 entries in 4 days from these alone, all "called on every page navigation"):
+  //
+  // Org-scope check (ADR-035): every (app)/ route loads this for permission UI gates
+  '/api/v2/users/me/org-scope',
+  '/users/me/org-scope',
+  // Hierarchy labels (ADR-034): every (app)/ route loads this for label resolution
+  '/api/v2/organigram/hierarchy-labels',
+  '/organigram/hierarchy-labels',
+  // Organigram reference data (loaded on org-related pages for tree rendering)
+  '/api/v2/organigram/positions',
+  '/organigram/positions',
+  '/api/v2/organigram/swap-requests-enabled',
+  '/organigram/swap-requests-enabled',
+  '/api/v2/organigram/tree',
+  '/organigram/tree',
+  // Root dashboard widget (loaded on every root page for header KPIs)
+  '/api/v2/root/dashboard',
+  '/root/dashboard',
+  // Domain verification status badge (loaded on root header)
+  '/api/v2/domains/verification-status',
+  '/domains/verification-status',
+  // Password policy display (loaded on every page for tooltip on password fields)
+  '/api/v2/security-settings/user-password-change-policy',
+  '/security-settings/user-password-change-policy',
+  // Audit log page itself — meta-logging creates auditor noise (86 hits in 4 days).
+  // The auditor's own scrolling pollutes the audit they're trying to read.
+  '/api/v2/logs',
+  '/logs',
 ] as const;
 
 /**

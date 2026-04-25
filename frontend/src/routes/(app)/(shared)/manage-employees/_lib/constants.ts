@@ -104,6 +104,20 @@ const STATIC_MESSAGES = {
   UPGRADE_ERROR: 'Fehler beim Hochstufen',
   UPGRADE_UNAUTHORIZED:
     'Sie sind nicht berechtigt, Rollen zu ändern. Nur Root oder Admin mit Vollzugriff.',
+  // ADR-051 §5.4 — identical semantic strings as manage-admins §5.3. Kept
+  // local to the module (NOT extracted into shared) because the UX wording
+  // is feature-local and a shared util would be a premature abstraction
+  // (KISS + plan §5.4 explicit note: "copy-paste < premature abstraction").
+  BTN_SEND_RESET_LINK: 'Passwort-Reset-Link senden',
+  RESET_LINK_CONFIRM:
+    'Soll dem Mitarbeiter eine E-Mail mit einem Passwort-Reset-Link gesendet werden? Der Mitarbeiter kann danach ein neues Passwort setzen — Du siehst es nicht.',
+  RESET_LINK_SUCCESS: 'Passwort-Reset-Link gesendet',
+  RESET_LINK_ERROR_INVALID_TARGET:
+    'Für diesen Mitarbeiter kann kein Reset-Link angefordert werden.',
+  RESET_LINK_ERROR_INACTIVE: 'Der Mitarbeiter ist nicht aktiv. Kein Reset-Link möglich.',
+  RESET_LINK_ERROR_RATE_LIMIT:
+    'Bitte warte 15 Minuten, bevor Du erneut einen Reset-Link für diesen Mitarbeiter anforderst.',
+  RESET_LINK_ERROR_GENERIC: 'Fehler beim Senden des Reset-Links',
 };
 
 /**

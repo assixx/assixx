@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
+import type { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import type { UserPositionService } from '../organigram/user-position.service.js';
 import type { RootAdminService } from './root-admin.service.js';
 import type { RootDeletionService } from './root-deletion.service.js';
@@ -87,7 +88,7 @@ function createMockAdminService() {
   return {
     getAdmins: vi.fn().mockResolvedValue([]),
     getAdminById: vi.fn().mockResolvedValue(null),
-    createAdmin: vi.fn().mockResolvedValue(1),
+    createAdmin: vi.fn().mockResolvedValue({ id: 1, uuid: 'mock-uuid-v7' }),
     updateAdmin: vi.fn().mockResolvedValue(undefined),
     deleteAdmin: vi.fn().mockResolvedValue(undefined),
     getAdminLogs: vi.fn().mockResolvedValue([]),
@@ -169,6 +170,12 @@ describe('RootService', () => {
       mockTenantService as unknown as RootTenantService,
       mockDeletionService as unknown as RootDeletionService,
       mockUserPositions as unknown as UserPositionService,
+      // Step 2.9 KISS gate (§2.9 + D33) — assertVerified no-op for
+      // existing createRootUser tests; 403-path tests would reject-once.
+      {
+        assertVerified: vi.fn().mockResolvedValue(undefined),
+        isVerified: vi.fn().mockResolvedValue(true),
+      } as unknown as TenantVerificationService,
     );
   });
 
@@ -377,7 +384,8 @@ describe('RootService', () => {
     it('should return aggregated dashboard stats', async () => {
       mockUserRepo.countByRole
         .mockResolvedValueOnce(3) // admin count
-        .mockResolvedValueOnce(50); // employee count
+        .mockResolvedValueOnce(50) // employee count
+        .mockResolvedValueOnce(1); // root count (powers Single-Root-Warning-Banner)
       mockUserRepo.countAll.mockResolvedValueOnce(55);
       // tenant count
       mockDb.systemQuery.mockResolvedValueOnce([{ count: '2' }]);
@@ -388,6 +396,7 @@ describe('RootService', () => {
 
       expect(result.adminCount).toBe(3);
       expect(result.employeeCount).toBe(50);
+      expect(result.rootCount).toBe(1);
       expect(result.totalUsers).toBe(55);
       expect(result.tenantCount).toBe(2);
       expect(result.activeAddons).toEqual(['chat', 'documents']);

@@ -404,7 +404,7 @@ echo "API:      http://localhost/api/v2/"
 
 | Component  | Version     | Notes                       |
 | ---------- | ----------- | --------------------------- |
-| Node.js    | 24.14.0 LTS | Alpine image                |
+| Node.js    | 24.15.0 LTS | Debian bookworm-slim image  |
 | PostgreSQL | 18.3        | Alpine image                |
 | Nginx      | 1.29.4      | Alpine image                |
 | Redis      | 7.4.7       | Alpine image                |

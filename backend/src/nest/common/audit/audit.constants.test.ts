@@ -76,7 +76,9 @@ describe('RESOURCE_TABLE_MAP', () => {
       'addon',
       'setting',
       'role',
-      'admin-permission',
+      // 'admin-permission' intentionally excluded — aggregated resource,
+      // handled by AuditMetadataService.fetchAdminPermissionSnapshot/Name
+      // (see audit.constants.ts comment).
       'tenant',
     ];
     for (const key of expectedKeys) {
@@ -84,6 +86,15 @@ describe('RESOURCE_TABLE_MAP', () => {
       expect(typeof RESOURCE_TABLE_MAP[key].table).toBe('string');
       expect(typeof RESOURCE_TABLE_MAP[key].nameField).toBe('string');
     }
+  });
+
+  it('should NOT map aggregated resources (admin-permission)', () => {
+    // Aggregated resources live across multiple tables and can't be resolved
+    // via the single-table RESOURCE_TABLE_MAP pattern. See AuditMetadataService
+    // for the dedicated fetcher. Regression guard: if someone re-adds it and
+    // the table name is wrong, ERROR logs flood on every admin permission
+    // change.
+    expect(RESOURCE_TABLE_MAP['admin-permission']).toBeUndefined();
   });
 
   it('should have unique table names', () => {

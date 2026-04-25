@@ -1,0 +1,19 @@
+{
+  "_comment": "Standalone tsconfig for k6 load tests. k6 ≥0.54 runs TS natively via internal ESBuild — this config exists only for IDE type-checking and `pnpm exec tsc --noEmit -p load`. `allowImportingTsExtensions` matches k6's convention of explicit .ts in relative imports.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "lib": ["ES2022"]
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["results"]
+}

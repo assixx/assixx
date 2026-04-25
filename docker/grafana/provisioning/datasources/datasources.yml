@@ -2,16 +2,35 @@
 # Grafana Datasources Provisioning
 # =============================================================================
 #
-# Auto-configures Loki and Prometheus as data sources on Grafana startup.
+# Auto-configures Loki, Prometheus, and Tempo as data sources on Grafana startup.
 # No manual configuration needed!
 #
 # @see https://grafana.com/docs/grafana/latest/administration/provisioning/
+# @see ADR-048 Distributed Tracing with Tempo + OTel
+#
+# IMPORTANT — UIDs:
+#   Loki + Prometheus intentionally omit explicit `uid:` fields. Existing
+#   alert rules in ../alerting/rules.yml reference the auto-generated UIDs
+#   (e.g. `P8E80F9AEF21F6940`). Setting explicit UIDs here would rewrite them
+#   on restart and break alerting provisioning.
+#
+#   Tempo gets an explicit UID (`tempo-ds`) because it's the new datasource;
+#   nothing else references it via UID yet.
+#
+#   Log→Trace and Metric→Trace correlation (derivedFields / exemplars) is
+#   deferred to Phase 3 of FEAT_TEMPO_OTEL_MASTERPLAN — wiring them now
+#   without backend emitting `trace_id` in logs would be a no-op with risk.
 # =============================================================================
 
 apiVersion: 1
 
 datasources:
   # Loki - Log Aggregation
+  # derivedFields (ADR-048 Phase 3a): regex on the log-line body extracts
+  # `trace_id` (emitted by Pino's otelTraceMixin in logger.module.ts) and
+  # turns it into a clickable "View Trace in Tempo" link in Grafana Explore.
+  # Works across pino-pretty (dev) and JSON (prod) because the regex is loose
+  # — matches `"trace_id":"<hex>"` and `trace_id=<hex>` equally.
   - name: Loki
     type: loki
     access: proxy
@@ -21,8 +40,20 @@ datasources:
     jsonData:
       maxLines: 1000
       timeout: 60
+      derivedFields:
+        - name: TraceID
+          matcherRegex: 'trace_id["=:\s]+([a-f0-9]{32})'
+          datasourceUid: tempo-ds
+          url: "$${__value.raw}"
+          urlDisplayLabel: "View Trace in Tempo"
 
   # Prometheus - Metrics Collection
+  # exemplarTraceIdDestinations (ADR-048 Session 3b): maps OpenMetrics
+  # exemplar labels to Tempo traces. When a histogram has `enableExemplars`
+  # and Prometheus stores them (--enable-feature=exemplar-storage),
+  # Grafana graphs render diamond markers; click → jumps to the Tempo
+  # datasource with the trace_id. `name` must match the exemplar-label key
+  # emitted by the backend (snake_case, matches Phase 3a Pino mixin).
   - name: Prometheus
     type: prometheus
     access: proxy
@@ -34,3 +65,22 @@ datasources:
       manageAlerts: true
       prometheusType: Prometheus
       prometheusVersion: "2.x"
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo-ds
+
+  # Tempo - Distributed Tracing (ADR-048)
+  # Explicit UID set — no existing references to break, and Phase 3
+  # (trace correlation) will reference this UID from Loki derivedFields.
+  - name: Tempo
+    type: tempo
+    uid: tempo-ds
+    access: proxy
+    url: http://tempo:3200
+    isDefault: false
+    editable: false
+    jsonData:
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false

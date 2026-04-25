@@ -265,6 +265,26 @@ describe('TenantDeletionService', () => {
       expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining("'cancelled'"), [50]);
     });
 
+    // R15 regression — see backend/src/nest/tenant-deletion/tenant-deletion.service.ts
+    // header comment on the tenant UPDATE. The bug-state was the third query
+    // writing inline NULL ("UPDATE tenants SET deletion_status = NULL"); the
+    // fix parametrises it with literal 'active'. Asserting the exact SQL +
+    // params freezes the contract — any regression to NULL trips this test.
+    // Discovered during shift-handover smoke test (FEAT_SHIFT_HANDOVER §Session 21).
+    it('should restore tenant deletion_status to "active" (R15 regression — never NULL)', async () => {
+      mockDb.query
+        .mockResolvedValueOnce([{ id: 50, tenant_id: 7, status: 'pending_approval' }])
+        .mockResolvedValueOnce([]) // UPDATE queue
+        .mockResolvedValueOnce([]); // UPDATE tenants — the regression target
+
+      await service.cancelDeletion(7, 5);
+
+      expect(mockDb.query).toHaveBeenCalledWith(
+        'UPDATE tenants SET deletion_status = $1 WHERE id = $2',
+        ['active', 7],
+      );
+    });
+
     it('should handle emergency stop', async () => {
       mockDb.query
         .mockResolvedValueOnce([{ id: 50, tenant_id: 1, status: 'queued' }])

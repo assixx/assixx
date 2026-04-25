@@ -41,6 +41,7 @@ type WorkerResponse = { requestId: string } & (
     }
   | { type: 'privateKeyUnwrapped'; publicKey: string; fingerprint: string }
   | { type: 'unwrapFailed'; reason: string }
+  | { type: 'wrappingKeyDerived'; wrappingKey: string }
   | { type: 'locked' }
   | { type: 'pong' }
   | { type: 'error'; message: string }
@@ -205,6 +206,72 @@ class CryptoBridge {
       throw new Error(response.message);
     }
     throw new Error(`Unexpected wrapKey response: ${response.type}`);
+  }
+
+  /**
+   * Derive the escrow wrappingKey from password + stored salt/params, without
+   * decrypting or persisting anything. Returns base64(32 bytes).
+   *
+   * Called by the apex-login flow (ADR-050 × ADR-022) BEFORE the cross-origin
+   * redirect, to produce the value stored in the short-lived unlock ticket.
+   * Requires `init()` to have been called first so the Worker exists (the
+   * handler itself is stateless, but ioredis-style: someone must open the
+   * channel). The IndexedDB side-effect of init is benign on apex — it just
+   * opens an empty user-scoped DB that will not be written to here.
+   */
+  async deriveWrappingKey(
+    password: string,
+    argon2Salt: string,
+    argon2Params: Argon2Params,
+  ): Promise<string> {
+    const response = await this.send({
+      type: 'deriveWrappingKey',
+      password,
+      argon2Salt,
+      argon2Params,
+    });
+    if (response.type === 'wrappingKeyDerived') {
+      return response.wrappingKey;
+    }
+    if (response.type === 'error') {
+      throw new Error(response.message);
+    }
+    throw new Error(`Unexpected deriveWrappingKey response: ${response.type}`);
+  }
+
+  /**
+   * Unwrap using a pre-derived wrappingKey (skips Argon2id).
+   *
+   * Call path for the ADR-050 cross-origin handoff: the apex login derived
+   * the wrappingKey once via normal `unwrapKey()` (or equivalent derivation),
+   * transported it via Redis unlock-ticket, and the subdomain hands the
+   * already-derived key to the Worker here. Saves ~1 second of Argon2id
+   * re-derivation and avoids any password residue on the subdomain origin.
+   *
+   * Returns null on authentication failure (wrong wrappingKey → XChaCha20
+   * "invalid tag") or malformed input — same contract as `unwrapKey()`.
+   */
+  async unwrapKeyWithDerivedKey(
+    wrappingKey: string,
+    encryptedBlob: string,
+    xchachaNonce: string,
+  ): Promise<{ publicKey: string; fingerprint: string } | null> {
+    const response = await this.send({
+      type: 'unwrapWithDerivedKey',
+      wrappingKey,
+      encryptedBlob,
+      xchachaNonce,
+    });
+    if (response.type === 'privateKeyUnwrapped') {
+      return { publicKey: response.publicKey, fingerprint: response.fingerprint };
+    }
+    if (response.type === 'unwrapFailed') {
+      return null;
+    }
+    if (response.type === 'error') {
+      throw new Error(response.message);
+    }
+    throw new Error(`Unexpected unwrapKeyWithDerivedKey response: ${response.type}`);
   }
 
   /**

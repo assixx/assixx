@@ -5,7 +5,7 @@
  * Private methods tested via bracket notation.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -1124,27 +1124,24 @@ describe('BlackboardEntriesService – public methods', () => {
       expect(result.message).toBe('Entry deleted successfully');
     });
 
-    it('throws ForbiddenException for non-author, non-root, no full access', async () => {
-      const entry = createMockDbEntry({ author_id: 99 });
-      // First getUserAccessInfo (inside getEntryById)
-      mockAccessService.getUserAccessInfo
-        .mockResolvedValueOnce({
-          role: 'employee',
-          departmentId: 1,
-          teamId: null,
-          hasFullAccess: false,
-        })
-        // Second getUserAccessInfo (in deleteEntry for hasFullAccess check)
-        .mockResolvedValueOnce({
-          role: 'employee',
-          departmentId: 1,
-          teamId: null,
-          hasFullAccess: false,
-        });
-      mockDb.query.mockResolvedValueOnce([entry]);
-      mockAccessService.checkEntryAccess.mockResolvedValue(true);
+    /**
+     * ADR-045 behavior: the service trusts the Controller guard
+     * `@RequirePermission(blackboard, blackboard-posts, canDelete)`. A user who
+     * lacks the delegated canDelete grant is blocked at the Controller and never
+     * reaches the service. Authorization is therefore NOT re-checked here.
+     *
+     * The old "ForbiddenException for non-author, non-root, no full access"
+     * check was removed because it mis-blocked Employee-Team-Leads with
+     * explicitly-granted canDelete permissions (ADR-020 delegated management).
+     *
+     * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
+     */
+    it('no longer enforces author/full-access in service — trusts Controller guard (ADR-045)', async () => {
+      setupGetEntryMocks(99); // different author — previously threw ForbiddenException
 
-      await expect(service.deleteEntry(1, 1, 5, 'employee')).rejects.toThrow(ForbiddenException);
+      const result = await service.deleteEntry(1, 1, 5, 'employee');
+
+      expect(result.message).toBe('Entry deleted successfully');
     });
 
     it('uses uuid column for string ID delete', async () => {
@@ -1362,6 +1359,59 @@ describe('BlackboardEntriesService – public methods', () => {
         service.updateEntry(1, { title: 'X', departmentIds: [1] } as never, 1, 5),
       ).resolves.toBeDefined();
       expect(mockAccessService.validateOrgPermissions).toHaveBeenCalled();
+    });
+  });
+
+  // ----------------------------------------------------------
+  // getMyPermissions — ADR-045 Layer 2 self-lookup
+  // ----------------------------------------------------------
+
+  describe('getMyPermissions', () => {
+    it('returns all-true bypass for hasFullAccess=true without hitting the DB', async () => {
+      const result = await service.getMyPermissions(5, true);
+
+      expect(result).toEqual({
+        posts: { canRead: true, canWrite: true, canDelete: true },
+        comments: { canRead: true, canWrite: true, canDelete: true },
+        archive: { canRead: true, canWrite: true },
+      });
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('returns fail-closed false defaults when no permission rows exist', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getMyPermissions(5, false);
+
+      expect(result).toEqual({
+        posts: { canRead: false, canWrite: false, canDelete: false },
+        comments: { canRead: false, canWrite: false, canDelete: false },
+        archive: { canRead: false, canWrite: false },
+      });
+    });
+
+    it('maps DB rows to per-module canRead/canWrite/canDelete triples', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { module_code: 'blackboard-posts', can_read: true, can_write: true, can_delete: false },
+        {
+          module_code: 'blackboard-comments',
+          can_read: true,
+          can_write: false,
+          can_delete: false,
+        },
+        {
+          module_code: 'blackboard-archive',
+          can_read: true,
+          can_write: true,
+          can_delete: false,
+        },
+      ]);
+
+      const result = await service.getMyPermissions(5, false);
+
+      expect(result.posts).toEqual({ canRead: true, canWrite: true, canDelete: false });
+      expect(result.comments).toEqual({ canRead: true, canWrite: false, canDelete: false });
+      expect(result.archive).toEqual({ canRead: true, canWrite: true });
     });
   });
 });

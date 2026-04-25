@@ -157,7 +157,7 @@ CREATE TABLE vacation_holidays (
 
 -- Recurring holidays: holiday_date stores the date for the FIRST year.
 -- For recurring=true, matching is: EXTRACT(MONTH FROM holiday_date) = month AND EXTRACT(DAY FROM holiday_date) = day
--- LIMITATION: Bewegliche Feiertage (Ostern, Pfingsten) muessen JAEHRLICH als non-recurring eingetragen werden.
+-- LIMITATION: Bewegliche Feiertage (Ostern, Pfingsten) muessen Jährlich als non-recurring eingetragen werden.
 -- V2: Admin-Tool fuer automatische Berechnung beweglicher Feiertage.
 
 CREATE INDEX idx_vh_tenant_date ON vacation_holidays(tenant_id, holiday_date);

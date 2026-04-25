@@ -26,7 +26,7 @@ function toArray<T>(data: T[] | null): T[] {
 function unwrapEvents(data: unknown): CalendarEvent[] {
   if (Array.isArray(data)) return data as CalendarEvent[];
   if (data !== null && typeof data === 'object' && 'events' in data) {
-    const wrapped = data as { events: unknown };
+    const wrapped = data;
     if (Array.isArray(wrapped.events)) return wrapped.events as CalendarEvent[];
   }
   return [];

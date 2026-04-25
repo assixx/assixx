@@ -38,7 +38,7 @@ const apiClient = getApiClient();
 export async function fetchUserData(): Promise<User | null> {
   try {
     const result = await fetchSharedUser();
-    return result.user as User | null;
+    return result.user;
   } catch (err: unknown) {
     log.error({ err }, 'Error fetching user');
     checkSessionExpired(err);

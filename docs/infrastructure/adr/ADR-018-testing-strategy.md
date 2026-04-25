@@ -118,33 +118,41 @@ Assixx had **no automated tests** until early 2026. API endpoints were manually 
 ### Architecture Schema
 
 ```
-                        VITEST TEST PYRAMID
-                        ==================
+                        ASSIXX TEST PYRAMID
+                        ===================
 
-                         ┌─────────────┐
-                         │   E2E Tests │  (Future: Playwright)
-                         │   Browser   │  not part of this ADR
-                         └──────┬──────┘
-                                │
-                   ┌────────────┴────────────┐
-                   │  API Integration Tests   │  Tier 2: Real HTTP
-                   │  35 files, 558 tests     │  against Docker backend
-                   │  vitest --project api    │  Sequential, fetch()
-                   └────────────┬─────────────┘
-                                │
-          ┌─────────────────────┴─────────────────────┐
-          │           Unit Tests                       │  Tier 1: Pure Functions
-          │  226 files, 5568 tests                     │  No Docker needed
-          │  vitest --project unit                     │  Parallel, <15s
-          ├────────────────────────────────────────────┤
-          │  🔴 Permission/Security Tests              │  Tier 1a: CRITICAL subset
-          │  19 files, 430 tests                       │  Access control, auth, RBAC
-          │  vitest --project permission               │  Badged: SECURITY:
-          ├────────────────────────────────────────────┤
-          │           Frontend Unit Tests              │  Tier 1b: Frontend Utils
-          │  19 files, 399 tests                       │  No Docker needed
-          │  vitest --project frontend-unit            │  Parallel, <14s
-          └────────────────────────────────────────────┘
+                      ┌──────────────────────┐
+                      │  Load / Perf (k6)     │  Tier 4: Performance
+                      │  1 file, 10 endpoints │  Regression guard
+                      │  pnpm run test:load:  │  Docker k6 image,
+                      │  smoke                │  1 VU × 1 min (~65s)
+                      └──────────┬───────────┘
+                                 │
+                      ┌──────────┴───────────┐
+                      │   E2E Browser Tests   │  Tier 3: Playwright
+                      │   3 files, 20 tests   │  Docker + Dev Server
+                      │   pnpm run test:e2e   │  Chromium, ~25s
+                      └──────────┬───────────┘
+                                 │
+                   ┌─────────────┴────────────┐
+                   │  API Integration Tests    │  Tier 2: Real HTTP
+                   │  43 files, 753 tests      │  against Docker backend
+                   │  vitest --project api     │  Sequential, fetch()
+                   └─────────────┬─────────────┘
+                                 │
+          ┌──────────────────────┴──────────────────────┐
+          │           Unit Tests                         │  Tier 1: Pure Functions
+          │  249 files, 6477 tests                       │  No Docker needed
+          │  vitest --project unit                       │  Parallel, <15s
+          ├──────────────────────────────────────────────┤
+          │  🔴 Permission/Security Tests                │  Tier 1a: CRITICAL subset
+          │  19 files, 430 tests                         │  Access control, auth, RBAC
+          │  vitest --project permission                 │  Badged: SECURITY:
+          ├──────────────────────────────────────────────┤
+          │           Frontend Unit Tests                │  Tier 1b: Frontend Utils
+          │  23 files, 399 tests                         │  No Docker needed
+          │  vitest --project frontend-unit              │  Parallel, <14s
+          └──────────────────────────────────────────────┘
 ```
 
 ### Tier 1: Unit Tests (Pure Functions)
@@ -201,11 +209,12 @@ Phase 11: Org Scope + Hierarchy  — scope, hierarchy-permission, leads   ✅ ~1
 | Timeout       | 30s per test, 30s per hook                                 |
 | Prerequisite  | Docker backend running (`docker-compose up -d`)            |
 
-**35 Modules, 558 Tests:**
+**36 Modules, 574 Tests:**
 
 | Module                    | Tests | Specifics                                   |
 | ------------------------- | ----- | ------------------------------------------- |
 | auth                      | 9     | Login + Refresh + Logout                    |
+| auth-password-reset       | 16    | Forgot + Reset + Token reuse + E2E flow     |
 | addons                    | 29    | Addon listing + tenant addon CRUD           |
 | users                     | 10    | CRUD + ensureTestEmployee                   |
 | departments               | 9     | CRUD                                        |
@@ -371,15 +380,110 @@ export default defineConfig({
 });
 ```
 
+### Tier 3: E2E Browser Tests (Playwright)
+
+| Aspect        | Decision                                                         |
+| ------------- | ---------------------------------------------------------------- |
+| Tool          | Playwright 1.59 (`pnpm run test:e2e`)                            |
+| Scope         | `e2e/*.spec.ts`                                                  |
+| Browser       | Chromium (Desktop Chrome device profile)                         |
+| Execution     | Sequential (`workers: 1`), headless                              |
+| Auth          | `storageState` pattern — auth.setup.ts logs in once, saves state |
+| Dev Server    | Auto-started via `webServer` config (SvelteKit best practice)    |
+| Rate Limiting | `globalSetup` flushes Redis `throttle:*` keys before suite       |
+| Prerequisite  | Docker backend running (postgres, redis, backend)                |
+
+**3 Files, 20 Tests:**
+
+| File          | Tests | Specifics                                                  |
+| ------------- | ----- | ---------------------------------------------------------- |
+| auth.setup.ts | 1     | Login + storageState save (setup project, runs first)      |
+| login.spec.ts | 7     | Login form, success, error, auth redirect, logout + modal  |
+| smoke.spec.ts | 13    | Dashboard stats, sidebar modules, navigation, 6 page loads |
+
+**Setup:**
+
+- `webServer.command: 'pnpm run dev:svelte'` — auto-starts SvelteKit dev server
+- `webServer.reuseExistingServer: false` — never reuses; ensures `webServer.env` overrides actually apply (footgun: a parallel `pnpm run dev:svelte` would inject real Turnstile keys, see HOW-TO-CLOUDFLARE-TURNSTILE)
+- `webServer.env` — injects Cloudflare official Turnstile test keys (`1x00…AA`) so the invisible challenge auto-resolves in headless Chromium without bypassing the widget
+- `globalSetup` — flushes Redis rate-limit keys (same pattern as API tests)
+- `e2e/.auth/` — storageState files (gitignored)
+
+**References:**
+
+- [Svelte Testing Docs](https://svelte.dev/docs/svelte/testing)
+- [SvelteKit Playwright CLI](https://svelte.dev/docs/cli/playwright)
+- [Playwright Best Practices](https://playwright.dev/docs/best-practices)
+
+### Tier 4: Load & Performance Regression (k6)
+
+Performance tests are a separate axis from functional tests — they measure
+**how fast** endpoints respond, not **whether** they respond correctly. Added
+2026-04-18 alongside the Tempo + OTel observability work (see ADR-048). The
+suite guards against performance regressions that unit / API / E2E tiers cannot
+detect (e.g. an added N+1 query, a new middleware, a slow serializer).
+
+| Aspect        | Decision                                                                            |
+| ------------- | ----------------------------------------------------------------------------------- |
+| Tool          | [k6](https://grafana.com/docs/k6/) via Docker (`grafana/k6:latest`)                 |
+| Scope         | `load/tests/*.ts` — currently one smoke test                                        |
+| Execution     | Single VU × 1 min against running Docker backend, via `pnpm run test:load:smoke`    |
+| HTTP Client   | k6's built-in `k6/http` (not fetch — k6 runs in goja VM, not Node)                  |
+| Auth          | `loginApitest()` in `load/lib/auth.ts` — port of `backend/test/helpers.ts`          |
+| Rate Limiting | Script's pre-step `test:load:flush` runs `FLUSHDB` against the Redis container      |
+| Thresholds    | `p95 < 500 ms`, `p99 < 1000 ms`, `http_req_failed < 1 %`, `checks > 99 %`           |
+| TypeScript    | k6 ≥ 0.54 supports `.ts` natively — no transpile step; `load/tsconfig.json` for IDE |
+| Prerequisites | Docker backend healthy, `apitest` tenant seeded, Redis reachable                    |
+
+**1 Smoke Test, 10 Endpoints:**
+
+Hot-path endpoints that every user hits — chosen to catch regressions early:
+
+| #   | Endpoint                                | Why in smoke                    |
+| --- | --------------------------------------- | ------------------------------- |
+| 1   | `GET /health`                           | Baseline (no auth, no DB)       |
+| 2   | `GET /api/v2/users/me/org-scope`        | Hot-path (ADR-035/036/039)      |
+| 3   | `GET /api/v2/users?limit=10`            | Paginated list                  |
+| 4   | `GET /api/v2/departments`               | Hierarchy read (ADR-034)        |
+| 5   | `GET /api/v2/teams`                     | Hierarchy read (ADR-034)        |
+| 6   | `GET /api/v2/blackboard/entries`        | RLS-filtered list (ADR-019)     |
+| 7   | `GET /api/v2/notifications`             | Sidebar load                    |
+| 8   | `GET /api/v2/calendar/events?from=&to=` | Date-range filter (heavy)       |
+| 9   | `GET /api/v2/tpm/plans`                 | Paginated list (Addon, ADR-033) |
+| 10  | `GET /api/v2/addons`                    | Tenant-addon catalog            |
+
+**Baseline (2026-04-18):** p95 = 23.64 ms, p99 = 38.11 ms, 0 % failure, 541/541 checks passing.
+
+**Commands:**
+
+```bash
+# Standalone smoke (flushes Redis throttle keys automatically, then runs k6)
+pnpm run test:load:smoke
+
+# Flush Redis throttle keys only (for troubleshooting)
+pnpm run test:load:flush
+
+# Full `pnpm test` now includes Vitest + Playwright + k6 smoke (total ~3 min)
+pnpm test
+```
+
+**Not in CI (yet):** load tests need Docker backend + Redis + postgres. Currently runs locally pre-merge. A scheduled CI job against a staging environment is the natural next step.
+
+**References:**
+
+- [load/README.md](../../../load/README.md) — complete setup + troubleshooting
+- [ADR-048 Distributed Tracing with Tempo + OTel](./ADR-048-distributed-tracing-tempo-otel.md) — traces generated by the smoke suite land in Tempo (Phase 2b+)
+- [k6 TypeScript Support](https://grafana.com/docs/k6/latest/using-k6/javascript-typescript-compatibility-mode/)
+
 ### All Test Commands (Quick Reference)
 
 ```bash
 # ── All Tests ────────────────────────────────────────────────
-pnpm test                                           # All 4 projects (unit + permission + frontend-unit + api)
+pnpm test                                           # Vitest: unit + permission + frontend-unit + api
 pnpm test -- --reporter=verbose                     # With details
 
 # ── Backend Unit Tests ────────────────────────────────────────
-pnpm test --project unit                            # 5568 tests (~15s, no Docker)
+pnpm test --project unit                            # 6477 tests (~15s, no Docker)
 pnpm vitest run --project unit -- backend/src/nest/auth/auth.service.test.ts  # Single file
 
 # ── 🔴 Permission/Security Tests ─────────────────────────────
@@ -389,8 +493,19 @@ pnpm run test:permission                            # 430 tests (~4s, CRITICAL s
 pnpm test --project frontend-unit                   # 399 tests (<14s, no Docker)
 
 # ── API Integration Tests ────────────────────────────────────
-pnpm test --project api                             # 558 tests (~20s, Docker MUST be running!)
+pnpm test --project api                             # 753 tests (~33s, Docker MUST be running!)
 pnpm vitest run --project api -- backend/test/calendar.api.test.ts  # Single module
+
+# ── E2E Browser Tests (Playwright) ───────────────────────────
+pnpm run test:e2e                                   # 20 tests (~25s, Docker + auto-starts dev server)
+pnpm run test:e2e:headed                            # With visible browser window
+pnpm exec playwright test e2e/login.spec.ts         # Single spec file
+pnpm run test:e2e:report                            # Open HTML report
+
+# ── Load / Performance Tests (k6) ────────────────────────────
+pnpm run test:load                                  # Alias for smoke (same command)
+pnpm run test:load:smoke                            # 10 endpoints × 1 VU × 1 min (~65s, flushes Redis first)
+pnpm run test:load:flush                            # Flush Redis throttle keys (manual debug)
 
 # ── Coverage ──────────────────────────────────────────────────
 pnpm test:coverage                                  # All projects with coverage
@@ -428,8 +543,9 @@ Phase 8: DTO Validations            ✅ DONE   460 Tests   (13 modules, 13 files
 Phase 9: Service Coverage Push      ✅ DONE   ~930 Tests  (11 services: 47%→99% avg)
 Phase 10: New Modules + Coverage    ✅ DONE  ~600 Tests  (organigram, tpm, vacation, halls, etc.)
 Phase 11: Org Scope + Hierarchy     ✅ DONE  ~150 Tests  (scope, hierarchy-permission, leads, ADR-036)
+Phase 12: E2E Browser Tests         ✅ DONE    20 Tests  (Playwright: login, logout, dashboard, navigation, 6 page loads)
 ──────────────────────────────────────────────────────────────────────
-TOTAL: 5568 Unit + 430 Permission (subset) + 399 Frontend + 558 API = 6955 Tests
+TOTAL: 6477 Unit + 430 Permission (subset) + 399 Frontend + 753 API + 20 E2E = 8079 Tests
 ──────────────────────────────────────────────────────────────────────
 ```
 
@@ -506,7 +622,7 @@ unit-tests:
   steps:
     - uses: actions/checkout@v4
     - uses: pnpm/action-setup@v2
-      with: { version: 10.33.0 }
+      with: { version: 10.33.2 }
     - uses: actions/setup-node@v5
       with: { node-version: '24', cache: 'pnpm' }
     - run: pnpm install --frozen-lockfile
@@ -523,7 +639,7 @@ unit-tests:
 - `*.guard.ts` excluded from coverage — Rollup cannot parse TypeScript decorators
 - `*.test.ts` removed from `.prettierignore` — otherwise `validate:all` doesn't format test files, but CI checks them
 
-**Important:** API integration tests (`--project api`) do NOT run in CI — they require Docker with DB/Redis.
+**Important:** API integration tests (`--project api`) and E2E browser tests (`pnpm run test:e2e`) do NOT run in CI — they require Docker with DB/Redis.
 Unit + frontend tests (`--project unit --project frontend-unit`) run in CI — they only need Node.js.
 
 ### Branch Protection (GitHub, configured)
@@ -547,13 +663,14 @@ Settings → Branches → main:
 
 - **Single Tool** — Vitest for unit + integration, no tool fragmentation
 - **ESM-native** — No workarounds, no `--experimental-vm-modules` flags
-- **Fast** — 5568 unit tests in ~15s, 430 permission tests in ~4s, 558 API tests in ~20s, 399 frontend tests in <14s
+- **Fast** — 6477 unit tests in ~15s, 430 permission tests in ~4s, 769 API tests in ~33s, 399 frontend tests in <14s, 20 E2E tests in ~25s
 - **Deterministic** — `vi.useFakeTimers()` for dates, `flushThrottleKeys()` for rate limiting
 - **Workspace Separation** — Unit tests (CI-compatible, no Docker) vs. API tests (Docker required)
 - **Bruno CLI eliminated** — 329 npm packages removed, no state management via `bru.setVar()`
 - **Tests as Documentation** — Edge cases (is_active multi-state, password NIST rules) become visible through tests
 - **Bugs discovered and fixed through tests** — sanitizeData camelCase bug (SENSITIVE_FIELDS lowercase normalization, fixed 2026-02-05), EmailSchema trim order documented
-- **Regression Protection** — 6955 automated tests (5568 unit + 430 permission [subset] + 399 frontend + 558 API)
+- **Regression Protection** — 8095 automated tests (6477 unit + 430 permission [subset] + 399 frontend + 769 API + 20 E2E)
+- **Full-Stack E2E** — Playwright smoke tests verify the entire stack (Nginx → SvelteKit → NestJS → PostgreSQL) through a real browser
 - **CI as Merge Gate** — Unit tests + coverage thresholds block merge on failure
 - **Coverage Floor** — Thresholds prevent coverage from gradually declining
 
@@ -612,7 +729,8 @@ Settings → Branches → main:
 - **ADR-007** — API Response Standardization (ResponseInterceptor, relevant for double-wrapping fix)
 - **ADR-013** — CI/CD Pipeline Hardening (unit tests as future merge gate)
 - **ADR-036** — Organizational Scope Access Control (Phase 11: scope + hierarchy-permission tests)
+- **ADR-048** — Distributed Tracing with Tempo + OTel (Tier 4 smoke exercises the observability pipeline end-to-end)
 
 ---
 
-_Last Updated: 2026-03-23 (v10 - Coverage thresholds raised: 83/76/83/83 → 86/80/87/86. Long-term goals updated: 93/88/93/93. Current coverage: Lines 91.07%, Branches 85.56%, Functions 92.36%, Statements 91.35%. 6455 unit+frontend tests across 255 files.)_
+_Last Updated: 2026-04-18 (v12 - Phase 13: Tier 4 Load & Performance Regression tests with k6 v0.54+ (Docker `grafana/k6:latest`). 1 smoke test, 10 hot-path endpoints, 1 VU × 1 min, thresholds p95<500ms / p99<1000ms / err<1%. Baseline recorded: p95=23.64ms, p99=38.11ms. Integrated into `pnpm test`. Total: 8080 test artefacts across 6 tiers._

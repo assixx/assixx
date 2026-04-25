@@ -400,7 +400,7 @@
                 bind:checked={holidayRecurring}
               />
               <span class="toggle-switch__slider"></span>
-              <span class="toggle-switch__label"> Jaehrlich wiederkehrend </span>
+              <span class="toggle-switch__label"> Jährlich wiederkehrend </span>
             </label>
             <p class="form-field__hint">
               Wiederkehrende Feiertage werden jedes Jahr am gleichen Tag beruecksichtigt (Monat +
@@ -529,13 +529,6 @@
 
   .holiday-list__item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--spacing-3) var(--spacing-4);
-    border-radius: var(--radius-md);
-    background: var(--glass-bg);
-    border: 1px solid var(--color-glass-border);
-    transition: border-color var(--transition-fast);
   }
 
   .holiday-list__item:hover {

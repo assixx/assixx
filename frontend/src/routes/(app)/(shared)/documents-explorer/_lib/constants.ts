@@ -4,7 +4,7 @@
 
 import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
-import type { DocumentCategory, SortOption, CategoryMapping, AccessScope } from './types';
+import type { DocumentCategory, SortOption, CategoryMapping } from './types';
 
 /** SVG icons for folder categories */
 const FOLDER_ICONS: Record<DocumentCategory, string> = {
@@ -103,25 +103,25 @@ export const DB_CATEGORY_LABELS: Record<string, string> = {
  */
 export const CATEGORY_MAPPINGS: Record<string, CategoryMapping> = {
   company: {
-    accessScope: 'company' as AccessScope,
+    accessScope: 'company',
     categoryValue: 'general',
   },
   department: {
-    accessScope: 'department' as AccessScope,
+    accessScope: 'department',
     requiresField: 'departmentId',
     categoryValue: 'work',
   },
   team: {
-    accessScope: 'team' as AccessScope,
+    accessScope: 'team',
     requiresField: 'teamId',
     categoryValue: 'work',
   },
   personal: {
-    accessScope: 'personal' as AccessScope,
+    accessScope: 'personal',
     categoryValue: 'personal',
   },
   payroll: {
-    accessScope: 'payroll' as AccessScope,
+    accessScope: 'payroll',
     requiresPayrollPeriod: true,
     categoryValue: 'salary',
   },

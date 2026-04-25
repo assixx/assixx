@@ -684,7 +684,7 @@ export class ReportsService {
       `,
       params,
     );
-    return rows[0] ?? ({} as DbMetricsRow);
+    return rows[0] ?? {};
   }
 
   /**
@@ -788,7 +788,7 @@ export class ReportsService {
       `,
       params,
     );
-    return rows[0] ?? ({} as DbMetricsRow);
+    return rows[0] ?? {};
   }
 
   /**

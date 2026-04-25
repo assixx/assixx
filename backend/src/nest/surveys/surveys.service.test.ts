@@ -229,28 +229,25 @@ describe('SurveysService', () => {
   // =============================================================
 
   describe('validateSurveyUpdate', () => {
-    it('throws ForbiddenException for employee role', () => {
-      expect(() => mocks.service['validateSurveyUpdate']('employee', 'draft', 0)).toThrow(
-        ForbiddenException,
-      );
-    });
-
+    // Role-based blocking removed: @RequirePermission + checkSurveyManagementAccess
+    // are the authoritative gates. validateSurveyUpdate only enforces state
+    // constraints (active survey with responses cannot be updated).
     it('throws ConflictException for active survey with responses', () => {
-      expect(() => mocks.service['validateSurveyUpdate']('admin', 'active', 5)).toThrow(
-        ConflictException,
-      );
+      expect(() => mocks.service['validateSurveyUpdate']('active', 5)).toThrow(ConflictException);
     });
 
-    it('does not throw for admin with draft survey', () => {
-      expect(() => mocks.service['validateSurveyUpdate']('admin', 'draft', 0)).not.toThrow();
+    it('does not throw for draft survey regardless of response count', () => {
+      expect(() => mocks.service['validateSurveyUpdate']('draft', 0)).not.toThrow();
+      expect(() => mocks.service['validateSurveyUpdate']('draft', 10)).not.toThrow();
     });
 
-    it('does not throw for admin with active survey and zero responses', () => {
-      expect(() => mocks.service['validateSurveyUpdate']('admin', 'active', 0)).not.toThrow();
+    it('does not throw for active survey with zero responses', () => {
+      expect(() => mocks.service['validateSurveyUpdate']('active', 0)).not.toThrow();
     });
 
-    it('does not throw for root role with draft survey', () => {
-      expect(() => mocks.service['validateSurveyUpdate']('root', 'draft', 10)).not.toThrow();
+    it('does not throw for completed/archived surveys', () => {
+      expect(() => mocks.service['validateSurveyUpdate']('completed', 100)).not.toThrow();
+      expect(() => mocks.service['validateSurveyUpdate']('archived', 50)).not.toThrow();
     });
   });
 
@@ -809,9 +806,38 @@ describe('SurveysService', () => {
       expect(mocks.mockActivityLogger.logUpdate).toHaveBeenCalled();
     });
 
-    it('throws ForbiddenException for employee update', async () => {
+    it('allows employee (lead) update when scope check passes', async () => {
+      // Employee-lead scenario: has surveys-manage.canWrite permission AND is
+      // lead of assigned org unit (checkSurveyManagementAccess passes in mock).
       const existing = createMockDbSurvey();
-      mocks.mockDb.tenantQuery.mockResolvedValueOnce([existing]);
+      mocks.mockDb.tenantQuery
+        .mockResolvedValueOnce([existing]) // getSurveyById (management access)
+        .mockResolvedValueOnce([]) // UPDATE surveys
+        .mockResolvedValueOnce([existing]); // getSurveyById (re-fetch after update)
+
+      const result = await mocks.service.updateSurvey(
+        1,
+        { title: 'Lead Update' } as never,
+        1,
+        5,
+        'employee',
+      );
+
+      expect(result).toHaveProperty('title');
+      expect(mocks.mockAccessService.checkSurveyManagementAccess).toHaveBeenCalledWith(
+        1,
+        1,
+        5,
+        'employee',
+      );
+    });
+
+    it('rejects employee update when scope check fails', async () => {
+      // Employee without lead status OR with out-of-scope target:
+      // checkSurveyManagementAccess throws ForbiddenException.
+      mocks.mockAccessService.checkSurveyManagementAccess.mockRejectedValueOnce(
+        new ForbiddenException('No management permission for this survey'),
+      );
 
       await expect(
         mocks.service.updateSurvey(1, { title: 'X' } as never, 1, 5, 'employee'),

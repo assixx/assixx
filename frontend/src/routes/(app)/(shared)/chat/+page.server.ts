@@ -20,7 +20,7 @@ import type { Conversation } from './_lib/types';
 function unwrapConversations(raw: unknown): Conversation[] {
   if (Array.isArray(raw)) return raw as Conversation[];
   if (raw !== null && typeof raw === 'object' && 'conversations' in raw) {
-    const wrapped = raw as { conversations: unknown };
+    const wrapped = raw;
     if (Array.isArray(wrapped.conversations)) return wrapped.conversations as Conversation[];
   }
   return [];

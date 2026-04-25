@@ -59,7 +59,13 @@ export interface CalendarShiftResponse {
 }
 
 /**
- * Assignment count per employee (week, month, year)
+ * Assignment count per employee (week, month, year).
+ *
+ * `weekInMonthCount` / `weekInYearCount` are the intersection counts
+ * (shifts that lie in BOTH the current week AND the reference month/year).
+ * The frontend needs these to correctly re-merge local (unsaved) week edits
+ * into the month/year totals when the current week crosses a month/year
+ * boundary — see `frontend/.../shifts/+page.svelte` assignmentCounts derived.
  */
 export interface AssignmentCountResponse {
   employeeId: number;
@@ -68,6 +74,8 @@ export interface AssignmentCountResponse {
   weekCount: number;
   monthCount: number;
   yearCount: number;
+  weekInMonthCount: number;
+  weekInYearCount: number;
 }
 
 /**

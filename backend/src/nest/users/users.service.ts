@@ -26,6 +26,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
+import { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
@@ -87,6 +88,11 @@ export class UsersService {
     private readonly scopeService: ScopeService,
     private readonly hierarchyPermission: HierarchyPermissionService,
     private readonly userPositionService: UserPositionService,
+    // Step 2.9 KISS gate — `assertVerified(tenantId)` called at top of
+    // `insertUserRecord` (the AST-enclosing helper of the `INSERT INTO users`
+    // literal, v0.3.6 D33) to block user creation for tenants without a
+    // verified domain. `tenantId` is the helper's 4th parameter.
+    private readonly tenantVerification: TenantVerificationService,
   ) {}
 
   // ============================================
@@ -248,6 +254,12 @@ export class UsersService {
     hasFullAccess: boolean | undefined,
     tenantId: number,
   ): Promise<number> {
+    // KISS gate (§2.9 + §0.2.5 #1): helper-entry assertion per v0.3.6 D33.
+    // Throws `ForbiddenException('TENANT_NOT_VERIFIED')` if no verified
+    // `tenant_domains` row exists. Arch-test (§2.11, regex
+    // `INSERT INTO users\b`) locks the invariant that the gate sits in
+    // THIS function — not the public `createUser` wrapper upstream.
+    await this.tenantVerification.assertVerified(tenantId);
     const employeeNumber = userData.employeeNumber ?? `EMP${String(Date.now())}`;
     const hashedPassword = await bcryptjs.hash(userData.password, 12);
     const userUuid = uuidv7();

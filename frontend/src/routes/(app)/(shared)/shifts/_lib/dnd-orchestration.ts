@@ -190,7 +190,7 @@ export function handleDrop(event: DragEvent, dateKey: string, shiftType: string)
   assignEmployeeToShift(employeeId, employee, dateKey, shiftType);
 
   const employeeName = getEmployeeDisplayName(employee);
-  const shiftLabel = getShiftLabel(shiftType as ShiftType);
+  const shiftLabel = getShiftLabel(shiftType);
   showSuccessAlert(`${employeeName} zur ${shiftLabel} hinzugefügt`);
 
   const dayName = shiftCell?.dataset.day;

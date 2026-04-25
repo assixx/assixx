@@ -4,7 +4,20 @@ import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vite';
 
+// Read package.json version at config-load time.
+// Sync with Changesets: `pnpm changeset:version` bumps this field → next build
+// picks up the new value automatically (no manual step required).
+// See docs/how-to/HOW-TO-USE-CHANGESETS.md.
+import pkg from './package.json' with { type: 'json' };
+
 export default defineConfig(({ mode }) => ({
+  // Build-time constant replacement.
+  // __APP_VERSION__ is substituted everywhere in source → version number in UI
+  // stays in lockstep with package.json (Fixed-Group via Changesets).
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
+
   plugins: [
     // Sentry MUSS vor SvelteKit kommen!
     sentrySvelteKit({
@@ -38,10 +51,25 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     strictPort: true, // Fail if port 5173 is unavailable
 
-    // HMR Configuration (Best Practice 2025)
+    // Allow `*.localhost` subdomains for ADR-050 local subdomain-routing tests.
+    // Vite 5+ defaults allowedHosts to `['localhost']` as a DNS-rebinding
+    // defence; without this entry a request to `testfirma.localhost:5173`
+    // returns "Blocked request. This host is not allowed." and the whole dev
+    // flow on subdomains breaks. The leading dot is Vite's subdomain-wildcard
+    // marker — matches `firma-a.localhost`, `testfirma.localhost`, etc.
+    // Plain `localhost` stays allowed by default; this is purely additive.
+    //
+    // @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §"Local Dev"
+    // @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md D9
+    allowedHosts: ['.localhost'],
+
+    // HMR Configuration — do NOT pin hmr.port. Vite defaults to server.port,
+    // which is correct when Vite runs on a non-default port (e.g. Playwright E2E
+    // starts a second instance on 5174 via CLI --port). A hardcoded hmr.port
+    // would make the HMR websocket try to connect to 5173 even when the server
+    // listens on 5174, breaking smoke tests with "WebSocket handshake 400".
     hmr: {
       overlay: true,
-      port: 5173,
       protocol: 'ws',
       host: 'localhost',
     },
@@ -51,6 +79,13 @@ export default defineConfig(({ mode }) => ({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        // Ausnahme: /api/turnstile wird von SvelteKit selbst bedient
+        // (siehe frontend/src/routes/api/turnstile/+server.ts). Ohne
+        // diesen Bypass würde der Request an NestJS:3000 laufen und
+        // dort mit 404 NOT_FOUND beantwortet — Signup-Flow brechen.
+        // Wenn bypass einen Pfad zurückgibt, überspringt Vite den Proxy
+        // und SvelteKit's Router übernimmt. Siehe HOW-TO-CLOUDFLARE-TURNSTILE.md.
+        bypass: (req) => (req.url?.startsWith('/api/turnstile') === true ? req.url : undefined),
       },
       '/chat-ws': {
         target: 'ws://localhost:3000',
@@ -102,13 +137,13 @@ export default defineConfig(({ mode }) => ({
         },
         // CRITICAL: Strip console.* and debugger in production builds
         // This removes ALL 331+ console calls from the production bundle
-        // Vite 8: esbuild.drop → rolldownOptions.output.minify.compress
+        // Vite 8: rolldownOptions.output.minify.compress (rolldown CompressOptions)
         ...(mode === 'production' ?
           {
             minify: {
               compress: {
-                drop_console: true,
-                drop_debugger: true,
+                dropConsole: true,
+                dropDebugger: true,
               },
             },
           }

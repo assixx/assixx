@@ -450,3 +450,168 @@ Each attempt costs ~0.5 seconds and 64 MiB of RAM due to Argon2id's memory-hardn
 - [@noble/ciphers](https://github.com/paulmillr/noble-ciphers) — XChaCha20-Poly1305 (already in project)
 - [RFC 9106: Argon2](https://www.rfc-editor.org/rfc/rfc9106) — Argon2id specification
 - [Incident 2026-02-11](../../CLAUDE-KAIZEN-MANIFEST.md) — Key rotation data loss that motivated this ADR
+
+---
+
+## Amendment 2026-04-22 — Cross-Origin Unlock Handoff + Restorative Rotation
+
+### Context
+
+ADR-050 (subdomain routing) introduced a mandatory cross-origin redirect
+between password entry (apex `www.assixx.com`) and the app surface
+(`<slug>.assixx.com`). The original escrow design assumed same-origin
+login → app and carried the password via `login-password-bridge.ts`, a
+module-scoped JS variable. Module memory does not survive a
+`window.location.href` change across origins, so the subdomain's
+`e2e.initialize()` received `loginPassword === null` and the recovery
+path was unreachable — every cross-origin login that found an empty
+subdomain IndexedDB fell through to `generateAndRegisterKey()` and
+collided with the pre-existing server key.
+
+The pre-Phase-A fallback was the silent rotation removed in
+[ADR-021 §Amendment 2026-04-22](./ADR-021-e2e-encryption.md#amendment-2026-04-22--no-auto-rotation--plaintext-fallback-block).
+Post-Phase-A the same collision fails closed. A cross-origin transport
+mechanism is therefore required.
+
+### Decision
+
+#### Single-use unlock ticket (Redis, 60 s TTL)
+
+A new Redis-backed single-use ticket carries the client-derived
+wrappingKey from apex to subdomain. Wire-for-wire identical to the
+existing `oauth:state:{uuid}` (ADR-046) and `oauth:handoff:{uuid}`
+(ADR-050) patterns — different keyspace (`escrow:unlock:{uuid}`) so
+`FLUSHDB` in dev isolates concerns.
+
+**Payload:** `{ wrappingKey, userId, tenantId, createdAt }`. The
+`wrappingKey` is a base64-encoded 32-byte XChaCha20 key derived
+**client-side** in the apex Worker via `Argon2id(password, escrow.salt,
+escrow.params)`. The password never leaves the apex browser for this
+purpose — the server only sees the already-derived key.
+
+**Binding:** consume verifies `payload.userId === req.user.id` and
+`payload.tenantId === req.user.tenantId`. A ticket leaked to another
+user cannot be redeemed.
+
+**TTL:** 60 s. Long enough for the 303 redirect + subdomain first-render,
+short enough to bound the dump-window. `GETDEL` atomic
+(Redis 6.2+; production Redis 8.6.2).
+
+#### Endpoints
+
+| Method | Path                         | Auth   | Rate limit               | Purpose                                         |
+| ------ | ---------------------------- | ------ | ------------------------ | ----------------------------------------------- |
+| POST   | `/e2e/escrow/unlock-ticket`  | Bearer | `AuthThrottle` (10/5min) | Mint ticket after apex login                    |
+| POST   | `/e2e/escrow/consume-unlock` | Cookie | `UserThrottle`           | Subdomain consumes ticket → returns wrappingKey |
+
+#### Worker additions
+
+- `deriveWrappingKey({ password, argon2Salt, argon2Params })` → returns
+  base64 wrappingKey. Pure Argon2id, no IndexedDB side-effects (used on
+  apex where the key should NOT land in a user-scoped store).
+- `unwrapWithDerivedKey({ wrappingKey, encryptedBlob, xchachaNonce })` →
+  XChaCha20-Poly1305 decrypt + store private key in subdomain's
+  per-user IndexedDB. No Argon2id (key is already derived).
+
+#### Flow
+
+```
+Apex /login use:enhance:
+  1. Submit credentials, receive { accessToken, user.id, redirectTo, … }
+  2. GET /e2e/escrow with Bearer → escrow metadata (or null)
+  3. If escrow exists:
+       - cryptoBridge.deriveWrappingKey(password, salt, params)
+       - POST /e2e/escrow/unlock-ticket { wrappingKey } → { ticketId }
+       - append ?unlock=<ticketId> to redirectTo
+  4. window.location.href = redirectTo
+
+Subdomain /signup/oauth-complete?token=…&unlock=…:
+  - Server-side: consume handoff token, set cookies, preserve ?unlock=
+    into the final dashboard redirect.
+
+Subdomain (app) /+layout.svelte onMount:
+  - bootstrapFromUnlockTicket(userId, ticketId):
+      - POST /e2e/escrow/consume-unlock → { wrappingKey }
+      - GET  /e2e/escrow → blob
+      - cryptoBridge.unwrapKeyWithDerivedKey(wrappingKey, blob, nonce)
+        → private key stored in subdomain IndexedDB
+      - [restorative-rotation — see below]
+  - e2e.initialize(userId) — hasKey=true, happy path.
+```
+
+#### Restorative rotation after escrow unwrap (single permitted rotation path)
+
+Escrow may encode a private key whose fingerprint does NOT match the
+server's current active public key. Real-world cause: past buggy
+auto-rotations (pre-Phase-A) rewrote the server to a freshly generated
+key without touching escrow; subsequent legitimate logins therefore
+unwrap a historically-canonical key (what the escrow-stored private
+actually decrypts to) while the server still holds the artefact key.
+
+**Rule:** after a successful `unwrapKeyWithDerivedKey`, if the escrow's
+fingerprint differs from the server's active key, `bootstrapFromUnlockTicket`
+calls the private `rotateKeyOnServer` helper (defined in
+`e2e-state.svelte.ts`) to align the server with the escrow-canonical
+key. This is **the only permitted call site** for that helper.
+
+**Why safe here and nowhere else:**
+
+1. Successful Argon2id + XChaCha20 authenticated-decrypt is an
+   identity proof — only someone holding the password reaches this
+   branch.
+2. The escrow-encoded private key is the user's own self-deposited
+   long-term key — the one their counterparties have historically been
+   encrypting to across most of the account's lifetime.
+3. Rotation is RESTORATIVE: the new active key matches the
+   escrow-canonical fingerprint, so every message encrypted during
+   any prior period where the active key also matched escrow becomes
+   decryptable again. Only messages encrypted during short-lived
+   intermediate versions remain lost — the intended trade-off.
+
+Empirical validation (user 19, 2026-04-22): escrow encoded fingerprint
+`6aac158d84e7d6a6`, which had been the active public key during 5 of
+the user's 13 historical key versions (v1, v3, v5, v8, v12 — 55 % of
+the account's lifetime). Server's current active was `03dc09f88778f516`
+(v13, active only 7 minutes). Post-amendment the subdomain rotated back
+to `6aac…` as v14, immediately re-enabling decryption for the majority
+of historical 1:1 traffic.
+
+### Consequences
+
+- Cross-origin subdomain login (ADR-050) now preserves escrow recovery
+  end-to-end; no user intervention needed for normal operation.
+- The ZK guarantee is slightly weakened: the derived wrappingKey exists
+  on the server for up to 60 s. An attacker with a Redis dump AND a DB
+  dump AND the ability to race the 60 s window could unlock escrow; with
+  just the DB dump (the original ADR-022 threat model) the blob
+  remains unbreakable.
+- OAuth users (ADR-046) do not benefit — no password available to derive
+  a wrappingKey. They still require admin reset on device change, as
+  documented in ADR-021's "Consequences → Negative #1".
+- New-user scenario (no escrow yet): the apex flow skips ticket mint
+  when `/e2e/escrow` returns null; the subdomain generates the initial
+  key pair without a paired escrow. A future amendment may extend the
+  ticket payload with `argon2Salt + argon2Params` so the subdomain can
+  CREATE the first escrow post-generation — deferred, because all
+  current known-affected users already have an escrow.
+
+### Files Changed
+
+- `backend/src/nest/e2e-escrow/` — new `escrow-unlock-ticket.service.ts`,
+  new DI token `ESCROW_REDIS_CLIENT`, module wiring for the `escrow:`
+  keyspace Redis client, two controller endpoints.
+- `frontend/src/lib/crypto/crypto-worker.ts` — `deriveWrappingKey` +
+  `unwrapWithDerivedKey` handlers.
+- `frontend/src/lib/crypto/crypto-bridge.ts` — matching promise wrappers.
+- `frontend/src/lib/crypto/e2e-state.svelte.ts` —
+  `bootstrapFromUnlockTicket` + private `rotateKeyOnServer` with
+  SAFETY CONTRACT.
+- `frontend/src/routes/(public)/login/+page.server.ts` — handoff
+  response carries `accessToken` + `user.id/tenantId` for the
+  apex-side ticket mint.
+- `frontend/src/routes/(public)/login/+page.svelte` —
+  `mintUnlockTicketOrFallback` in the `use:enhance` callback.
+- `frontend/src/routes/(public)/signup/oauth-complete/+page.server.ts` —
+  preserves `?unlock=` through the handoff redirect.
+- `frontend/src/routes/(app)/+layout.svelte` —
+  `bootstrapE2eFromUrlAndInitialize` before `initialize()`.

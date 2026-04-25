@@ -27,7 +27,7 @@
 .card-stat__value {
   display: block;
   margin-bottom: var(--spacing-1);
-  color: var(--color-primary);
+  color: var(--color-text-primary);
   font-weight: 700;
   font-size: 1.5rem; /* 24px - Better for text and numbers */
 }

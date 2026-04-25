@@ -1,0 +1,59 @@
+{
+  "uid": "assixx-tempo-cloud-quota-high",
+  "title": "Grafana Cloud Traces Quota > 80% (Free Tier)",
+  "ruleGroup": "assixx-warning",
+  "folderUID": "assixx-prod-alerts",
+  "noDataState": "OK",
+  "execErrState": "OK",
+  "for": "10m",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "queryType": "",
+      "relativeTimeRange": { "from": 3600, "to": 0 },
+      "datasourceUid": "grafanacloud-usage",
+      "model": {
+        "expr": "grafanacloud_org_traces_usage / grafanacloud_org_traces_included_usage",
+        "intervalMs": 300000,
+        "maxDataPoints": 43200,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "B",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": { "type": "reduce", "expression": "A", "reducer": "last", "refId": "B" }
+    },
+    {
+      "refId": "C",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "B",
+        "conditions": [
+          {
+            "evaluator": { "params": [0.8], "type": "gt" },
+            "operator": { "type": "and" },
+            "query": { "params": ["B"] },
+            "reducer": { "type": "last" },
+            "type": "query"
+          }
+        ],
+        "refId": "C"
+      }
+    }
+  ],
+  "annotations": {
+    "summary": "Grafana Cloud Traces > 80% der monatlichen Quota (Free Tier 50 GB)",
+    "description": "Trace-Ingest-Volumen in Grafana Cloud hat 80% der included-usage erreicht (= 40 GB bei Free Tier 50 GB). Bei 100% verhaengt Grafana Cloud Rate-Limiting auf neue Traces — lokaler Tempo erhaelt weiterhin alles (Phase 5 Fan-out, ADR-048 D8), aber Cloud-seitige Queries gehen dann ins Leere. Massnahmen: (a) Tail-Sampling-Policies in docker/otel-collector/collector.yaml verschaerfen (probabilistic 10% → 5%), (b) Retention in Grafana Cloud UI reduzieren (14d default → 7d), (c) Upgrade auf Pro Tier. Metric: grafanacloud_org_traces_usage / grafanacloud_org_traces_included_usage > 0.8. Datasource: grafanacloud-usage. Self-adapting threshold: included_usage reflektiert aktuellen Plan (Free 50 GB / Pro 100+ GB)."
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "observability"
+  }
+}

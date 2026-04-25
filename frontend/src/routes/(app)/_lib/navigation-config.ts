@@ -86,6 +86,36 @@ const BLACKBOARD_SUBMENU: NavItem[] = [
   },
 ];
 
+/**
+ * Shift-planning submenu (all roles, addon-gated).
+ *
+ * Base contains only the always-visible `shift-plan` child. The
+ * `shift-handover-templates` entry is **added** by
+ * `applyShiftHandoverVariant()` when the user can manage templates
+ * (ADR-045 Layer-1 canManage gate). This direction (default-bare,
+ * manager-upgrade) mirrors `applySurveysVariant` for consistency.
+ *
+ * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md Session 11
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
+ */
+const SHIFT_SUBMENU: NavItem[] = [
+  { id: 'shift-plan', label: 'Schichtplanung', url: '/shifts', badgeType: 'shiftSwap' },
+];
+
+/**
+ * Manager-only sidebar entry for the shift-handover template editor.
+ * Added to `SHIFT_SUBMENU` by `applyShiftHandoverVariant` when the user
+ * passes the canManage gate (ADR-045 Layer-1). The `addonCode` here is
+ * defense-in-depth; the parent Schichtplanung entry already carries the
+ * same `addonCode` so the whole branch disappears when the addon is off.
+ */
+const SHIFT_HANDOVER_TEMPLATES_ENTRY: NavItem = {
+  id: 'shift-handover-templates',
+  label: 'Übergabe-Templates',
+  url: '/shift-handover-templates',
+  addonCode: 'shift_planning',
+};
+
 /** Shared documents submenu (all roles) */
 const DOCUMENTS_SUBMENU: NavItem[] = [
   {
@@ -126,6 +156,24 @@ const WORK_ORDERS_ADMIN_SUBMENU: NavItem[] = [
   },
 ];
 
+/**
+ * Surveys submenu for users with manage rights (root, admin-with-full-access, any lead, deputy-with-lead-scope).
+ * Injected via `applySurveysVariant()` when `canManageSurveys` is true.
+ */
+const SURVEYS_MANAGE_SUBMENU: NavItem[] = [
+  {
+    id: 'surveys-my',
+    label: 'Meine Umfragen',
+    url: '/surveys',
+    badgeType: 'surveys',
+  },
+  {
+    id: 'surveys-manage',
+    label: 'Verwaltung',
+    url: '/manage-surveys',
+  },
+];
+
 /** KVP + Surveys + TPM submenu for root/admin (includes category management) */
 const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
@@ -149,7 +197,7 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
     id: 'surveys',
     label: LABELS.SURVEYS,
-    url: '/survey-admin',
+    url: '/surveys',
     badgeType: 'surveys',
     addonCode: 'surveys',
   },
@@ -226,12 +274,32 @@ const ORGANIGRAM_SUBMENU: NavItem[] = [
   },
 ];
 
+/**
+ * Firmenprofil submenu — added 2026-04-19 alongside Tenant Domain Verification
+ * (masterplan §5.1). Mirrors `ORGANIGRAM_SUBMENU` pattern: an "Übersicht" entry
+ * pointing at the existing `/settings/company-profile` overview page + one
+ * entry per sub-feature. Future company-profile sub-pages (legal, contact, …)
+ * land here without further nav-config restructuring.
+ */
+const COMPANY_PROFILE_SUBMENU: NavItem[] = [
+  {
+    id: 'company-profile-overview',
+    label: 'Übersicht',
+    url: '/settings/company-profile',
+  },
+  {
+    id: 'company-profile-domains',
+    label: 'Domains',
+    url: '/settings/company-profile/domains',
+  },
+];
+
 /** System settings submenu (root only) — ordered: identity → structure → config → workflow → appearance */
 const SYSTEM_SUBMENU: NavItem[] = [
   {
     id: 'company-profile',
     label: 'Firmenprofil',
-    url: '/settings/company-profile',
+    submenu: COMPANY_PROFILE_SUBMENU,
   },
   {
     id: 'organigram',
@@ -248,7 +316,18 @@ const SYSTEM_SUBMENU: NavItem[] = [
     label: 'Freigabe-Master',
     url: '/settings/approvals',
   },
-  { id: 'design', label: 'Design', url: '/settings/design' },
+  // Firmen-Einstellungen: system-level tenant config (shift times, tenant deletion, design).
+  // WHY subgroup: /company-settings is the root view (Shift Times + Danger Zone, root-only),
+  // Design is a sibling config surface (/settings/design). Grouping them keeps the
+  // System menu shallow and signals these as company-wide — not user — settings.
+  {
+    id: 'company-settings',
+    label: 'Firmen-Einstellungen',
+    submenu: [
+      { id: 'company-settings-overview', label: 'Übersicht', url: '/company-settings' },
+      { id: 'design', label: 'Design', url: '/settings/design' },
+    ],
+  },
 ];
 
 /** Static root menu items before "Verwalten" group */
@@ -333,10 +412,7 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     id: 'profile',
     icon: ICONS.user,
     label: 'Mein Profil',
-    submenu: [
-      { id: 'profile-page', label: 'Profil', url: '/root-profile' },
-      { id: 'account-settings', label: 'Kontoeinstellungen', url: '/account-settings' },
-    ],
+    submenu: [{ id: 'profile-page', label: 'Profil', url: '/root-profile' }],
   },
   {
     id: 'system',
@@ -462,9 +538,8 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     id: 'shifts',
     icon: ICONS.clock,
     label: 'Schichtplanung',
-    url: '/shifts',
     addonCode: 'shift_planning',
-    badgeType: 'shiftSwap',
+    submenu: SHIFT_SUBMENU,
   },
   {
     id: 'chat',
@@ -509,15 +584,26 @@ function buildAdminMenuItems(labels: HierarchyLabels): NavItem[] {
   ];
 }
 
+/**
+ * Employee Blackboard — pinned directly under Dashboard.
+ *
+ * WHY: UX requirement (2026-04-15) — "Schwarzes Brett" must sit immediately
+ * below Dashboard for admin and employee roles. Extracted from
+ * EMPLOYEE_MENU_STATIC so `injectLeadItems()` can anchor teams/employees
+ * AFTER Blackboard instead of between Dashboard and Blackboard.
+ * Enforced by navigation-config.test.ts ("Blackboard pin position").
+ */
+const EMPLOYEE_BLACKBOARD_ITEM: NavItem = {
+  id: 'blackboard',
+  icon: ICONS.pin,
+  label: LABELS.BLACKBOARD,
+  url: '/blackboard',
+  badgeType: 'blackboard',
+  addonCode: 'blackboard',
+};
+
 const EMPLOYEE_MENU_STATIC: NavItem[] = [
-  {
-    id: 'blackboard',
-    icon: ICONS.pin,
-    label: LABELS.BLACKBOARD,
-    url: '/blackboard',
-    badgeType: 'blackboard',
-    addonCode: 'blackboard',
-  },
+  // Blackboard lives in EMPLOYEE_BLACKBOARD_ITEM (pinned above), not here.
   {
     id: 'documents',
     icon: ICONS.document,
@@ -556,7 +642,7 @@ const EMPLOYEE_MENU_STATIC: NavItem[] = [
       {
         id: 'surveys',
         label: LABELS.SURVEYS,
-        url: '/survey-employee',
+        url: '/surveys',
         badgeType: 'surveys',
         addonCode: 'surveys',
       },
@@ -602,9 +688,8 @@ const EMPLOYEE_MENU_STATIC: NavItem[] = [
     id: 'shifts',
     icon: ICONS.clock,
     label: 'Schichtplanung',
-    url: '/shifts',
     addonCode: 'shift_planning',
-    badgeType: 'shiftSwap',
+    submenu: SHIFT_SUBMENU,
   },
   {
     id: 'settings',
@@ -629,6 +714,9 @@ const EMPLOYEE_MENU_STATIC: NavItem[] = [
 function buildEmployeeMenuItems(labels: HierarchyLabels): NavItem[] {
   return [
     { id: 'dashboard', icon: ICONS.home, label: 'Dashboard', url: '/employee-dashboard' },
+    // Blackboard pinned directly after Dashboard (UX requirement 2026-04-15).
+    // Must not be displaced by my-team or lead injection — see injectLeadItems.
+    EMPLOYEE_BLACKBOARD_ITEM,
     { id: 'my-team', icon: ICONS.team, label: `Meine ${labels.team}`, url: '/my-team' },
     ...EMPLOYEE_MENU_STATIC,
   ];
@@ -788,10 +876,19 @@ function injectBeforeProfile(items: NavItem[], item: NavItem): NavItem[] {
   return result;
 }
 
-/** Inject team management items for employee-leads after dashboard */
+/**
+ * Inject team management items for employee-leads.
+ *
+ * Anchor: AFTER Blackboard (UX requirement 2026-04-15 — Blackboard is pinned
+ * directly under Dashboard, lead items must not sit between them). Falls back
+ * to Dashboard when the Blackboard addon is disabled and already stripped by
+ * filterMenuByAddons (pipeline-order agnostic).
+ */
 function injectLeadItems(items: NavItem[], labels: HierarchyLabels): NavItem[] {
+  const blackboardIdx = items.findIndex((i: NavItem) => i.id === 'blackboard');
   const dashboardIdx = items.findIndex((i: NavItem) => i.id === 'dashboard');
-  const insertAt = dashboardIdx >= 0 ? dashboardIdx + 1 : 0;
+  const anchorIdx = blackboardIdx >= 0 ? blackboardIdx : dashboardIdx;
+  const insertAt = anchorIdx >= 0 ? anchorIdx + 1 : 0;
   const leadItems: NavItem[] = [
     {
       id: 'teams',
@@ -881,4 +978,105 @@ export function filterMenuByScope(
   }
 
   return items;
+}
+
+/**
+ * Canonical Layer-1 Management-Gate per ADR-045.
+ *
+ * Generic "Darf der User dieses Modul verwalten?"-Entscheidung — identisch für
+ * alle Feature-Module (Blackboard, Surveys, KVP-Kategorien, TPM-Config, …).
+ *
+ * Allowed:
+ * - Root (immer, by design)
+ * - Admin mit `hasFullAccess=true`
+ * - Jeder Lead (Team/Area/Department) — `orgScope.isAnyLead` deckt das ab
+ * - Deputies mit Lead-Scope — Backend merged Deputy-IDs in `leadXxxIds` wenn
+ *   Tenant-Toggle `deputy_has_lead_scope` aktiv ist (ADR-039), d.h. `isAnyLead=true`.
+ *
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
+ */
+export function canManage(
+  role: string | undefined,
+  hasFullAccess: boolean,
+  isAnyLead: boolean,
+): boolean {
+  return role === 'root' || (role === 'admin' && hasFullAccess) || isAnyLead;
+}
+
+/**
+ * Lesbarkeits-Wrapper für Surveys (delegiert zu `canManage`).
+ *
+ * Used by:
+ * - `+layout.svelte` (sidebar submenu expansion via `applySurveysVariant`)
+ * - `/manage-surveys/+page.server.ts` (route guard — redirect to `/surveys` if false)
+ */
+export const canManageSurveys = canManage;
+
+/**
+ * Lesbarkeits-Wrapper für Blackboard (delegiert zu `canManage`).
+ *
+ * Used by:
+ * - `/blackboard/+page.svelte` (Create-Button-Gate)
+ * - `/blackboard/[uuid]/+page.svelte` (Archive/Unarchive-Button-Gate)
+ *
+ * Edit/Delete eigener Beiträge: zusätzlicher Creator-Bypass im Service.
+ */
+export const canManageBlackboard = canManage;
+
+/**
+ * Lesbarkeits-Wrapper für Shift-Handover-Templates (delegiert zu `canManage`).
+ *
+ * Used by:
+ * - `/shift-handover-templates/+page.server.ts` (route guard — redirect to `/shifts` if false)
+ * - `applyShiftHandoverVariant` (added in Session 11 — sidebar submenu promotion)
+ *
+ * Layer-1 of the 3-layer permission stack (ADR-045): Addon → canManage → Action-Permission.
+ *
+ * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §5.2
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
+ */
+export const canManageShiftHandoverTemplates = canManage;
+
+/**
+ * Upgrade the "Umfragen" entry to a submenu with "Meine Umfragen" + "Verwaltung"
+ * when the user can manage surveys. Otherwise pass through unchanged (single /surveys link).
+ *
+ * Pipeline-wise this runs LAST, after addon filtering — if the surveys addon is inactive
+ * the entry is already gone and this function is a no-op.
+ */
+export function applySurveysVariant(items: NavItem[], canManage: boolean): NavItem[] {
+  if (!canManage) return items;
+
+  return items.map((item) => {
+    if (item.id !== NAV_ID_LEAN || item.submenu === undefined) return item;
+
+    const updatedSubmenu = item.submenu.map((child) =>
+      child.id === 'surveys' ?
+        { ...child, url: undefined, submenu: SURVEYS_MANAGE_SUBMENU }
+      : child,
+    );
+
+    return { ...item, submenu: updatedSubmenu };
+  });
+}
+
+/**
+ * Append the "Übergabe-Templates" sub-entry to the Schichtplanung submenu
+ * when the user can manage shift-handover templates. Otherwise pass through
+ * unchanged (the bare `SHIFT_SUBMENU` is the default for non-managers).
+ *
+ * Pipeline position: runs AFTER `filterMenuByAddons` — if the `shift_planning`
+ * addon is inactive, the parent Schichtplanung entry is already gone and this
+ * function is a no-op. Mirrors `applySurveysVariant` (default-bare, manager-
+ * upgrade) for consistency across feature variant filters (ADR-045 Layer-1).
+ *
+ * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md Session 11
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
+ */
+export function applyShiftHandoverVariant(items: NavItem[], canManage: boolean): NavItem[] {
+  if (!canManage) return items;
+  return items.map((item) => {
+    if (item.id !== 'shifts' || item.submenu === undefined) return item;
+    return { ...item, submenu: [...item.submenu, SHIFT_HANDOVER_TEMPLATES_ENTRY] };
+  });
 }

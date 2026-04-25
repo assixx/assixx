@@ -22,7 +22,7 @@ export function mapNotificationToApi(row: DbNotificationRow): NotificationRespon
       metadata =
         typeof row.metadata === 'string' ?
           (JSON.parse(row.metadata) as Record<string, unknown>)
-        : (row.metadata as unknown as Record<string, unknown>);
+        : row.metadata;
     } catch {
       metadata = null;
     }

@@ -99,6 +99,15 @@ export default defineConfig({
             '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
             '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
             '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
+            // Phase-2.1 addition (FEAT_SHIFT_HANDOVER §R14): the shared
+            // module is published via conditional exports in production,
+            // but Vitest resolves by alias in unit-test mode and needs
+            // an explicit entry so runtime imports don't hit Node's
+            // package lookup.
+            '@assixx/shared/shift-handover': resolve(
+              rootDir,
+              './shared/src/shift-handover/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
@@ -128,6 +137,15 @@ export default defineConfig({
             '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
             '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
             '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
+            // Phase-2.1 addition (FEAT_SHIFT_HANDOVER §R14): the shared
+            // module is published via conditional exports in production,
+            // but Vitest resolves by alias in unit-test mode and needs
+            // an explicit entry so runtime imports don't hit Node's
+            // package lookup.
+            '@assixx/shared/shift-handover': resolve(
+              rootDir,
+              './shared/src/shift-handover/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
@@ -163,10 +181,25 @@ export default defineConfig({
         resolve: {
           alias: {
             '$app/environment': resolve(rootDir, './frontend/test/mocks/app-environment.ts'),
+            // ADR-050 Amendment: `build-apex-url.ts` reads `env.PUBLIC_APP_URL`
+            // via `$env/dynamic/public` — mock the module so utilities that
+            // consume env vars stay unit-testable without a full SvelteKit
+            // runtime. Tests pass `publicAppUrl` explicitly to exercise
+            // specific values; absence-of-env cases hit the helper's default.
+            '$env/dynamic/public': resolve(rootDir, './frontend/test/mocks/env-dynamic-public.ts'),
             $lib: resolve(rootDir, './frontend/src/lib'),
             '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
             '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
             '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
+            // Phase-2.1 addition (FEAT_SHIFT_HANDOVER §R14): the shared
+            // module is published via conditional exports in production,
+            // but Vitest resolves by alias in unit-test mode and needs
+            // an explicit entry so runtime imports don't hit Node's
+            // package lookup.
+            '@assixx/shared/shift-handover': resolve(
+              rootDir,
+              './shared/src/shift-handover/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },

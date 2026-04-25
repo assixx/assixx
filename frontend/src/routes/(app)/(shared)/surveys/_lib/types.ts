@@ -1,0 +1,146 @@
+// =============================================================================
+// SURVEY-EMPLOYEE - TYPE DEFINITIONS
+// Based on: frontend/src/scripts/survey/employee/types.ts
+// =============================================================================
+
+/**
+ * Survey status
+ */
+export type SurveyStatus = 'draft' | 'active' | 'paused' | 'completed' | 'archived';
+
+/**
+ * Question type
+ */
+export type QuestionType =
+  | 'text'
+  | 'single_choice'
+  | 'multiple_choice'
+  | 'rating'
+  | 'yes_no'
+  | 'number'
+  | 'date';
+
+/**
+ * Buffer type (from legacy API - MySQL BLOB data)
+ */
+export interface BufferData {
+  type: 'Buffer';
+  data: number[];
+}
+
+/**
+ * Question option from API response
+ */
+export interface QuestionOption {
+  id: number;
+  optionText: string;
+}
+
+/**
+ * Survey question
+ */
+export interface Question {
+  id: number;
+  questionText: string | BufferData;
+  questionType: QuestionType;
+  isRequired: boolean | number | string;
+  options?: QuestionOption[];
+}
+
+/**
+ * Assignment type
+ */
+export type AssignmentType = 'all_users' | 'area' | 'department' | 'team' | 'user';
+
+/**
+ * Survey assignment (from backend, includes resolved names)
+ */
+export interface SurveyAssignment {
+  assignmentType?: AssignmentType;
+  type?: AssignmentType;
+  areaId?: number;
+  areaName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  teamId?: number;
+  teamName?: string;
+  userId?: number;
+}
+
+/**
+ * Survey
+ */
+export interface Survey {
+  id: number;
+  title: string | BufferData;
+  description: string | BufferData | null;
+  status: SurveyStatus;
+  isMandatory: boolean | number | string;
+  isAnonymous: boolean | number | string;
+  startDate: string | null;
+  endDate: string | null;
+  questions: Question[];
+  assignments?: SurveyAssignment[];
+}
+
+/**
+ * Answer (used when submitting)
+ */
+export interface Answer {
+  questionId: number;
+  answerText?: string;
+  answerNumber?: number;
+  answerDate?: string;
+  answerOptions?: number[];
+  selectedOptions?: number[];
+}
+
+/**
+ * Answer map (questionId -> Answer)
+ * Uses Partial to indicate that a key might not exist (user hasn't answered yet)
+ */
+export type AnswerMap = Partial<Record<number, Answer>>;
+
+/**
+ * Response answer (from API)
+ */
+export interface ResponseAnswer {
+  questionId: number;
+  questionText: string;
+  questionType?: string;
+  // API returns JSON null for unpopulated answer columns (survey_answers.answer_*
+  // are nullable in the DB). Previously typed as `string | undefined` only —
+  // that lie caused ResponseModal's `!== undefined` checks to treat null as
+  // "present" and render empty <p> tags for yes_no / choice answers.
+  answerText?: string | null;
+  answerNumber?: number | null;
+  answerDate?: string | null;
+  answerOptions?: string[] | null;
+}
+
+/**
+ * Survey response (user's completed response)
+ */
+export interface SurveyResponse {
+  id: number;
+  surveyId: number;
+  userId: number;
+  completedAt: string;
+  answers: ResponseAnswer[];
+}
+
+/**
+ * Response check result
+ */
+export interface ResponseCheck {
+  responded: boolean;
+  response?: SurveyResponse;
+}
+
+/**
+ * Survey with response status (for display)
+ */
+export interface SurveyWithStatus extends Survey {
+  hasResponded: boolean;
+  responseData?: SurveyResponse;
+}

@@ -1,0 +1,68 @@
+{
+  "uid": "assixx-backend-logs-silent",
+  "title": "Backend Logs Silent",
+  "ruleGroup": "assixx-critical",
+  "folderUID": "assixx-prod-alerts",
+  "noDataState": "OK",
+  "execErrState": "OK",
+  "isPaused": true,
+  "for": "5m",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "queryType": "instant",
+      "relativeTimeRange": { "from": 600, "to": 0 },
+      "datasourceUid": "grafanacloud-logs",
+      "model": {
+        "expr": "absent_over_time({app=\"assixx\", service=\"backend\", env=\"production\"}[10m])",
+        "queryType": "instant",
+        "intervalMs": 60000,
+        "maxDataPoints": 43200,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "B",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "reduce",
+        "expression": "A",
+        "reducer": "last",
+        "settings": { "mode": "replaceNN", "replaceWithValue": 0 },
+        "refId": "B"
+      }
+    },
+    {
+      "refId": "C",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "B",
+        "conditions": [
+          {
+            "evaluator": { "params": [0], "type": "gt" },
+            "operator": { "type": "and" },
+            "query": { "params": ["B"] },
+            "reducer": { "type": "last" },
+            "type": "query"
+          }
+        ],
+        "refId": "C"
+      }
+    }
+  ],
+  "annotations": {
+    "summary": "No backend logs received for 10 minutes (paused until Prod deploys)",
+    "description": "Prod-Backend hat seit 10 Minuten keine Logs mit env=\"production\" emittiert. Wahrscheinlich Process-Crash, Netzwerk-Partition, pino-loki Transport kaputt oder Loki-Ingest broken. Runbook: docs/how-to/HOW-TO-ALERTING.md#backend-logs-silent — docker ps | grep assixx-backend, docker logs --tail 50 assixx-backend, curl /health. Filter env=\"production\" ist konsistent mit 04+05 — Dev-Stille ist explizit kein Trigger mehr. isPaused=true bis Prod-Instanz (ADR-050 Phase 1) live geht und Logs an Cloud-Loki sendet; danach einfach isPaused auf false + apply.sh."
+  },
+  "labels": {
+    "severity": "critical",
+    "service": "backend",
+    "component": "logs"
+  }
+}

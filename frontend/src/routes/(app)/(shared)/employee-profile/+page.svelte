@@ -111,6 +111,12 @@
   const passwordsMatch = $derived(doPasswordsMatch(newPassword, confirmPassword));
   const isPasswordValid = $derived(isPasswordLengthValid(newPassword));
 
+  // Tenant-wide gate from layout SSR (ADR-045): Root disables
+  // `security.allow_user_password_change` → employees cannot rotate their
+  // password. Backend UserProfileService is authoritative; this `{#if}`
+  // wrap prevents employees from seeing a form that would 403 on submit.
+  const canChangePassword = $derived(data.allowUserPasswordChange);
+
   // =============================================================================
   // PROFILE PICTURE ACTIONS
   // =============================================================================
@@ -379,7 +385,7 @@
           />
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn btn-secondary"
             onclick={() => {
               triggerFileInput('profile-picture-input');
             }}
@@ -485,165 +491,170 @@
       </form>
     </div>
 
-    <!-- Password Change Card -->
-    <div class="profile-card">
-      <h2 class="card-title">Passwort ändern</h2>
-      <form
-        id="password-form"
-        autocomplete="off"
-        onsubmit={handleChangePassword}
-      >
-        <!-- Current Password -->
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="current_password">Aktuelles Passwort</label
-          >
-          <div class="form-field__password-wrapper">
-            <input
-              type={showCurrentPassword ? 'text' : 'password'}
-              id="current_password"
-              name="current_password"
-              class="form-field__control"
-              class:is-error={currentPasswordError}
-              autocomplete="current-password"
-              bind:value={currentPassword}
-              required
-            />
-            <button
-              type="button"
-              class="form-field__password-toggle"
-              aria-label="Passwort anzeigen"
-              onclick={() => {
-                togglePasswordVisibility('current');
-              }}
+    <!-- Password Change Card — gated by tenant policy (ADR-045). -->
+    {#if canChangePassword}
+      <div class="profile-card">
+        <h2 class="card-title">Passwort ändern</h2>
+        <form
+          id="password-form"
+          autocomplete="off"
+          onsubmit={handleChangePassword}
+        >
+          <!-- Current Password -->
+          <div class="form-field">
+            <label
+              class="form-field__label"
+              for="current_password">Aktuelles Passwort</label
             >
-              <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
-            </button>
-          </div>
-          {#if currentPasswordError}
-            <span class="form-field__message form-field__message--error">
-              {MESSAGES.currentPasswordWrong}
-            </span>
-          {/if}
-        </div>
-
-        <!-- New Password -->
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="new_password"
-          >
-            Neues Passwort
-            <span class="tooltip ml-1">
-              <i class="fas fa-info-circle"></i>
-              <span
-                class="tooltip__content tooltip__content--info tooltip__content--right"
-                role="tooltip">{PASSWORD_TOOLTIP}</span
+            <div class="form-field__password-wrapper">
+              <input
+                type={showCurrentPassword ? 'text' : 'password'}
+                id="current_password"
+                name="current_password"
+                class="form-field__control"
+                class:is-error={currentPasswordError}
+                autocomplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore
+                data-form-type="other"
+                bind:value={currentPassword}
+                required
+              />
+              <button
+                type="button"
+                class="form-field__password-toggle"
+                aria-label="Passwort anzeigen"
+                onclick={() => {
+                  togglePasswordVisibility('current');
+                }}
               >
-            </span>
-          </label>
-          <div class="form-field__password-wrapper">
-            <input
-              type={showNewPassword ? 'text' : 'password'}
-              id="new_password"
-              name="new_password"
-              class="form-field__control"
-              class:is-error={newPasswordError}
-              autocomplete="new-password"
-              minlength="12"
-              maxlength="72"
-              bind:value={newPassword}
-              oninput={handleNewPasswordInput}
-              required
-            />
-            <button
-              type="button"
-              class="form-field__password-toggle"
-              aria-label="Passwort anzeigen"
-              onclick={() => {
-                togglePasswordVisibility('new');
-              }}
-            >
-              <i class="fas {showNewPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
-            </button>
+                <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+              </button>
+            </div>
+            {#if currentPasswordError}
+              <span class="form-field__message form-field__message--error">
+                {MESSAGES.currentPasswordWrong}
+              </span>
+            {/if}
           </div>
 
-          {#if passwordStrength !== null || strengthLoading}
-            <PasswordStrengthIndicator
-              score={passwordStrength?.score ?? -1}
-              label={passwordStrength?.label ?? ''}
-              crackTime={passwordStrength?.crackTime ?? ''}
-              loading={strengthLoading}
-              feedback={passwordStrength?.feedback ?? null}
-            />
-          {/if}
+          <!-- New Password -->
+          <div class="form-field">
+            <label
+              class="form-field__label"
+              for="new_password"
+            >
+              Neues Passwort
+              <span class="tooltip ml-1">
+                <i class="fas fa-info-circle"></i>
+                <span
+                  class="tooltip__content tooltip__content--info tooltip__content--right"
+                  role="tooltip">{PASSWORD_TOOLTIP}</span
+                >
+              </span>
+            </label>
+            <div class="form-field__password-wrapper">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                id="new_password"
+                name="new_password"
+                class="form-field__control"
+                class:is-error={newPasswordError}
+                autocomplete="new-password"
+                minlength="12"
+                maxlength="72"
+                bind:value={newPassword}
+                oninput={handleNewPasswordInput}
+                required
+              />
+              <button
+                type="button"
+                class="form-field__password-toggle"
+                aria-label="Passwort anzeigen"
+                onclick={() => {
+                  togglePasswordVisibility('new');
+                }}
+              >
+                <i class="fas {showNewPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+              </button>
+            </div>
 
-          {#if newPasswordError}
-            <span class="form-field__message form-field__message--error">
-              {MESSAGES.passwordRequirements}
-            </span>
-          {/if}
-        </div>
+            {#if passwordStrength !== null || strengthLoading}
+              <PasswordStrengthIndicator
+                score={passwordStrength?.score ?? -1}
+                label={passwordStrength?.label ?? ''}
+                crackTime={passwordStrength?.crackTime ?? ''}
+                loading={strengthLoading}
+                feedback={passwordStrength?.feedback ?? null}
+              />
+            {/if}
 
-        <!-- Confirm Password -->
-        <div
-          class="form-field"
-          class:is-success={confirmPassword !== '' && passwordsMatch}
-        >
-          <label
-            class="form-field__label"
-            for="confirm_password">Neues Passwort bestätigen</label
+            {#if newPasswordError}
+              <span class="form-field__message form-field__message--error">
+                {MESSAGES.passwordRequirements}
+              </span>
+            {/if}
+          </div>
+
+          <!-- Confirm Password -->
+          <div
+            class="form-field"
+            class:is-success={confirmPassword !== '' && passwordsMatch}
           >
-          <div class="form-field__password-wrapper">
-            <input
-              type={showConfirmPassword ? 'text' : 'password'}
-              id="confirm_password"
-              name="confirm_password"
-              class="form-field__control"
-              class:is-error={passwordMismatchError}
-              class:is-success={confirmPassword !== '' && passwordsMatch}
-              autocomplete="new-password"
-              minlength="12"
-              maxlength="72"
-              bind:value={confirmPassword}
-              oninput={validateConfirmPassword}
-              required
-            />
-            <button
-              type="button"
-              class="form-field__password-toggle"
-              aria-label="Passwort anzeigen"
-              onclick={() => {
-                togglePasswordVisibility('confirm');
-              }}
+            <label
+              class="form-field__label"
+              for="confirm_password">Neues Passwort bestätigen</label
             >
-              <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
-            </button>
+            <div class="form-field__password-wrapper">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="confirm_password"
+                name="confirm_password"
+                class="form-field__control"
+                class:is-error={passwordMismatchError}
+                class:is-success={confirmPassword !== '' && passwordsMatch}
+                autocomplete="new-password"
+                minlength="12"
+                maxlength="72"
+                bind:value={confirmPassword}
+                oninput={validateConfirmPassword}
+                required
+              />
+              <button
+                type="button"
+                class="form-field__password-toggle"
+                aria-label="Passwort anzeigen"
+                onclick={() => {
+                  togglePasswordVisibility('confirm');
+                }}
+              >
+                <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+              </button>
+            </div>
+            {#if passwordMismatchError}
+              <span class="form-field__message form-field__message--error">
+                {MESSAGES.passwordMismatch}
+              </span>
+            {:else if confirmPassword !== '' && passwordsMatch}
+              <span class="form-field__message form-field__message--success">
+                <i class="fas fa-check"></i> Passwörter stimmen überein
+              </span>
+            {/if}
           </div>
-          {#if passwordMismatchError}
-            <span class="form-field__message form-field__message--error">
-              {MESSAGES.passwordMismatch}
-            </span>
-          {:else if confirmPassword !== '' && passwordsMatch}
-            <span class="form-field__message form-field__message--success">
-              <i class="fas fa-check"></i> Passwörter stimmen überein
-            </span>
-          {/if}
-        </div>
 
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={passwordSaving}
-        >
-          {#if passwordSaving}<span class="spinner-ring spinner-ring--sm"></span>{:else}<i
-              class="fas fa-key"
-            ></i>{/if}
-          Passwort ändern
-        </button>
-      </form>
-    </div>
+          <button
+            type="submit"
+            class="btn btn-secondary"
+            disabled={passwordSaving}
+          >
+            {#if passwordSaving}<span class="spinner-ring spinner-ring--sm"></span>{:else}<i
+                class="fas fa-key"
+              ></i>{/if}
+            Passwort ändern
+          </button>
+        </form>
+      </div>
+    {/if}
   </div>
 </div>
 

@@ -23,6 +23,7 @@ import { generateEmployeeId } from '../../utils/employee-id-generator.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
+import { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import { UserPositionService } from '../organigram/user-position.service.js';
 import { RootAdminService } from './root-admin.service.js';
 import { RootDeletionService } from './root-deletion.service.js';
@@ -37,6 +38,7 @@ import type {
   AdminLog,
   AdminUser,
   CreateAdminRequest,
+  CreateAdminResult,
   CreateRootUserRequest,
   DashboardStats,
   DbAddonCodeRow,
@@ -78,6 +80,10 @@ export class RootService {
     private readonly tenantService: RootTenantService,
     private readonly deletionService: RootDeletionService,
     private readonly userPositionService: UserPositionService,
+    // Step 2.9 KISS gate — assertVerified at top of `insertRootUserRecord`
+    // (AST-enclosing helper of `INSERT INTO users`, v0.3.6 D33). tenantId
+    // is the helper's 6th parameter.
+    private readonly tenantVerification: TenantVerificationService,
   ) {}
 
   // ==========================================================================
@@ -94,12 +100,12 @@ export class RootService {
     return await this.adminService.getAdminById(id, tenantId);
   }
 
-  /** Create new admin user */
+  /** Create new admin user — returns id + uuid (uuid is needed for controller response, see ADR-045) */
   async createAdmin(
     data: CreateAdminRequest,
     tenantId: number,
     actingUserId: number,
-  ): Promise<number> {
+  ): Promise<CreateAdminResult> {
     return await this.adminService.createAdmin(data, tenantId, actingUserId);
   }
 
@@ -237,6 +243,9 @@ export class RootService {
     subdomain: string,
     tenantId: number,
   ): Promise<number> {
+    // KISS gate (§2.9 + §0.2.5 #1 + D33): helper-entry assertion. Arch-test
+    // (§2.11, regex `INSERT INTO users\b`) locks this site.
+    await this.tenantVerification.assertVerified(tenantId);
     const result = await client.query<DbIdRow>(
       `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, has_full_access, tenant_id, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, $5, 'root', NULL, $6, $7, $8, TRUE, $9, $10, NOW())
@@ -394,35 +403,40 @@ export class RootService {
     this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
     // SECURITY: Use UserRepository for accurate active user counts (is_active = 1)
-    const [adminCount, employeeCount, totalUserCount, tenantCount, addons] = await Promise.all([
-      this.userRepository.countByRole('admin', tenantId),
-      this.userRepository.countByRole('employee', tenantId),
-      this.userRepository.countAll(tenantId),
-      this.db.systemQuery<DbCountRow>(
-        "SELECT COUNT(*) as count FROM tenants WHERE status = 'active'",
-      ),
-      this.db.systemQuery<DbAddonCodeRow>(
-        `SELECT a.code FROM addons a
-         WHERE a.is_active = ${IS_ACTIVE.ACTIVE}
-           AND (
-             a.is_core = true
-             OR EXISTS (
-               SELECT 1 FROM tenant_addons ta
-               WHERE ta.addon_id = a.id
-                 AND ta.tenant_id = $1
-                 AND ta.is_active = ${IS_ACTIVE.ACTIVE}
-                 AND ta.status IN ('active', 'trial')
-             )
-           )`,
-        [tenantId],
-      ),
-    ]);
+    // rootCount powers the Single-Root-Warning-Banner on /root-dashboard —
+    // recommends a second root user when only one exists (credential-loss guard).
+    const [adminCount, employeeCount, rootCount, totalUserCount, tenantCount, addons] =
+      await Promise.all([
+        this.userRepository.countByRole('admin', tenantId),
+        this.userRepository.countByRole('employee', tenantId),
+        this.userRepository.countByRole('root', tenantId),
+        this.userRepository.countAll(tenantId),
+        this.db.systemQuery<DbCountRow>(
+          "SELECT COUNT(*) as count FROM tenants WHERE status = 'active'",
+        ),
+        this.db.systemQuery<DbAddonCodeRow>(
+          `SELECT a.code FROM addons a
+           WHERE a.is_active = ${IS_ACTIVE.ACTIVE}
+             AND (
+               a.is_core = true
+               OR EXISTS (
+                 SELECT 1 FROM tenant_addons ta
+                 WHERE ta.addon_id = a.id
+                   AND ta.tenant_id = $1
+                   AND ta.is_active = ${IS_ACTIVE.ACTIVE}
+                   AND ta.status IN ('active', 'trial')
+               )
+             )`,
+          [tenantId],
+        ),
+      ]);
 
     const tenantCountNum = Number(tenantCount[0]?.count ?? 0);
 
     return {
       adminCount,
       employeeCount,
+      rootCount,
       totalUsers: totalUserCount,
       tenantCount: tenantCountNum,
       activeAddons: addons.map((a: DbAddonCodeRow) => a.code),

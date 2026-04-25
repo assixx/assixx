@@ -7,6 +7,18 @@ import type { IsActiveStatus, FormIsActiveStatus, StatusFilter } from '@assixx/s
 export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
 
 /**
+ * Hall entry in a department's effective hall list.
+ * 'area'   = implicitly inherited via halls.area_id === dept.area_id
+ * 'direct' = explicit cross-area assignment via department_halls junction
+ */
+export interface DepartmentHallEntry {
+  id: number;
+  name: string;
+  areaId: number | null;
+  source: 'area' | 'direct';
+}
+
+/**
  * Department entity from API
  */
 export interface Department {
@@ -26,8 +38,7 @@ export interface Department {
   employeeNames?: string;
   teamCount?: number;
   teamNames?: string;
-  hallIds?: number[];
-  hallNames?: string;
+  halls?: DepartmentHallEntry[];
   hallCount?: number;
   assetCount?: number;
   budget?: number;

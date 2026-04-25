@@ -8,7 +8,7 @@
  * @see docs/USER-PERMISSIONS-UNIT-TEST-PLAN.md
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { Logger, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Logger, UnauthorizedException } from '@nestjs/common';
 import type { ExecutionContext } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -46,15 +46,33 @@ interface MockRequestOptions {
   authorization?: string;
   cookies?: Record<string, string>;
   query?: Record<string, string | undefined>;
+  /**
+   * ADR-050 cross-tenant host check — `TenantHostResolverMiddleware` sets this
+   * on the request BEFORE the guard runs. Three-state semantics:
+   *   undefined → middleware did not run (existing tests rely on this)
+   *   null      → apex / localhost / unknown slug
+   *   number    → subdomain resolved
+   */
+  hostTenantId?: number | null;
 }
 
 function createMockExecutionContext(options: MockRequestOptions = {}): ExecutionContext {
-  const mockRequest = {
+  // `hostTenantId` is read via `request.raw` — see ADR-050 + Session 10 D17.
+  // The middleware runs under `@fastify/middie` and writes to the raw
+  // IncomingMessage; the guard reads via FastifyRequest.raw. The mock
+  // mirrors that shape so unit tests catch regressions to the production
+  // read-path, not an easier-to-pass flat-object shape.
+  const mockRaw: Record<string, unknown> = {};
+  if ('hostTenantId' in options) {
+    mockRaw['hostTenantId'] = options.hostTenantId;
+  }
+  const mockRequest: Record<string, unknown> = {
     headers: {
       ...(options.authorization !== undefined ? { authorization: options.authorization } : {}),
     },
     cookies: options.cookies,
     query: options.query ?? {},
+    raw: mockRaw,
   };
 
   const handler = vi.fn();
@@ -378,6 +396,93 @@ describe('SECURITY: JwtAuthGuard', () => {
 
       // CLS should use activeRole, not original role
       expect(mockCls.set).toHaveBeenCalledWith('userRole', 'employee');
+    });
+  });
+
+  // -----------------------------------------------------------
+  // ADR-050 Cross-Tenant Host Check (three-state hostTenantId)
+  // -----------------------------------------------------------
+  //
+  // The single load-bearing security line of ADR-050. Three branches to cover:
+  //   undefined → middleware didn't run (test/legacy) → skip cross-check.
+  //   null      → apex/localhost/IP/unknown slug      → skip cross-check.
+  //   number    → subdomain resolved → MUST match user.tenantId, else 403.
+  //
+  // Error-code surface (`CROSS_TENANT_HOST_MISMATCH`) is Loki-alertable and
+  // distinct from `HANDOFF_HOST_MISMATCH` (OAuth-flow specific per §R15) —
+  // asserted explicitly so a future refactor that collapses the codes would
+  // fail loudly.
+
+  describe('ADR-050 Cross-Tenant Host Check', () => {
+    beforeEach(() => {
+      mockReflector.getAllAndOverride.mockReturnValue(false);
+      mockJwtService.verifyAsync.mockResolvedValue(validJwtPayload({ tenantId: 42 }));
+      mockDb.query.mockResolvedValue([validUserRow({ tenant_id: 42 })]);
+    });
+
+    it('passes when req.hostTenantId is undefined (middleware did not run)', async () => {
+      // Pre-ADR-050 tests above rely on this branch — no hostTenantId
+      // means no cross-check, as if we were running on localhost.
+      const context = createMockExecutionContext({
+        authorization: 'Bearer valid-token',
+        // hostTenantId deliberately omitted
+      });
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+    });
+
+    it('passes when req.hostTenantId is null (apex / localhost / IP / unknown)', async () => {
+      // TenantHostResolverMiddleware sets null for the apex, dev-localhost,
+      // internal calls, and unknown slugs. All of these legitimately have
+      // no host-based tenant context and must fall through.
+      const context = createMockExecutionContext({
+        authorization: 'Bearer valid-token',
+        hostTenantId: null,
+      });
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+    });
+
+    it('passes when req.hostTenantId matches the JWT tenantId (normal subdomain flow)', async () => {
+      const context = createMockExecutionContext({
+        authorization: 'Bearer valid-token',
+        hostTenantId: 42,
+      });
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+    });
+
+    it('throws ForbiddenException CROSS_TENANT_HOST_MISMATCH on tenant mismatch', async () => {
+      // JWT was minted for tenant 42 but the request arrived on tenant 999's
+      // subdomain. Classic cross-tenant token replay — 403 is mandatory.
+      const context = createMockExecutionContext({
+        authorization: 'Bearer valid-token',
+        hostTenantId: 999,
+      });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('surfaces the discriminable CROSS_TENANT_HOST_MISMATCH error code', async () => {
+      // The code is Loki-alertable. Distinct from HANDOFF_HOST_MISMATCH (R15)
+      // so OAuth-flow anomalies and general cross-tenant attempts can be
+      // told apart in monitoring.
+      const context = createMockExecutionContext({
+        authorization: 'Bearer valid-token',
+        hostTenantId: 999,
+      });
+
+      const err = await guard.canActivate(context).catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(ForbiddenException);
+      const response = (err as ForbiddenException).getResponse() as { code: string };
+      expect(response.code).toBe('CROSS_TENANT_HOST_MISMATCH');
     });
   });
 });

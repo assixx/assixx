@@ -6,8 +6,8 @@
 
 **Enterprise 2.0 Platform for Industrial Companies**
 
-[![Version](https://img.shields.io/badge/Version-0.4.11-blue.svg)](https://github.com/assixx-dev/Assixx)
-[![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/assixx-dev/Assixx)
+[![Version](https://img.shields.io/badge/Version-0.4.11-blue.svg)](https://github.com/assixx/assixx)
+[![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/assixx/assixx)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
 Multi-Tenant SaaS for knowledge management, communication, and collaboration in manufacturing companies.
@@ -16,11 +16,7 @@ Multi-Tenant SaaS for knowledge management, communication, and collaboration in 
 
 ## Preview
 
-<p align="center"><strong>Dark Mode</strong></p>
-<p align="center"><img src="docs/screenshots/sample_dark.png" alt="Assixx Dark Mode"></p>
-
-<p align="center"><strong>Light Mode</strong></p>
-<p align="center"><img src="docs/screenshots/sample_light.png" alt="Assixx Light Mode"></p>
+[Demo-Video ansehen](https://github.com/user-attachments/assets/7854f964-94d7-429a-83b5-bd11a5990770)
 
 ---
 
@@ -35,8 +31,8 @@ Assixx digitizes existing paper-based processes in industrial companies. From TP
 ## Quick Start
 
 ```bash
-git clone https://github.com/assixx-dev/Assixx.git
-cd Assixx/docker
+git clone https://github.com/assixx/assixx.git
+cd assixx/docker
 
 # With Doppler (team members):
 doppler run -- ./docker-init.sh
@@ -54,6 +50,8 @@ cd .. && pnpm run dev:svelte
 Development: `http://localhost:5173` | Production: `http://localhost`
 
 > **Full setup guide:** [docs/DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)
+>
+> **Microsoft OAuth sign-in** (optional — enables one-click root-user signup via Azure AD): requires a one-time Azure AD app registration + three Doppler secrets (`MICROSOFT_OAUTH_CLIENT_ID`, `MICROSOFT_OAUTH_CLIENT_SECRET`, `PUBLIC_APP_URL`). See [docs/how-to/HOW-TO-AZURE-AD-SETUP.md](./docs/how-to/HOW-TO-AZURE-AD-SETUP.md). Password signup works without it.
 
 ---
 
@@ -124,7 +122,7 @@ docker-compose down                               # Stop
 ## Contact
 
 **Development:** SCS-Technik Team
-**GitHub:** [assixx-dev/Assixx](https://github.com/assixx-dev/Assixx)
+**GitHub:** [assixx/assixx](https://github.com/assixx/assixx)
 
 ---
 

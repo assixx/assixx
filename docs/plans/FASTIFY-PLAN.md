@@ -10,7 +10,7 @@
 | v4      | **2025-06-30** (6 Monate!) | 18+     | ❌ EOL bald  |
 | v5      | TBD (aktuell)              | **20+** | ✅ Verwenden |
 
-Wir haben Node 24.14.0 → v5 ist die richtige Wahl.
+Wir haben Node 24.15.0 → v5 ist die richtige Wahl.
 Quelle: https://fastify.dev/docs/latest/Reference/LTS/
 
 ---

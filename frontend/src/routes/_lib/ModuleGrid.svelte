@@ -1,197 +1,271 @@
 <!--
   ModuleGrid.svelte
-  Landing page module section — 4 category cards with unique accent colors
-  Updated for addon-based SaaS model (ADR-033)
+  Editorial zig-zag layout for the 4 module categories (ADR-033 addon model).
+  Pattern: oversized monospace numerals + accent glow + hairline dividers,
+  alternating left/right per row. No glassmorphism cards — pure inline flow.
+  Theme-aware: relies on --color-text-primary / --color-text-secondary tokens
+  so light & dark modes both stay readable.
 -->
+<script lang="ts">
+  import LandingEyebrow from './LandingEyebrow.svelte';
+
+  interface ModuleEntry {
+    num: string;
+    icon: string;
+    label: string;
+    title: string;
+    copy: string;
+    accent: string;
+  }
+
+  const modules: ModuleEntry[] = [
+    {
+      num: '01',
+      icon: 'fa-users-cog',
+      label: 'Personal',
+      title: 'Organisation & Personal',
+      copy: 'Mitarbeiter, Abteilungen, Teams und Organigramm — zentral verwaltet. Unbegrenzte Nutzer inklusive.',
+      accent: 'var(--color-info)',
+    },
+    {
+      num: '02',
+      icon: 'fa-comments',
+      label: 'Dialog',
+      title: 'Kommunikation',
+      copy: 'Schwarzes Brett, Chat, Benachrichtigungen und Umfragen — alle Mitarbeiter erreichen, vom Büro bis zur Produktion.',
+      accent: 'var(--color-success)',
+    },
+    {
+      num: '03',
+      icon: 'fa-calendar-check',
+      label: 'Workflow',
+      title: 'Planung & Verwaltung',
+      copy: 'Kalender, Schichtplanung, Urlaubsverwaltung und Dokumentenmanagement — Arbeitsabläufe digital organisiert.',
+      accent: 'var(--color-warning)',
+    },
+    {
+      num: '04',
+      icon: 'fa-industry',
+      label: 'Effizienz',
+      title: 'Lean Management',
+      copy: 'TPM-Wartung, KVP-Prozess, Arbeitsaufträge und Anlagenverwaltung — Produktivität systematisch steigern.',
+      accent: 'var(--color-purple)',
+    },
+  ];
+</script>
+
 <section
   class="module-section"
   id="module"
 >
   <div class="module-section__container">
+    <LandingEyebrow text="[ MODULE // 01 — 04 ]" />
     <h2 class="module-section__title">Unsere Module</h2>
     <p class="module-section__subtitle">
-      Alles was Ihr Unternehmen braucht — modular und flexibel zusammenstellbar
+      Alles was Ihr Unternehmen braucht — modular und flexibel zusammenstellbar.
     </p>
 
-    <div class="module-grid">
-      <div
-        class="module-card"
-        style="
+    <div class="modules">
+      {#each modules as mod, i (mod.num)}
+        <article
+          class="module-row"
+          class:module-row--reverse={i % 2 === 1}
+          style="
 
---accent: var(--color-info);"
-      >
-        <div class="module-card__icon">
-          <i class="fas fa-users-cog"></i>
-        </div>
-        <h3>Organisation & Personal</h3>
-        <p>
-          Mitarbeiter, Abteilungen, Teams und Organigramm — zentral verwaltet. Unbegrenzte Nutzer
-          inklusive.
-        </p>
-      </div>
-
-      <div
-        class="module-card"
-        style="
-
---accent: var(--color-success);"
-      >
-        <div class="module-card__icon">
-          <i class="fas fa-comments"></i>
-        </div>
-        <h3>Kommunikation</h3>
-        <p>
-          Schwarzes Brett, Chat, Benachrichtigungen und Umfragen — alle Mitarbeiter erreichen, vom
-          Büro bis zur Produktion.
-        </p>
-      </div>
-
-      <div
-        class="module-card"
-        style="
-
---accent: var(--color-warning);"
-      >
-        <div class="module-card__icon">
-          <i class="fas fa-calendar-check"></i>
-        </div>
-        <h3>Planung & Verwaltung</h3>
-        <p>
-          Kalender, Schichtplanung, Urlaubsverwaltung und Dokumentenmanagement — Arbeitsabläufe
-          digital organisiert.
-        </p>
-      </div>
-
-      <div
-        class="module-card"
-        style="
-
---accent: var(--color-purple);"
-      >
-        <div class="module-card__icon">
-          <i class="fas fa-industry"></i>
-        </div>
-        <h3>Lean Management</h3>
-        <p>
-          TPM-Wartung, KVP-Prozess, Arbeitsaufträge und Anlagenverwaltung — Produktivität
-          systematisch steigern.
-        </p>
-      </div>
+--accent: {mod.accent}; --row-delay: {150 + i * 100}ms;"
+        >
+          <div class="module-row__index">
+            <span class="module-row__num">{mod.num}</span>
+            <span
+              class="module-row__icon"
+              aria-hidden="true"
+            >
+              <i class="fas {mod.icon}"></i>
+            </span>
+          </div>
+          <div class="module-row__body">
+            <p class="module-row__label">[ {mod.label} ]</p>
+            <h3 class="module-row__title">{mod.title}</h3>
+            <p class="module-row__copy">{mod.copy}</p>
+          </div>
+        </article>
+      {/each}
     </div>
   </div>
 </section>
 
 <style>
+  /*
+    Section atmosphere: a subtle radial accent at the top adds depth
+    without re-introducing card-style backgrounds. Layered above
+    --glass-bg so light & dark modes both keep their base tone.
+  */
+  /*
+    Section is transparent — the global body::after gradient
+    (--main-bg-gradient) shows through and provides the atmosphere.
+  */
   .module-section {
-    border-top: var(--glass-border);
-    border-bottom: var(--glass-border);
-    background: var(--glass-bg);
-    padding: calc(var(--spacing-8) * 2) 5%;
+    position: relative;
+    background: transparent;
+    padding: calc(var(--spacing-8) * 2.5) 5%;
+    overflow: hidden;
   }
 
   .module-section__container {
     margin: 0 auto;
-    max-width: 1400px;
+    max-width: 1200px;
   }
 
+  /*
+    Elegant separator at the top of every section container: a short
+    centered gradient hairline. Shared pattern across Module, Security
+    and Pricing sections for visual rhythm.
+  */
+  .module-section__container::before {
+    content: '';
+    display: block;
+    width: clamp(220px, 32vw, 420px);
+    height: 3px;
+    margin: 0 auto calc(var(--spacing-8) * 1.75);
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      color-mix(in oklch, var(--color-primary) 70%, transparent) 50%,
+      transparent 100%
+    );
+  }
+
+  /* Eyebrow moved to shared <LandingEyebrow> — see LandingEyebrow.svelte. */
+
   .module-section__title {
-    margin-bottom: var(--spacing-4);
-    color: var(--primary-color);
+    margin: 0 0 var(--spacing-4) 0;
+    color: var(--color-text-primary);
     font-weight: 700;
-    font-size: 2.5rem;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    letter-spacing: -0.02em;
+    line-height: 1.05;
     text-align: center;
     animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: 80ms;
   }
 
   .module-section__subtitle {
-    margin-right: auto;
-    margin-bottom: calc(var(--spacing-8) * 1.5);
-    margin-left: auto;
+    margin: 0 auto calc(var(--spacing-8) * 2);
     max-width: 600px;
     color: var(--color-text-secondary);
-    font-size: 1.1rem;
+    font-size: 1.125rem;
     line-height: 1.6;
     text-align: center;
     animation: fade-in-up var(--duration-slow) var(--ease-out) both;
-    animation-delay: 100ms;
+    animation-delay: 160ms;
   }
 
-  .module-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--spacing-6);
+  /* Editorial zig-zag rows — no card chrome, only hairline dividers */
+  .modules {
+    display: flex;
+    flex-direction: column;
   }
 
-  .module-card {
-    border: var(--glass-border);
-    border-radius: var(--glass-card-radius);
-    background: var(--glass-bg);
-    padding: var(--spacing-6);
-    transition: all var(--duration-normal) var(--ease-out);
-    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
-  }
-
-  .module-card:nth-child(1) {
-    animation-delay: 150ms;
-  }
-
-  .module-card:nth-child(2) {
-    animation-delay: 250ms;
-  }
-
-  .module-card:nth-child(3) {
-    animation-delay: 350ms;
-  }
-
-  .module-card:nth-child(4) {
-    animation-delay: 450ms;
-  }
-
-  .module-card:hover {
-    transform: translateY(-2px);
-    border-color: color-mix(in oklch, var(--accent) 40%, transparent);
-    background: var(--glass-bg-hover);
-  }
-
-  .module-card__icon {
+  /*
+    Flex layout (replaces fixed grid-template-columns): natural widths
+    for index + body, gap controls breathing room. No hairline dividers.
+  */
+  .module-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    margin-bottom: var(--spacing-4);
-    border-radius: var(--radius-xl);
-    background: color-mix(in oklch, var(--accent) 12%, transparent);
+    gap: clamp(var(--spacing-6), 5vw, calc(var(--spacing-8) * 2));
+    padding: calc(var(--spacing-8) * 1.5) 0;
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: var(--row-delay);
+  }
+
+  /* Reverse: index → right, body → left, text-aligns right */
+  .module-row--reverse {
+    flex-direction: row-reverse;
+  }
+
+  .module-row--reverse .module-row__body {
+    text-align: right;
+  }
+
+  .module-row__index {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-3);
     color: var(--accent);
-    font-size: 1.25rem;
-    transition: all var(--duration-normal) var(--ease-out);
   }
 
-  .module-card:hover .module-card__icon {
-    background: color-mix(in oklch, var(--accent) 20%, transparent);
-    transform: scale(1.08);
+  .module-row__num {
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: 700;
+    font-size: clamp(3.5rem, 8vw, 6rem);
+    line-height: 1;
+    letter-spacing: -0.04em;
+
+    /* Soft accent glow under the numeral, theme-agnostic */
+    text-shadow: 0 0 32px color-mix(in oklch, var(--accent) 35%, transparent);
   }
 
-  .module-card h3 {
-    margin-bottom: var(--spacing-3);
+  .module-row__icon {
+    display: inline-flex;
+    font-size: clamp(1.25rem, 2vw, 1.5rem);
+    opacity: 70%;
+  }
+
+  .module-row__body {
+    flex: 1;
+    max-width: 56ch;
+  }
+
+  .module-row__label {
+    margin: 0 0 var(--spacing-2) 0;
+    color: var(--accent);
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .module-row__title {
+    margin: 0 0 var(--spacing-3) 0;
     color: var(--color-text-primary);
-    font-weight: 600;
-    font-size: 1.1rem;
+    font-weight: 700;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    letter-spacing: -0.015em;
+    line-height: 1.15;
   }
 
-  .module-card p {
+  .module-row__copy {
+    margin: 0;
     color: var(--color-text-secondary);
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 1rem;
+    line-height: 1.65;
   }
 
+  /* Mobile: collapse to single column, drop the zig-zag swap */
   @media (width < 768px) {
-    .module-section__title {
-      font-size: 2rem;
+    .module-section {
+      padding: calc(var(--spacing-8) * 1.5) 5%;
     }
 
-    .module-grid {
-      grid-template-columns: 1fr;
+    .module-section__title {
+      font-size: clamp(1.75rem, 8vw, 2.25rem);
+    }
+
+    .module-row,
+    .module-row--reverse {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--spacing-4);
+      padding: var(--spacing-8) 0;
+    }
+
+    .module-row--reverse .module-row__body {
+      text-align: left;
+    }
+
+    .module-row__num {
+      font-size: clamp(2.5rem, 12vw, 4rem);
     }
   }
 </style>

@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import { DummyUsersService } from './dummy-users.service.js';
 import type { DummyUserWithTeamsRow } from './dummy-users.types.js';
 import { DUMMY_PERMISSIONS } from './dummy-users.types.js';
@@ -35,6 +36,15 @@ type MockDb = ReturnType<typeof createMockDb>;
 const mockActivityLogger = {
   log: vi.fn().mockResolvedValue(undefined),
 };
+
+// Step 2.9: DummyUsersService gained a 3rd DI (TenantVerificationService).
+// `assertVerified` resolves as a no-op so existing tests see a verified tenant
+// and exercise the happy path; tests that need the 403-path set
+// `mockTenantVerification.assertVerified.mockRejectedValueOnce(...)`.
+const mockTenantVerification = {
+  assertVerified: vi.fn().mockResolvedValue(undefined),
+  isVerified: vi.fn().mockResolvedValue(true),
+} as unknown as TenantVerificationService;
 
 /** Creates a valid DummyUserWithTeamsRow for mocking getByUuid results */
 function createDummyRow(overrides: Partial<DummyUserWithTeamsRow> = {}): DummyUserWithTeamsRow {
@@ -75,6 +85,7 @@ describe('DummyUsersService', () => {
     service = new DummyUsersService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockTenantVerification,
     );
   });
 
@@ -176,6 +187,7 @@ describe('DummyUsersService', () => {
       service = new DummyUsersService(
         mockDb as unknown as DatabaseService,
         mockActivityLogger as unknown as ActivityLoggerService,
+        mockTenantVerification,
       );
 
       // 1-3: email/employee generation

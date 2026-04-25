@@ -6,6 +6,10 @@
  * Uses parent() to get user data from (app)/+layout.server.ts.
  * Fail-closed: if role check fails for ANY reason, access is denied.
  *
+ * NOTE: rootCount for the SingleRootWarningBanner is loaded at the (app)
+ * layout level, not here. The banner must render above AppHeader, which is
+ * owned by (app)/+layout.svelte — so the data has to flow with it.
+ *
  * @see ADR-012: Frontend Route Security Groups
  */
 import { redirect } from '@sveltejs/kit';

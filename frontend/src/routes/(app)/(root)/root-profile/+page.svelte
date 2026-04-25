@@ -381,7 +381,7 @@
           />
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn btn-secondary"
             onclick={() => {
               triggerFileInput('profile-picture-input');
             }}
@@ -465,7 +465,7 @@
         </div>
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-secondary"
           disabled={profileSaving}
         >
           {#if profileSaving}<span class="spinner-ring spinner-ring--sm"></span>{:else}<i
@@ -497,7 +497,10 @@
               name="current_password"
               class="form-field__control"
               class:is-error={currentPasswordError}
-              autocomplete="current-password"
+              autocomplete="new-password"
+              data-lpignore="true"
+              data-1p-ignore
+              data-form-type="other"
               bind:value={currentPassword}
               required
             />
@@ -625,7 +628,7 @@
 
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-secondary"
           disabled={passwordSaving}
         >
           {#if passwordSaving}<span class="spinner-ring spinner-ring--sm"></span>{:else}<i

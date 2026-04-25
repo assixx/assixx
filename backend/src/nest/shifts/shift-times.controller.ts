@@ -2,7 +2,7 @@
  * Shift Times Controller
  *
  * REST API endpoints for tenant-configurable shift time definitions.
- * Admin+Root write access — managed via /account-settings in the frontend.
+ * Admin+Root write access — managed via /company-settings in the frontend.
  */
 import { Body, Controller, Get, Logger, Param, Post, Put } from '@nestjs/common';
 

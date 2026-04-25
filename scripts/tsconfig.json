@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Assixx Scripts - tsx-executed utilities",
+
+  // Scripts run via `tsx` (see #!/usr/bin/env tsx shebang), not compiled.
+  // This tsconfig exists purely for IDE diagnostics + optional CI type-check.
+  // WHY: Without it, VS Code's TS language service falls back to an inferred
+  // project without @types/node, causing cascading false-positives (missing
+  // `process`, unresolved `node:*` specifiers, phantom "no return" errors
+  // because `process.exit()` is not typed as `never`). See ADR-041.
+  "extends": "../tsconfig.base.json",
+
+  "compilerOptions": {
+    // NodeNext required for `import.meta.url` + `node:*` specifiers used by
+    // sync-freemail-list.ts (and any future tsx scripts in this folder).
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+
+    // Explicit node types - root cause fix for the 8 TS errors in scripts/.
+    "types": ["node"],
+
+    // Scripts are tsx-executed; no emit, no composite, no declaration.
+    "noEmit": true,
+
+    // ES2024 lib surfaces Node 24 native APIs (AbortSignal.timeout, fetch,
+    // Array.fromAsync, etc.) that these scripts rely on.
+    "lib": ["ES2024"]
+  },
+
+  "include": ["**/*.ts"],
+
+  "exclude": ["node_modules"]
+}

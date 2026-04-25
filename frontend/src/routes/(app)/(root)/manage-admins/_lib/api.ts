@@ -195,3 +195,26 @@ export async function updateAdminAvailability(
 export async function deleteAdmin(adminId: number): Promise<void> {
   await apiClient.delete(`/root/admins/${adminId}`);
 }
+
+// =============================================================================
+// ROOT-INITIATED PASSWORD RESET (ADR-051 §2.7 / §5.3)
+// =============================================================================
+
+/**
+ * Root triggers a password-reset-link email for an admin/employee target.
+ *
+ * Strict Root-only endpoint — the backend enforces `@Roles('root')` before
+ * the service logic runs (§0.2.5 #13, narrower than ADR-045 Layer-1). On
+ * success, the target receives an email pointing to `/reset-password`; Root
+ * never sees the new credential (separation of duties).
+ *
+ * Server error codes surfaced via `apiClient.post` thrown-error envelope:
+ *   - 400 `INVALID_TARGET_ROLE` — target is root OR not admin/employee
+ *   - 400 `INACTIVE_TARGET`     — target.is_active !== 1
+ *   - 429 `RATE_LIMIT`          — 2nd request within 15 min (same root+target pair)
+ *
+ * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.7 / §5.3
+ */
+export async function sendPasswordResetLink(userId: number): Promise<{ message: string }> {
+  return await apiClient.post<{ message: string }>(`/users/${userId}/send-password-reset-link`, {});
+}

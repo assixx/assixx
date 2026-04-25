@@ -10,9 +10,18 @@
     isVisible: boolean;
     onCancel: () => void;
     onConfirm: () => void;
+    /**
+     * While true: both buttons are disabled and a spinner renders on the
+     * confirm button. Used by ADR-050 Amendment (Logout → Apex) so the
+     * modal stays as the UX anchor from confirm-click until the apex
+     * login page paints (browser paint-hold keeps the modal as the last
+     * frame during the cross-origin hard-nav → no blank-flash between
+     * old and new document).
+     */
+    submitting?: boolean;
   }
 
-  const { isVisible, onCancel, onConfirm }: Props = $props();
+  const { isVisible, onCancel, onConfirm, submitting = false }: Props = $props();
 </script>
 
 <ConfirmModal
@@ -23,6 +32,7 @@
   icon="fa-sign-out-alt"
   confirmLabel="Abmelden"
   centered
+  {submitting}
   onconfirm={onConfirm}
   oncancel={onCancel}
 >

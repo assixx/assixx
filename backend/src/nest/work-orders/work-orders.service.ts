@@ -80,6 +80,7 @@ interface ListQuery {
   sourceUuid?: string | undefined;
   assigneeUuid?: string | undefined;
   isActive?: string | undefined;
+  overdue?: 'true' | undefined;
   page?: number | undefined;
   limit?: number | undefined;
 }
@@ -125,6 +126,9 @@ function appendQueryFilters(
                WHERE a3.work_order_id = wo.id AND ua.uuid = $${idx++})`,
     );
     params.push(query.assigneeUuid);
+  }
+  if (query.overdue === 'true') {
+    conditions.push(`wo.due_date < CURRENT_DATE AND wo.status IN ('open', 'in_progress')`);
   }
   return idx;
 }

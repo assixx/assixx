@@ -39,6 +39,8 @@ interface AuditTrailRow {
   user_agent: string | null;
   status: string;
   error_message: string | null;
+  /** Request correlation UUID — set by ClsModule middleware (ADR-006). */
+  request_id: string | null;
   created_at: Date;
 }
 
@@ -234,7 +236,7 @@ export class UnifiedLogsService {
       SELECT
         id, tenant_id, user_id, user_name, user_role,
         action, resource_type, resource_id, resource_name,
-        changes, ip_address, user_agent, status, error_message, created_at
+        changes, ip_address, user_agent, status, error_message, request_id, created_at
       FROM audit_trail
       ${whereClause}
       ORDER BY created_at DESC
@@ -405,6 +407,9 @@ export class UnifiedLogsService {
       ipAddress: row.ip_address ?? undefined,
       status: row.status === 'failure' ? 'failure' : 'success',
       changes: this.safeJsonParse(row.changes),
+      // ADR-009 P1-1 (2026-04-22): expose request_id so auditors can group
+      // entries from the same HTTP request (1 user-action → N audit rows).
+      requestId: row.request_id ?? undefined,
     };
   }
 
@@ -440,7 +445,7 @@ export class UnifiedLogsService {
 
     // If already an object (JSONB auto-parsed), return as-is
     if (typeof value === 'object') {
-      return value as Record<string, unknown>;
+      return value;
     }
 
     try {

@@ -23,6 +23,11 @@
       "types": "./src/helpers/index.ts",
       "import": "./dist/helpers/index.js",
       "default": "./dist/helpers/index.js"
+    },
+    "./shift-handover": {
+      "types": "./src/shift-handover/index.ts",
+      "import": "./dist/shift-handover/index.js",
+      "default": "./dist/shift-handover/index.js"
     }
   },
   "scripts": {
@@ -30,5 +35,8 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "prettier": "prettier --check \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "zod": "~4.3.6"
   }
 }

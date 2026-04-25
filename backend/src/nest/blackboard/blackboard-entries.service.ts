@@ -5,7 +5,7 @@
  * Handles listing, creation, updates, deletion, and dashboard queries.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -19,6 +19,7 @@ import {
 } from './blackboard.helpers.js';
 import type {
   BlackboardEntryResponse,
+  BlackboardMyPermissions,
   CountResult,
   DbBlackboardEntry,
   EntryFilters,
@@ -38,6 +39,62 @@ export class BlackboardEntriesService {
     private readonly accessService: BlackboardAccessService,
     private readonly activityLogger: ActivityLoggerService,
   ) {}
+
+  // ==========================================================================
+  // ADR-045 LAYER-2 SELF-LOOKUP
+  // ==========================================================================
+
+  /**
+   * Return the calling user's effective blackboard permissions across all modules
+   * (ADR-045 Layer 2). Consumed by the SvelteKit page-loader to gate action buttons
+   * without triggering 403s at click-time.
+   *
+   * - `hasFullAccess=true` → all-true bypass (Root by DB trigger, Admin by grant).
+   * - Otherwise → read `user_addon_permissions` for `addon_code='blackboard'`.
+   * - Missing rows default to `false` (fail-closed).
+   */
+  async getMyPermissions(userId: number, hasFullAccess: boolean): Promise<BlackboardMyPermissions> {
+    if (hasFullAccess) {
+      return {
+        posts: { canRead: true, canWrite: true, canDelete: true },
+        comments: { canRead: true, canWrite: true, canDelete: true },
+        archive: { canRead: true, canWrite: true },
+      };
+    }
+
+    interface PermRow {
+      module_code: string;
+      can_read: boolean;
+      can_write: boolean;
+      can_delete: boolean;
+    }
+
+    const rows = await this.db.tenantQuery<PermRow>(
+      `SELECT module_code, can_read, can_write, can_delete
+       FROM user_addon_permissions
+       WHERE user_id = $1 AND addon_code = 'blackboard'`,
+      [userId],
+    );
+
+    const perms = new Map(rows.map((r: PermRow) => [r.module_code, r]));
+    const get = (code: string): { canRead: boolean; canWrite: boolean; canDelete: boolean } => {
+      const row = perms.get(code);
+      return {
+        canRead: row?.can_read ?? false,
+        canWrite: row?.can_write ?? false,
+        canDelete: row?.can_delete ?? false,
+      };
+    };
+
+    return {
+      posts: get('blackboard-posts'),
+      comments: get('blackboard-comments'),
+      archive: {
+        canRead: get('blackboard-archive').canRead,
+        canWrite: get('blackboard-archive').canWrite,
+      },
+    };
+  }
 
   // ==========================================================================
   // LIST OPERATIONS
@@ -374,10 +431,7 @@ export class BlackboardEntriesService {
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Updating entry ${String(id)}`);
 
-    const existingEntry = (await this.getEntryById(id, tenantId, userId)) as Record<
-      string,
-      unknown
-    >;
+    const existingEntry = await this.getEntryById(id, tenantId, userId);
 
     const hasMultiOrg =
       dto.departmentIds !== undefined || dto.teamIds !== undefined || dto.areaIds !== undefined;
@@ -557,34 +611,31 @@ export class BlackboardEntriesService {
   /**
    * Delete a blackboard entry.
    *
-   * Allowed to delete:
-   * - Root users (any entry)
-   * - Users with has_full_access = true (any entry in their tenant)
-   * - Author of the entry
+   * Authorization follows ADR-045 three-layer model:
+   * - Controller-Guard `@RequirePermission(blackboard, blackboard-posts, canDelete)`
+   *   enforces Layer-1 (role/lead/deputy/full-access) + Layer-2 (canDelete permission).
+   * - Creator-Bypass is intentionally NOT implemented for blackboard entries —
+   *   if Root revokes the author's `canDelete` grant, the author can no longer
+   *   delete their own entry. This matches the announcement-board semantics
+   *   where management (publish/retract) stays with designated leads, not authors.
+   *   If Creator-Bypass is needed in the future, it must be added here as an
+   *   explicit `authorId === currentUser.id` check before the permission guard,
+   *   not inferred from "falling through".
+   *
+   * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md §Creator-Bypass
    */
   async deleteEntry(
     id: number | string,
     tenantId: number,
     userId: number,
-    userRole: string,
+    _userRole: string,
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting entry ${String(id)}`);
 
     const entry = await this.getEntryById(id, tenantId, userId);
 
-    // Check delete permissions: root, has_full_access, or author
-    const isRoot = userRole === 'root';
-    const isAuthor = (entry as Record<string, unknown>)['authorId'] === userId;
-    const { hasFullAccess } = await this.accessService.getUserAccessInfo(userId);
-
-    if (!isRoot && !hasFullAccess && !isAuthor) {
-      throw new ForbiddenException(
-        'Only the author, root, or users with full access can delete this entry',
-      );
-    }
-
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
-    const numericId = (entry as Record<string, unknown>)['id'] as number;
+    const numericId = entry['id'] as number;
 
     await this.db.tenantQuery(
       `DELETE FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
@@ -597,12 +648,12 @@ export class BlackboardEntriesService {
       userId,
       'blackboard',
       numericId,
-      `Blackboard-Eintrag gelöscht: ${(entry as Record<string, unknown>)['title'] as string}`,
+      `Blackboard-Eintrag gelöscht: ${entry['title'] as string}`,
       {
-        title: (entry as Record<string, unknown>)['title'],
-        isActive: (entry as Record<string, unknown>)['isActive'],
-        priority: (entry as Record<string, unknown>)['priority'],
-        orgLevel: (entry as Record<string, unknown>)['orgLevel'],
+        title: entry['title'],
+        isActive: entry['isActive'],
+        priority: entry['priority'],
+        orgLevel: entry['orgLevel'],
       },
     );
 

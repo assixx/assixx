@@ -7,6 +7,7 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
+  ForbiddenException,
   InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
@@ -18,6 +19,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
+import type { SecuritySettingsService } from '../security-settings/security-settings.service.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { UserProfileService } from './user-profile.service.js';
 import type { UserRow } from './users.types.js';
@@ -63,6 +65,17 @@ function createMockActivityLogger() {
   };
 }
 
+/**
+ * SecuritySettings mock — default returns `true` (policy OFF = "allowed" yes)
+ * so existing changePassword tests pass unchanged. New tests override via
+ * `mockResolvedValueOnce(false)` to verify the Forbidden path.
+ */
+function createMockSecuritySettings() {
+  return {
+    getUserPasswordChangePolicy: vi.fn().mockResolvedValue(true),
+  };
+}
+
 /** Standard user row — all optional fields set to null (NOT undefined!) */
 function makeUserRow(overrides: Partial<UserRow> = {}): UserRow {
   return {
@@ -99,16 +112,19 @@ describe('UserProfileService', () => {
   let service: UserProfileService;
   let mockDb: ReturnType<typeof createMockDb>;
   let mockUserRepo: ReturnType<typeof createMockUserRepository>;
+  let mockSecuritySettings: ReturnType<typeof createMockSecuritySettings>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
     mockUserRepo = createMockUserRepository();
     const mockActivityLogger = createMockActivityLogger();
+    mockSecuritySettings = createMockSecuritySettings();
     service = new UserProfileService(
       mockDb as unknown as DatabaseService,
       mockUserRepo as unknown as UserRepository,
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockSecuritySettings as unknown as SecuritySettingsService,
     );
   });
 
@@ -163,7 +179,7 @@ describe('UserProfileService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockUserRepo.getPasswordHash.mockResolvedValueOnce(null);
 
-      await expect(service.changePassword(999, 10, 'old', 'new')).rejects.toThrow(
+      await expect(service.changePassword(999, 10, 'employee', 'old', 'new')).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -172,9 +188,47 @@ describe('UserProfileService', () => {
       mockUserRepo.getPasswordHash.mockResolvedValueOnce('stored-hash');
       vi.mocked(bcryptjs.compare).mockResolvedValueOnce(false as never);
 
-      await expect(service.changePassword(1, 10, 'wrong-password', 'new-password')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.changePassword(1, 10, 'employee', 'wrong-password', 'new-password'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    // Security gate (ADR-045 + user-request 2026-04-20):
+    // admin/employee must be blocked when the tenant policy is OFF.
+    it('should throw ForbiddenException when admin tries to change password with policy=false', async () => {
+      mockSecuritySettings.getUserPasswordChangePolicy.mockResolvedValueOnce(false);
+
+      await expect(
+        service.changePassword(13, 1, 'admin', 'current-password', 'new-password-12345'),
+      ).rejects.toThrow(ForbiddenException);
+
+      // Invariant: we must fail FAST — bcrypt must never run on a blocked
+      // request (prevents timing-attack leak of the password hash).
+      expect(mockUserRepo.getPasswordHash).not.toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException when employee tries to change password with policy=false', async () => {
+      mockSecuritySettings.getUserPasswordChangePolicy.mockResolvedValueOnce(false);
+
+      await expect(
+        service.changePassword(5, 1, 'employee', 'current-password', 'new-password-12345'),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockUserRepo.getPasswordHash).not.toHaveBeenCalled();
+    });
+
+    it('should bypass policy check when role is root (policy getter never called)', async () => {
+      // Root can always rotate credentials — needed for recovery scenarios.
+      // The getter must not be called, otherwise a missing tenant_settings
+      // row could mis-gate the flow. The bcrypt step IS exercised, so we
+      // wire the downstream mocks.
+      mockUserRepo.getPasswordHash.mockResolvedValueOnce('stored-hash');
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE users
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '0' }]); // revoke refresh_tokens
+
+      const result = await service.changePassword(1, 1, 'root', 'current-password', 'new-password');
+
+      expect(result.message).toBe('Password changed successfully');
+      expect(mockSecuritySettings.getUserPasswordChangePolicy).not.toHaveBeenCalled();
     });
 
     it('should change password successfully', async () => {
@@ -184,7 +238,13 @@ describe('UserProfileService', () => {
       mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE users
       mockDb.tenantQuery.mockResolvedValueOnce([{ count: '2' }]); // revoke refresh_tokens
 
-      const result = await service.changePassword(1, 10, 'current-password', 'new-password');
+      const result = await service.changePassword(
+        1,
+        10,
+        'employee',
+        'current-password',
+        'new-password',
+      );
 
       expect(result.message).toBe('Password changed successfully');
       expect(mockDb.tenantQuery).toHaveBeenCalledWith(

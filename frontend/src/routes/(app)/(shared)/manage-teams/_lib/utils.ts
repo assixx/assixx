@@ -230,7 +230,7 @@ export function populateFormFromTeam(team: Team): {
     leaderId: team.leaderId ?? null,
     memberIds: team.members?.map((m) => m.id) ?? [],
     assetIds: team.assets?.map((m) => m.id) ?? [],
-    isActive: (team.isActive === 4 ? 0 : team.isActive) as FormIsActiveStatus,
+    isActive: team.isActive === 4 ? 0 : team.isActive,
   };
 }
 

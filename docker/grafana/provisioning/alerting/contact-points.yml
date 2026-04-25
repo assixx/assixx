@@ -1,0 +1,63 @@
+# =============================================================================
+# Grafana Alerting - Contact Points
+# =============================================================================
+# Production-grade provisioning for alert delivery channels.
+#
+# Why provisioning (not UI):
+#   - Reproducible: survives volume wipes, docker-compose down -v
+#   - Git-controlled: no UI-drift, reviewable changes
+#   - Idempotent: restart container re-applies this file
+#
+# Required env vars (injected by docker-compose from Doppler):
+#   ALERT_EMAIL_TO       Target mailbox for critical/warning alerts.
+#   SLACK_WEBHOOK_URL    Optional. Incoming-Webhook URL for #assixx-alerts.
+#                        Leave empty/unset to skip Slack (contact point still
+#                        provisions but sends nowhere until filled).
+#
+# Reference: https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/
+# ADR-002 (Alerting & Monitoring Stack) — Sentry for errors, PLG for logs/metrics.
+# =============================================================================
+
+apiVersion: 1
+
+# Env-var interpolation: Grafana substitutes $VAR / ${VAR} at startup.
+# Docker-compose passes the values through from Doppler. If a var is unset,
+# Grafana stores the literal string — document in runbook (HOW-TO-ALERTING.md).
+
+contactPoints:
+  - orgId: 1
+    name: email-default
+    receivers:
+      - uid: cp-email-default
+        type: email
+        settings:
+          addresses: ${ALERT_EMAIL_TO}
+          singleEmail: true
+          subject: "[Assixx] {{ .CommonLabels.severity | toUpper }} {{ .CommonLabels.alertname }}"
+          message: |
+            Alert: {{ .CommonLabels.alertname }}
+            Severity: {{ .CommonLabels.severity }}
+            Summary: {{ .CommonAnnotations.summary }}
+            Description: {{ .CommonAnnotations.description }}
+
+            Runbook: {{ .CommonAnnotations.runbook_url }}
+
+            Fired at: {{ (index .Alerts 0).StartsAt }}
+            Firing: {{ len .Alerts.Firing }} / Resolved: {{ len .Alerts.Resolved }}
+
+  - orgId: 1
+    name: slack-critical
+    receivers:
+      - uid: cp-slack-critical
+        type: slack
+        # disableResolveMessage keeps noise down — resolved notifications via email only.
+        disableResolveMessage: false
+        settings:
+          url: ${SLACK_WEBHOOK_URL}
+          recipient: "#assixx-alerts"
+          username: Grafana
+          title: "[{{ .CommonLabels.severity | toUpper }}] {{ .CommonLabels.alertname }}"
+          text: |
+            *{{ .CommonAnnotations.summary }}*
+            {{ .CommonAnnotations.description }}
+            Runbook: {{ .CommonAnnotations.runbook_url }}

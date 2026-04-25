@@ -76,6 +76,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, params, url
     defects,
     total,
     error: plan === null ? 'Wartungsplan nicht gefunden' : null,
-    userRole: user.role as string,
+    userRole: user.role,
   };
 };

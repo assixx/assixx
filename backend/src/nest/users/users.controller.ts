@@ -49,6 +49,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
+import { AuthService } from '../auth/auth.service.js';
+import type { SendPasswordResetLinkResponse } from '../auth/dto/index.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
@@ -131,6 +133,10 @@ export class UsersController {
     private readonly availabilityService: UserAvailabilityService,
     private readonly scopeService: ScopeService,
     private readonly userPositionService: UserPositionService,
+    // ADR-051 §2.7: Root-initiated password-reset-link flow — credential
+    // issuance stays in Auth-domain even though the HTTP route lives under
+    // /users. Controller delegates straight to AuthService.
+    private readonly authService: AuthService,
   ) {}
 
   /** GET /users - List all users with pagination and filters (scope-filtered) */
@@ -247,6 +253,7 @@ export class UsersController {
     return await this.userProfileService.changePassword(
       user.id,
       user.tenantId,
+      user.role,
       dto.currentPassword,
       dto.newPassword,
     );
@@ -501,6 +508,34 @@ export class UsersController {
     @Param('positionId') positionId: string,
   ): Promise<void> {
     await this.userPositionService.unassign(tenantId, userId, positionId);
+  }
+
+  /**
+   * POST /users/:id/send-password-reset-link
+   *
+   * Root-initiated password-reset-link (ADR-051 §Decision — Root-Initiated
+   * Reset). Strict Root-only — NOT `canManage` / `@RequirePermission`
+   * (§0.2.5 #13): credential-issuance is an auth-boundary action, narrower
+   * than ADR-045 Layer-1. An admin-with-hasFullAccess cannot issue reset
+   * links.
+   *
+   * The target user gets an email with a link to `/reset-password`, clicks
+   * it, and sets their own new password. Root never sees the credential —
+   * separation of duties (admin-initiated tokens bypass the §2.6 role-gate
+   * via §2.8 origin-check branch; the target's new password is bcrypt-hashed
+   * only in `resetPassword()` redemption).
+   *
+   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.7
+   * @see docs/infrastructure/adr/ADR-051-forgot-password-role-gate.md §Decision — Root-Initiated Reset
+   */
+  @Post(':id/send-password-reset-link')
+  @Roles('root')
+  @HttpCode(HttpStatus.OK)
+  async sendPasswordResetLink(
+    @Param('id', ParseIntPipe) targetUserId: number,
+    @CurrentUser() initiator: NestAuthUser,
+  ): Promise<SendPasswordResetLinkResponse> {
+    return await this.authService.sendAdminInitiatedResetLink(targetUserId, initiator);
   }
 
   /** Get MIME type for image extension (switch to avoid object injection) */

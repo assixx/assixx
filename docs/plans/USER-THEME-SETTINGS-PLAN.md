@@ -126,13 +126,13 @@ Changes for **all 3 roles**:
 }
 ```
 
-**Root** (currently "System" with only "Kontoeinstellungen"):
+**Root** (currently "System" with only "Firmen-Einstellungen"):
 
 ```
 { id: 'system', icon: ICONS.settings, label: 'System',
   submenu: [
     { id: 'design', label: 'Design', url: '/settings/design' },
-    { id: 'account-settings', label: 'Kontoeinstellungen', url: '/account-settings' }
+    { id: 'company-settings', label: 'Firmen-Einstellungen', url: '/company-settings' }
   ]
 }
 ```

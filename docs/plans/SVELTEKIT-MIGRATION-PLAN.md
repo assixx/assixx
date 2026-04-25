@@ -73,7 +73,7 @@ Gesamtfortschritt:                    ██████████████
 | Features                | `/features`                          | ✅ 100% | (app) layout                                          |
 | Logs                    | `/logs`                              | ✅ 100% | (app) layout                                          |
 | Root Profile            | `/root-profile`                      | ✅ 100% | (app) layout                                          |
-| Account Settings        | `/account-settings`                  | ✅ 100% | (app) layout                                          |
+| Company Settings        | `/company-settings`                  | ✅ 100% | (app) layout                                          |
 | Tenant Deletion Status  | `/tenant-deletion-status`            | ✅ 100% | (app) layout                                          |
 | Tenant Deletion Approve | `/tenant-deletion-approve?queueId=X` | ✅ 100% | **Standalone** (kein Header/Sidebar)                  |
 | Documents Explorer      | `/documents-explorer`                | ✅ 100% | (app) layout                                          |
@@ -1603,7 +1603,7 @@ Konvertierung der 25 Storybook Stories zu Svelte Components.
 | admin-profile.html           | /(app)/profile                   | 6         |
 | employee-profile.html        | /(app)/profile                   | 6         |
 | root-profile.html            | /(root)/profile                  | 6         |
-| account-settings.html        | /(app)/settings                  | 6         |
+| company-settings.html        | /(app)/settings                  | 6         |
 | logs.html                    | /(app)/logs                      | 6         |
 | features.html                | /(root)/features                 | 7         |
 | manage-root.html             | /(root)/manage                   | 7         |
@@ -2078,7 +2078,7 @@ Eine 400-Zeilen Datei mit klarer Struktur ist besser als 5 Dateien mit 80 Zeilen
 | Features                | `/features`                | Feature-Toggle Grid               |
 | Logs                    | `/logs`                    | Audit-Log mit Filtering           |
 | Root Profile            | `/root-profile`            | Profil-Bearbeitung                |
-| Account Settings        | `/account-settings`        | Tenant-Löschung anfordern         |
+| Company Settings        | `/company-settings`        | Tenant-Löschung anfordern         |
 | Tenant Deletion Status  | `/tenant-deletion-status`  | Status-Übersicht mit Aktionen     |
 | Tenant Deletion Approve | `/tenant-deletion-approve` | **Standalone** (ohne App-Layout!) |
 

@@ -89,25 +89,53 @@ export class RoleSwitchService {
   }
 
   /**
-   * Generate JWT token with role switch information
+   * Generate JWT token with role switch information.
+   *
+   * `preserveExp` is the Unix-seconds expiration from the CALLER's current
+   * access token. Role-switch is semantically a claim change (`activeRole`),
+   * NOT a session renewal — we preserve the original session's exp so:
+   *   1. The header countdown flows smoothly across role changes instead of
+   *      jumping back to 30:00 every switch.
+   *   2. Users cannot bypass the inactivity timeout by periodically clicking
+   *      role-switch; a compromised session stays bounded by the original exp.
+   *   3. Only the explicit refresh-token flow (AuthService.refresh) legitimately
+   *      extends session lifetime.
+   *
+   * A floor of 1 second keeps jsonwebtoken from rejecting a zero/negative
+   * expiresIn if the caller's token is about to expire; the new token will
+   * simply die immediately and the client hits the standard expired-session
+   * path. Happens only in a sub-second race window because the JwtAuthGuard
+   * already rejected expired tokens upstream.
    */
-  private generateToken(user: UserRow, activeRole: string, isRoleSwitched: boolean): string {
-    return this.jwtService.sign({
-      // User identity - NEVER changes
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      tenant_id: user.tenant_id,
-      tenantId: user.tenant_id,
+  private generateToken(
+    user: UserRow,
+    activeRole: string,
+    isRoleSwitched: boolean,
+    preserveExp: number,
+  ): string {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const remainingSeconds = Math.max(preserveExp - nowSeconds, 1);
+    return this.jwtService.sign(
+      {
+        // User identity - NEVER changes
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        tenant_id: user.tenant_id,
+        tenantId: user.tenant_id,
 
-      // Role information
-      role: user.role, // Original role NEVER changes
-      activeRole,
-      isRoleSwitched,
+        // Role information
+        role: user.role, // Original role NEVER changes
+        activeRole,
+        isRoleSwitched,
 
-      // Token type
-      type: 'access' as const,
-    });
+        // Token type
+        type: 'access' as const,
+      },
+      // Override the module's default expiresIn (30m) with the caller's
+      // remaining session time — see method doc for rationale.
+      { expiresIn: remainingSeconds },
+    );
   }
 
   /**
@@ -143,7 +171,11 @@ export class RoleSwitchService {
   /**
    * Switch to employee view (admin/root only)
    */
-  async switchToEmployee(userId: number, tenantId: number): Promise<RoleSwitchResult> {
+  async switchToEmployee(
+    userId: number,
+    tenantId: number,
+    preserveExp: number,
+  ): Promise<RoleSwitchResult> {
     this.logger.log(`User ${userId} switching to employee view`);
 
     const user = await this.verifyUserTenant(userId, tenantId);
@@ -153,7 +185,7 @@ export class RoleSwitchService {
       throw new ForbiddenException('Only admins and root users can switch roles');
     }
 
-    const token = this.generateToken(user, 'employee', true);
+    const token = this.generateToken(user, 'employee', true, preserveExp);
 
     await this.logRoleSwitch(tenantId, userId, user.role, 'employee', 'role_switch_to_employee');
 
@@ -175,7 +207,11 @@ export class RoleSwitchService {
   /**
    * Switch back to original role
    */
-  async switchToOriginal(userId: number, tenantId: number): Promise<RoleSwitchResult> {
+  async switchToOriginal(
+    userId: number,
+    tenantId: number,
+    preserveExp: number,
+  ): Promise<RoleSwitchResult> {
     this.logger.log(`User ${userId} switching back to original role`);
 
     const user = await this.verifyUserTenant(userId, tenantId);
@@ -185,7 +221,7 @@ export class RoleSwitchService {
       throw new ForbiddenException('Only admins and root users can switch roles');
     }
 
-    const token = this.generateToken(user, user.role, false);
+    const token = this.generateToken(user, user.role, false, preserveExp);
 
     await this.logRoleSwitch(
       tenantId,
@@ -213,7 +249,11 @@ export class RoleSwitchService {
   /**
    * Root user switches to admin view
    */
-  async rootToAdmin(userId: number, tenantId: number): Promise<RoleSwitchResult> {
+  async rootToAdmin(
+    userId: number,
+    tenantId: number,
+    preserveExp: number,
+  ): Promise<RoleSwitchResult> {
     this.logger.log(`Root user ${userId} switching to admin view`);
 
     const user = await this.verifyUserTenant(userId, tenantId);
@@ -223,7 +263,7 @@ export class RoleSwitchService {
       throw new ForbiddenException('Only root users can switch to admin view');
     }
 
-    const token = this.generateToken(user, 'admin', true);
+    const token = this.generateToken(user, 'admin', true, preserveExp);
 
     await this.logRoleSwitch(tenantId, userId, 'root', 'admin', 'role_switch_root_to_admin');
 

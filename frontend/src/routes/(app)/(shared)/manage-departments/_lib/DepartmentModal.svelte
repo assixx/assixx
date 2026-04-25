@@ -20,7 +20,7 @@
     formAreaId: number | null;
     formDepartmentLeadId: number | null;
     formDepartmentDeputyLeadId: number | null;
-    formHallIds: number[];
+    formDirectHallIds: number[];
     formIsActive: FormIsActiveStatus;
     allAreas: Area[];
     allHalls: Hall[];
@@ -32,8 +32,18 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formDepartmentDeputyLeadId = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), allAreas, allHalls, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formDepartmentDeputyLeadId = $bindable(), formDirectHallIds = $bindable(), formIsActive = $bindable(), allAreas, allHalls, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
+
+  // Split halls into inherited (same area as dept) vs available cross-area.
+  // Inherited halls are shown read-only; cross-area halls populate the editable multi-select.
+  const inheritedHalls = $derived(
+    formAreaId === null ? [] : allHalls.filter((h) => h.areaId === formAreaId),
+  );
+  const crossAreaHalls = $derived(allHalls.filter((h) => h.areaId !== formAreaId));
+  const areaName = $derived(
+    formAreaId === null ? '' : (allAreas.find((a) => a.id === formAreaId)?.name ?? ''),
+  );
 
   // Local dropdown states
   let areaDropdownOpen = $state(false);
@@ -393,29 +403,64 @@
           {/if}
         </div>
 
-        <!-- Hall Multi-Select -->
+        <!-- Inherited halls info (Section 1): shown only when dept has an area WITH halls -->
+        {#if inheritedHalls.length > 0}
+          <div
+            class="alert alert--info alert--sm"
+            style="margin-bottom: var(--spacing-3);"
+          >
+            <span class="alert__icon">
+              <i class="fas fa-info-circle"></i>
+            </span>
+            <div class="alert__content">
+              <p class="alert__message">
+                {messages.hallsInheritedInfo(inheritedHalls.length, areaName)}
+              </p>
+              <ul class="mt-2 flex flex-wrap gap-1">
+                {#each inheritedHalls as hall (hall.id)}
+                  <li>
+                    <span class="badge badge--info">
+                      <i class="fas fa-lock mr-1"></i>{hall.name}
+                    </span>
+                  </li>
+                {/each}
+              </ul>
+              <p class="mt-2 text-sm opacity-75">
+                {messages.HALLS_INHERITED_HINT}
+              </p>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Cross-area halls (Section 2): editable multi-select, optional -->
         <div class="form-field">
           <label
             class="form-field__label"
-            for="department-halls"
+            for="department-direct-halls"
           >
             <i class="fas fa-warehouse mr-1"></i>
-            {messages.LABEL_HALLS}
+            {messages.LABEL_HALLS_DIRECT}
           </label>
-          <select
-            id="department-halls"
-            name="hallIds"
-            multiple
-            class="multi-select"
-            bind:value={formHallIds}
-          >
-            {#each allHalls as hall (hall.id)}
-              <option value={hall.id}>{hall.name}</option>
-            {/each}
-          </select>
+          {#if crossAreaHalls.length > 0}
+            <select
+              id="department-direct-halls"
+              name="directHallIds"
+              multiple
+              class="multi-select"
+              bind:value={formDirectHallIds}
+            >
+              {#each crossAreaHalls as hall (hall.id)}
+                <option value={hall.id}>{hall.name}</option>
+              {/each}
+            </select>
+          {:else}
+            <p class="form-field__message text-(--color-text-secondary)">
+              {messages.NO_DIRECT_HALLS_AVAILABLE}
+            </p>
+          {/if}
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            {messages.HALLS_HINT}
+            {messages.HALLS_HINT_DIRECT}
           </span>
         </div>
 

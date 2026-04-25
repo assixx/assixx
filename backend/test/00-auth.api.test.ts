@@ -39,6 +39,27 @@ function applyDbPrerequisites(tenantId: number, userId: number): void {
       FROM addons WHERE is_active = 1 AND is_core = false
       ON CONFLICT (tenant_id, addon_id) DO UPDATE SET status = 'active', is_active = 1, deactivated_at = NULL, updated_at = NOW();
 
+      -- Ensure a verified primary tenant_domain exists (feat: add tenant domain as subdomain).
+      -- Backend rejects POST /users + POST /dummy-users with 403 if the tenant has no
+      -- verified domain. For the apitest tenant, DNS-based verification is not reproducible
+      -- in Docker/CI, so we mark apitest.de as verified directly. ON CONFLICT DO NOTHING
+      -- makes this idempotent against all three partial-unique indexes on tenant_domains
+      -- (tenant_domains_one_primary_per_tenant, tenant_domains_tenant_domain_unique,
+      -- idx_tenant_domains_domain_verified) — any of them matching a live row is a
+      -- no-op. Also repair a soft-deleted primary so the next test run finds a verified
+      -- row (otherwise 403 on user-create returns).
+      INSERT INTO tenant_domains (tenant_id, domain, status, verification_token, verified_at, is_primary, is_active)
+      VALUES (${tenantId}, 'apitest.de', 'verified',
+              substr(md5(random()::text) || md5(random()::text), 1, 64),
+              NOW(), true, 1)
+      ON CONFLICT DO NOTHING;
+
+      UPDATE tenant_domains
+      SET is_active = 1, status = 'verified', verified_at = COALESCE(verified_at, NOW()), is_primary = true
+      WHERE tenant_id = ${tenantId}
+        AND domain = 'apitest.de'
+        AND NOT (is_active = 1 AND is_primary = true AND status = 'verified');
+
       -- Ensure a department exists (required FK for teams)
       INSERT INTO departments (tenant_id, name, description, is_active, uuid, uuid_created_at)
       SELECT ${tenantId}, 'Test Department', 'Auto-created for API tests', 1, gen_random_uuid()::char(36), NOW()

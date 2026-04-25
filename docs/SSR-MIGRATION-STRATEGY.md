@@ -205,7 +205,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 
 ### ✅ No SSR Needed (2)
 
-- `account-settings` - uses layout user data only
+- `company-settings` - uses layout user data only
 - `root-profile` - uses layout user data only
 
 ---

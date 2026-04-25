@@ -6,6 +6,15 @@
  *
  * Principle: When an Area is selected, departments belonging to that area
  * are automatically hidden because access is inherited.
+ *
+ * Note: Leadership scope filtering is intentionally NOT implemented here —
+ * per ADR-036 (Organizational Scope Access Control) the backend services
+ * (`/areas`, `/departments`, `/teams`) already return scope-filtered data
+ * via `ScopeService`. Duplicating that filter on the client would diverge
+ * from the authoritative backend scope (especially for deputy-leads under
+ * ADR-039 tenant toggle) and add a second failure mode.
+ *
+ * @see docs/infrastructure/adr/ADR-036-organizational-scope-access-control.md
  */
 
 // =============================================================================

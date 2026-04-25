@@ -31,7 +31,6 @@ import {
   Put,
   Query,
   Res,
-  UseGuards,
 } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
@@ -39,9 +38,7 @@ import { attachmentHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
-import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import {
   CreateSurveyDto,
@@ -112,8 +109,6 @@ export class SurveysController {
    */
   @Post('templates/:templateId')
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canWrite')
   async createFromTemplate(
     @Param('templateId') templateId: string,
@@ -163,8 +158,6 @@ export class SurveysController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canWrite')
   async createSurvey(
     @Body() dto: CreateSurveyDto,
@@ -188,8 +181,6 @@ export class SurveysController {
    * Update a survey (supports both numeric ID and UUID)
    */
   @Put(':id')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canWrite')
   async updateSurvey(
     @Param('id') id: string,
@@ -217,8 +208,6 @@ export class SurveysController {
    * Delete a survey (supports both numeric ID and UUID)
    */
   @Delete(':id')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canDelete')
   async deleteSurvey(
     @Param('id') id: string,
@@ -244,8 +233,6 @@ export class SurveysController {
    * Get survey statistics (supports both numeric ID and UUID)
    */
   @Get(':id/statistics')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(SURVEY_ADDON, SURVEY_RESULTS, 'canRead')
   async getStatistics(
     @Param('id') id: string,
@@ -285,8 +272,6 @@ export class SurveysController {
    * Get all responses for a survey (admin only, supports both numeric ID and UUID)
    */
   @Get(':id/responses')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(SURVEY_ADDON, SURVEY_RESULTS, 'canRead')
   async getAllResponses(
     @Param('id') id: string,
@@ -323,8 +308,6 @@ export class SurveysController {
    * Export survey responses (supports both numeric ID and UUID)
    */
   @Get(':id/export')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(SURVEY_ADDON, SURVEY_RESULTS, 'canRead')
   async exportResponses(
     @Param('id') id: string,

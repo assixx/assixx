@@ -753,6 +753,12 @@
     onvalidateemails={validateEmails}
     onvalidatepasswords={validatePasswords}
     onupgrade={canUpgrade ? upgradeEmployee : undefined}
+    resetLinkTarget={isEditMode && currentEditId !== null && data.user?.role === 'root' ?
+      (() => {
+        const e = allEmployees.find((x) => x.id === currentEditId);
+        return e !== undefined ? { id: e.id, email: e.email } : undefined;
+      })()
+    : undefined}
   />
 
   <!-- Delete Modals Component -->

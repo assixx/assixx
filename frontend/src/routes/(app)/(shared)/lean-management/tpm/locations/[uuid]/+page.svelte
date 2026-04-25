@@ -298,8 +298,10 @@
           {#if canWrite && showForm}
             {#if !isEditing}
               <div class="alert alert--info alert--sm mb-6">
-                <i class="fas fa-info-circle"></i>
-                Bilder können zum Standort erst nach Erstellung des Standorts hinzugefügt werden.
+                <span class="alert__icon"><i class="fas fa-info-circle"></i></span>
+                <span class="alert__content"
+                  >Bilder können zum Standort erst nach Erstellung des Standorts hinzugefügt werden.</span
+                >
               </div>
             {/if}
             <!-- Create/Edit Form Section -->

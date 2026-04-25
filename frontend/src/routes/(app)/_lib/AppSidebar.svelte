@@ -24,7 +24,7 @@
    */
   function resolveDynamicPath(path: string): string {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument -- Dynamic paths can't match SvelteKit's static route types
-    return resolve(path as any, {});
+    return resolve(path as any);
   }
 
   interface UserInfo {
@@ -519,11 +519,7 @@
     z-index: -1;
     inset: -0.55rem;
     border-radius: var(--glass-card-radius);
-    background: linear-gradient(
-      135deg,
-      oklch(95.55% 0.0129 240.14) 0%,
-      oklch(76.44% 0.1084 243.55) 100%
-    );
+    background: var(--color-accent-bg-gradient);
     content: '';
   }
 
@@ -603,7 +599,7 @@
 
   .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
     border-color: var(--color-accent-bg);
-    background: var(--color-accent-bg);
+    background: var(--color-accent-bg-gradient);
     color: var(--color-black);
   }
 
@@ -886,11 +882,7 @@
       z-index: -1;
       inset: -0.55rem;
       border-radius: var(--glass-card-radius);
-      background: linear-gradient(
-        135deg,
-        oklch(95.55% 0.0129 240.14) 0%,
-        oklch(76.44% 0.1084 243.55) 100%
-      );
+      background: var(--color-accent-bg-gradient);
       content: '';
     }
 

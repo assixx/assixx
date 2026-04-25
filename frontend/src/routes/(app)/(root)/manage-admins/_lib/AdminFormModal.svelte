@@ -1,6 +1,7 @@
 <script lang="ts">
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import UserPositionChips from '$lib/components/UserPositionChips.svelte';
+  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import {
     DEFAULT_HIERARCHY_LABELS,
     isLeadPosition,
@@ -8,8 +9,12 @@
     type HierarchyLabels,
     type PositionOption,
   } from '$lib/types/hierarchy-labels';
+  import { ApiError } from '$lib/utils/api-client';
+
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
   import AdminOrganizationSection from './AdminOrganizationSection.svelte';
+  import { sendPasswordResetLink } from './api';
   import { POSITION_OPTIONS, MESSAGES, type AdminMessages } from './constants';
   import { calculatePasswordStrength } from './utils';
 
@@ -48,11 +53,19 @@
     positionOptions?: PositionOption[];
     ondowngrade?: () => void;
     labels?: HierarchyLabels;
+    /**
+     * ADR-051 §5.3: target for the "Passwort-Reset-Link senden" button.
+     * Non-undefined → button renders. Undefined (create mode) → no button.
+     * The parent page derives this from `currentEditId + admin.email` so
+     * the target user-id + email are available for the confirm-dialog and
+     * the API call.
+     */
+    resetLinkTarget?: { id: number; email: string };
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade, resetLinkTarget }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -94,6 +107,69 @@
   let passwordScore = $state(-1);
   let passwordLabel = $state('');
   let passwordTime = $state('');
+
+  // ADR-051 §5.3: loading-state for the "Passwort-Reset-Link senden" button.
+  // Disables the button + swaps the icon for a spinner during the in-flight
+  // request (the Root-initiated-reset endpoint is DB-rate-limited 1/15 min
+  // per (root, target) pair — visible UX feedback prevents double-submit).
+  let sendingResetLink = $state(false);
+
+  // Pre-call confirmation state — drives the design-system `ConfirmModal`
+  // (variant="danger"). Replaces the former native `confirm()` to match
+  // the destructive-action visual pattern used elsewhere in the app and
+  // avoid the browser-chrome dialog that ignores theming/i18n.
+  let showResetLinkConfirm = $state(false);
+
+  /**
+   * Open the confirm-dialog for the "Passwort-Reset-Link senden" action
+   * (ADR-051 §5.3). The actual API call runs in `confirmSendResetLink`
+   * once the user accepts the ConfirmModal.
+   */
+  function requestSendResetLink(): void {
+    if (resetLinkTarget === undefined) return;
+    showResetLinkConfirm = true;
+  }
+
+  /**
+   * Cancel the ConfirmModal without calling the API.
+   */
+  function cancelSendResetLink(): void {
+    showResetLinkConfirm = false;
+  }
+
+  /**
+   * Execute the "Passwort-Reset-Link senden" action after ConfirmModal
+   * approval (ADR-051 §5.3). Error mapping matches the three backend
+   * code markers (§2.7); unknown errors fall back to the generic string.
+   * 429 is detected via `err.status` because the api-client pre-empts 429
+   * with its own `ApiError('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED')`
+   * BEFORE parsing the body, so the backend's `code: 'RATE_LIMIT'` never
+   * reaches the caller as `err.code`.
+   */
+  async function confirmSendResetLink(): Promise<void> {
+    showResetLinkConfirm = false;
+    if (resetLinkTarget === undefined) return;
+
+    sendingResetLink = true;
+    try {
+      await sendPasswordResetLink(resetLinkTarget.id);
+      showSuccessAlert(`${MESSAGES.RESET_LINK_SUCCESS}: ${resetLinkTarget.email}`);
+    } catch (err: unknown) {
+      let message: string = MESSAGES.RESET_LINK_ERROR_GENERIC;
+      if (err instanceof ApiError) {
+        if (err.status === 429) {
+          message = MESSAGES.RESET_LINK_ERROR_RATE_LIMIT;
+        } else if (err.code === 'INVALID_TARGET_ROLE') {
+          message = MESSAGES.RESET_LINK_ERROR_INVALID_TARGET;
+        } else if (err.code === 'INACTIVE_TARGET') {
+          message = MESSAGES.RESET_LINK_ERROR_INACTIVE;
+        }
+      }
+      showErrorAlert(message);
+    } finally {
+      sendingResetLink = false;
+    }
+  }
 
   // =============================================================================
   // DERIVED VALUES
@@ -427,6 +503,53 @@
           {onupgrade}
           {ondowngrade}
         />
+
+        {#if resetLinkTarget !== undefined}
+          <!--
+            ADR-051 §5.3 — Root-initiated Password-Reset-Link.
+            Only rendered in edit mode when the parent passed a target.
+            Root triggers an email containing a /reset-password link;
+            the target sets their own password — Root never sees it.
+            Backend enforces @Roles('root') + per-pair DB-rate-limit 1/15 min.
+
+            Styling: `btn-danger` signals the destructive/sensitive nature
+            (Root kicks off a credential-reset flow for another user).
+            The border-top + description paragraph mirror the Upgrade/
+            Downgrade "danger-zone" pattern and visually separate the
+            action from the form fields. `align-items: center` on the
+            flex-column wrapper overrides the default `stretch` so the
+            inline-flex button collapses to content-width and centers.
+            Horizontal padding tightened to 8px 12px (default: 8px 16px)
+            per UX request — keeps the button compact without using
+            `btn-sm` (which would also shrink font-size + border-radius).
+          -->
+          <div class="mt-4 border-t border-(--color-border) pt-4">
+            <p class="mb-4 text-sm text-(--color-text-secondary)">
+              Sendet dem Benutzer eine E-Mail mit einem Passwort-Reset-Link. Der Benutzer kann
+              danach selbst ein neues Passwort setzen — Du siehst es nicht. Pro Empfänger 1× alle 15
+              Minuten möglich.
+            </p>
+            <div
+              class="form-field"
+              style="align-items: center;"
+            >
+              <button
+                type="button"
+                class="btn btn-danger"
+                style="padding: 8px 12px;"
+                onclick={requestSendResetLink}
+                disabled={sendingResetLink}
+              >
+                {#if sendingResetLink}
+                  <span class="spinner-ring spinner-ring--sm mr-2"></span>
+                {:else}
+                  <i class="fas fa-paper-plane mr-2"></i>
+                {/if}
+                {MESSAGES.BTN_SEND_RESET_LINK}
+              </button>
+            </div>
+          </div>
+        {/if}
       </div>
 
       <div class="ds-modal__footer">
@@ -447,3 +570,25 @@
     </form>
   </div>
 {/if}
+
+<!--
+  Confirm-Dialog for ADR-051 §5.3 Password-Reset-Link.
+  Rendered outside the parent `{#if show}` block so the ConfirmModal's
+  own modal-overlay stacks cleanly on top of AdminFormModal. The reset
+  flow is sensitive (Root triggers credential-change for another user)
+  → variant="danger" matches the destructive-action pattern used by
+  DeleteModals. Resolves on cancel → no-op, on confirm → API call.
+-->
+<ConfirmModal
+  show={showResetLinkConfirm}
+  id="reset-link-confirm-modal"
+  title={MESSAGES.BTN_SEND_RESET_LINK}
+  variant="danger"
+  icon="fa-paper-plane"
+  confirmLabel={MESSAGES.BTN_SEND_RESET_LINK}
+  cancelLabel={MESSAGES.BTN_CANCEL}
+  onconfirm={confirmSendResetLink}
+  oncancel={cancelSendResetLink}
+>
+  {MESSAGES.RESET_LINK_CONFIRM}
+</ConfirmModal>

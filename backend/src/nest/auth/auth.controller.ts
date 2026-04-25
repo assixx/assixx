@@ -15,6 +15,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Post,
   Req,
   Res,
@@ -30,8 +31,27 @@ import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { AuthService } from './auth.service.js';
 import { ConnectionTicketService } from './connection-ticket.service.js';
-import { ConnectionTicketDto, LoginDto, RefreshDto, RegisterDto } from './dto/index.js';
-import type { ConnectionTicketResponse, LoginResponse, RefreshResponse } from './dto/index.js';
+import {
+  ConnectionTicketDto,
+  ForgotPasswordDto,
+  HandoffMintDto,
+  LoginDto,
+  RefreshDto,
+  RegisterDto,
+  ResetPasswordDto,
+} from './dto/index.js';
+import type {
+  ConnectionTicketResponse,
+  ForgotPasswordResponse,
+  HandoffMintResponse,
+  LoginResponse,
+  RefreshResponse,
+  ResetPasswordResponse,
+} from './dto/index.js';
+// Session 12c (ADR-050): reuse the handoff machinery from OAuth (Session 7)
+// for password-login → subdomain redirect. OAuthModule already exports this
+// service; AuthModule already imports OAuthModule (forwardRef, D15).
+import { OAuthHandoffService } from './oauth/oauth-handoff.service.js';
 
 /**
  * Cookie configuration for SSR support
@@ -39,14 +59,23 @@ import type { ConnectionTicketResponse, LoginResponse, RefreshResponse } from '.
  * secure: Only sent over HTTPS (disabled in dev for localhost)
  * sameSite: CSRF protection
  * path: Cookie available for all routes
+ *
+ * Exported so OAuthController (sibling module under `auth/oauth/`) can reuse
+ * the exact same cookie shape on its login-success + complete-signup paths —
+ * SSR clients must see identical cookies regardless of authentication method
+ * (plan §2.6). Do not duplicate these values anywhere else.
  */
-const COOKIE_OPTIONS = {
+export const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env['NODE_ENV'] === 'production',
   sameSite: 'lax' as const,
   path: '/',
-  /** Access token expires in 30 minutes */
-  maxAge: 30 * 60 * 1000,
+  // Set-Cookie Max-Age is SECONDS per RFC 6265; cookie@1.x writes it 1:1.
+  // Previous `30 * 60 * 1000` produced `Max-Age=1800000` → ~20.83 days of
+  // browser persistence, so cookies lingered long after the JWT inside
+  // expired. That masked real logout/session bugs and leaked state between
+  // sessions on shared browsers. (2026-04-17)
+  maxAge: 30 * 60,
 };
 
 /**
@@ -57,15 +86,132 @@ const COOKIE_OPTIONS = {
  * SECURITY: Refresh tokens are long-lived (7 days) and must be protected.
  * By limiting the path, the cookie is NOT sent for regular API requests,
  * reducing the attack surface for CSRF.
+ *
+ * Exported for reuse by OAuthController — see COOKIE_OPTIONS comment above.
  */
-const REFRESH_COOKIE_OPTIONS = {
+export const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env['NODE_ENV'] === 'production',
   sameSite: 'strict' as const,
   path: '/api/v2/auth',
-  /** Refresh token expires in 7 days */
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  // Seconds per RFC 6265 — see COOKIE_OPTIONS note. Previous value was
+  // 1000× the intended 7 days (~19 years). (2026-04-17)
+  maxAge: 7 * 24 * 60 * 60,
 };
+
+/**
+ * Expiry-only companion cookie — exposes ONLY the Unix timestamp (seconds
+ * since epoch) of the access token's `exp` claim so client-side JS can render
+ * the session-countdown UI without ever holding the JWT itself.
+ *
+ * `httpOnly: false` is intentional and safe: the payload is a non-sensitive
+ * integer. No key material leaks, no authenticated action is possible with
+ * just an exp value. All other attributes mirror COOKIE_OPTIONS so the cookie
+ * lives and dies with the access token.
+ *
+ * Why we need this — problem solved:
+ *   Every OAuth login-success flow is a browser-following-302 from the
+ *   backend. That path has no JSON response body to hydrate a client-side
+ *   TokenManager, so the classic "decode JWT in localStorage to get exp"
+ *   trick fails — the timer widget rendered "00:00 / expired" immediately
+ *   after a fresh login. Password login didn't hit this because its form
+ *   action returns JSON that includes the token. This cookie unifies both
+ *   auth methods: backend always sets the exp cookie, frontend always reads
+ *   it; auth method becomes irrelevant to the UI.
+ *
+ * @see ADR-046 OAuth Sign-In (2026-04-16 amendment — tokenExp-cookie pattern)
+ * @see docs/FEAT_MICROSOFT_OAUTH_MASTERPLAN.md Phase 6 post-mortem
+ */
+export const EXP_COOKIE_OPTIONS = {
+  httpOnly: false,
+  secure: process.env['NODE_ENV'] === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  // Seconds per RFC 6265 — see COOKIE_OPTIONS note. Mirrors access token's
+  // 30-min lifetime so the companion cookie dies with the JWT. (2026-04-17)
+  maxAge: 30 * 60,
+};
+
+/**
+ * Decode a JWT without verifying the signature and return its `exp` claim
+ * (seconds since Unix epoch). Caller is trusted (we just minted the token
+ * via our own signing service) so there is no need to re-verify.
+ *
+ * Throws if the token is malformed or missing `exp` — both are internal
+ * invariants of our token issuer; violation is a bug, not a runtime error.
+ */
+function extractJwtExp(token: string): number {
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    throw new Error('Invalid JWT format (expected 3 dot-separated parts)');
+  }
+  const payloadPart = parts[1];
+  if (payloadPart === undefined || payloadPart === '') {
+    throw new Error('Invalid JWT payload segment');
+  }
+  const payloadJson = Buffer.from(payloadPart, 'base64url').toString('utf-8');
+  const payload = JSON.parse(payloadJson) as Record<string, unknown>;
+  const exp = payload['exp'];
+  if (typeof exp !== 'number' || !Number.isFinite(exp)) {
+    throw new Error('JWT missing numeric exp claim');
+  }
+  return exp;
+}
+
+/**
+ * Atomically set the three session cookies on any successful auth event.
+ * This is the ONLY place that writes these three cookies — the 3-cookie
+ * invariant (access + refresh + exp, or none) is enforced by centralising
+ * the write path here. Every auth entry point (password login, refresh,
+ * OAuth login-success, OAuth complete-signup) MUST call this helper.
+ *
+ * Exported so `OAuthController` (sibling module) can reuse without duplicating.
+ */
+export function setAuthCookies(
+  reply: FastifyReply,
+  accessToken: string,
+  refreshToken: string,
+): void {
+  reply.setCookie('accessToken', accessToken, COOKIE_OPTIONS);
+  reply.setCookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+  reply.setCookie('accessTokenExp', String(extractJwtExp(accessToken)), EXP_COOKIE_OPTIONS);
+}
+
+/**
+ * Clear all three session cookies. Paths MUST mirror `setAuthCookies` /
+ * `COOKIE_OPTIONS` / `REFRESH_COOKIE_OPTIONS` exactly — otherwise the
+ * clearCookie call is a no-op (browser keeps the cookie) which leads to
+ * phantom-session bugs that are miserable to debug.
+ */
+export function clearAuthCookies(reply: FastifyReply): void {
+  reply.clearCookie('accessToken', { path: '/' });
+  reply.clearCookie('refreshToken', { path: '/api/v2/auth' });
+  reply.clearCookie('accessTokenExp', { path: '/' });
+}
+
+/**
+ * Rotate ONLY the access token + its exp-companion cookie. The refresh token
+ * cookie is left untouched — the session identity is unchanged, only a JWT
+ * claim (`activeRole`) is being updated.
+ *
+ * Used by role-switch endpoints, which mint a new access token carrying the
+ * switched `activeRole` claim. Without this helper the backend would return
+ * the new token in JSON only, leaving the cookie state stuck at the old
+ * role. That produces a cookie-vs-localStorage split-brain: SSR layout
+ * reads the stale cookie and renders the old role while client-side Bearer
+ * calls see the new one. The split silently "worked" for password login
+ * (full-page reload after redirect re-hydrated everything from localStorage)
+ * but surfaced immediately for OAuth users and for any SSR-first render.
+ *
+ * Exported so `RoleSwitchController` (sibling module) can call it without
+ * duplicating the 2-cookie write + `extractJwtExp` decode dance.
+ *
+ * @see ADR-046 OAuth Sign-In (2026-04-16 amendment — role-switch cookie sync)
+ */
+export function rotateAccessCookies(reply: FastifyReply, newAccessToken: string): void {
+  reply.setCookie('accessToken', newAccessToken, COOKIE_OPTIONS);
+  reply.setCookie('accessTokenExp', String(extractJwtExp(newAccessToken)), EXP_COOKIE_OPTIONS);
+}
 
 /**
  * Response type for register endpoint
@@ -131,6 +277,10 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly connectionTicketService: ConnectionTicketService,
+    // Session 12c (ADR-050): apex-login → subdomain-handoff mint path.
+    // OAuthHandoffService already mints the same payload shape; reusing it
+    // keeps one Redis keyspace + one consumer endpoint for both login paths.
+    private readonly handoffService: OAuthHandoffService,
   ) {}
 
   /**
@@ -156,11 +306,76 @@ export class AuthController {
     const { ipAddress, userAgent } = getClientInfo(req);
     const result = await this.authService.login(dto, ipAddress, userAgent);
 
-    // Set httpOnly cookies for SSR support
-    reply.setCookie('accessToken', result.accessToken, COOKIE_OPTIONS);
-    reply.setCookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
+    // Set access + refresh httpOnly cookies plus non-httpOnly accessTokenExp —
+    // see setAuthCookies for the 3-cookie invariant rationale.
+    setAuthCookies(reply, result.accessToken, result.refreshToken);
 
     return result;
+  }
+
+  /**
+   * POST /auth/handoff/mint — single-use token for apex-login → subdomain redirect.
+   *
+   * Called by the frontend login action (`(public)/login/+page.server.ts`)
+   * when the user authenticated on the apex (`locals.hostSlug === null`)
+   * but their tenant has a subdomain. We mint a 32-byte opaque token into
+   * the SAME Redis keyspace the OAuth handoff uses (`oauth:handoff:{token}`,
+   * 60 s TTL) carrying the exact auth payload. The subdomain's
+   * `/signup/oauth-complete?token=X` page (Session 12) consumes it,
+   * performs the R15 host-cross-check, and sets cookies on its own origin.
+   *
+   * Security model:
+   *   - Bearer-authenticated (JwtAuthGuard): only a user who just logged in
+   *     on the apex can mint — nothing new accessible that their accessToken
+   *     doesn't already grant.
+   *   - Throttled via AuthThrottle() — same brute-force defence as /login.
+   *   - 404 when the tenant has no subdomain (greenfield: can't happen for
+   *     new signups because the DTO requires it; defensive regardless).
+   *
+   * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §OAuth (handoff reuse)
+   * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Session 12c
+   */
+  @Post('handoff/mint')
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle()
+  @HttpCode(HttpStatus.OK)
+  async mintHandoff(
+    @Body() dto: HandoffMintDto,
+    @CurrentUser() user: NestAuthUser,
+    @Req() req: FastifyRequest,
+  ): Promise<HandoffMintResponse> {
+    // The Bearer token header IS the accessToken we want to bake into the
+    // handoff payload. No need to derive it from anywhere else.
+    const authHeader = req.headers.authorization ?? '';
+    const accessToken = authHeader.replace(/^Bearer\s+/i, '');
+    if (accessToken === '') {
+      // Shouldn't happen under JwtAuthGuard, but defensive: reject with the
+      // same error code the guard would produce downstream.
+      throw new NotFoundException({
+        code: 'HANDOFF_MINT_MISSING_ACCESS_TOKEN',
+        message: 'Access token required in Authorization header.',
+      });
+    }
+
+    const subdomain = await this.authService.getSubdomainForTenant(user.tenantId);
+    if (subdomain === null) {
+      // Defensive: greenfield prod tenants always have a subdomain (signup
+      // DTO enforces). If we hit this, something is off with the tenant row
+      // — caller can't redirect to a subdomain that doesn't exist.
+      throw new NotFoundException({
+        code: 'HANDOFF_MINT_NO_SUBDOMAIN',
+        message: 'Tenant has no subdomain configured.',
+      });
+    }
+
+    const token = await this.handoffService.mint({
+      userId: user.id,
+      tenantId: user.tenantId,
+      accessToken,
+      refreshToken: dto.refreshToken,
+    });
+
+    return { token, subdomain };
   }
 
   /**
@@ -205,9 +420,8 @@ export class AuthController {
     const { ipAddress, userAgent } = getClientInfo(req);
     const result = await this.authService.logout(user, ipAddress, userAgent);
 
-    // Clear httpOnly cookies (must match the path they were set with!)
-    reply.clearCookie('accessToken', { path: '/' });
-    reply.clearCookie('refreshToken', { path: '/api/v2/auth' });
+    // Clear all three session cookies (paths must mirror setAuthCookies).
+    clearAuthCookies(reply);
 
     return {
       message: 'Logged out successfully',
@@ -245,9 +459,9 @@ export class AuthController {
 
     const result = await this.authService.refresh(effectiveDto, ipAddress, userAgent);
 
-    // Update httpOnly cookies with new tokens
-    reply.setCookie('accessToken', result.accessToken, COOKIE_OPTIONS);
-    reply.setCookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
+    // Rotate all three session cookies together — new access token means a
+    // new exp, and refresh rotation invalidates the old refresh cookie.
+    setAuthCookies(reply, result.accessToken, result.refreshToken);
 
     return result;
   }
@@ -283,6 +497,50 @@ export class AuthController {
       isActive: foundUser.is_active,
       lastLogin: foundUser.last_login,
       createdAt: foundUser.created_at,
+    };
+  }
+
+  /**
+   * POST /auth/forgot-password
+   * Request password reset email (public, rate-limited)
+   *
+   * SECURITY: Always returns same message regardless of whether email exists.
+   * This prevents email enumeration attacks.
+   */
+  @Post('forgot-password')
+  @Public()
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle() // 10 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ForgotPasswordResponse> {
+    // Additive response shape (ADR-051 §2.2 / Plan v0.4.4):
+    //   - root happy path + silent-drop → `{ message }` (byte-identical → R1)
+    //   - admin/employee blocked       → `{ message, blocked: true, reason: 'ROLE_NOT_ALLOWED' }`
+    // The `message` string is canonical and identical across all three paths
+    // so root vs silent-drop cannot be distinguished on the wire.
+    const result = await this.authService.forgotPassword(dto);
+    const message =
+      'Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.';
+    if (result.blocked) {
+      return { message, blocked: true, reason: 'ROLE_NOT_ALLOWED' };
+    }
+    return { message };
+  }
+
+  /**
+   * POST /auth/reset-password
+   * Reset password using token from email (public, rate-limited)
+   */
+  @Post('reset-password')
+  @Public()
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle() // 10 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<ResetPasswordResponse> {
+    await this.authService.resetPassword(dto);
+
+    return {
+      message: 'Passwort erfolgreich zurückgesetzt. Sie können sich jetzt anmelden.',
     };
   }
 

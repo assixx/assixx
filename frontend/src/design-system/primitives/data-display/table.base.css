@@ -39,7 +39,25 @@
 
 .data-table th,
 .data-table td {
-  vertical-align: top;
+  /*
+   * vertical-align: middle is the industry default for data tables
+   * (Material Design, Radix UI, Fluent, Shadcn, GitHub, Notion).
+   *
+   * Why middle, not top:
+   *   - Cells mixing avatars/badges/icons/buttons with plain text rows
+   *     (the dominant pattern in Assixx) misalign with `top` — the flex
+   *     container centers its children visually while neighbour text
+   *     cells anchor to the top, so e.g. "Name + Avatar" and "Email"
+   *     sit on different baselines.
+   *   - Short single-line text cells render identically either way.
+   *   - Multi-line content cells in this codebase are consistently
+   *     truncated via getTruncatedNotes() → still single-line visually.
+   *
+   * If a future table genuinely needs top-anchored cells (e.g. a grid
+   * with long wrapped text), add a `data-table--align-top` modifier
+   * there — don't weaken this default.
+   */
+  vertical-align: middle;
   border-bottom: 1px solid var(--glass-border);
   padding: var(--spacing-4) var(--spacing-4);
   text-align: left;

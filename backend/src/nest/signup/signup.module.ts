@@ -6,10 +6,16 @@
  */
 import { Module } from '@nestjs/common';
 
+import { DomainsModule } from '../domains/domains.module.js';
 import { SignupController } from './signup.controller.js';
 import { SignupService } from './signup.service.js';
 
 @Module({
+  // DomainsModule provides `DomainVerificationService` — needed by
+  // SignupService to generate the `verification_token` for the
+  // `tenant_domains(pending)` seed on password signup (§2.8) and
+  // `tenant_domains(verified)` seed on OAuth signup (§2.8b).
+  imports: [DomainsModule],
   controllers: [SignupController],
   providers: [SignupService],
   exports: [SignupService],

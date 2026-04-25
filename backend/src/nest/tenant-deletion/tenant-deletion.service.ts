@@ -208,7 +208,15 @@ export class TenantDeletionService implements OnModuleDestroy {
       this.logger.log(`Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`);
     }
 
-    await this.db.systemQuery('UPDATE tenants SET deletion_status = NULL WHERE id = $1', [
+    // Restore the tenant to its routable state. Setting NULL here was a
+    // latent bug: `TenantHostResolverMiddleware` (ADR-050 R15) filters with
+    // `WHERE subdomain = $1 AND deletion_status = 'active'` — a NULL value
+    // makes the predicate UNKNOWN, so the slug→tenant lookup returns 0 rows,
+    // `req.hostTenantId` becomes null, and every subsequent OAuth handoff /
+    // cross-tenant cookie cross-check fails with HANDOFF_HOST_MISMATCH.
+    // Discovered during shift-handover smoke test (FEAT_SHIFT_HANDOVER §Session 21).
+    await this.db.systemQuery('UPDATE tenants SET deletion_status = $1 WHERE id = $2', [
+      'active',
       tenantId,
     ]);
   }

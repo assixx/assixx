@@ -1,0 +1,67 @@
+{
+  "uid": "assixx-backend-error-rate-warning",
+  "title": "Backend Error Rate Elevated",
+  "ruleGroup": "assixx-warning",
+  "folderUID": "assixx-prod-alerts",
+  "noDataState": "OK",
+  "execErrState": "Error",
+  "for": "10m",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "queryType": "instant",
+      "relativeTimeRange": { "from": 600, "to": 0 },
+      "datasourceUid": "grafanacloud-logs",
+      "model": {
+        "expr": "sum(count_over_time({app=\"assixx\", service=\"backend\", level=\"error\", env=\"production\"}[10m]))",
+        "queryType": "instant",
+        "intervalMs": 60000,
+        "maxDataPoints": 43200,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "B",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "reduce",
+        "expression": "A",
+        "reducer": "last",
+        "settings": { "mode": "replaceNN", "replaceWithValue": 0 },
+        "refId": "B"
+      }
+    },
+    {
+      "refId": "C",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "B",
+        "conditions": [
+          {
+            "evaluator": { "params": [10], "type": "gt" },
+            "operator": { "type": "and" },
+            "query": { "params": ["B"] },
+            "reducer": { "type": "last" },
+            "type": "query"
+          }
+        ],
+        "refId": "C"
+      }
+    }
+  ],
+  "annotations": {
+    "summary": "Backend error rate above 10 in 10 minutes",
+    "description": "Sustained error rate >10 in last 10 min. 1 error/min sustained = systemic issue, nicht ein One-Off. Pruefe Grafana Explore: {app=\"assixx\", service=\"backend\", level=\"error\", env=\"production\"} — Group by request path, tenant oder user. Cross-check Sentry fuer gruppierte Issues."
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "backend",
+    "component": "logs"
+  }
+}

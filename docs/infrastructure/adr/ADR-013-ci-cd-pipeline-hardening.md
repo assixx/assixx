@@ -1,11 +1,11 @@
 # ADR-013: CI/CD Pipeline Hardening
 
-| Metadata                | Value                                                     |
-| ----------------------- | --------------------------------------------------------- |
-| **Status**              | Amended                                                   |
-| **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21)               |
-| **Decision Makers**     | SCS Technik                                               |
-| **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml |
+| Metadata                | Value                                                               |
+| ----------------------- | ------------------------------------------------------------------- |
+| **Status**              | Amended                                                             |
+| **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21, 2026-04-14, 2026-04-21) |
+| **Decision Makers**     | SCS Technik                                                         |
+| **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml           |
 
 ---
 
@@ -99,6 +99,80 @@ GitHub deprecated Node.js 20 for Actions runners (forced Node.js 24 starting Jun
 | `docker/setup-buildx-action` | v3  | v4  |
 | `docker/login-action`        | v3  | v4  |
 
+### Fix 8: pnpm audit CI-Gate + Dependabot Security Cadence (Amendment 2026-04-14)
+
+**Background:** CI had no lockfile-level CVE gate. Trivy scans only the container image (OS packages + installed binaries), not the resolved pnpm graph. Dependabot alerts caught GHSA-tracked issues but fired only on new advisories — there was no hard gate at PR time, and version updates ran `monthly`, too slow for security-adjacent dependency drift.
+
+**Three-scanner coverage now explicit:**
+
+| Scanner                     | Source DB               | Scope                  | Trigger                       | Blocks PR?          |
+| --------------------------- | ----------------------- | ---------------------- | ----------------------------- | ------------------- |
+| Dependabot Security Updates | GHSA                    | `pnpm-lock.yaml`       | Real-time on advisory publish | No (auto-PR only)   |
+| `pnpm audit` (new)          | npm Registry advisories | `pnpm-lock.yaml`       | Every PR/push                 | Yes (HIGH+CRITICAL) |
+| Trivy                       | OS CVE feeds (NVD/OSV)  | Container image layers | On Docker build               | Yes (CRITICAL only) |
+
+**Changes:**
+
+1. New CI job `security-audit` in `code-quality-checks.yml`:
+   - `pnpm audit --audit-level=high` fails PR on HIGH+CRITICAL
+   - `pnpm audit --audit-level=moderate` informational (Dependabot auto-patches these)
+   - Scans prod + dev — build-chain attacks (`ua-parser-js`, `event-stream`) bypass prod-only scans
+   - Escape hatch: `pnpm.auditConfig.ignoreCves` in `package.json` with WHY comment
+
+2. `.github/dependabot.yml` tuning:
+   - npm: `monthly` → `weekly` (Mon 06:00 Europe/Berlin)
+   - Labels: `dependencies`, `github-actions`, `docker`
+   - Commit-message prefixes: `chore(deps)`, `chore(deps-dev)`, `chore(ci)`, `chore(docker)`
+   - Groups by semver: `patch` + `minor` grouped; `major` as separate PRs (manual breaking review)
+   - `github-actions`, `docker`, `docker-compose` remain `monthly` (low churn, no runtime CVEs)
+
+3. GitHub repo settings activated (not file-based):
+   - Dependabot alerts: **Enabled**
+   - Dependabot security updates: **Enabled** (real-time auto-PRs)
+   - Grouped security updates: **Enabled**
+   - Secret scanning + Push protection: **Enabled**
+   - Private vulnerability reporting: **Enabled**
+
+**Alternatives considered:**
+
+| Option                            | Rejected because                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------- |
+| OSV-Scanner as 4th scanner        | Diminishing returns — Dependabot + pnpm audit + Trivy cover npm graph and OS layer  |
+| `--audit-level=critical` only     | Too permissive; HIGH npm CVEs (XSS, RCE) must block                                 |
+| `--prod` only (skip devDeps)      | Build-chain attacks bypass this; compromised devDeps can exfiltrate from CI runners |
+| Daily cadence for version updates | PR noise; Dependabot security updates already fire real-time                        |
+| Auto-merge for patch updates      | Deferred until gate is stable; requires confidence in test coverage                 |
+
+**Consequences:**
+
+_Positive:_
+
+- CVE gate at PR time — stale branches can't merge with unpatched HIGH+CRITICAL
+- Security coverage across all three layers (dep graph + image + SAST already via Semgrep)
+- Weekly cadence catches drift faster without PR flood
+
+_Negative:_
+
+- One additional CI job (~30–60s, runs in parallel)
+- `pnpm audit` may surface unpatchable transitive CVEs — requires explicit `auditConfig.ignoreCves` entries
+- Weekly PRs need weekly review (vs monthly batch)
+
+---
+
+### Fix 9: svelte-kit sync Env Parity (Amendment 2026-04-21)
+
+**Problem:** `@typescript-eslint/no-unnecessary-type-assertion` was silent locally but errored in CI on three identical `env as Record<string, string | undefined>` casts (`Turnstile.svelte:34`, `login/+page.svelte:29`, `signup/+page.svelte:64`). Not a flaky test — a deterministic environment drift.
+
+**Root cause:** `svelte-kit sync` emits the `$env/dynamic/public` module declaration based on `PUBLIC_*` env vars present at sync time. Locally (Doppler-backed) the keys are set, so the generator emits concrete `PUBLIC_SENTRY_DSN: string; PUBLIC_TURNSTILE_SITE_KEY: string` alongside the `[key: PUBLIC_${string}]: string | undefined` index signature. The cast then legitimately widens `string` → `string | undefined`, so the lint rule stays silent. In CI the keys are absent, so only the index signature is emitted, `env` is already `string | undefined`, and the cast becomes a no-op → rule fires.
+
+**Fix:** Job-level `env:` block with empty-string dummies for `PUBLIC_SENTRY_DSN` and `PUBLIC_TURNSTILE_SITE_KEY` on `frontend-quality` and `unit-tests` (both run `svelte-kit sync`). Values steer the type generator only — never executed at runtime by lint/check/vitest.
+
+**Rule (binding):** any new `PUBLIC_*` env key that backend code treats as always-defined must also be injected as a dummy into any CI job that runs `svelte-kit sync`. Otherwise the type emitted in CI diverges from local and `strictTypeChecked` lint rules flip. See [ADR-041](./ADR-041-typescript-compiler-configuration.md) (svelte-kit sync pre-step discipline) for the related build-tooling discipline.
+
+**Alternative rejected:** three inline `eslint-disable-next-line` comments. Would scatter the workaround across three frontend files for a CI-only symptom, weaken a rule that catches real bugs elsewhere, and need re-justification at every review. Fixing CI parity once is cleaner.
+
+---
+
 ### Fix 3: Cache re-enabled
 
 `cache-from: type=gha` and `cache-to: type=gha,mode=max` uncommented again. GitHub cache issues from 2026-01-13 have long been resolved.
@@ -142,9 +216,19 @@ Chosen: CRITICAL only as gate. HIGH is informational in the CI logs but does not
 
 Chosen: Table format. Code Security is not enabled and not justified for current needs. When Code Security is activated, SARIF can be added back.
 
-### API Tests in CI: Bruno vs. Alternatives
+### API + E2E Tests in CI
 
-Intentionally not implemented. The decision whether to use Bruno, OpenAPI/Swagger, or Postman as the long-term API test tool is still pending. Once decided, the chosen tool should be integrated into CI.
+API integration tests (Vitest, 753 tests) and E2E browser tests (Playwright, 20 tests) both require Docker services (Backend, PostgreSQL, Redis). The current CI runners use standard `ubuntu-latest` without Docker Compose.
+
+**Options to enable in CI (not yet implemented):**
+
+| Option                         | Pros                      | Cons                                     |
+| ------------------------------ | ------------------------- | ---------------------------------------- |
+| Docker Compose in CI           | Same env as local         | Slow startup (~60s), complex setup       |
+| `services:` in GitHub Actions  | Native, no Compose needed | Limited to single containers per service |
+| Self-hosted runner with Docker | Full control, fast        | Maintenance overhead                     |
+
+**Current state:** Both test suites run locally only. Unit + frontend tests (no Docker) run in CI as merge gate. This is a deliberate trade-off — CI covers 7306 tests (unit + permission + frontend), local adds 773 (API + E2E).
 
 ---
 

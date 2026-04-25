@@ -1,13 +1,13 @@
 # ADR-039: Per-Tenant Deputy Scope Toggle
 
-| Metadata                | Value                                                                              |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| **Status**              | Proposed                                                                           |
-| **Date**                | 2026-03-21                                                                         |
-| **Decision Makers**     | SCS-Technik Team                                                                   |
-| **Affected Components** | Backend (HierarchyPermissionService, 15+ SQL queries), Frontend (Positions Page)   |
-| **Supersedes**          | ---                                                                                |
-| **Related ADRs**        | ADR-036 (Scope Access, KL#10), ADR-035 (Org Hierarchy), ADR-038 (Position Catalog) |
+| Metadata                | Value                                                                                                 |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                              |
+| **Date**                | 2026-03-21                                                                                            |
+| **Decision Makers**     | SCS-Technik Team                                                                                      |
+| **Affected Components** | Backend (HierarchyPermissionService, SurveyAccessService, 15+ SQL queries), Frontend (Positions Page) |
+| **Supersedes**          | ---                                                                                                   |
+| **Related ADRs**        | ADR-036 (Scope Access, KL#10), ADR-035 (Org Hierarchy), ADR-038 (Position Catalog)                    |
 
 ---
 

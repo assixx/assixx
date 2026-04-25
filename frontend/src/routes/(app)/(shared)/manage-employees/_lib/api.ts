@@ -74,7 +74,7 @@ export function checkAuth(): boolean {
   if (typeof localStorage === 'undefined') return false;
   const token = localStorage.getItem('accessToken');
   if (token === null) {
-    void goto(resolve('/login', {}));
+    void goto(resolve('/login'));
     return false;
   }
   return true;
@@ -259,4 +259,27 @@ export function buildEmployeePayload(
   }
 
   return payload;
+}
+
+// =============================================================================
+// ROOT-INITIATED PASSWORD RESET (ADR-051 §2.7 / §5.4)
+// =============================================================================
+
+/**
+ * Root triggers a password-reset-link email for an employee target.
+ *
+ * Same endpoint as manage-admins (§5.3) — the backend route is user-scoped
+ * (`/users/:id/send-password-reset-link`), not role-scoped. Strict Root-only
+ * via `@Roles('root')`; admin-with-hasFullAccess is deliberately rejected
+ * (§0.2.5 #13 — narrower than ADR-045 Layer-1). The target sets their own
+ * password on `/reset-password`; Root never sees the credential.
+ *
+ * Error codes: `INVALID_TARGET_ROLE` (400), `INACTIVE_TARGET` (400),
+ * `RATE_LIMIT` (429 — surfaces via api-client as `err.status === 429` with
+ * the client's synthesized `RATE_LIMIT_EXCEEDED` code).
+ *
+ * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.7 / §5.4
+ */
+export async function sendPasswordResetLink(userId: number): Promise<{ message: string }> {
+  return await apiClient.post<{ message: string }>(`/users/${userId}/send-password-reset-link`, {});
 }

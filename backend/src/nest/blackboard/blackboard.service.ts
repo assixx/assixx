@@ -20,6 +20,7 @@ import { BlackboardEntriesService } from './blackboard-entries.service.js';
 import type {
   BlackboardComment,
   BlackboardEntryResponse,
+  BlackboardMyPermissions,
   EntryFilters,
   PaginatedBlackboardComments,
   PaginatedEntriesResult,
@@ -30,6 +31,7 @@ import type { UpdateEntryDto } from './dto/update-entry.dto.js';
 // Re-export types for consumers
 export type {
   BlackboardEntryResponse,
+  BlackboardMyPermissions,
   PaginatedEntriesResult,
   PaginatedBlackboardComments,
   BlackboardComment,
@@ -46,6 +48,14 @@ export class BlackboardService {
     private readonly confirmationsService: BlackboardConfirmationsService,
     private readonly attachmentsService: BlackboardAttachmentsService,
   ) {}
+
+  // ==========================================================================
+  // ADR-045 LAYER-2 SELF-LOOKUP
+  // ==========================================================================
+
+  async getMyPermissions(userId: number, hasFullAccess: boolean): Promise<BlackboardMyPermissions> {
+    return await this.entriesService.getMyPermissions(userId, hasFullAccess);
+  }
 
   // ==========================================================================
   // ENTRY OPERATIONS (delegated to BlackboardEntriesService)
@@ -79,7 +89,7 @@ export class BlackboardService {
     this.logger.debug(`Getting full entry ${String(id)} for tenant ${tenantId}`);
 
     const entry = await this.entriesService.getEntryById(id, tenantId, userId);
-    const numericId = (entry as Record<string, unknown>)['id'] as number;
+    const numericId = entry['id'] as number;
     const comments = await this.commentsService.getComments(numericId, tenantId);
     const attachments = await this.attachmentsService.getAttachments(numericId, tenantId, userId);
 
@@ -213,7 +223,7 @@ export class BlackboardService {
     userId: number,
   ): Promise<Record<string, unknown>> {
     const entry = await this.entriesService.getEntryById(entryId, tenantId, userId);
-    const numericId = (entry as Record<string, unknown>)['id'] as number;
+    const numericId = entry['id'] as number;
     return await this.attachmentsService.uploadAttachment(numericId, file, tenantId, userId);
   }
 
@@ -223,7 +233,7 @@ export class BlackboardService {
     userId: number,
   ): Promise<Record<string, unknown>[]> {
     const entry = await this.entriesService.getEntryById(entryId, tenantId, userId);
-    const numericId = (entry as Record<string, unknown>)['id'] as number;
+    const numericId = entry['id'] as number;
     return await this.attachmentsService.getAttachments(numericId, tenantId, userId);
   }
 

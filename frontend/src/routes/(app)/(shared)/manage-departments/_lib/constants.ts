@@ -98,8 +98,19 @@ export function createMessages(labels: HierarchyLabels) {
     STATUS_HINT: `Inaktive/Archivierte ${labels.department} werden nicht angezeigt`,
     TH_AREA: labels.area,
     TH_TEAMS: labels.team,
-    LABEL_HALLS: `${labels.hall} zuweisen`,
-    HALLS_HINT: `Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte ${labels.hall} werden zugeordnet.`,
+    LABEL_HALLS: labels.hall,
+    LABEL_HALLS_DIRECT: `Zusätzliche ${labels.hall}`,
+    /**
+     * Phrase `automatisch zugeordnet (Quelle: X)` — avoids German case-conflict
+     * when labels.area is the plural-only nominative (e.g. "Bereiche" / "Hallen").
+     * Function so the ${areaName} can be interpolated at render time.
+     */
+    hallsInheritedInfo(count: number, areaName: string): string {
+      return `${count.toString()} ${count === 1 ? labels.hall.replace(/n$/, '') : labels.hall} automatisch zugeordnet — Quelle: ${areaName}.`;
+    },
+    HALLS_INHERITED_HINT: `Änderungen erfolgen über die ${labels.area}-Verwaltung.`,
+    HALLS_HINT_DIRECT: `Optional — nur relevant, wenn die Abteilung mehrere ${labels.area} nutzt.`,
+    NO_DIRECT_HALLS_AVAILABLE: `Keine weiteren ${labels.hall} verfügbar.`,
     TH_HALLS: labels.hall,
     FILTER_ACTIVE_TITLE: `Aktive ${labels.department}`,
     FILTER_INACTIVE_TITLE: `Inaktive ${labels.department}`,
@@ -135,7 +146,9 @@ export const API_ENDPOINTS = {
 } as const;
 
 /**
- * Form default values
+ * Form default values.
+ * Only cross-area halls are form-editable (directHallIds) — area-inherited
+ * halls are not part of the mutable form state.
  */
 export const FORM_DEFAULTS: {
   name: string;
@@ -143,7 +156,7 @@ export const FORM_DEFAULTS: {
   areaId: number | null;
   departmentLeadId: number | null;
   departmentDeputyLeadId: number | null;
-  hallIds: number[];
+  directHallIds: number[];
   isActive: FormIsActiveStatus;
 } = {
   name: '',
@@ -151,6 +164,6 @@ export const FORM_DEFAULTS: {
   areaId: null,
   departmentLeadId: null,
   departmentDeputyLeadId: null,
-  hallIds: [],
+  directHallIds: [],
   isActive: 1,
 };

@@ -54,6 +54,7 @@
   let statusFilter = $state('');
   let priorityFilter = $state('');
   let isActiveFilter = $state('active');
+  let overdueFilter = $state(false);
   let currentPage = $state(1);
   let loading = $state(false);
 
@@ -88,10 +89,12 @@
         status?: string;
         priority?: string;
         isActive?: string;
+        overdue?: string;
       } = {};
       if (statusFilter !== '') filters.status = statusFilter;
       if (priorityFilter !== '') filters.priority = priorityFilter;
       if (isActiveFilter !== 'active') filters.isActive = isActiveFilter;
+      if (overdueFilter) filters.overdue = 'true';
       clientWorkOrders = await fetchWorkOrders(currentPage, 20, filters);
     } catch (err: unknown) {
       logApiError('loadWorkOrders', err);
@@ -120,6 +123,12 @@
 
   function handlePriorityFilterChange(value: string): void {
     priorityFilter = value;
+    currentPage = 1;
+    void loadWorkOrders();
+  }
+
+  function handleOverdueFilterToggle(): void {
+    overdueFilter = !overdueFilter;
     currentPage = 1;
     void loadWorkOrders();
   }
@@ -190,7 +199,7 @@
       let woUuid: string;
 
       if (editingItem !== null) {
-        await updateWorkOrder(editingItem.uuid, payload as UpdateWorkOrderPayload);
+        await updateWorkOrder(editingItem.uuid, payload);
         woUuid = editingItem.uuid;
         showSuccessAlert(MESSAGES.SUCCESS_UPDATED);
       } else {
@@ -382,6 +391,20 @@
                 {opt.label}
               </button>
             {/each}
+          </div>
+
+          <!-- Overdue toggle (cross-cutting filter) -->
+          <div class="toggle-group">
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={overdueFilter}
+              onclick={handleOverdueFilterToggle}
+              aria-pressed={overdueFilter}
+            >
+              <i class="fas fa-exclamation-triangle"></i>
+              {MESSAGES.STAT_OVERDUE}
+            </button>
           </div>
         </div>
       </div>

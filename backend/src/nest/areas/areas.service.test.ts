@@ -655,15 +655,17 @@ describe('AreasService', () => {
     it('should assign halls to area', async () => {
       // getAreaById
       mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
-      // Clear existing assignments
+      // Clear existing assignments (halls.area_id = NULL)
       mockDb.query.mockResolvedValueOnce([]);
-      // Assign new halls
+      // Assign new halls (UPDATE halls SET area_id)
+      mockDb.query.mockResolvedValueOnce([]);
+      // Cleanup redundant department_halls for departments of this area
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.assignHallsToArea(1, [10, 20], 10);
 
       expect(result.message).toBe('Halls assigned successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.query).toHaveBeenCalledTimes(4);
     });
 
     it('should only clear assignments when hallIds is empty', async () => {

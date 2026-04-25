@@ -15,9 +15,21 @@ const log = createLogger('Toast');
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
+/**
+ * Toast action button config.
+ *
+ * Exactly one of `href` or `onClick` must be set:
+ * - `href`  — rendered as link-navigation button (e.g. "Berechtigungen zuweisen")
+ * - `onClick` — rendered as callback button (e.g. "Rückgängig" für Undo-Pattern)
+ *
+ * WHY: Undo-Pattern braucht Callback (DELETE-Call), nicht navigierenden Link.
+ * Beide Varianten koexistieren damit Quick-Link (manage-employees) und Undo
+ * (dieses ADR-Experiment) dasselbe Interface nutzen — siehe CLAUDE.md KISS.
+ */
 export interface ToastAction {
   label: string;
-  href: string;
+  href?: string;
+  onClick?: () => void | Promise<void>;
 }
 
 export interface Toast {

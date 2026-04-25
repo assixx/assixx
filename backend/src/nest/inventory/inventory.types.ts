@@ -74,6 +74,8 @@ export interface InventoryItemRow {
   updated_at: Date;
   /** First photo path (populated by findByList via lateral subquery) */
   thumbnail_path: string | null;
+  /** Full name of the uploader (populated by findByList via users JOIN) */
+  created_by_name: string | null;
 }
 
 export interface InventoryCustomFieldRow {
@@ -211,6 +213,7 @@ export interface InventoryItemPhoto {
   sortOrder: number;
   createdBy: number;
   createdAt: Date;
+  uploaderName: string | null;
 }
 
 // ── Row → Application Mappers ──────────────────────────────────

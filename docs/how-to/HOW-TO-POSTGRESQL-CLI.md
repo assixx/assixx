@@ -84,12 +84,28 @@ PGPASSWORD=$(docker exec assixx-postgres printenv POSTGRES_PASSWORD) \
 ### Via Docker (Alternative, kein lokales psql nötig)
 
 ```bash
-# Weiterhin möglich - psql im Container ausführen
+# Einzelner Befehl (inline SQL via -c)
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT 1;"
 
 # Interaktive Shell im Container
 docker exec -it assixx-postgres psql -U assixx_user -d assixx
+
+# Multi-Statement via Heredoc → IMMER -i setzen!
+docker exec -i assixx-postgres psql -U assixx_user -d assixx <<'SQL'
+BEGIN;
+SELECT 'before', COUNT(*) FROM users;
+DELETE FROM old_sessions WHERE created_at < now() - interval '30 days';
+SELECT 'after', COUNT(*) FROM users;
+ROLLBACK;
+SQL
 ```
+
+> **⚠️ Silent-Failure-Falle (verifiziert 2026-04-18):** `docker exec` **ohne** `-i`
+> leitet stdin NICHT an den Container weiter. Heredoc-SQL wird stumm verworfen —
+> psql sieht leeren Input, beendet sich mit Exit-Code 0, **keine Ausgabe, keine
+> Fehlermeldung**. Das wirkt wie "Befehl hing sich auf" oder "keine Daten
+> gefunden". Immer `docker exec -i` für Heredoc/Stdin-Piping. Für einzelne
+> Statements ist `-c "..."` der einfachere, sichere Weg (kein stdin nötig).
 
 ---
 
@@ -252,13 +268,14 @@ SELECT COUNT(*) FROM users;
 
 ## Troubleshooting
 
-| Problem                            | Ursache                   | Lösung                                                   |
-| ---------------------------------- | ------------------------- | -------------------------------------------------------- |
-| `connection refused`               | Docker-Container nicht da | `cd docker && doppler run -- docker-compose up -d`       |
-| `password authentication failed`   | Falsches Passwort         | `docker exec assixx-postgres printenv POSTGRES_PASSWORD` |
-| `psql: command not found`          | Client nicht installiert  | `sudo apt install postgresql-client-17`                  |
-| `FATAL: role "scs" does not exist` | Kein `-U` angegeben       | Immer `-U assixx_user` mitgeben                          |
-| `could not connect to server`      | Port 5432 nicht exposed   | `docker-compose.yml` prüfen: `127.0.0.1:5432->5432`      |
+| Problem                                                   | Ursache                                                                                                                        | Lösung                                                                                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `connection refused`                                      | Docker-Container nicht da                                                                                                      | `cd docker && doppler run -- docker-compose up -d`                                                                                     |
+| `password authentication failed`                          | Falsches Passwort                                                                                                              | `docker exec assixx-postgres printenv POSTGRES_PASSWORD`                                                                               |
+| `psql: command not found`                                 | Client nicht installiert                                                                                                       | `sudo apt install postgresql-client-17`                                                                                                |
+| `FATAL: role "scs" does not exist`                        | Kein `-U` angegeben                                                                                                            | Immer `-U assixx_user` mitgeben                                                                                                        |
+| `could not connect to server`                             | Port 5432 nicht exposed                                                                                                        | `docker-compose.yml` prüfen: `127.0.0.1:5432->5432`                                                                                    |
+| **Heredoc an `docker exec psql` → keine Ausgabe, Exit 0** | `docker exec` OHNE `-i` leitet stdin nicht weiter → psql bekommt leeren Input → endet still. Keine Fehlermeldung, silent-fail. | `-i` flag setzen: `docker exec -i assixx-postgres psql ... <<'SQL' ... SQL`. Für Einzelstatements: `psql -c "..."` (kein stdin nötig). |
 
 ---
 

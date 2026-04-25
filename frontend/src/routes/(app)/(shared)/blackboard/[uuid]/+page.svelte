@@ -19,6 +19,8 @@
     showSuccessAlert,
   } from '$lib/utils';
 
+  // ADR-045: Layer-1 management gate (`canManageBlackboard`)
+  import { canManageBlackboard } from '../../../_lib/navigation-config';
   // Shared components (parent _lib)
   import BlackboardEditModal from '../_lib/BlackboardEditModal.svelte';
   import DeleteConfirmModal from '../_lib/DeleteConfirmModal.svelte';
@@ -76,25 +78,33 @@
   // DERIVED VALUES
   // =============================================================================
 
-  const uuid = $derived($page.params.uuid);
+  const uuid = $derived($page.params.uuid ?? '');
 
   /**
-   * Permission logic for edit/delete:
-   * - root: always allowed
-   * - admin with hasFullAccess: always allowed
-   * - creator (authorId === currentUser.id): allowed
+   * ADR-045 Layer 1: Management-Gate.
+   * Controls Archive/Unarchive buttons (management actions, no owner-bypass).
+   */
+  const canManage = $derived(
+    canManageBlackboard(
+      currentUser?.role,
+      currentUser?.hasFullAccess === true,
+      data.orgScope.isAnyLead,
+    ),
+  );
+
+  /**
+   * ADR-045: Edit/Delete eligibility = Layer-1-Management OR Creator-Bypass.
+   * Backend `@RequirePermission` adds Layer-2 fine-grained canWrite/canDelete enforcement.
    */
   const canEditOrDelete = $derived.by(() => {
     if (entry === null || currentUser === null) return false;
-    if (currentUser.role === 'root') return true;
-    if (currentUser.role === 'admin' && currentUser.hasFullAccess) return true;
-    if (entry.authorId === currentUser.id) return true;
-    return false;
+    if (entry.authorId === currentUser.id) return true; // Creator-Bypass
+    return canManage;
   });
 
-  const isAdmin = $derived.by(
-    () => currentUser !== null && (currentUser.role === 'admin' || currentUser.role === 'root'),
-  );
+  /** Archive/Unarchive buttons — require Layer-2 archive.canWrite additionally. */
+  const canArchive = $derived(canManage && data.myPermissions.archive.canWrite);
+
   const isConfirmed = $derived(entry?.isConfirmed === true);
   /** Entry is archived (is_active = 3) - hide edit/delete/archive actions */
   const isArchived = $derived(entry?.isActive === 3);
@@ -427,7 +437,7 @@
             {:else}
               <button
                 type="button"
-                class="btn btn-upload"
+                class="btn btn-success"
                 onclick={confirmEntry}
                 disabled={confirming}
               >
@@ -473,7 +483,7 @@
         {/if}
 
         <!-- Actions - Hidden for archived entries -->
-        {#if !isArchived && (canEditOrDelete || isAdmin)}
+        {#if !isArchived && (canEditOrDelete || canArchive)}
           <div class="sidebar-card card">
             <h3 class="section-title"><i class="fas fa-cog"></i> Aktionen</h3>
             <div class="action-buttons">
@@ -490,7 +500,7 @@
                   ><i class="fas fa-trash-alt mr-2"></i>Löschen</button
                 >
               {/if}
-              {#if isAdmin}
+              {#if canArchive}
                 <button
                   type="button"
                   class="btn btn-light"
@@ -504,13 +514,15 @@
             <div class="p-4 text-center">
               <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"></i>
               <p class="mb-4 text-(--color-text-secondary)">Dieser Eintrag ist archiviert</p>
-              <button
-                type="button"
-                class="btn btn-light"
-                onclick={restoreEntry}
-              >
-                <i class="fas fa-undo mr-2"></i>Wiederherstellen
-              </button>
+              {#if canArchive}
+                <button
+                  type="button"
+                  class="btn btn-light"
+                  onclick={restoreEntry}
+                >
+                  <i class="fas fa-undo mr-2"></i>Wiederherstellen
+                </button>
+              {/if}
             </div>
           </div>
         {/if}
@@ -723,6 +735,15 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-3);
+  }
+
+  /* Destructive action visually separated on the right edge.
+   * WHY: Standard UX pattern (primary actions left, destructive right) reduces
+   * misclick risk on Löschen. Using `order` + `margin-left: auto` keeps the
+   * template semantic (delete stays grouped with edit) while shifting visually. */
+  .action-buttons .btn-danger {
+    order: 2;
+    margin-left: auto;
   }
 
   /* ─── Photo Gallery ──────── */

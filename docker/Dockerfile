@@ -9,8 +9,18 @@
 # - COPY --link for independent layer caching
 # =============================================================================
 
-# Node version is configurable via docker-compose.yml build args
-ARG NODE_VERSION=24.14.0-alpine3.22
+# Node version is configurable via docker-compose.yml build args.
+#
+# IMPORTANT: Debian slim (glibc), NOT Alpine (musl).
+# Rationale: musl ships without EDNS0, and its `getaddrinfo(AF_UNSPEC)` plus
+# Docker's IPv4-only embedded DNS (127.0.0.11) combine into a well-known
+# failure class — parallel A+AAAA with "first response wins", fragile on
+# truncation / NXDOMAIN — producing AAAA-only answers that fail ENETUNREACH
+# on v4-only bridges. Hits every outbound fetch() (OAuth token exchange,
+# JWKS, any third-party HTTPS). glibc implements EDNS0, TCP fallback, and
+# RFC-compliant dual-stack semantics; the whole class disappears.
+# See ADR-027 (pinning), moby#41651, bell-sw "Alpine DNS issues".
+ARG NODE_VERSION=24.15.0-bookworm-slim
 
 # -----------------------------------------------------------------------------
 # Stage 1: Build TypeScript
@@ -20,7 +30,7 @@ LABEL org.opencontainers.image.authors="Assixx"
 
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
 # pnpm version configurable for consistency across environments
-ARG PNPM_VERSION=10.33.0
+ARG PNPM_VERSION=10.33.2
 RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app
@@ -60,15 +70,19 @@ RUN pnpm run build && \
 FROM node:${NODE_VERSION} AS production
 LABEL org.opencontainers.image.authors="Assixx"
 
-# Install runtime dependencies + create non-root user
+# Install runtime dependencies + create non-root user (Debian/apt, not Alpine/apk).
 # - dumb-init: PID 1 signal forwarding (SIGTERM, SIGINT)
 # - Fix CVE-2025-64756: npm upgrade for patched glob
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
-ARG PNPM_VERSION=10.33.0
-RUN apk add --no-cache dumb-init && \
-    npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}" && \
-    addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 -G nodejs
+# Non-root user created with `useradd -r` (system user, no home) —
+# Debian equivalent of BusyBox `adduser -S` from the prior Alpine image.
+ARG PNPM_VERSION=10.33.2
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends dumb-init \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}" \
+    && groupadd -r -g 1001 nodejs \
+    && useradd -r -u 1001 -g nodejs --no-log-init nodejs
 
 WORKDIR /app
 

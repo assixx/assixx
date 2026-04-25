@@ -59,6 +59,10 @@ undefined*
 *.swp
 *.swo
 
+# ctags (generated from .ctags — regenerate with `ctags` at repo root)
+tags
+.ctags
+
 # Assixx
 .claude/
 CLAUDE.local.md
@@ -81,6 +85,13 @@ temp/
 # Test coverage
 coverage/
 .nyc_output/
+
+# Playwright E2E
+e2e/.auth/
+e2e/test-results/
+test-results/
+playwright-report/
+.playwright-mcp/
 
 # Test directories
 **/__tests__/

@@ -1,63 +1,43 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-
   import { resolve } from '$app/paths';
 
-  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-  import { isDark } from '$lib/stores/theme.svelte';
+  import LandingFooter from '$lib/components/LandingFooter.svelte';
+  import LandingHeader from '$lib/components/LandingHeader.svelte';
+  import Seo from '$lib/components/Seo.svelte';
 
   import ModuleGrid from './_lib/ModuleGrid.svelte';
   import PricingSection from './_lib/PricingSection.svelte';
   import SecuritySection from './_lib/SecuritySection.svelte';
 
-  // Body class for landing page (disables global gradient)
-  onMount(() => {
-    document.body.classList.add('landing-page-active');
-    return () => {
-      document.body.classList.remove('landing-page-active');
-    };
-  });
-
-  function handleReloadPage(): void {
-    window.location.reload();
-  }
+  const STRUCTURED_DATA: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Assixx',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    description:
+      'Enterprise 2.0 Platform für Industriefirmen — Wissensmanagement, Kommunikation und Kollaboration.',
+    url: 'https://www.assixx.com',
+    inLanguage: 'de',
+    author: {
+      '@type': 'Organization',
+      name: 'SCS-Technik',
+      url: 'https://www.scs-technik.de',
+    },
+  };
 </script>
 
-<svelte:head>
-  <title>Assixx - Enterprise 2.0 für Industriefirmen</title>
-</svelte:head>
+<Seo
+  title="Assixx - Enterprise 2.0 für Industriefirmen"
+  description="Multi-Tenant SaaS für Wissensmanagement, Kommunikation und Kollaboration in Industrieunternehmen. Von der Produktion bis zur Verwaltung — alles in einer Plattform."
+  canonical="https://www.assixx.com/"
+  jsonLd={STRUCTURED_DATA}
+/>
 
 <!-- Landing Page Container -->
 <div class="landing-page">
-  <!-- Header -->
-  <header class="header">
-    <nav class="nav">
-      <div class="logo-container u-cursor-pointer">
-        <button
-          type="button"
-          class="logo-button"
-          onclick={handleReloadPage}
-        >
-          <img
-            src={isDark() ? '/images/logo_darkmode.png' : '/images/logo_lightmode.png'}
-            alt="Assixx Logo"
-            class="logo"
-          />
-        </button>
-      </div>
-      <div class="nav-links">
-        <a href="#module">Module</a>
-        <a href="#security">Sicherheit</a>
-        <a href="#pricing">Preise</a>
-        <a href={resolve('/login', {})}>Anmelden</a>
-        <a
-          href={resolve('/signup', {})}
-          class="btn btn-index">Registrieren</a
-        >
-        <ThemeToggle />
-      </div>
-    </nav>
-  </header>
+  <!-- Header — shared across public surface (Landing + Legal pages). -->
+  <LandingHeader />
 
   <!-- Hero Section -->
   <section class="hero">
@@ -67,7 +47,7 @@
       Alles in einer Plattform.
     </p>
     <a
-      href={resolve('/signup', {})}
+      href={resolve('/signup')}
       class="btn btn-index">Jetzt registrieren</a
     >
   </section>
@@ -82,9 +62,7 @@
   <PricingSection />
 
   <!-- Footer -->
-  <footer class="footer">
-    <p>&copy; 2026 Assixx. Alle Rechte vorbehalten.</p>
-  </footer>
+  <LandingFooter />
 </div>
 
 <!-- End .landing-page -->
@@ -97,62 +75,9 @@
     min-height: 100vh;
   }
 
-  /* Header - Glass nav bar */
-  .header {
-    padding: var(--spacing-4) 5%;
-    border-bottom: var(--glass-border);
-  }
-
-  /* Logo button reset */
-  .logo-button {
-    all: unset;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-  }
-
-  /* Navigation */
-  .nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0 auto;
-    width: 100%;
-    max-width: 1200px;
-  }
-
-  .logo-container {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-4);
-    cursor: pointer;
-    text-decoration: none;
-  }
-
-  .logo {
-    display: block;
-    transition: transform 0.3s ease;
-    cursor: pointer;
-    width: 120px;
-    height: auto;
-  }
-
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-  }
-
-  .nav-links a {
-    transition: color 0.3s ease;
-    color: var(--text-secondary);
-    font-weight: 500;
-    text-decoration: none;
-  }
-
-  .nav-links a:hover {
-    color: var(--color-white);
-  }
+  /* Header + nav styles now live in LandingHeader.svelte — shared with
+   * Legal pages (Impressum, Datenschutz) to guarantee identical markup
+   * and styling across the public surface. */
 
   /* Hero Section */
   .hero {
@@ -172,8 +97,15 @@
     background-repeat: no-repeat;
     padding: calc(var(--spacing-8) * 4) 5% calc(var(--spacing-8) * 2);
     max-width: 100%;
-    min-height: 70vh;
+
+    /*
+      Hero height: 815px hard floor (guarantees no collapse even on very
+      short viewports), grows with 65vh on taller monitors. max() picks
+      whichever is larger.
+    */
+    min-height: max(700px, 65vh);
     text-align: center;
+    margin-bottom: 150px;
   }
 
   .hero::before {
@@ -215,49 +147,22 @@
     animation-delay: 250ms;
   }
 
-  /* Hero CTA button: always white text (sits on dark image overlay in both modes) */
+  /*
+    Hero CTA: white on the dark hero overlay. Hero uses the same dark
+    background asset in both light and dark mode (per product decision
+    2026-04-22 — light-mode variant removed), so white stays legible.
+  */
   .hero :global(.btn) {
     color: var(--color-white);
     animation: fade-in-up var(--duration-slow) var(--ease-out) both;
     animation-delay: 400ms;
   }
 
-  /* Footer */
-  .footer {
-    border-top: var(--glass-border);
-    padding: var(--spacing-6) 5%;
-    color: var(--color-text-secondary);
-    text-align: center;
-  }
-
-  /* Light mode overrides */
-  :global(html:not(.dark)) .nav-links a:hover {
-    color: var(--color-primary);
-  }
-
   /* Responsive */
   @media (width < 768px) {
-    .header {
-      padding: var(--spacing-3);
-    }
-
-    .nav {
-      flex-direction: column;
-      gap: var(--spacing-4);
-    }
-
-    .logo-container {
-      margin-bottom: var(--spacing-2);
-    }
-
-    .nav-links {
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: var(--spacing-4);
-    }
-
     .hero {
-      min-height: 50vh;
+      /* Mobile: tighter clamp, still fluid */
+      min-height: clamp(420px, 55vh, 560px);
       padding: calc(var(--spacing-8) * 2) 5% var(--spacing-8);
     }
 

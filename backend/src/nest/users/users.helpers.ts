@@ -29,7 +29,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
 export function toSafeUserResponse(user: UserRow): SafeUserResponse {
   const { password, ...safeUser } = user;
   void password;
-  return dbToApi(safeUser as unknown as Record<string, unknown>) as unknown as SafeUserResponse;
+  return dbToApi(safeUser) as unknown as SafeUserResponse;
 }
 
 /**

@@ -72,7 +72,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, params, url
     defects,
     total,
     error: card === null ? 'Karte nicht gefunden' : null,
-    userRole: user.role as string,
+    userRole: user.role,
     expandExecutionUuid: url.searchParams.get('execution'),
   };
 };

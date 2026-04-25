@@ -147,3 +147,13 @@ export interface UserAccessInfo {
   teamId: number | null;
   hasFullAccess: boolean;
 }
+
+// ============================================================================
+// ADR-045 Layer 2 — Own effective blackboard permissions
+// ============================================================================
+
+export interface BlackboardMyPermissions {
+  posts: { canRead: boolean; canWrite: boolean; canDelete: boolean };
+  comments: { canRead: boolean; canWrite: boolean; canDelete: boolean };
+  archive: { canRead: boolean; canWrite: boolean };
+}

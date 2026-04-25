@@ -10,11 +10,16 @@
  * - Environment-aware log levels
  * - Pretty printing in development, JSON in production
  * - pino-loki transport to Grafana Loki (when LOKI_URL is set)
+ * - OpenTelemetry trace correlation: every log record gets `trace_id` and
+ *   `span_id` when an active span exists (ADR-048 Phase 3). Enables
+ *   Grafana-side Log→Trace click-through via Loki derivedFields.
  *
  * @see https://github.com/iamolegga/nestjs-pino
  * @see docs/adr/ADR-002-alerting-monitoring.md
+ * @see docs/infrastructure/adr/ADR-048-distributed-tracing-tempo-otel.md
  */
 import { Module, RequestMethod } from '@nestjs/common';
+import { trace } from '@opentelemetry/api';
 import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
 import type { TransportMultiOptions, TransportSingleOptions } from 'pino';
 
@@ -166,6 +171,33 @@ function buildTransport(): TransportSingleOptions | TransportMultiOptions | unde
 }
 
 /**
+ * Inject OpenTelemetry trace context into every log record (ADR-048 Phase 3).
+ *
+ * Called by Pino per log event. When an HTTP request is in flight, OTel's
+ * auto-instrumentation has an active `SPAN_KIND_SERVER` span on the context —
+ * we attach its `trace_id` and `span_id` so Loki can linkify via derivedFields
+ * (see `docker/grafana/provisioning/datasources/datasources.yml`).
+ *
+ * Guaranteed side-effect-free:
+ *   - Outside request context (workers, startup, custom async flows without
+ *     a span) → returns `{}` → no fields added → no behaviour change.
+ *   - When OTEL_TEMPO_ENABLED=false → TracerProvider isn't registered →
+ *     `getActiveSpan()` returns undefined → same no-op behaviour.
+ *
+ * Perf: ~100 ns per call (AsyncLocalStorage lookup). Pino's own overhead
+ * dwarfs this; no measurable impact on k6 smoke baseline.
+ */
+function otelTraceMixin(): { trace_id?: string; span_id?: string } {
+  const span = trace.getActiveSpan();
+  if (span === undefined) return {};
+  const ctx = span.spanContext();
+  return {
+    trace_id: ctx.traceId,
+    span_id: ctx.spanId,
+  };
+}
+
+/**
  * Minimal request serializer - only method and URL
  *
  * Why no userAgent/contentType?
@@ -205,6 +237,10 @@ function buildPinoHttpOptions(): Record<string, unknown> {
       paths: [...REDACT_PATHS],
       censor: REDACTED_VALUE,
     },
+
+    // Inject trace_id / span_id into every log record (ADR-048 Phase 3).
+    // See otelTraceMixin() above for no-op behaviour outside request context.
+    mixin: otelTraceMixin,
 
     // Silence ALL pino-http auto-logging:
     // - Errors (4xx/5xx): Handled by AllExceptionsFilter with full context

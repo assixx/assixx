@@ -270,6 +270,71 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT pg_stat_sta
 
 ---
 
+## 10a. Tempo / OTel Trace Verification (ADR-048)
+
+Full Log↔Trace pipeline verification. Prerequisite: all observability containers healthy + backend started with `OTEL_TEMPO_ENABLED=true`.
+
+```bash
+# Login + get a token for triggering log-producing endpoints (apitest admin)
+TOKEN=$(curl -s -X POST http://localhost:3000/api/v2/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@apitest.de","password":"ApiTest12345!"}' | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['accessToken'])")
+
+# Trigger a WARN log inside an active OTel span (E2E-key duplicate returns 409 → AllExceptionsFilter logs)
+curl -s -X POST http://localhost:3000/api/v2/e2e/keys -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"publicKey":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}' -o /dev/null
+
+# Extract the trace_id from backend stdout (grep "trace_id" — Pino otelTraceMixin injects it)
+docker logs assixx-backend --since 10s 2>&1 | grep -E 'trace_id' | head -3
+
+# Verify trace resolves in Tempo (replace <TRACE_ID_HEX> with value from above)
+curl -s "http://localhost:3200/api/traces/<TRACE_ID_HEX>" | python3 -c "import json,sys; d=json.load(sys.stdin); print('Spans:', sum(len(ss.get('spans',[])) for b in d.get('batches',[]) for ss in b.get('scopeSpans',[])))"
+
+# Verify same log is searchable in Loki (service="backend" is the correct label, NOT service="assixx-backend")
+curl -sG --data-urlencode 'query={service="backend"} |~ "trace_id"' --data-urlencode 'limit=5' "http://localhost:3100/loki/api/v1/query_range" | python3 -c "import json,sys; d=json.load(sys.stdin); r=d.get('data',{}).get('result',[]); print(f'Streams: {len(r)}')"
+
+# List services in Tempo (catalog-visible — means at least 1 trace per service has landed)
+curl -s 'http://localhost:3200/api/search/tag/service.name/values'
+
+# Recent traces for backend (most recent first)
+curl -s 'http://localhost:3200/api/search?tags=service.name%3Dassixx-backend&limit=10' | python3 -c "import json,sys; d=json.load(sys.stdin); [print(t['traceID'][:16], t.get('rootTraceName','?'), t.get('durationMs','?'),'ms') for t in d.get('traces',[])[:10]]"
+
+# Tempo health
+curl -s http://localhost:3200/ready                           # → "ready"
+
+# OTel Collector internal metrics (includes received/exported/dropped spans)
+docker logs assixx-otel-collector --tail 30 | grep -iE "traces"
+
+# Flip OTel ON (Phase 2b+) — via env var for docker-compose:
+cd /home/scs/projects/Assixx/docker && OTEL_TEMPO_ENABLED=true doppler run -- docker-compose up -d --force-recreate backend deletion-worker
+
+# Flip OTel OFF (rollback — instant, ~10s):
+cd /home/scs/projects/Assixx/docker && doppler run -- docker-compose up -d --force-recreate backend deletion-worker
+
+# Grafana UI for the visual click-through:
+#   http://localhost:3050 → Explore → Loki → {service="backend"} |~ "trace_id"
+#   Click any log → "View Trace in Tempo" derived-field link → Tempo opens the full trace
+```
+
+### Grafana Cloud Tempo (Phase 5 fan-out, ADR-048)
+
+Same trace_id resolves in Grafana Cloud too (otlphttp/grafana-cloud exporter).
+Doppler-provisioned: `GRAFANA_CLOUD_OTLP_ENDPOINT` + `GRAFANA_CLOUD_OTLP_AUTH_B64`.
+Cloud ingestion latency: ~1–2 min — for fresh requests, wait before querying.
+
+```bash
+# Cloud-side UI: https://assixx.grafana.net → Explore → grafanacloud-traces → Search
+#   Service Name = assixx-backend   (same metric.name tag as local)
+
+# Check collector is exporting to Cloud (silence = success; any 4xx/5xx = problem)
+docker logs assixx-otel-collector --since 5m 2>&1 | grep -iE "otlphttp|grafana-cloud|error|4[0-9][0-9]|5[0-9][0-9]" | head -10
+
+# Free-Tier quota usage check (GB consumed / GB included this billing month)
+doppler run -- bash -c 'curl -s -H "Authorization: Bearer $GRAFANA_CLOUD_ADMIN_TOKEN" "https://assixx.grafana.net/api/datasources/uid/grafanacloud-usage/resources/api/v1/query?query=grafanacloud_org_traces_usage" | jq ".data.result[0].value[1]"'
+doppler run -- bash -c 'curl -s -H "Authorization: Bearer $GRAFANA_CLOUD_ADMIN_TOKEN" "https://assixx.grafana.net/api/datasources/uid/grafanacloud-usage/resources/api/v1/query?query=grafanacloud_org_traces_included_usage" | jq ".data.result[0].value[1]"'
+```
+
+> Full end-to-end verification is captured in [FEAT_TEMPO_OTEL_MASTERPLAN.md](./FEAT_TEMPO_OTEL_MASTERPLAN.md) §Session 3a (log↔trace) + §Session 5 (Cloud fan-out). Rollback strategy: flip `OTEL_TEMPO_ENABLED=false` + restart = 10 s back to pre-OTel behaviour. Debug workflow: see [docs/how-to/HOW-TO-TRACE-DEBUG.md](./how-to/HOW-TO-TRACE-DEBUG.md).
+
+---
+
 ## 11. Health Checks & API-Tests
 
 ```bash
@@ -287,6 +352,29 @@ curl -s http://localhost:3000/api/v2/auth/login -X POST -H "Content-Type: applic
 # Nginx Routing prüfen (Production)
 curl -sI http://localhost/login | head -10                   # Response-Headers der Login-Seite
 curl -sI http://localhost/api/v2/health | head -10           # API via Nginx
+
+# Monitoring-Exporters (siehe ADR-002 Phase 5f)
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job:.labels.job, health}'  # Alle 4 Prometheus-Targets
+docker exec assixx-postgres-exporter wget -qO- http://localhost:9187/metrics | grep ^pg_up           # postgres_exporter direkt
+docker exec assixx-redis-exporter wget -qO- http://localhost:9121/metrics | grep ^redis_up           # redis_exporter direkt
+```
+
+---
+
+## 11a. Grafana Cloud Alert-Rules (siehe ADR-002 Phase 5g + 5h)
+
+```bash
+# Alle Alert-Rules aus docker/grafana/alerts/*.json idempotent provisionieren
+# Current set (7): 01-backend-down, 02-postgres-down, 03-backend-memory-high,
+# 04-backend-error-rate-warning, 05-backend-error-rate-critical,
+# 06-backend-logs-silent, 07-tempo-cloud-quota-high (ADR-048 Phase 5h)
+doppler run -- ./docker/grafana/alerts/apply.sh
+
+# Aktive Alert-Rules in Cloud listen
+doppler run -- bash -c 'curl -s -H "Authorization: Bearer $GRAFANA_CLOUD_ADMIN_TOKEN" https://assixx.grafana.net/api/v1/provisioning/alert-rules' | jq '.[] | select(.folderUID=="assixx-prod-alerts") | {title, severity:.labels.severity}'
+
+# Einzelne Rule loeschen (UID aus JSON-Datei)
+doppler run -- bash -c 'curl -s -X DELETE -H "Authorization: Bearer $GRAFANA_CLOUD_ADMIN_TOKEN" -H "X-Disable-Provenance: true" https://assixx.grafana.net/api/v1/provisioning/alert-rules/assixx-backend-down'
 ```
 
 ---
@@ -310,6 +398,18 @@ docker exec -i assixx-postgres psql -U assixx_user -d assixx < database/backups/
 
 ## 13. Troubleshooting
 
+> **Lifecycle-Konvention:** **Nie** `docker start` / `docker stop` direkt auf
+> einen Container aufrufen. Nutze immer `docker-compose up/down/restart/stop`.
+> Grund: auf Docker Desktop WSL2 pinnt der Container-Spec einen internen
+> Staging-Pfad (`/run/desktop/mnt/host/wsl/docker-desktop-bind-mounts/<hash>`)
+> für Bind-Mounts. Nach längerem Stop kann die GC diesen Eintrag eviktieren
+> → `docker start` bricht mit `error mounting ... no such file or directory`.
+> `docker-compose up -d <service>` rekreiert den Container mit frischem
+> Staging-Eintrag und ist unabhängig von dem Problem. Prod auf Linux-Engine
+> ist nicht betroffen (kein Staging-Layer). Siehe
+> [FEAT_TEMPO_OTEL_MASTERPLAN.md §0.2 R15](./FEAT_TEMPO_OTEL_MASTERPLAN.md)
+> für Root-Cause-Analyse.
+
 ```bash
 # Port belegt?
 lsof -i :3000                                               # Welcher Prozess nutzt Port 3000?
@@ -322,6 +422,9 @@ docker logs assixx-nginx --tail 50                           # Nginx-Logs
 
 # Postgres erreichbar?
 docker exec assixx-postgres pg_isready -U assixx_user -d assixx  # DB-Readiness-Check
+
+# Einzelnen Service hart neu aufsetzen (fix für Bind-Mount-Staleness auf WSL2)
+cd /home/scs/projects/Assixx/docker && doppler run -- docker-compose up -d --force-recreate <service>
 
 # Alles von vorn (Nuclear Option)
 cd /home/scs/projects/Assixx/docker && doppler run -- docker-compose down && doppler run -- docker-compose up -d  # Dev neu starten

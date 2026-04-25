@@ -70,8 +70,13 @@ frontend/.storybook/
 # -----------------------------------------------------------------------------
 # Documentation (not needed in image)
 # -----------------------------------------------------------------------------
+# `*.md` only matches TOP-LEVEL markdown (filepath.Match semantics — no `/`
+# matching). Subdirectory CHANGELOGs like shared/CHANGELOG.md are unaffected.
 *.md
 !README.md
+# Root CHANGELOG.md is the aggregated artefact consumed by the frontend build
+# for /versioninfo (see docs/how-to/HOW-TO-USE-CHANGESETS.md + Dockerfile.frontend).
+!CHANGELOG.md
 docs/
 
 # -----------------------------------------------------------------------------

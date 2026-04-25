@@ -7,6 +7,7 @@
    * @see ADR-009 Central Audit Logging
    */
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import { showErrorAlert, showSuccessAlert, showWarningAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
   import {
@@ -46,8 +47,6 @@
   let exportFormat = $state<ExportFormat>('csv');
   let exportSource = $state<ExportSource>('all');
   let exportLoading = $state(false);
-  let exportError = $state('');
-  let exportSuccess = $state('');
   let rateLimitedUntil = $state<Date | null>(null);
   let selectedQuickTimerange = $state<string | null>(null);
 
@@ -77,8 +76,6 @@
 
   async function handleExportLogs(): Promise<void> {
     exportLoading = true;
-    exportError = '';
-    exportSuccess = '';
 
     try {
       await exportLogs({
@@ -90,24 +87,19 @@
         entityType: filterEntity !== 'all' ? filterEntity : undefined,
       });
 
-      exportSuccess = MESSAGES.EXPORT_SUCCESS;
+      showSuccessAlert(MESSAGES.EXPORT_SUCCESS);
       log.info('Export completed successfully');
-
-      setTimeout(() => {
-        exportSuccess = '';
-      }, 5000);
     } catch (err: unknown) {
       if (err instanceof RateLimitError) {
         rateLimitedUntil = new Date(Date.now() + err.retryAfter * 1000);
-        exportError = `${MESSAGES.EXPORT_RATE_LIMITED} (${err.retryAfter}s)`;
+        showWarningAlert(`${MESSAGES.EXPORT_RATE_LIMITED} (${err.retryAfter}s)`);
         log.warn({ retryAfter: err.retryAfter }, 'Export rate limited');
 
         setTimeout(() => {
           rateLimitedUntil = null;
-          exportError = '';
         }, err.retryAfter * 1000);
       } else {
-        exportError = err instanceof Error ? err.message : MESSAGES.EXPORT_ERROR;
+        showErrorAlert(err instanceof Error ? err.message : MESSAGES.EXPORT_ERROR);
         log.error({ err }, 'Export failed');
       }
     } finally {
@@ -135,20 +127,6 @@
     </h3>
   </div>
   <div class="card__body">
-    <!-- Export Status Messages -->
-    {#if exportError}
-      <div class="alert alert--danger mb-4">
-        <i class="fas fa-exclamation-circle mr-2"></i>
-        {exportError}
-      </div>
-    {/if}
-    {#if exportSuccess}
-      <div class="alert alert--success mb-4">
-        <i class="fas fa-check-circle mr-2"></i>
-        {exportSuccess}
-      </div>
-    {/if}
-
     <!-- Quick Timerange Buttons -->
     <div class="mb-4">
       <span class="form-field__label mb-2 block">Schnellauswahl Zeitraum</span>

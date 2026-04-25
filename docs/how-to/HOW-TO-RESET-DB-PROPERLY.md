@@ -196,6 +196,10 @@ docker exec assixx-postgres psql -U assixx_user -d assixx \
 
 Falls 0: `install.sh` erneut mit `--schema-only` ausführen.
 
+### psql-Befehl liefert keine Ausgabe, Exit 0
+
+Wenn ein `docker exec assixx-postgres psql ... <<'SQL' ... SQL`-Heredoc stumm bleibt (kein Ergebnis, kein Fehler): Es fehlt `-i`. `docker exec` ohne `-i` leitet stdin nicht an den Container weiter — psql bekommt leeren Input, endet mit Exit 0. Lösung: `docker exec -i ...` oder besser `psql -c "..."` verwenden. Details: [HOW-TO-POSTGRESQL-CLI.md](./HOW-TO-POSTGRESQL-CLI.md#troubleshooting).
+
 ### Backup wiederherstellen
 
 ```bash
@@ -223,5 +227,6 @@ cd ../docker && doppler run -- docker-compose start backend deletion-worker
 
 - [HOW-TO-CREATE-TEST-USER.md](./HOW-TO-CREATE-TEST-USER.md) — Test-Tenant erstellen
 - [HOW-TO-RESET-POSTGRESQL-ID.md](./HOW-TO-RESET-POSTGRESQL-ID.md) — Einzelne Sequences resetten
+- [HOW-TO-POSTGRESQL-CLI.md](./HOW-TO-POSTGRESQL-CLI.md) — psql-Patterns & Troubleshooting (Heredoc braucht `docker exec -i`)
 - [DATABASE-MIGRATION-GUIDE.md](../DATABASE-MIGRATION-GUIDE.md) — Migrations-Workflow
 - [customer/README.md](../../customer/README.md) — Fresh Install Dokumentation

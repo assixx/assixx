@@ -15,6 +15,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import {
   buildDummyEmail,
   buildDummyEmployeeNumber,
@@ -102,6 +103,11 @@ export class DummyUsersService {
   constructor(
     private readonly db: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
+    // Step 2.9 KISS gate — `assertVerified(tenantId)` called at top of `create`
+    // to block dummy-user creation for tenants without a verified domain.
+    // DummyUsersService is the ONE service with INSERT INTO users inline in
+    // the public method (v0.3.6 D33), so the gate sits at public-method entry.
+    private readonly tenantVerification: TenantVerificationService,
   ) {}
 
   // ==========================================================================
@@ -113,6 +119,11 @@ export class DummyUsersService {
     dto: { displayName: string; password: string; teamIds?: number[] },
     actingUserId: number,
   ): Promise<DummyUser> {
+    // KISS gate (§2.9 + §0.2.5 #1): Throws `ForbiddenException('TENANT_NOT_
+    // VERIFIED')` if no verified `tenant_domains` row exists. Must run before
+    // ANY DB writes — the INSERT INTO users at line ~128 is directly below.
+    // Arch-test (§2.11, regex `INSERT INTO users\b`) locks this invariant.
+    await this.tenantVerification.assertVerified(tenantId);
     const uuid = uuidv7();
     const hashedPassword = await bcryptjs.hash(dto.password, BCRYPT_SALT_ROUNDS);
 

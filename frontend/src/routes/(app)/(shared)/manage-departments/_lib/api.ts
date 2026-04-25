@@ -77,7 +77,7 @@ export function checkSession(): boolean {
   const userRole = localStorage.getItem('userRole');
 
   if (token === null || (userRole !== 'root' && userRole !== 'admin')) {
-    void goto(resolve('/login', {}));
+    void goto(resolve('/login'));
     return false;
   }
   return true;

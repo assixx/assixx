@@ -276,9 +276,92 @@ curl -X POST http://localhost:3000/api/v2/surveys \
 - SSE connections count against browser connection limit (6 per domain in HTTP/1.1)
 - Long-lived connections may be terminated by proxies (mitigated by Nginx config)
 
+## Email Notifications (Added 2026-04-10)
+
+### Architecture: NestJS MailerService Wrapper
+
+The legacy `backend/src/utils/email-service.ts` (Nodemailer with module-level
+state — transporter, queue, logo cache) is wrapped by a thin NestJS service:
+`backend/src/nest/common/services/mailer.service.ts`. Domain services
+(e.g. `AuthService`) inject `MailerService` via the constructor instead of
+calling `await import('../../utils/email-service.js')` inside business logic.
+
+**Why:**
+
+1. **No dynamic imports in domain code.** Dynamic `await import(...)` is a
+   KISS violation: it hides dependencies, breaks IDE navigation, and forces
+   tests to mock the module loader. The NestJS DI container handles lifecycle
+   and substitution natively.
+2. **Zero duplication.** The legacy module already exposes `loadTemplate`,
+   `loadBrandedTemplate`, `escapeHtmlTemplate` and `sendEmail`. The wrapper
+   composes these — it never reimplements template loading or HTML escaping.
+   `AuthService` previously carried duplicated `escapeHtml` + manual
+   `fs.readFile` template loading, all of which is now deleted.
+3. **Centralized failure swallowing.** `MailerService.sendPasswordReset()`
+   logs send failures and resolves normally. Callers can trust they will
+   never throw, which preserves the email enumeration prevention contract
+   (`forgot-password` always returns the same generic response).
+4. **Quiet bug fixed.** The previous inline implementation referenced
+   `cid:assixx-logo` in the HTML template but never attached the logo file —
+   resulting in broken images in every reset email. `loadBrandedTemplate`
+   attaches the CID image automatically.
+
+**Why NOT migrate `email-service.ts` itself to a `@Injectable()` class?**
+
+The legacy file holds module-level singleton state (transporter, queue,
+`isProcessingQueue` flag, branded logo buffer cache). Unwinding these into
+proper instance state would touch every caller — out of scope for an
+incremental refactor. Wrapping is the KISS-compliant first step; a full
+migration is tracked separately.
+
+**Future email types** (welcome, document notification, etc.) get their own
+typed method on `MailerService` instead of bypassing it. New domain services
+inject `MailerService` from `../common/services/mailer.service.js`.
+
+### SMTP Transport
+
+The existing `email-service.ts` (Nodemailer) was connected to SMTP via environment variables:
+
+| Env Var     | Source  | Example              |
+| ----------- | ------- | -------------------- |
+| `SMTP_HOST` | .env    | `smtp.gmail.com`     |
+| `SMTP_PORT` | .env    | `587`                |
+| `SMTP_USER` | Doppler | `user@gmail.com`     |
+| `SMTP_PASS` | Doppler | App-Passwort         |
+| `SMTP_FROM` | .env    | `noreply@assixx.com` |
+
+**Fix applied:** `email-service.ts` previously read `EMAIL_*` env vars, but `docker-compose.yml` injects `SMTP_*`. Aligned to `SMTP_*` as primary, `EMAIL_*` as fallback.
+
+### Password Reset Flow
+
+First email-based feature implemented. Public endpoints (rate-limited via `@AuthThrottle()`):
+
+- `POST /auth/forgot-password` — Accepts email, generates SHA-256 hashed token in `password_reset_tokens`, sends email. **Always returns generic response** (email enumeration prevention).
+- `POST /auth/reset-password` — Validates token, updates password (bcrypt, 12 rounds), invalidates token, revokes all refresh tokens (force re-login on all devices).
+
+**Token Security:**
+
+- Raw token: 32 bytes (`crypto.randomBytes(32).toString('hex')`)
+- Stored as SHA-256 hash (never raw)
+- 60-minute expiry
+- Single-use (marked `used = true` after consumption)
+- Previous unused tokens invalidated on new request
+
+**Email Template:** `backend/templates/email/password-reset.html` — responsive, dark mode support, MSO-compatible (Outlook VML roundrect), fallback URL for broken buttons.
+
+**Frontend Pages:**
+
+- `/forgot-password` — Email input, generic success message
+- `/reset-password?token=xxx` — Password form with strength meter (NIST 800-63B: 12+ chars, 3/4 categories)
+
+### Future: Event-Triggered Email Notifications
+
+Planned: Hook into EventBus to send emails alongside SSE for configured event types. Will respect `notification_preferences.email_notifications` flag per user. Not yet implemented.
+
 ## Related Decisions
 
 - ADR-002: Chat uses WebSocket for bidirectional communication (typing indicators)
+- ADR-005: Authentication Strategy (JWT, password hashing, token revocation)
 
 ## Notes
 

@@ -47,7 +47,7 @@ export async function saveList(
   editId: string | null,
 ): Promise<void> {
   if (editId !== null) {
-    await updateList(editId, payload as UpdateListPayload);
+    await updateList(editId, payload);
   } else {
     await createList(payload as CreateListPayload);
   }

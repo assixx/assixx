@@ -88,6 +88,7 @@ export async function fetchWorkOrders(
     sourceType?: string;
     assigneeUuid?: string;
     isActive?: string;
+    overdue?: string;
   } = {},
 ): Promise<PaginatedResponse<WorkOrderListItem>> {
   const params = new URLSearchParams();

@@ -5,7 +5,6 @@
 
   import {
     INTERVAL_LABELS,
-    WEEKDAY_LABELS,
     CARD_STATUS_LABELS,
     CARD_STATUS_BADGE_CLASSES,
     APPROVAL_STATUS_LABELS,
@@ -222,13 +221,26 @@
     <table class="data-table data-table--hover data-table--striped">
       <thead>
         <tr>
-          <th scope="col">{messages.TH_MACHINE}</th>
-          <th scope="col">{messages.TH_PLAN_NAME}</th>
-          <th scope="col">{messages.TH_WEEKDAY}</th>
-          <th scope="col">{messages.TH_STATUS}</th>
-          <th scope="col">Version</th>
-          <th scope="col">Freigabe</th>
-          <th scope="col">Geändert</th>
+          <th
+            scope="col"
+            style="min-width: 120px">{messages.TH_MACHINE}</th
+          >
+          <th
+            scope="col"
+            style="min-width: 80px">{messages.TH_STATUS}</th
+          >
+          <th
+            scope="col"
+            style="min-width: 64px">Version</th
+          >
+          <th
+            scope="col"
+            style="min-width: 160px">Freigabe</th
+          >
+          <th
+            scope="col"
+            style="min-width: 88px">Geändert</th
+          >
           {#each intervalColumns as col (col)}
             <th
               scope="col"
@@ -255,25 +267,28 @@
                 {plan.assetName ?? '—'}
               </a>
             </td>
-            <td>{plan.name}</td>
-            <td>{WEEKDAY_LABELS[plan.baseWeekday] ?? '—'}</td>
             <td>
               <span class="badge {badge.cls}">{badge.label}</span>
             </td>
             <td>
               <span class="badge badge--primary">v{plan.approvalVersion}.{plan.revisionMinor}</span>
             </td>
-            <td>
+            <td class="text-nowrap">
               {#if plan.approvalStatus !== null}
                 <span
                   class="badge {APPROVAL_STATUS_BADGE[plan.approvalStatus] ?? 'badge--outline'}"
                 >
                   {APPROVAL_STATUS_LABELS[plan.approvalStatus] ?? plan.approvalStatus}
                 </span>
+                {#if plan.approvalDecidedByName !== null}
+                  <span class="approval-decided-by">
+                    {plan.approvalDecidedByName}
+                  </span>
+                {/if}
                 {#if plan.approvalDecisionNote !== null}
                   <span
                     class="decision-note-icon"
-                    title="{plan.approvalDecidedByName ?? ''}: {plan.approvalDecisionNote}"
+                    title={plan.approvalDecisionNote}
                   >
                     <i class="fas fa-comment"></i>
                   </span>
@@ -448,8 +463,14 @@
     color: var(--color-text-muted);
   }
 
-  .decision-note-icon {
+  .approval-decided-by {
     margin-left: 0.375rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+
+  .decision-note-icon {
+    margin-left: 0.25rem;
     color: var(--color-text-muted);
     cursor: help;
     font-size: 0.8rem;

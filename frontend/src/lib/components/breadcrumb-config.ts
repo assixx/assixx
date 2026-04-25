@@ -65,6 +65,15 @@ const dynamicRoutes: DynamicRoute[] = [
     icon: ICON_INFO,
   },
   { pattern: /^\/kvp\/[^/]+$/, label: 'KVP-Details', icon: ICON_INFO },
+  // Shift-Handover detail page (Session 15 modal→page rewrite).
+  // Pattern mirrors /blackboard/[uuid] — parent crumb comes from the
+  // `/shift-handover-detail` intermediateBreadcrumbs entry, which the
+  // dynamic-route handler looks up via `basePath + '-detail'`.
+  {
+    pattern: /^\/shift-handover\/[^/]+$/,
+    label: 'Übergabe',
+    icon: 'fa-clipboard-list',
+  },
   {
     pattern: /^\/manage-employees\/availability\/[^/]+$/,
     label: 'Employee Name Placeholder',
@@ -174,12 +183,12 @@ const dynamicRoutes: DynamicRoute[] = [
 const intermediateBreadcrumbs: Partial<Record<string, IntermediateCrumb>> = {
   '/survey-results': {
     label: 'Umfragen',
-    href: '/survey-admin',
+    href: '/manage-surveys',
     icon: 'fa-poll',
   },
   '/survey-create': {
     label: 'Umfragen',
-    href: '/survey-admin',
+    href: '/manage-surveys',
     icon: 'fa-poll',
   },
   '/kvp-detail': { label: 'KVP', href: '/kvp', icon: 'fa-lightbulb' },
@@ -209,15 +218,47 @@ const intermediateBreadcrumbs: Partial<Record<string, IntermediateCrumb>> = {
     href: '/root-dashboard',
     icon: 'fa-cog',
   },
+  // Tenant Domain Verification (masterplan §5.1) — parent crumb points at
+  // Firmenprofil; the existing /settings/company-profile entry above provides
+  // its OWN parent (System → /root-dashboard), so the full crumb chain renders
+  // [Home → System → Firmenprofil → Domains].
+  '/settings/company-profile/domains': {
+    label: 'Firmenprofil',
+    href: '/settings/company-profile',
+    icon: 'fa-building',
+  },
   '/blackboard-detail': {
     label: 'Schwarzes Brett',
     href: '/blackboard',
     icon: 'fa-clipboard',
   },
+  // Parent crumb matches the sidebar submenu name ("Schichtplanung") promoted
+  // in Session 11 via `applyShiftHandoverVariant`; clicking it returns the
+  // user to the shift grid. See FEAT_SHIFT_HANDOVER_MASTERPLAN Session 13.
+  '/shift-handover-templates': {
+    label: 'Schichtplanung',
+    href: '/shifts',
+    icon: 'fa-calendar',
+  },
+  // Session 15 (2026-04-23): the shift-handover detail page replaced the
+  // in-grid modal. Crumb path mirrors the templates page — parent is the
+  // shift grid. Key uses the `-detail` suffix because the dynamic-route
+  // handler (buildDynamicRouteItems) looks it up via `basePath + '-detail'`
+  // from the UUID-param URL `/shift-handover/{uuid}` — see blackboard-detail.
+  '/shift-handover-detail': {
+    label: 'Schichtplanung',
+    href: '/shifts',
+    icon: 'fa-calendar',
+  },
   '/work-orders/admin': {
     label: 'Arbeitsaufträge',
     href: '/work-orders',
     icon: 'fa-clipboard-check',
+  },
+  '/lean-management/tpm/gesamtansicht': {
+    label: TPM_OVERVIEW_LABEL,
+    href: TPM_OVERVIEW_PATH,
+    icon: ICON_TOOLS,
   },
 };
 
@@ -237,13 +278,15 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   '/documents': { label: 'Dokumente', icon: 'fa-file-alt' },
   '/documents-explorer': { label: 'Dokumente', icon: 'fa-file-alt' },
   '/shifts': { label: 'Schichtplan', icon: 'fa-clock' },
+  '/shift-handover-templates': { label: 'Übergabe-Templates', icon: 'fa-clipboard-list' },
+  '/shift-handover': { label: 'Schichtübergabe', icon: 'fa-clipboard-list' },
   '/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
   '/kvp-categories': { label: 'Definitionen', icon: 'fa-tags' },
   '/kvp-detail': { label: 'KVP-Details', icon: ICON_INFO },
-  '/survey-admin': { label: 'Umfragen', icon: 'fa-poll' },
-  '/survey-employee': { label: 'Mitarbeiter-Umfrage', icon: 'fa-poll-h' },
+  '/manage-surveys': { label: 'Umfragen verwalten', icon: 'fa-poll' },
+  '/surveys': { label: 'Umfragen', icon: 'fa-poll-h' },
   '/survey-results': { label: 'Umfrage-Ergebnisse', icon: 'fa-chart-bar' },
-  '/account-settings': { label: 'Konto-Einstellungen', icon: 'fa-user-cog' },
+  '/company-settings': { label: 'Firmen-Einstellungen', icon: 'fa-building' },
   '/settings/design': { label: 'Design', icon: 'fa-palette' },
   '/storage-upgrade': { label: 'Speicher-Upgrade', icon: 'fa-hdd' },
   '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
@@ -264,6 +307,10 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   '/lean-management/tpm/overview': {
     label: TPM_OVERVIEW_LABEL,
     icon: ICON_TOOLS,
+  },
+  '/lean-management/tpm/gesamtansicht': {
+    label: 'Gesamtansicht',
+    icon: 'fa-table',
   },
   '/tenant-deletion-status': {
     label: 'Tenant Löschstatus',
@@ -291,6 +338,11 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   },
   '/settings/company': { label: 'Addon-Einstellungen', icon: 'fa-sliders-h' },
   '/settings/company-profile': { label: 'Firmenprofil', icon: 'fa-building' },
+  '/settings/company-profile/domains': { label: 'Domains', icon: 'fa-globe' },
+  // Auth/RBAC fail-closed page (ADR-012). Without this entry the crumb
+  // falls back to the URL slug ("Permission Denied"). Use the German UI
+  // label and the same fa-ban icon as the page itself for consistency.
+  '/permission-denied': { label: 'Zugriff verweigert', icon: 'fa-ban' },
 };
 
 /** Static dynamic intermediates (hierarchy-independent) */

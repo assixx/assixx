@@ -1,16 +1,7 @@
-# Assixx Project - CODEOWNERS
-# Diese Datei bestimmt automatisch, wer Pull Requests überprüfen soll
-
-# Standard-Besitzer für das gesamte Repository
-* @assixx-dev
-
-# Server-Verzeichnis Besitzer
-/server/ @assixx-dev
-
-# Spezifische kritische Dateien
-/server/auth.js @assixx-dev
-/server/server.js @assixx-dev
-/server/middleware/security*.js @assixx-dev
-
-# Dokumentation
-*.md @assixx-dev
+# Assixx CODEOWNERS
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+#
+# Single team owns the whole repo. When the org grows (e.g. separate security
+# or backend teams), add path-specific rules BELOW the catch-all — GitHub
+# uses last-match-wins semantics, so later lines override earlier ones.
+*   @assixx/core

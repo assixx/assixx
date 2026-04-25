@@ -306,5 +306,5 @@ export async function uploadDocument(
  */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const result = await fetchSharedUser();
-  return result.user as CurrentUser | null;
+  return result.user;
 }

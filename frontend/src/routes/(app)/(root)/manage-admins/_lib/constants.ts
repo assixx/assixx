@@ -140,6 +140,23 @@ const STATIC_MESSAGES = {
   ERROR_EMPLOYEE_NUMBER_REQUIRED: 'Bitte geben Sie eine Personalnummer ein',
   ERROR_SAVE_FAILED: 'Fehler beim Speichern',
   ERROR_DELETE_FAILED: 'Fehler beim Löschen',
+  // ADR-051 §5.3 — Root-initiated Password-Reset-Link. Strings for the
+  // Edit-Modal button + its confirm-dialog + toast-mapping. German only
+  // per CLAUDE.md (ä/ö/ü/ß preserved). Error strings map to backend codes
+  // surfaced via the API thrown-error envelope:
+  //   INVALID_TARGET_ROLE → RESET_LINK_ERROR_INVALID_TARGET
+  //   INACTIVE_TARGET     → RESET_LINK_ERROR_INACTIVE
+  //   RATE_LIMIT          → RESET_LINK_ERROR_RATE_LIMIT
+  BTN_SEND_RESET_LINK: 'Passwort-Reset-Link senden',
+  RESET_LINK_CONFIRM:
+    'Soll dem Benutzer eine E-Mail mit einem Passwort-Reset-Link gesendet werden? Der Benutzer kann danach ein neues Passwort setzen — Du siehst es nicht.',
+  RESET_LINK_SUCCESS: 'Passwort-Reset-Link gesendet',
+  RESET_LINK_ERROR_INVALID_TARGET:
+    'Für diesen Benutzer kann kein Reset-Link angefordert werden. Root-Benutzer nutzen "Passwort vergessen" selbst.',
+  RESET_LINK_ERROR_INACTIVE: 'Der Benutzer ist nicht aktiv. Kein Reset-Link möglich.',
+  RESET_LINK_ERROR_RATE_LIMIT:
+    'Bitte warte 15 Minuten, bevor Du erneut einen Reset-Link für diesen Benutzer anforderst.',
+  RESET_LINK_ERROR_GENERIC: 'Fehler beim Senden des Reset-Links',
   HINT_PASSWORD:
     'Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)',
   HINT_EMPLOYEE_NUMBER: 'Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)',

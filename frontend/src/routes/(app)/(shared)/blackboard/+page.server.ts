@@ -10,9 +10,23 @@ import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
-import type { BlackboardEntry, Department, Team, Area, PaginationMeta } from './_lib/types';
+import type {
+  BlackboardEntry,
+  BlackboardMyPermissions,
+  Department,
+  Team,
+  Area,
+  PaginationMeta,
+} from './_lib/types';
 
 const ENTRIES_PER_PAGE = 12;
+
+/** Fail-closed default when /blackboard/my-permissions fails or is unreachable. */
+const DEFAULT_MY_PERMISSIONS: BlackboardMyPermissions = {
+  posts: { canRead: false, canWrite: false, canDelete: false },
+  comments: { canRead: false, canWrite: false, canDelete: false },
+  archive: { canRead: false, canWrite: false },
+};
 
 interface EntriesResponse {
   entries?: BlackboardEntry[];
@@ -74,13 +88,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     redirect(302, '/login');
   }
 
-  const { activeAddons } = await parent();
+  const { activeAddons, user, orgScope } = await parent();
   requireAddon(activeAddons, 'blackboard');
 
   const apiParams = buildApiParams(url);
 
-  // Parallel fetch: entries with filters + organization data for dropdowns
-  const [entriesCheck, departmentsData, teamsData, areasData] = await Promise.all([
+  // Parallel fetch: entries with filters + organization data + own permissions (ADR-045 Layer 2)
+  const [entriesCheck, departmentsData, teamsData, areasData, myPermissions] = await Promise.all([
     apiFetchWithPermission<EntriesResponse | BlackboardEntry[]>(
       `/blackboard/entries?${apiParams.toString()}`,
       token,
@@ -89,6 +103,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     apiFetch<Department[]>('/departments', token, fetch),
     apiFetch<Team[]>('/teams', token, fetch),
     apiFetch<Area[]>('/areas', token, fetch),
+    apiFetch<BlackboardMyPermissions>('/blackboard/my-permissions', token, fetch),
   ]);
 
   if (entriesCheck.permissionDenied) {
@@ -99,6 +114,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
       departments: [],
       teams: [],
       areas: [],
+      user,
+      orgScope,
+      myPermissions: DEFAULT_MY_PERMISSIONS,
     };
   }
 
@@ -111,5 +129,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     departments: safeArray(departmentsData),
     teams: safeArray(teamsData),
     areas: safeArray(areasData),
+    user,
+    orgScope,
+    myPermissions: myPermissions ?? DEFAULT_MY_PERMISSIONS,
   };
 };

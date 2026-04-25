@@ -564,8 +564,6 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-left: auto;
-    border: var(--glass-border);
     border-radius: var(--radius-xl);
   }
 

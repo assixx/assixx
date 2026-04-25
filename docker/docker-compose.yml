@@ -91,8 +91,8 @@ services:
       dockerfile: docker/Dockerfile.dev
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
-        NODE_VERSION: ${NODE_VERSION_DEV:-24.14.0-alpine3.22}
-        PNPM_VERSION: ${PNPM_VERSION:-10.33.0}
+        NODE_VERSION: ${NODE_VERSION_DEV:-24.15.0-bookworm-slim}
+        PNPM_VERSION: ${PNPM_VERSION:-10.33.2}
     image: assixx-backend:dev
     container_name: assixx-backend
     restart: unless-stopped
@@ -123,6 +123,12 @@ services:
       # SECURITY: Secrets are REQUIRED - no fallback defaults
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
+      # OAuth sign-in (V1: Microsoft only) — see docs/FEAT_MICROSOFT_OAUTH_MASTERPLAN.md
+      # PUBLIC_APP_URL: base URL the backend uses to derive OAuth redirect URIs (R4 mitigation).
+      # Boot fails fast if any of these are missing — matches the JWT_SECRET pattern.
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:?PUBLIC_APP_URL must be set - use doppler run}
+      MICROSOFT_OAUTH_CLIENT_ID: ${MICROSOFT_OAUTH_CLIENT_ID:?MICROSOFT_OAUTH_CLIENT_ID must be set - use doppler run}
+      MICROSOFT_OAUTH_CLIENT_SECRET: ${MICROSOFT_OAUTH_CLIENT_SECRET:?MICROSOFT_OAUTH_CLIENT_SECRET must be set - use doppler run}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
@@ -139,6 +145,19 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
       # Sentry Error Tracking
       SENTRY_DSN: ${SENTRY_DSN:-}
+      # OpenTelemetry → Grafana Tempo (ADR-048 / FEAT_TEMPO_OTEL_MASTERPLAN Phase 2)
+      # Default OFF — Sentry behavior is completely unchanged until flag is flipped.
+      # Flip via Doppler: `doppler secrets set OTEL_TEMPO_ENABLED=true`
+      # Rollback: flip to false + `docker-compose restart backend` (≈10s)
+      OTEL_TEMPO_ENABLED: ${OTEL_TEMPO_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318/v1/traces}
+      # Prometheus Exemplars (ADR-048 / FEAT_TEMPO_OTEL_MASTERPLAN Session 3b)
+      # Default OFF — /api/v2/metrics serves plain Prometheus format, no exemplars.
+      # Flag ON → OpenMetrics content-type + trace_id/span_id exemplar labels on
+      # assixx_http_request_duration_seconds. Resolved at boot (main.ts +
+      # metrics.controller.ts); flag flip requires container recreation.
+      # Requires Prometheus server flag --enable-feature=exemplar-storage (Session 3b-b).
+      PROMETHEUS_EXEMPLARS_ENABLED: ${PROMETHEUS_EXEMPLARS_ENABLED:-false}
       # Loki Log Aggregation - Dual Target Support
       # LOKI_URL: Grafana Cloud (requires GRAFANA_CLOUD_USER + API_KEY)
       LOKI_URL: ${LOKI_URL:-}
@@ -279,6 +298,13 @@ services:
       TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
       # Sentry Error Tracking
       SENTRY_DSN: ${SENTRY_DSN:-}
+      # OpenTelemetry → Grafana Tempo (ADR-048 Phase 2 — default OFF)
+      OTEL_TEMPO_ENABLED: ${OTEL_TEMPO_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318/v1/traces}
+      # Prometheus Exemplars (ADR-048 Session 3b — default OFF)
+      # No-op in deletion-worker (no Fastify/HTTP surface); declared here for
+      # image-env consistency and to keep flag flips symmetric with backend.
+      PROMETHEUS_EXEMPLARS_ENABLED: ${PROMETHEUS_EXEMPLARS_ENABLED:-false}
       # Loki Log Aggregation - Dual Target Support
       # LOKI_URL: Grafana Cloud (requires GRAFANA_CLOUD_USER + API_KEY)
       LOKI_URL: ${LOKI_URL:-}
@@ -350,8 +376,8 @@ services:
       dockerfile: docker/Dockerfile.frontend
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
-        NODE_VERSION: ${NODE_VERSION_PROD:-24.14.0-alpine3.22}
-        PNPM_VERSION: ${PNPM_VERSION:-10.33.0}
+        NODE_VERSION: ${NODE_VERSION_PROD:-24.15.0-bookworm-slim}
+        PNPM_VERSION: ${PNPM_VERSION:-10.33.2}
         # Sentry DSN for error tracking (embedded at build time)
         PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
       # BuildKit secrets - never persisted in image layers (unlike ARG/ENV)
@@ -516,7 +542,8 @@ services:
           --config.file=/etc/prometheus/prometheus.yml \
           --storage.tsdb.path=/prometheus \
           --storage.tsdb.retention.time=15d \
-          --web.enable-lifecycle
+          --web.enable-lifecycle \
+          --enable-feature=exemplar-storage
     networks:
       - assixx-network
     healthcheck:
@@ -534,10 +561,165 @@ services:
       - observability
       - production
 
+  # ===========================================================================
+  # postgres_exporter - PostgreSQL Metrics for Prometheus
+  # WHY: Production-Readiness for Multi-Tenant SaaS — DB-Latenz ist der #1
+  # Performance-Killer. Backend-Metrics allein (CPU/Memory/EventLoop) zeigen
+  # nicht WARUM eine Request slow ist. postgres_exporter liefert connections,
+  # locks, deadlocks, replication lag, bgwriter stats, table sizes.
+  # @see docs/infrastructure/adr/ADR-002-alerting-monitoring.md (Phase 5: TODO erledigt)
+  # @see docs/infrastructure/adr/ADR-025-pg-stat-statements-query-monitoring.md
+  # ===========================================================================
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.19.1
+    container_name: assixx-postgres-exporter
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          cpus: "0.1"
+          memory: 32M
+    environment:
+      # Separate URI/USER/PASS to avoid URL-encoding issues with special chars in password.
+      DATA_SOURCE_URI: "postgres:5432/${POSTGRES_DB}?sslmode=disable"
+      DATA_SOURCE_USER: ${POSTGRES_USER}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set - use doppler run}
+      # Single-DB setup — disable auto-discovery to avoid noise from template0/template1.
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    profiles:
+      - observability
+      - production
+
+  # ===========================================================================
+  # redis_exporter - Redis Metrics for Prometheus
+  # WHY: Cache-Hit-Ratio ist Frühwarnsystem für Performance-Degradation.
+  # Liefert: memory usage, evictions, hit/miss ratio, connected clients,
+  # command stats (rate per command type), persistence health.
+  # @see docs/infrastructure/adr/ADR-002-alerting-monitoring.md
+  # ===========================================================================
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.82.0-alpine
+    container_name: assixx-redis-exporter
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 64M
+        reservations:
+          cpus: "0.1"
+          memory: 16M
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    profiles:
+      - observability
+      - production
+
+  # ===========================================================================
+  # Tempo - Distributed Tracing Backend (ADR-048)
+  # Receives traces from otel-collector via OTLP gRPC.
+  # Query API exposed on :3200 for the Grafana Tempo datasource.
+  # ===========================================================================
+  tempo:
+    image: grafana/tempo:2.10.4
+    container_name: assixx-tempo
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200" # HTTP query API (Grafana datasource)
+      # 4317/4318 NOT published - internal OTLP receive only (collector → tempo)
+    networks:
+      - assixx-network
+    # NOTE: healthcheck disabled — grafana/tempo:2.10+ ships as distroless
+    # (no /bin/sh, no wget/curl/nc inside the container), so CMD-SHELL-based
+    # healthchecks fail with "exec: /bin/sh: no such file or directory".
+    # Same pattern as otel-collector-contrib (see below). Readiness is still
+    # queryable from outside via `curl http://localhost:3200/ready` — the
+    # HTTP endpoint is fine, only the in-container shell is missing.
+    # Downstream services (grafana, otel-collector) use `service_started`
+    # instead of `service_healthy` in their depends_on for this reason.
+    healthcheck:
+      disable: true
+    profiles:
+      - observability
+      - production
+
+  # ===========================================================================
+  # OpenTelemetry Collector - Trace Aggregation + Tail-Sampling (ADR-048)
+  # Applications emit OTLP to :4317 (gRPC) or :4318 (HTTP).
+  # Forwards sampled traces to tempo:4317 internally.
+  # Distribution: contrib (needed for tail_sampling processor).
+  # ===========================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.150.1
+    container_name: assixx-otel-collector
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    environment:
+      # Grafana Cloud OTLP fan-out (Phase 5, ADR-048 / FEAT_TEMPO_OTEL_MASTERPLAN).
+      # Injected into collector.yaml via ${VAR} substitution at config-load.
+      # Values provisioned via Doppler dev/stg/prd — see docs/how-to/HOW-TO-DOPPLER-GUIDE.md §8.
+      # Exporter is DEFINED in collector.yaml but NOT yet in pipelines.traces.exporters — Step 5.2.
+      GRAFANA_CLOUD_OTLP_ENDPOINT: ${GRAFANA_CLOUD_OTLP_ENDPOINT}
+      GRAFANA_CLOUD_OTLP_AUTH_B64: ${GRAFANA_CLOUD_OTLP_AUTH_B64}
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./otel-collector/collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC (backends connect here)
+      - "4318:4318" # OTLP HTTP (browser-from-frontend path, future use)
+      # 13133 and 8888 kept internal (healthcheck + collector-metrics)
+    depends_on:
+      tempo:
+        condition: service_started
+    networks:
+      - assixx-network
+    # NOTE: healthcheck omitted — the otel/opentelemetry-collector-contrib
+    # image is distroless-ish (no wget/curl/nc available inside the container
+    # for CMD-SHELL healthchecks). The health_check extension on :13133 is
+    # reachable from the Docker network for external probes, but containerized
+    # self-checks need a tool that the image doesn't ship. Readiness is visible
+    # in `docker logs assixx-otel-collector` ("Everything is ready").
+    profiles:
+      - observability
+      - production
+
   # Grafana - Dashboards & Visualization
   # Pre-configured with Loki and Prometheus datasources
   grafana:
-    image: grafana/grafana:12.4.2
+    image: grafana/grafana:12.4.3
     container_name: assixx-grafana
     restart: unless-stopped
     deploy:
@@ -562,9 +744,29 @@ services:
       GF_ANALYTICS_CHECK_FOR_UPDATES: false
       # Enable anonymous access for development (disable in production)
       GF_AUTH_ANONYMOUS_ENABLED: ${GF_ANONYMOUS_ENABLED:-false}
-      # Alerting
+      # Alerting (unified = v11+ single engine)
       GF_ALERTING_ENABLED: true
       GF_UNIFIED_ALERTING_ENABLED: true
+      # SMTP for alert emails — reuses the same Doppler-managed SMTP as the
+      # backend (SMTP_HOST/USER/PASS/FROM). STARTTLS is mandatory for port 587
+      # (Gmail and most providers). See HOW-TO-ALERTING.md for provider-specific
+      # notes (Gmail App Passwords, etc.).
+      GF_SMTP_ENABLED: "true"
+      GF_SMTP_HOST: ${SMTP_HOST}:${SMTP_PORT:-587}
+      GF_SMTP_USER: ${SMTP_USER}
+      GF_SMTP_PASSWORD: ${SMTP_PASS}
+      GF_SMTP_FROM_ADDRESS: ${ALERT_EMAIL_FROM:-${SMTP_FROM}}
+      GF_SMTP_FROM_NAME: "Assixx Alerts"
+      GF_SMTP_STARTTLS_POLICY: MandatoryStartTLS
+      GF_SMTP_SKIP_VERIFY: "false"
+      # Secrets referenced by provisioning/alerting/contact-points.yml.
+      # Grafana's email + slack validators reject empty strings, which would
+      # fail-close the entire provisioning step. So when the real secret is
+      # unset we feed RFC-2606 / RFC-6761 reserved sentinels: the contact
+      # point provisions cleanly, delivery fails (visible in grafana logs)
+      # until a real value is filled in via Doppler. See HOW-TO-ALERTING.md.
+      ALERT_EMAIL_TO: ${ALERT_EMAIL_TO:-alerts-unset@assixx.invalid}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-https://hooks.slack.invalid/unset}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
@@ -574,6 +776,8 @@ services:
         condition: service_healthy
       prometheus:
         condition: service_healthy
+      tempo:
+        condition: service_started
     networks:
       - assixx-network
     healthcheck:
@@ -618,3 +822,6 @@ volumes:
     name: assixx_prometheus_data
   grafana_data:
     name: assixx_grafana_data
+  # Tempo traces (ADR-048 — distributed tracing backend)
+  tempo_data:
+    name: assixx_tempo_data

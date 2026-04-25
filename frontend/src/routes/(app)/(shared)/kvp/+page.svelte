@@ -106,7 +106,7 @@
         notificationStore.decrementCount('kvp');
       });
     }
-    void goto(resolve(`/kvp-detail?uuid=${uuid}`, {}));
+    void goto(resolve(`/kvp-detail?uuid=${uuid}`));
   }
 
   // ==========================================================================
@@ -195,7 +195,9 @@
           </div>
           <div class="card-stat__content">
             <div class="card-stat__value">
-              {kvpState.formattedStats.teamTotal} / {kvpState.formattedStats.total}
+              {kvpState.formattedStats.teamTotal > 0 ?
+                `${kvpState.formattedStats.teamTotal} / ${kvpState.formattedStats.total}`
+              : 'Kontaktieren Sie Ihren Teamleiter'}
             </div>
             <div class="card-stat__label">Team / Gesamt</div>
           </div>
@@ -215,7 +217,7 @@
             <div class="card-stat__value">
               {kvpState.formattedStats.teamTotal > 0 ?
                 `${kvpState.formattedStats.implementationRate}%`
-              : '–'}
+              : 'Kontaktieren Sie Ihren Teamleiter'}
             </div>
             <div class="card-stat__label">Umsetzungsrate Team</div>
           </div>

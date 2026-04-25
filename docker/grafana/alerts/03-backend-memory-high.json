@@ -1,0 +1,59 @@
+{
+  "uid": "assixx-backend-memory-high",
+  "title": "Backend Memory High",
+  "ruleGroup": "assixx-warning",
+  "folderUID": "assixx-prod-alerts",
+  "noDataState": "OK",
+  "execErrState": "OK",
+  "for": "5m",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "queryType": "",
+      "relativeTimeRange": { "from": 600, "to": 0 },
+      "datasourceUid": "grafanacloud-prom",
+      "model": {
+        "expr": "assixx_process_resident_memory_bytes{job=\"assixx-backend\"}",
+        "intervalMs": 60000,
+        "maxDataPoints": 43200,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "B",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": { "type": "reduce", "expression": "A", "reducer": "last", "refId": "B" }
+    },
+    {
+      "refId": "C",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "B",
+        "conditions": [
+          {
+            "evaluator": { "params": [800000000], "type": "gt" },
+            "operator": { "type": "and" },
+            "query": { "params": ["B"] },
+            "reducer": { "type": "last" },
+            "type": "query"
+          }
+        ],
+        "refId": "C"
+      }
+    }
+  ],
+  "annotations": {
+    "summary": "Backend Memory > 800 MB seit 5 Minuten",
+    "description": "Der NestJS Backend-Prozess belegt ueber 800 MB Resident-Memory. Frueh-Warnung fuer OOM (Container-Limit: 4 GB). Pruefe Heap-Profile, evtl. Memory-Leak. Query: assixx_process_resident_memory_bytes"
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "backend"
+  }
+}

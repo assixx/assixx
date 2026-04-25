@@ -148,6 +148,24 @@ async function parseThemeSetting(response: Response | null): Promise<'dark' | 'l
   return null;
 }
 
+/**
+ * Parse `allow_user_password_change` policy from the security-settings API.
+ *
+ * Fallback on error = `false` (locked). Rationale: a transient 5xx should not
+ * suddenly expose the password-change UI to users whose Root admin locked it.
+ * "Fail closed" matches the DB-side default. See ADR-045 Layer-1 gate and
+ * user-request 2026-04-20.
+ */
+async function parseAllowUserPasswordChange(response: Response | null): Promise<boolean> {
+  if (response?.ok !== true) return false;
+  try {
+    const json = (await response.json()) as ApiResponse<{ allowed: boolean }>;
+    return json.data?.allowed === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Addon data from /addons/my-addons endpoint */
 interface AddonWithTenantInfo {
   code: string;
@@ -204,12 +222,88 @@ async function parseOrgScope(response: Response | null): Promise<OrganizationalS
   }
 }
 
+/**
+ * Fetch rootCount only when the caller is a root user.
+ *
+ * Powers the SingleRootWarningBanner in +layout.svelte: if the tenant has
+ * exactly one root, the banner urges the user to create a second one
+ * (credential-loss guard). For admins/employees we short-circuit with 0 so
+ * the banner is never rendered and no /root/* call is made for them.
+ *
+ * Reuses /root/dashboard (already optimized) rather than introducing a
+ * dedicated endpoint — cheap since the backend RBAC guard still blocks
+ * non-root callers at the /root/* path anyway.
+ */
+async function fetchRootCount(
+  role: string,
+  fetchFn: typeof fetch,
+  headers: Record<string, string>,
+): Promise<number> {
+  if (role !== 'root') return 0;
+  try {
+    const response = await fetchFn(`${API_BASE}/root/dashboard`, { headers });
+    if (!response.ok) return 0;
+    const json = (await response.json()) as ApiResponse<{ rootCount?: number }>;
+    return json.data?.rootCount ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Fetch tenant verification status (root + admin only — masterplan §5.3 + §0.2.5 #16).
+ *
+ * Powers the UnverifiedDomainBanner in +layout.svelte and the user-creation
+ * form `disabled` guards. When the call fails (network, 5xx) we fall back
+ * to `true` (verified) — we'd rather show no banner on a transient outage
+ * than scare the user with a "your tenant is unverified" message that may
+ * be wrong. The backend's `assertVerified()` gate is the authoritative
+ * source: if a non-verified tenant somehow gets `true` here, the very next
+ * user-creation attempt still 403s, so this is a UX fallback only.
+ *
+ * Employees never need this flag (no user-creation UI surfaced to them) —
+ * short-circuit with `true` to skip the network call entirely.
+ *
+ * @see masterplan §5.3 (banner + form guards), §2.7 (endpoint), §0.2.5 #16 (Root+Admin readable)
+ */
+async function fetchTenantVerified(
+  role: string,
+  fetchFn: typeof fetch,
+  headers: Record<string, string>,
+): Promise<boolean> {
+  if (role !== 'root' && role !== 'admin') return true;
+  try {
+    const response = await fetchFn(`${API_BASE}/domains/verification-status`, { headers });
+    if (!response.ok) return true;
+    const json = (await response.json()) as ApiResponse<{ verified: boolean }>;
+    return json.data?.verified ?? true;
+  } catch {
+    return true;
+  }
+}
+
 /** Clear auth cookies and redirect to login */
 function clearAuthAndRedirect(cookies: Parameters<LayoutServerLoad>[0]['cookies']): never {
   cookies.delete('accessToken', { path: '/' });
   cookies.delete('refreshToken', { path: '/api/v2/auth' });
   redirect(302, '/login');
 }
+
+/**
+ * Cookie name for the Single-Root-Warning-Banner dismiss flag.
+ *
+ * WHY cookie (not sessionStorage, see commit 2026-04-22):
+ * sessionStorage is only readable on the client, so SSR always rendered the
+ * banner and hydration flipped it off — producing a visible "flash" on every
+ * page load for users who had dismissed it. Routing the dismiss state through
+ * a cookie lets the server decide *before* rendering whether to emit the
+ * banner at all. No HTML flash, no hydration mismatch, no Vite-dev-mode-
+ * specific 1s delay after OAuth-Login.
+ *
+ * NOT HttpOnly: the component must write it from the close-button handler.
+ * Value is a boolean UI flag, no secret — XSS surface is irrelevant.
+ */
+const SINGLE_ROOT_BANNER_DISMISS_COOKIE = 'assixx_single_root_banner_dismissed';
 
 /** Unauthenticated response */
 const UNAUTHENTICATED_RESPONSE = {
@@ -222,6 +316,21 @@ const UNAUTHENTICATED_RESPONSE = {
   hierarchyLabels: DEFAULT_HIERARCHY_LABELS,
   orgScope: DEFAULT_ORG_SCOPE,
   activeRole: null as string | null,
+  // Drives SingleRootWarningBanner. 0 for unauthenticated/non-root users —
+  // banner only renders when rootCount === 1 (see +layout.svelte).
+  rootCount: 0,
+  // Drives UnverifiedDomainBanner + user-creation-form guards. Default `true`
+  // for unauthenticated paths: the banner only renders when `false` AND user
+  // is root/admin, neither condition is met here (see +layout.svelte §5.3).
+  tenantVerified: true,
+  // Drives the password-change UI in admin/employee-profile.
+  // Default `false` on unauthenticated paths — the login page never shows
+  // profile forms anyway, so the exact value is irrelevant; `false` matches
+  // the server-side default and the fail-closed semantics of the parser.
+  allowUserPasswordChange: false,
+  // Drives SingleRootWarningBanner visibility. Default `false` on
+  // unauthenticated paths — banner is gated by authentication anyway.
+  singleRootBannerDismissed: false,
 } as const;
 
 /** Build authenticated response from user data, counts, theme, addons, and labels */
@@ -232,7 +341,11 @@ async function buildAuthenticatedResponse(
   addonsResponse: Response | null,
   labelsResponse: Response | null,
   scopeResponse: Response | null,
+  passwordPolicyResponse: Response | null,
   activeRole: string | null,
+  rootCount: number,
+  tenantVerified: boolean,
+  singleRootBannerDismissed: boolean,
 ) {
   return {
     user: mapUserData(userData),
@@ -244,6 +357,16 @@ async function buildAuthenticatedResponse(
     hierarchyLabels: await parseHierarchyLabels(labelsResponse),
     orgScope: await parseOrgScope(scopeResponse),
     activeRole,
+    rootCount,
+    tenantVerified,
+    // Tenant-wide policy: when `false`, admin/employee-profile hide the
+    // password-change card. Root bypasses the gate in the backend + UI.
+    // See ADR-045 + user-request 2026-04-20.
+    allowUserPasswordChange: await parseAllowUserPasswordChange(passwordPolicyResponse),
+    // Server-read dismiss flag for the Single-Root-Warning-Banner — see
+    // SINGLE_ROOT_BANNER_DISMISS_COOKIE comment. When `true`, the banner
+    // is never emitted into the SSR HTML → no flash on hydration.
+    singleRootBannerDismissed,
   };
 }
 
@@ -257,21 +380,34 @@ async function fetchCountsThemeAddonsAndLabels(
   addonsResponse: Response | null;
   labelsResponse: Response | null;
   scopeResponse: Response | null;
+  passwordPolicyResponse: Response | null;
 }> {
-  const [countsResponse, themeResponse, addonsResponse, labelsResponse, scopeResponse] =
-    await Promise.all([
-      fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
-    ]);
+  const [
+    countsResponse,
+    themeResponse,
+    addonsResponse,
+    labelsResponse,
+    scopeResponse,
+    passwordPolicyResponse,
+  ] = await Promise.all([
+    fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
+    // Security policy — fetched in the same parallel batch so it does not
+    // add a waterfall step on every navigation.
+    fetchFn(`${API_BASE}/security-settings/user-password-change-policy`, { headers }).catch(
+      () => null,
+    ),
+  ]);
   return {
     countsResponse,
     themeResponse,
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
   };
 }
 
@@ -286,6 +422,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
   addonsResponse: Response | null;
   labelsResponse: Response | null;
   scopeResponse: Response | null;
+  passwordPolicyResponse: Response | null;
 }> {
   const [
     userResponse,
@@ -294,6 +431,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
   ] = await Promise.all([
     fetchFn(`${API_BASE}/users/me`, { headers }),
     fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
@@ -301,6 +439,9 @@ async function fetchUserCountsThemeAddonsAndLabels(
     fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/security-settings/user-password-change-policy`, { headers }).catch(
+      () => null,
+    ),
   ]);
   return {
     userResponse,
@@ -309,6 +450,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
   };
 }
 
@@ -345,37 +487,96 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
   // Read activeRole cookie for SSR banner rendering (non-sensitive UI state)
   const activeRole = cookies.get('activeRole') ?? null;
 
+  // SSR-read the Single-Root-Warning-Banner dismiss flag. Used by the layout
+  // gate to suppress the banner entirely on the server side when the user
+  // dismissed it — no more 1-second Vite-hydration flash (see commit 2026-04-22).
+  const singleRootBannerDismissed = cookies.get(SINGLE_ROOT_BANNER_DISMISS_COOKIE) === '1';
+
   // Check if RBAC hook already fetched user data (saves ~50-80ms!)
   const rbacUser = locals.user as UserData | undefined;
 
   if (rbacUser !== undefined) {
-    // FAST PATH: Reuse user from RBAC hook - fetch counts, theme, addons + labels in parallel
-    const fetchStart = performance.now();
-    const { countsResponse, themeResponse, addonsResponse, labelsResponse, scopeResponse } =
-      await fetchCountsThemeAddonsAndLabels(fetch, headers);
-    const fetchTime = Math.round(performance.now() - fetchStart);
-    const totalTime = Math.round(performance.now() - startTime);
-
-    log.debug(
-      { userId: rbacUser.id, fetchTime, totalTime, path: url.pathname },
-      `⚡ FAST PATH: RBAC user reused, /counts + /theme + /addons + /labels fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
-    );
-
-    return await buildAuthenticatedResponse(
+    return await loadFastPath(
       rbacUser,
-      countsResponse,
-      themeResponse,
-      addonsResponse,
-      labelsResponse,
-      scopeResponse,
+      fetch,
+      headers,
+      startTime,
+      url.pathname,
       activeRole,
+      singleRootBannerDismissed,
     );
   }
 
   // SLOW PATH: RBAC hook didn't set user - fetch both in parallel
   log.warn({ pathname: url.pathname }, '🐢 SLOW PATH: No RBAC user, fetching /users/me + /counts');
-  return await loadUserWithFetch(cookies, fetch, headers, startTime, url.pathname, activeRole);
+  return await loadUserWithFetch(
+    cookies,
+    fetch,
+    headers,
+    startTime,
+    url.pathname,
+    activeRole,
+    singleRootBannerDismissed,
+  );
 };
+
+/**
+ * FAST PATH: Reuse user from RBAC hook - fetch counts, theme, addons + labels
+ * in parallel. rootCount + tenantVerified are role-gated (rootCount is
+ * root-only, tenantVerified is root+admin per masterplan §0.2.5 #16) and
+ * run in the same Promise.all.
+ *
+ * Extracted from `load()` to keep that handler under the 60-line limit after
+ * the singleRootBannerDismissed cookie was added (commit 2026-04-22).
+ */
+async function loadFastPath(
+  rbacUser: UserData,
+  fetchFn: typeof fetch,
+  headers: Record<string, string>,
+  startTime: number,
+  pathname: string,
+  activeRole: string | null,
+  singleRootBannerDismissed: boolean,
+) {
+  const fetchStart = performance.now();
+  const [
+    {
+      countsResponse,
+      themeResponse,
+      addonsResponse,
+      labelsResponse,
+      scopeResponse,
+      passwordPolicyResponse,
+    },
+    rootCount,
+    tenantVerified,
+  ] = await Promise.all([
+    fetchCountsThemeAddonsAndLabels(fetchFn, headers),
+    fetchRootCount(rbacUser.role, fetchFn, headers),
+    fetchTenantVerified(rbacUser.role, fetchFn, headers),
+  ]);
+  const fetchTime = Math.round(performance.now() - fetchStart);
+  const totalTime = Math.round(performance.now() - startTime);
+
+  log.debug(
+    { userId: rbacUser.id, fetchTime, totalTime, path: pathname },
+    `⚡ FAST PATH: RBAC user reused, /counts + /theme + /addons + /labels + /verification-status fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
+  );
+
+  return await buildAuthenticatedResponse(
+    rbacUser,
+    countsResponse,
+    themeResponse,
+    addonsResponse,
+    labelsResponse,
+    scopeResponse,
+    passwordPolicyResponse,
+    activeRole,
+    rootCount,
+    tenantVerified,
+    singleRootBannerDismissed,
+  );
+}
 
 /** Load user via API fetch (slow path when RBAC user not available) */
 async function loadUserWithFetch(
@@ -385,6 +586,7 @@ async function loadUserWithFetch(
   startTime: number,
   pathname: string,
   activeRole: string | null,
+  singleRootBannerDismissed: boolean,
 ) {
   const fetchStart = performance.now();
   const {
@@ -394,6 +596,7 @@ async function loadUserWithFetch(
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
   } = await fetchUserCountsThemeAddonsAndLabels(fetchFn, headers);
   const fetchTime = Math.round(performance.now() - fetchStart);
 
@@ -410,10 +613,18 @@ async function loadUserWithFetch(
     redirect(302, '/login');
   }
 
+  // Fetch rootCount + tenantVerified AFTER user data arrives — both are
+  // role-gated, and the role isn't known until /users/me resolves. Run them
+  // in parallel since they hit different endpoints.
+  const [rootCount, tenantVerified] = await Promise.all([
+    fetchRootCount(userData.role, fetchFn, headers),
+    fetchTenantVerified(userData.role, fetchFn, headers),
+  ]);
+
   const totalTime = Math.round(performance.now() - startTime);
   log.debug(
     { fetchTime, totalTime, path: pathname },
-    `🐢 SLOW PATH complete: /users/me + /counts + /theme + /addons + /labels fetched (${fetchTime}ms, total: ${totalTime}ms)`,
+    `🐢 SLOW PATH complete: /users/me + /counts + /theme + /addons + /labels + /verification-status fetched (${fetchTime}ms, total: ${totalTime}ms)`,
   );
 
   return await buildAuthenticatedResponse(
@@ -423,6 +634,10 @@ async function loadUserWithFetch(
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
     activeRole,
+    rootCount,
+    tenantVerified,
+    singleRootBannerDismissed,
   );
 }

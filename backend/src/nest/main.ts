@@ -20,7 +20,13 @@ import fastifyStatic from '@fastify/static';
 import { Logger as NestLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import type { FastifyInstance } from 'fastify';
+import { trace } from '@opentelemetry/api';
+import type {
+  FastifyInstance,
+  FastifyReply,
+  FastifyRequest,
+  HookHandlerDoneFunction,
+} from 'fastify';
 import { Logger } from 'nestjs-pino';
 import path from 'path';
 import 'reflect-metadata';
@@ -33,6 +39,7 @@ import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
 import { getErrorMessage } from './common/utils/error.utils.js';
 import { DatabaseService } from './database/database.service.js';
 import { PartitionHealthService } from './database/partition-health.service.js';
+import { httpRequestDurationHistogram } from './metrics/http-request-duration.metric.js';
 
 /** Get uploads directory path (Docker: /app/uploads, volume mounted) */
 function getUploadsPath(): string {
@@ -69,6 +76,72 @@ function setupHealthCheck(fastify: FastifyInstance, partitionHealth: PartitionHe
   }
 }
 
+/**
+ * Register Fastify `onResponse` hook that observes the
+ * `assixx_http_request_duration_seconds` histogram for every HTTP request.
+ *
+ * Why `onResponse` (and not a NestJS interceptor):
+ *   - `reply.elapsedTime` measures the full Fastify lifecycle (routing,
+ *     hooks, handler, serialization, response-sent), which is the
+ *     canonical duration a latency metric should reflect.
+ *   - Interceptors only wrap the NestJS handler call, missing the time
+ *     spent in Fastify plugins (helmet, cookie, multipart, CORS).
+ *
+ * Exemplar emission is gated by PROMETHEUS_EXEMPLARS_ENABLED (Session 3b /
+ * Step 3.3.2). Stage 3b-a default is OFF → histogram observes without
+ * exemplars; on-wire output matches pre-3b metrics for backward compat.
+ * Flag ON → pulls `trace_id`/`span_id` from the active OTel span (shared
+ * via the Phase 2 NodeTracerProvider) and attaches them as OpenMetrics
+ * exemplar labels.
+ *
+ * @see docs/FEAT_TEMPO_OTEL_MASTERPLAN.md — Session 3b / Step 3.3.2
+ * @see docs/infrastructure/adr/ADR-048-distributed-tracing-tempo-otel.md
+ */
+function setupMetricsHook(fastify: FastifyInstance): void {
+  // Resolved at module-level boot — flag flip requires container recreation
+  // (same ceremony as OTEL_TEMPO_ENABLED). Keeping the read here (not
+  // top-level) localizes the env dependency to this function.
+  const exemplarsEnabled = process.env['PROMETHEUS_EXEMPLARS_ENABLED'] === 'true';
+
+  fastify.addHook(
+    'onResponse',
+    (request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction): void => {
+      // Fastify reply.elapsedTime is in milliseconds; Prometheus convention
+      // for `*_seconds` histograms is seconds.
+      const durationSec = reply.elapsedTime / 1000;
+
+      // routeOptions.url gives the parameterized pattern (e.g. /users/:id),
+      // keeping label cardinality bounded. Missing on 404 fallback paths;
+      // fall back to 'unknown' to stay defensive.
+      const labels = {
+        method: request.method,
+        route: request.routeOptions.url ?? 'unknown',
+        status: String(reply.statusCode),
+      };
+
+      if (exemplarsEnabled) {
+        const span = trace.getActiveSpan();
+        const ctx = span?.spanContext();
+        if (ctx !== undefined) {
+          httpRequestDurationHistogram.observe({
+            labels,
+            value: durationSec,
+            exemplarLabels: { trace_id: ctx.traceId, span_id: ctx.spanId },
+          });
+        } else {
+          // Active span missing (worker path, probes, startup edge) — still
+          // record the duration without exemplar annotation.
+          httpRequestDurationHistogram.observe(labels, durationSec);
+        }
+      } else {
+        httpRequestDurationHistogram.observe(labels, durationSec);
+      }
+
+      done();
+    },
+  );
+}
+
 /** Register static file serving for user uploads only.
  * Frontend is served by SvelteKit (:3001 via Nginx), NOT by the backend.
  */
@@ -101,18 +174,77 @@ async function setupSecurity(app: NestFastifyApplication): Promise<void> {
   // every upload endpoint. See docs/infrastructure/adr/ADR-042-multipart-file-upload-pipeline.md
   await app.register(import('@fastify/multipart'));
 
-  // CORS - supports multiple origins from ALLOWED_ORIGINS env var (comma-separated)
-  const allowedOrigins = (
-    process.env['ALLOWED_ORIGINS'] ?? 'http://localhost:3000,http://localhost:5173'
-  )
-    .split(',')
-    .map((origin: string) => origin.trim());
+  // CORS — origin allowlist via regex callback (ADR-050 §Step 2.4).
+  //
+  // Static list (old behavior) doesn't scale to wildcard subdomain routing:
+  // every <slug>.assixx.com is a valid origin once ADR-050 ships, and the
+  // set is DB-driven, not env-driven. A callback with a pinned regex shape
+  // is the cleanest contract — the regex itself IS the policy.
+  //
+  // Allowed:
+  //   - apex:       https://assixx.com, https://www.assixx.com
+  //   - subdomain:  https://<slug>.assixx.com   (slug matches extractSlug regex)
+  //   - dev:        http://localhost:5173, http://*.localhost:5173
+  //
+  // Same-origin / non-browser requests arrive with `origin === undefined`;
+  // @fastify/cors short-circuits those before reaching the callback, but we
+  // accept explicitly for defense-in-depth on any future adapter change.
+  // Matches @fastify/cors `OriginFunction` signature — NestJS's Fastify
+  // adapter forwards `enableCors` straight to @fastify/cors, so the callback
+  // shape is dictated by that plugin (callback's 2nd arg is `origin`, not
+  // `allow`). Locally-declared instead of imported because `@fastify/cors`
+  // is a transitive dep via `@nestjs/platform-fastify` and not listed in
+  // `backend/package.json`. Declaring the type here keeps the import graph
+  // clean while preserving full type-safety at the call site.
+  type FastifyCorsOriginFn = (
+    origin: string | undefined,
+    callback: (err: Error | null, origin: boolean | string | RegExp) => void,
+  ) => void;
+
+  const corsOriginHandler: FastifyCorsOriginFn = (
+    requestOrigin: string | undefined,
+    callback: (err: Error | null, origin: boolean | string | RegExp) => void,
+  ) => {
+    if (requestOrigin === undefined || isAllowedCorsOrigin(requestOrigin)) {
+      // `true` = "reflect the request origin" — conventional dynamic-allowlist pattern.
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`CORS origin not allowed: ${requestOrigin}`), false);
+  };
+
   app.enableCors({
-    origin: allowedOrigins,
+    origin: corsOriginHandler,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
+}
+
+/**
+ * CORS origin allowlist — pure function so the policy is testable in
+ * isolation and greppable in one place.
+ *
+ * Regex shapes mirror `extractSlug()` (backend/src/nest/common/utils/extract-slug.ts)
+ * for subdomain matching. The apex/dev patterns are expressed explicitly
+ * rather than composed from extractSlug so the CORS surface stays auditable
+ * without cross-file reasoning.
+ *
+ * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §"CORS"
+ */
+const PROD_APEX_ORIGIN_REGEX = /^https:\/\/(?:www\.)?assixx\.com$/;
+const PROD_SUBDOMAIN_ORIGIN_REGEX = /^https:\/\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.assixx\.com$/;
+// Accepts both ports 5173 (normal `pnpm run dev:svelte`) and 5174 (Playwright
+// E2E parallel Vite instance, see `playwright.config.ts::webServer`). Without
+// 5174 the E2E login fails with `CORS origin not allowed: http://apitest.localhost:5174`.
+const DEV_ORIGIN_REGEX = /^http:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)?localhost:517[34]$/;
+
+function isAllowedCorsOrigin(origin: string): boolean {
+  return (
+    PROD_APEX_ORIGIN_REGEX.test(origin) ||
+    PROD_SUBDOMAIN_ORIGIN_REGEX.test(origin) ||
+    DEV_ORIGIN_REGEX.test(origin)
+  );
 }
 
 // =============================================================================
@@ -234,6 +366,10 @@ async function bootstrap(): Promise<void> {
   // Setup in order
   const partitionHealth = app.get(PartitionHealthService);
   setupHealthCheck(fastify, partitionHealth);
+  // ADR-048 Phase 3b / Session 3b: observe HTTP request duration into the
+  // assixx_http_request_duration_seconds histogram. Must register before
+  // app.listen() so the hook is active on the first request.
+  setupMetricsHook(fastify);
   await setupUploadsServing(app, uploadsPath);
   bootstrapLogger.log(`Uploads serving configured: ${uploadsPath}`);
 

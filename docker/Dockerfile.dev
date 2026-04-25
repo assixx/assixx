@@ -8,19 +8,31 @@
 # - Cache mounts for pnpm store (faster rebuilds)
 # =============================================================================
 
-# Node version is configurable via docker-compose.yml build args
-ARG NODE_VERSION=24.14.0-alpine3.22
+# Node version is configurable via docker-compose.yml build args.
+#
+# IMPORTANT: the backend image uses Debian slim (glibc), NOT Alpine (musl).
+# Rationale: musl's DNS resolver ships without EDNS0 support and has a long
+# history of dual-stack quirks with Docker's embedded DNS (127.0.0.11) —
+# `getaddrinfo(AF_UNSPEC)` can drop the A-answer and return AAAA-only, which
+# then fails with ENETUNREACH on v4-only bridges. Affected every outbound
+# fetch() (OAuth token exchange, JWKS, any future third-party HTTPS).
+# glibc implements EDNS0, TCP fallback, and RFC-compliant dual-stack, so the
+# whole failure class disappears by choosing the standards-compliant libc.
+# See moby#41651, bell-sw "Alpine DNS issues", alpinelinux/docker-alpine#399.
+ARG NODE_VERSION=24.15.0-bookworm-slim
 FROM node:${NODE_VERSION}
 LABEL org.opencontainers.image.authors="Assixx"
 
-# Install development tools
-RUN apk add --no-cache curl jq
+# Install development tools (Debian/apt, not Alpine/apk)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl jq \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm globally (pinned version matching packageManager field)
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
 # pnpm version is configurable for consistency across environments
-ARG PNPM_VERSION=10.33.0
+ARG PNPM_VERSION=10.33.2
 RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app

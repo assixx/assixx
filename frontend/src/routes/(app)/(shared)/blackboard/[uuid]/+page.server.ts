@@ -6,14 +6,22 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
-import { apiFetchWithPermission } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
+import type { BlackboardMyPermissions } from '../_lib/types';
 import type { FullEntryResponse, PaginatedComments } from './_lib/types';
 
 const log = createLogger('BlackboardDetail');
+
+/** Fail-closed default when /blackboard/my-permissions fails (ADR-045 Layer 2). */
+const DEFAULT_MY_PERMISSIONS: BlackboardMyPermissions = {
+  posts: { canRead: false, canWrite: false, canDelete: false },
+  comments: { canRead: false, canWrite: false, canDelete: false },
+  archive: { canRead: false, canWrite: false },
+};
 
 interface ParentUser {
   id: number;
@@ -51,11 +59,10 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) =
     error(400, 'UUID fehlt');
   }
 
-  const result = await apiFetchWithPermission<FullEntryData>(
-    `/blackboard/entries/${uuid}/full`,
-    token,
-    fetch,
-  );
+  const [result, myPermissions] = await Promise.all([
+    apiFetchWithPermission<FullEntryData>(`/blackboard/entries/${uuid}/full`, token, fetch),
+    apiFetch<BlackboardMyPermissions>('/blackboard/my-permissions', token, fetch),
+  ]);
 
   if (result.permissionDenied) {
     const parentData = await parent();
@@ -63,9 +70,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) =
     return {
       permissionDenied: true as const,
       entry: null,
-      comments: { comments: [], total: 0, hasMore: false } as PaginatedComments,
+      comments: { comments: [], total: 0, hasMore: false },
       attachments: [],
       currentUser: null,
+      orgScope: parentData.orgScope,
+      myPermissions: myPermissions ?? DEFAULT_MY_PERMISSIONS,
     };
   }
 
@@ -88,6 +97,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) =
     entry: result.data.entry,
     comments: result.data.comments ?? defaultComments,
     attachments: result.data.attachments ?? [],
-    currentUser: mapCurrentUser(parentData.user as ParentUser | null | undefined),
+    currentUser: mapCurrentUser(parentData.user),
+    orgScope: parentData.orgScope,
+    myPermissions: myPermissions ?? DEFAULT_MY_PERMISSIONS,
   };
 };

@@ -49,9 +49,22 @@ export function populateFormFromList(list: InventoryList): {
     codeSeparator: list.codeSeparator,
     codeDigits: list.codeDigits,
     icon: list.icon ?? '',
-    isActive: (list.isActive === 4 ? 0 : list.isActive) as FormIsActiveStatus,
+    isActive: list.isActive === 4 ? 0 : list.isActive,
     tagIds: list.tags.map((t) => t.id),
   };
+}
+
+// ── Date Helpers ───────────────────────────────────────────────
+
+/** Format ISO date string as "DD.MM.YYYY, HH:mm" (de-DE) — used in preview footer */
+export function formatDateTime(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 // ── Status Count Helpers ───────────────────────────────────────

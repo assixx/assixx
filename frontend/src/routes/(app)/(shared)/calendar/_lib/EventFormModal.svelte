@@ -417,17 +417,6 @@
             blendet zugehörige {labels.team} aus.
           </span>
         </div>
-
-        <!-- Attendees Section -->
-        <div class="form-field">
-          <span class="form-field__label">Teilnehmer</span>
-          <div id="attendeesContainer">
-            <p class="flex items-center gap-2 text-(--color-info)">
-              <i class="fas fa-info-circle"></i>
-              Alle Mitarbeiter der Firma werden automatisch eingeladen
-            </p>
-          </div>
-        </div>
       {/if}
 
       <!-- Recurrence (Custom Dropdown like Legacy) -->
@@ -456,7 +445,7 @@
                 class="dropdown__option"
                 class:dropdown__option--selected={formData.recurrence === option.value}
                 onclick={() => {
-                  formData.recurrence = option.value as typeof formData.recurrence;
+                  formData.recurrence = option.value;
                   recurrenceDropdownOpen = false;
                 }}
               >
@@ -494,7 +483,7 @@
                   class="dropdown__option"
                   class:dropdown__option--selected={formData.recurrenceEndType === option.value}
                   onclick={() => {
-                    formData.recurrenceEndType = option.value as typeof formData.recurrenceEndType;
+                    formData.recurrenceEndType = option.value;
                     recurrenceEndDropdownOpen = false;
                   }}
                 >
