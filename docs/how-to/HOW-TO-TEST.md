@@ -10,18 +10,18 @@
 
 ## TL;DR — welcher Befehl wann?
 
-| Situation                                          | Befehl                                           | Dauer  | Tier   |
-| -------------------------------------------------- | ------------------------------------------------ | ------ | ------ |
-| Während TDD am einzelnen Modul                     | `pnpm exec vitest --project unit <file>`         | s–min  | 1      |
-| Vor jedem Commit                                   | `pnpm run validate:all`                          | ~30 s  | —      |
-| Backend-Code-Änderung verifizieren                 | `pnpm run test:api`                              | ~33 s  | 2      |
-| Permission-/Auth-Änderung verifizieren             | `pnpm run test:permission`                       | ~4 s   | 1a     |
-| Frontend-Util-Änderung                             | `pnpm test --project frontend-unit`              | <14 s  | 1b     |
-| UI-Flow ändern (Login, Dashboard, Navigation)      | `pnpm run test:e2e`                              | ~25 s  | 3      |
-| Pre-Release Smoke-Sicherheit                       | `pnpm run test:load:smoke`                       | ~65 s  | 4      |
-| Verdacht auf Perf-Regression                       | `pnpm run test:load:baseline`                    | ~5 min | 4      |
-| Capacity-Test (Pool-Saturation finden)             | `PROFILE=full LOGINS='[…]' pnpm run test:load:baseline` | ~8 min | 4      |
-| Vollständige Pipeline (Pre-Release-Tag)            | `pnpm test`                                      | ~3 min | 1+2+3+4 |
+| Situation                                     | Befehl                                                  | Dauer  | Tier    |
+| --------------------------------------------- | ------------------------------------------------------- | ------ | ------- |
+| Während TDD am einzelnen Modul                | `pnpm exec vitest --project unit <file>`                | s–min  | 1       |
+| Vor jedem Commit                              | `pnpm run validate:all`                                 | ~30 s  | —       |
+| Backend-Code-Änderung verifizieren            | `pnpm run test:api`                                     | ~33 s  | 2       |
+| Permission-/Auth-Änderung verifizieren        | `pnpm run test:permission`                              | ~4 s   | 1a      |
+| Frontend-Util-Änderung                        | `pnpm test --project frontend-unit`                     | <14 s  | 1b      |
+| UI-Flow ändern (Login, Dashboard, Navigation) | `pnpm run test:e2e`                                     | ~25 s  | 3       |
+| Pre-Release Smoke-Sicherheit                  | `pnpm run test:load:smoke`                              | ~65 s  | 4       |
+| Verdacht auf Perf-Regression                  | `pnpm run test:load:baseline`                           | ~5 min | 4       |
+| Capacity-Test (Pool-Saturation finden)        | `PROFILE=full LOGINS='[…]' pnpm run test:load:baseline` | ~8 min | 4       |
+| Vollständige Pipeline (Pre-Release-Tag)       | `pnpm test`                                             | ~3 min | 1+2+3+4 |
 
 ---
 
@@ -237,34 +237,34 @@ backend/test/
 
 ### Vitest-Config (Project `api`)
 
-| Setting       | Wert                            | Warum                                          |
-| ------------- | ------------------------------- | ---------------------------------------------- |
-| `name`        | `api`                           | Project-Selektor: `--project api`              |
-| `pool`        | `forks`                         | Process-basiert (kein Worker-Sharing)          |
-| `maxWorkers`  | `1`                             | Sequentiell (Tests teilen Auth-State)          |
-| `isolate`     | `false`                         | Module-Cache geteilt (Login nur 1×)            |
-| `testTimeout` | `30_000`                        | 30 s/Test (externe HTTP-Calls)                 |
-| `hookTimeout` | `30_000`                        | 30 s/Hook                                      |
-| `include`     | `backend/test/**/*.api.test.ts` | Nur `.api.test.ts`-Files                       |
-| `globals`     | `true`                          | `describe`, `it`, `expect` ohne Import         |
+| Setting       | Wert                            | Warum                                  |
+| ------------- | ------------------------------- | -------------------------------------- |
+| `name`        | `api`                           | Project-Selektor: `--project api`      |
+| `pool`        | `forks`                         | Process-basiert (kein Worker-Sharing)  |
+| `maxWorkers`  | `1`                             | Sequentiell (Tests teilen Auth-State)  |
+| `isolate`     | `false`                         | Module-Cache geteilt (Login nur 1×)    |
+| `testTimeout` | `30_000`                        | 30 s/Test (externe HTTP-Calls)         |
+| `hookTimeout` | `30_000`                        | 30 s/Hook                              |
+| `include`     | `backend/test/**/*.api.test.ts` | Nur `.api.test.ts`-Files               |
+| `globals`     | `true`                          | `describe`, `it`, `expect` ohne Import |
 
 **Kein Setup-File:** Keine Mocks — echte HTTP-Requests gegen Docker-Backend.
 
 ### `helpers.ts` — Exports
 
-| Export                 | Signatur                                         | Zweck                                            |
-| ---------------------- | ------------------------------------------------ | ------------------------------------------------ |
-| `BASE_URL`             | `string`                                         | `http://localhost:3000/api/v2`                   |
-| `APITEST_EMAIL`        | `string`                                         | `admin@apitest.de`                               |
-| `APITEST_PASSWORD`     | `string`                                         | `ApiTest12345!`                                  |
-| `loginApitest()`       | `() => Promise<AuthState>`                       | Cached Login — 1 HTTP-Request für komplette Suite |
+| Export                 | Signatur                                         | Zweck                                              |
+| ---------------------- | ------------------------------------------------ | -------------------------------------------------- |
+| `BASE_URL`             | `string`                                         | `http://localhost:3000/api/v2`                     |
+| `APITEST_EMAIL`        | `string`                                         | `admin@apitest.de`                                 |
+| `APITEST_PASSWORD`     | `string`                                         | `ApiTest12345!`                                    |
+| `loginApitest()`       | `() => Promise<AuthState>`                       | Cached Login — 1 HTTP-Request für komplette Suite  |
 | `authHeaders(token)`   | `(string) => Record<string, string>`             | `Authorization` + `Content-Type: application/json` |
-| `authOnly(token)`      | `(string) => Record<string, string>`             | `Authorization` only (für GET/DELETE)            |
-| `fetchWithRetry()`     | `(url, options?, retries?) => Promise<Response>` | Auto-Retry bei 429 mit exponential backoff       |
-| `flushThrottleKeys()`  | `() => void`                                     | Flushed `throttle:*` Redis-Keys (Export-Limits)  |
-| `ensureTestEmployee()` | `(token) => Promise<number>`                     | Erstellt/findet Test-Employee (Chat-Tests)       |
-| `AuthState`            | `interface`                                      | `{ authToken, refreshToken, userId, tenantId }`  |
-| `JsonBody`             | `type`                                           | `Record<string, any>`                            |
+| `authOnly(token)`      | `(string) => Record<string, string>`             | `Authorization` only (für GET/DELETE)              |
+| `fetchWithRetry()`     | `(url, options?, retries?) => Promise<Response>` | Auto-Retry bei 429 mit exponential backoff         |
+| `flushThrottleKeys()`  | `() => void`                                     | Flushed `throttle:*` Redis-Keys (Export-Limits)    |
+| `ensureTestEmployee()` | `(token) => Promise<number>`                     | Erstellt/findet Test-Employee (Chat-Tests)         |
+| `AuthState`            | `interface`                                      | `{ authToken, refreshToken, userId, tenantId }`    |
+| `JsonBody`             | `type`                                           | `Record<string, any>`                              |
 
 ### Critical Patterns
 
@@ -293,7 +293,9 @@ const res = await fetch(`${BASE_URL}/logs/export?format=json...`);
 import { type AuthState, BASE_URL, type JsonBody, authOnly, loginApitest } from './helpers.js';
 
 let auth: AuthState;
-beforeAll(async () => { auth = await loginApitest(); });
+beforeAll(async () => {
+  auth = await loginApitest();
+});
 
 describe('Module: List', () => {
   let res: Response;
@@ -304,9 +306,15 @@ describe('Module: List', () => {
     body = (await res.json()) as JsonBody;
   });
 
-  it('should return 200 OK', () => { expect(res.status).toBe(200); });
-  it('should return success true', () => { expect(body.success).toBe(true); });
-  it('should return array', () => { expect(Array.isArray(body.data)).toBe(true); });
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+  it('should return success true', () => {
+    expect(body.success).toBe(true);
+  });
+  it('should return array', () => {
+    expect(Array.isArray(body.data)).toBe(true);
+  });
 });
 ```
 
@@ -316,7 +324,9 @@ describe('Module: List', () => {
 import { type AuthState, BASE_URL, type JsonBody, authHeaders, authOnly, loginApitest } from './helpers.js';
 
 let auth: AuthState;
-beforeAll(async () => { auth = await loginApitest(); });
+beforeAll(async () => {
+  auth = await loginApitest();
+});
 
 let resourceId: number;
 
@@ -377,7 +387,9 @@ describe('Module: Delete', () => {
 import { type AuthState, BASE_URL, type JsonBody, authOnly, flushThrottleKeys, loginApitest } from './helpers.js';
 
 let auth: AuthState;
-beforeAll(async () => { auth = await loginApitest(); });
+beforeAll(async () => {
+  auth = await loginApitest();
+});
 
 describe('Module: Export JSON', () => {
   let res: Response;
@@ -389,7 +401,9 @@ describe('Module: Export JSON', () => {
     });
   });
 
-  it('should return 200 OK', () => { expect(res.status).toBe(200); });
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
 });
 ```
 
@@ -515,10 +529,10 @@ PROFILE=full LOGINS='[
 
 Rate-Limits werden PRO JWT-User-ID getrackt:
 
-| Tier   | Limit          | Sustained req/s/User |
-| ------ | -------------- | -------------------- |
-| `user` | 1000 / 15 min  | ~1.1                 |
-| `admin`| 2000 / 15 min  | ~2.2                 |
+| Tier    | Limit         | Sustained req/s/User |
+| ------- | ------------- | -------------------- |
+| `user`  | 1000 / 15 min | ~1.1                 |
+| `admin` | 2000 / 15 min | ~2.2                 |
 
 **Single-Tenant @ >5 VU = 429-Storm** statt Latency-Daten.
 
@@ -652,10 +666,13 @@ if (unreachableGuard) {
 
 // switch default
 switch (level) {
-  case 'read': return true;
-  case 'write': return false;
+  case 'read':
+    return true;
+  case 'write':
+    return false;
   /* v8 ignore next -- @preserve exhaustive switch */
-  default: return false;
+  default:
+    return false;
 }
 
 // Block-Bereich ignorieren
@@ -677,25 +694,25 @@ Komplette Referenz: [Vitest Coverage Docs](https://vitest.dev/guide/coverage)
 
 ## Troubleshooting
 
-| Symptom                                  | Tier | Ursache                            | Lösung                                                                      |
-| ---------------------------------------- | ---- | ---------------------------------- | --------------------------------------------------------------------------- |
-| `429 Too Many Requests` on login         | 2    | Rate-Limit (login/export)          | `flushThrottleKeys()` oder `pnpm run test:load:flush`                       |
-| `401 Unauthorized`                       | 2    | Token missing/expired              | Login-Cache prüfen, Docker neustarten                                       |
-| `400 Bad Request`                        | 2    | Content-Type bei GET/DELETE        | `authOnly()` statt `authHeaders()` verwenden                                |
-| `400 Bad Request`                        | 2    | Validation-Error                   | Body-Format gegen Zod-Schema prüfen                                         |
-| `403 Forbidden` (KVP)                    | 2    | User ist kein Team-Lead            | `UPDATE teams SET team_lead_id = 1 WHERE id = 2` (siehe Prerequisites)      |
-| `403 Forbidden` (Addon)                  | 2    | Addon nicht aktiviert              | `INSERT INTO tenant_addons …` (siehe Prerequisites)                         |
-| `404 Not Found`                          | 2    | Resource existiert nicht           | Create-`describe` muss VOR Get/Delete kommen                                |
-| `500 Internal Server Error`              | 2    | Backend-Bug                        | `docker logs assixx-backend --tail 100`                                     |
-| `ECONNREFUSED`                           | 2/3/4| Backend down                       | `cd docker && doppler run -- docker-compose up -d`                          |
-| `ECONNRESET`                             | 2    | Backend gecrashed                  | `doppler run -- docker-compose restart`                                     |
-| Test-Timeout (30 s)                      | 2    | hookTimeout zu kurz                | `beforeAll(async () => {...}, 60_000)` als 2. Argument                      |
-| Double-wrapped Response                  | 2    | Controller + ResponseInterceptor   | Controller soll `data` direkt returnen (nicht `{success, data}`)            |
-| Playwright `webServer.command failed`    | 3    | Port :5173 belegt                  | `./scripts/free-port.sh 5173`                                               |
-| Turnstile-Challenge persistiert          | 3    | Echter Turnstile-Key statt Test-Key | parallel `pnpm run dev:svelte` killen, nur Playwright-managed laufen lassen |
-| k6 `permission denied` auf summary       | 4    | Docker-User-Mismatch               | Wrapper-Skript benutzt `--user "$(id -u):$(id -g)"` (in `scripts/run-load-baseline.sh`) |
-| k6 `429` storm @ >5 VU single-tenant     | 4    | ADR-001 admin throttle 2000/15min  | `PROFILE=full LOGINS='[…5+ tenants…]'` verwenden                            |
-| Baseline `failed: refuses to start`      | 4    | `PROFILE=full` + Pool < 5          | Pool auf 5+ Logins erweitern oder `PROFILE=light` lassen                    |
+| Symptom                               | Tier  | Ursache                             | Lösung                                                                                  |
+| ------------------------------------- | ----- | ----------------------------------- | --------------------------------------------------------------------------------------- |
+| `429 Too Many Requests` on login      | 2     | Rate-Limit (login/export)           | `flushThrottleKeys()` oder `pnpm run test:load:flush`                                   |
+| `401 Unauthorized`                    | 2     | Token missing/expired               | Login-Cache prüfen, Docker neustarten                                                   |
+| `400 Bad Request`                     | 2     | Content-Type bei GET/DELETE         | `authOnly()` statt `authHeaders()` verwenden                                            |
+| `400 Bad Request`                     | 2     | Validation-Error                    | Body-Format gegen Zod-Schema prüfen                                                     |
+| `403 Forbidden` (KVP)                 | 2     | User ist kein Team-Lead             | `UPDATE teams SET team_lead_id = 1 WHERE id = 2` (siehe Prerequisites)                  |
+| `403 Forbidden` (Addon)               | 2     | Addon nicht aktiviert               | `INSERT INTO tenant_addons …` (siehe Prerequisites)                                     |
+| `404 Not Found`                       | 2     | Resource existiert nicht            | Create-`describe` muss VOR Get/Delete kommen                                            |
+| `500 Internal Server Error`           | 2     | Backend-Bug                         | `docker logs assixx-backend --tail 100`                                                 |
+| `ECONNREFUSED`                        | 2/3/4 | Backend down                        | `cd docker && doppler run -- docker-compose up -d`                                      |
+| `ECONNRESET`                          | 2     | Backend gecrashed                   | `doppler run -- docker-compose restart`                                                 |
+| Test-Timeout (30 s)                   | 2     | hookTimeout zu kurz                 | `beforeAll(async () => {...}, 60_000)` als 2. Argument                                  |
+| Double-wrapped Response               | 2     | Controller + ResponseInterceptor    | Controller soll `data` direkt returnen (nicht `{success, data}`)                        |
+| Playwright `webServer.command failed` | 3     | Port :5173 belegt                   | `./scripts/free-port.sh 5173`                                                           |
+| Turnstile-Challenge persistiert       | 3     | Echter Turnstile-Key statt Test-Key | parallel `pnpm run dev:svelte` killen, nur Playwright-managed laufen lassen             |
+| k6 `permission denied` auf summary    | 4     | Docker-User-Mismatch                | Wrapper-Skript benutzt `--user "$(id -u):$(id -g)"` (in `scripts/run-load-baseline.sh`) |
+| k6 `429` storm @ >5 VU single-tenant  | 4     | ADR-001 admin throttle 2000/15min   | `PROFILE=full LOGINS='[…5+ tenants…]'` verwenden                                        |
+| Baseline `failed: refuses to start`   | 4     | `PROFILE=full` + Pool < 5           | Pool auf 5+ Logins erweitern oder `PROFILE=light` lassen                                |
 
 ### Debug — Backend-Logs
 

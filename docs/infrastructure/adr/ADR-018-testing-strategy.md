@@ -425,17 +425,17 @@ WS-Soak, CI diff) covering ground Smoke cannot — namely write-amplification,
 RLS-`set_config` overhead, pool-saturation knees, and persistent-connection
 behaviour.
 
-| Aspect        | Decision                                                                                                |
-| ------------- | ------------------------------------------------------------------------------------------------------- |
-| Tool          | [k6](https://grafana.com/docs/k6/) via Docker (`grafana/k6:latest`)                                     |
-| Scope         | `load/tests/*.ts` — `smoke.ts` + `baseline.ts`                                                          |
-| Execution     | Smoke: 1 VU × 1 min · Baseline: ramping-vus, 5 VU light or 500 VU full                                  |
-| HTTP Client   | k6 built-in `k6/http` + `k6/ws` (k6 runs in goja VM, not Node)                                          |
-| Auth          | `loginApitest()` in `load/lib/auth.ts` — port of `backend/test/helpers.ts`                              |
-| Rate Limiting | Pre-step `test:load:flush` runs `FLUSHDB`; Baseline-Wrapper additionally `--user "$(id -u):$(id -g)"`   |
-| Thresholds    | Smoke: `p95 < 500 ms` · Baseline per-tag: `read p95 < 100`, `write p95 < 250`, `error rate < 0.1 %`     |
-| TypeScript    | k6 ≥ 0.54 supports `.ts` natively — no transpile step; `load/tsconfig.json` for IDE                     |
-| Prerequisites | Docker backend healthy, `apitest` tenant seeded, Redis reachable                                        |
+| Aspect        | Decision                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| Tool          | [k6](https://grafana.com/docs/k6/) via Docker (`grafana/k6:latest`)                                   |
+| Scope         | `load/tests/*.ts` — `smoke.ts` + `baseline.ts`                                                        |
+| Execution     | Smoke: 1 VU × 1 min · Baseline: ramping-vus, 5 VU light or 500 VU full                                |
+| HTTP Client   | k6 built-in `k6/http` + `k6/ws` (k6 runs in goja VM, not Node)                                        |
+| Auth          | `loginApitest()` in `load/lib/auth.ts` — port of `backend/test/helpers.ts`                            |
+| Rate Limiting | Pre-step `test:load:flush` runs `FLUSHDB`; Baseline-Wrapper additionally `--user "$(id -u):$(id -g)"` |
+| Thresholds    | Smoke: `p95 < 500 ms` · Baseline per-tag: `read p95 < 100`, `write p95 < 250`, `error rate < 0.1 %`   |
+| TypeScript    | k6 ≥ 0.54 supports `.ts` natively — no transpile step; `load/tsconfig.json` for IDE                   |
+| Prerequisites | Docker backend healthy, `apitest` tenant seeded, Redis reachable                                      |
 
 #### Smoke: 1 file, 10 endpoints
 
@@ -467,10 +467,10 @@ Rate limits are tracked PER JWT user-id. `admin` tier = 2000 reqs / 15 min ≈
 2.2 req/s sustained per user. Single-tenant @ >5 VU produces 429s, not latency
 data. Two profiles encode this reality:
 
-| Profile | VU peak | Pool min          | Wall-time | Goal                                      |
-| ------- | ------- | ----------------- | --------- | ----------------------------------------- |
-| `light` | 5       | 1 (apitest)       | ~5 min    | Regression detection + p95 drift          |
-| `full`  | 500     | 5+ (multi-tenant) | ~8 min    | Pool-saturation knee, capacity ceiling    |
+| Profile | VU peak | Pool min          | Wall-time | Goal                                   |
+| ------- | ------- | ----------------- | --------- | -------------------------------------- |
+| `light` | 5       | 1 (apitest)       | ~5 min    | Regression detection + p95 drift       |
+| `full`  | 500     | 5+ (multi-tenant) | ~8 min    | Pool-saturation knee, capacity ceiling |
 
 `setup()` validates pool size and aborts if `PROFILE=full && pool < 5`.
 
@@ -499,12 +499,12 @@ data. Two profiles encode this reality:
 Compares two k6 `--summary-export` JSON files. Fails if any tracked metric
 regressed beyond budget:
 
-| Metric                                 | Mode        | Default tolerance       |
-| -------------------------------------- | ----------- | ----------------------- |
-| `http_req_duration` p95/p99            | Relative    | +20 % over baseline     |
-| `http_req_duration{op:read}` p95/p99   | Relative    | +20 %                   |
-| `http_req_duration{op:write}` p95/p99  | Relative    | +20 %                   |
-| `http_req_failed` rate                 | Absolute    | +0.5 percentage points  |
+| Metric                                | Mode     | Default tolerance      |
+| ------------------------------------- | -------- | ---------------------- |
+| `http_req_duration` p95/p99           | Relative | +20 % over baseline    |
+| `http_req_duration{op:read}` p95/p99  | Relative | +20 %                  |
+| `http_req_duration{op:write}` p95/p99 | Relative | +20 %                  |
+| `http_req_failed` rate                | Absolute | +0.5 percentage points |
 
 Exit code: 0 pass, 1 regression, 2 usage error. Designed for GitHub
 Actions / GitLab CI.

@@ -100,9 +100,7 @@ function parseArgs(args: string[]): { baseline: string; current: string; budget:
     else if (arg.startsWith('--budget=')) budget = Number(arg.slice('--budget='.length));
   }
   if (baseline === '' || current === '' || !Number.isFinite(budget) || budget <= 0) {
-    console.error(
-      'Usage: load-diff.ts --baseline=<path> --current=<path> [--budget=<percent>]',
-    );
+    console.error('Usage: load-diff.ts --baseline=<path> --current=<path> [--budget=<percent>]');
     exit(2);
   }
   return { baseline, current, budget };
@@ -140,16 +138,19 @@ interface DiffRow {
   regressed: boolean;
 }
 
-function diff(
-  baseline: K6Summary,
-  current: K6Summary,
-  budgetPercent: number,
-): DiffRow[] {
+function diff(baseline: K6Summary, current: K6Summary, budgetPercent: number): DiffRow[] {
   return TRACKED_METRICS.map((check) => {
     const b = getValue(baseline, check);
     const c = getValue(current, check);
     if (b === null || c === null) {
-      return { label: check.label, baseline: b, current: c, delta: null, mode: check.mode, regressed: false };
+      return {
+        label: check.label,
+        baseline: b,
+        current: c,
+        delta: null,
+        mode: check.mode,
+        regressed: false,
+      };
     }
     if (check.mode === 'relative') {
       // Trend metrics: regression = current got slower (higher number).
@@ -183,11 +184,16 @@ function fmtDelta(delta: number | null, mode: MetricCheck['mode']): string {
 function report(rows: DiffRow[], budget: number): boolean {
   const regressions = rows.filter((r) => r.regressed);
   console.info('');
-  console.info(`Load-Diff Report  (budget: relative ${budget}%, error-rate ${ABSOLUTE_PP_BUDGET * 100}pp)`);
+  console.info(
+    `Load-Diff Report  (budget: relative ${budget}%, error-rate ${ABSOLUTE_PP_BUDGET * 100}pp)`,
+  );
   console.info('─'.repeat(78));
   console.info('  metric          baseline       current        delta');
   for (const r of rows) {
-    const marker = r.regressed ? 'FAIL' : r.delta === null ? 'skip' : 'ok  ';
+    const marker =
+      r.regressed ? 'FAIL'
+      : r.delta === null ? 'skip'
+      : 'ok  ';
     console.info(
       `  ${marker} ${r.label.padEnd(12)} ${fmt(r.baseline, r.mode).padStart(12)} ${fmt(r.current, r.mode).padStart(12)} ${fmtDelta(r.delta, r.mode).padStart(12)}`,
     );

@@ -194,8 +194,9 @@ const fullStages = [
 
 const httpRampStages = PROFILE === 'full' ? fullStages : lightStages;
 
-const wsScenario = ENABLE_WS
-  ? {
+const wsScenario =
+  ENABLE_WS ?
+    {
       ws_soak: {
         executor: 'constant-vus' as const,
         exec: 'runWsSoak',

@@ -194,11 +194,16 @@
     }
   }
 
-  /* Floating Elements Container */
+  /* Floating Elements Container.
+     `inset` carves out the right half (left: 50%) so petals never render behind
+     the welcome heading on the left — they only drift in the empty space next
+     to the greeting. All `.floating-dot` left/right percentages are relative
+     to this container, so they re-flow into the right half automatically.
+     (Issue: dashboard hero polish — petals overlapping welcome text, 2026-04-25) */
   .floating-elements {
     position: absolute;
     z-index: 1;
-    inset: 0;
+    inset: 0 0 0 25%;
 
     /* Isolate paint area: 24 box-shadow petals must not invalidate parent paints */
     contain: layout paint;
@@ -208,12 +213,27 @@
   /* Floating Petal Base (Sakura) */
   .floating-dot {
     position: absolute;
-    animation: float 15s infinite ease-in-out;
+
+    /* Two parallel animations — rotation is DECOUPLED from drift:
+       - `float`: drift (translate-only), ease-in-out → soft pendulum feel
+       - `spin`:  rotation only, LINEAR, full 360° per cycle
+       WHY split: the original `float` keyframes embedded `rotate()` inside
+       `transform`. With 5 keyframes and ease-in-out, rotation eased-in/out at
+       every segment boundary (0/25/50/75/100%) — a 4×-per-loop visible tick.
+       Additionally, rotating only 0°→180° per cycle produced a snap at
+       loop wrap-around because the petal shape is asymmetric. Moving rotation
+       to the standalone `rotate:` property (CSS Transforms 2) at 360° linear
+       removes both artefacts while keeping the translate's pendulum ease.
+       (Issue: dashboard hero polish — petal rotation jank, 2026-04-25) */
+    animation:
+      float 15s infinite ease-in-out,
+      spin 30s infinite linear;
 
     /* Promote to GPU layer: prevents box-shadow repaint on every transform tick.
-       `translate` is hinted alongside `transform` because the wind handler
-       animates it independently of the keyframe-driven transform. */
-    will-change: transform, translate;
+       `translate` and `rotate` are hinted alongside `transform` because they
+       animate independently of the keyframe-driven transform (wind handler /
+       `spin` keyframes respectively). */
+    will-change: transform, translate, rotate;
 
     /* Wind reaction: `--wind-x/-y` are set imperatively from handlePointerMove
        (see <script> in this file). The standalone `translate` property is
@@ -421,65 +441,82 @@
     height: 8px;
   }
 
-  /* Float Animation (Horizontal) */
+  /* Float Animation (Horizontal) — translate-only.
+     Rotation is intentionally NOT in this keyframe set; it lives in `spin`
+     so it can use linear timing without inheriting the per-segment
+     ease-in-out pulse. See `.floating-dot` for the WHY. */
   @keyframes float {
     0% {
-      transform: translateY(0) translateX(0) rotate(0deg);
+      transform: translateY(0) translateX(0);
       opacity: 70%;
     }
 
     25% {
-      transform: translateY(-8px) translateX(25px) rotate(45deg);
+      transform: translateY(-8px) translateX(25px);
       opacity: 90%;
     }
 
     50% {
-      transform: translateY(-15px) translateX(-5px) rotate(90deg);
+      transform: translateY(-15px) translateX(-5px);
       opacity: 100%;
     }
 
     75% {
-      transform: translateY(-8px) translateX(-30px) rotate(135deg);
+      transform: translateY(-8px) translateX(-30px);
       opacity: 90%;
     }
 
     100% {
-      transform: translateY(0) translateX(0) rotate(180deg);
+      transform: translateY(0) translateX(0);
       opacity: 70%;
     }
   }
 
-  /* Float Animation (Vertical Fall) */
+  /* Float Animation (Vertical Fall) — translate-only (rotation → `spin`). */
   @keyframes float-down {
     0% {
-      transform: translateY(0) translateX(0) rotate(0deg);
+      transform: translateY(0) translateX(0);
       opacity: 70%;
     }
 
     25% {
-      transform: translateY(20px) translateX(8px) rotate(60deg);
+      transform: translateY(20px) translateX(8px);
       opacity: 90%;
     }
 
     50% {
-      transform: translateY(35px) translateX(-5px) rotate(120deg);
+      transform: translateY(35px) translateX(-5px);
       opacity: 100%;
     }
 
     75% {
-      transform: translateY(20px) translateX(-10px) rotate(180deg);
+      transform: translateY(20px) translateX(-10px);
       opacity: 90%;
     }
 
     100% {
-      transform: translateY(0) translateX(0) rotate(240deg);
+      transform: translateY(0) translateX(0);
       opacity: 70%;
     }
   }
 
-  /* Apply vertical fall to every 3rd petal */
+  /* Continuous LINEAR rotation, decoupled from `float`/`float-down`.
+     360° per cycle (not 180°) so the loop wrap is visually identical and
+     produces no snap. Drives the standalone `rotate:` property — composes
+     additively with `transform` (drift) and `translate:` (wind) per
+     CSS Transforms 2. */
+  @keyframes spin {
+    to {
+      rotate: 360deg;
+    }
+  }
+
+  /* Apply vertical fall to every 3rd petal. `animation-name` overrides only
+     the NAME list — duration / timing / iteration inherit from the base
+     `.floating-dot` rule (15s ease-in-out + 30s linear). `spin` is repeated
+     so rotation continues alongside the alternate drift keyframes. */
   .floating-dot:nth-child(3n) {
-    animation-name: float-down;
+    animation-name: float-down, spin;
   }
 
   /* prefers-reduced-motion: keep the existing float animation (pre-change

@@ -8,6 +8,7 @@ import { redirect, error } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -184,7 +185,7 @@ async function loadSuggestionData(
 export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   const idOrUuid = url.searchParams.get('uuid') ?? url.searchParams.get('id');

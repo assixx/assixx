@@ -5,6 +5,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { PageServerLoad } from './$types';
 
@@ -21,11 +22,11 @@ interface AddonsResponse {
   storageGb?: number;
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
   // 1. Auth check
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   // 2. Parallel fetch plan and addons data

@@ -8,6 +8,7 @@ import { redirect } from '@sveltejs/kit';
 
 import { API_BASE, extractResponseData, type ServerApiResponse } from '$lib/server/api-fetch';
 import { dashboardForRole } from '$lib/server/role-redirects';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -63,16 +64,16 @@ async function apiFetch<T>(
   }
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   // Guard: only root can access company settings
   const parentData = await parent();
   if (!parentData.user) {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
   if (parentData.user.role !== 'root') {
     redirect(302, dashboardForRole(parentData.user.role));

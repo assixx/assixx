@@ -7,6 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 
 import { LOGS_PER_PAGE } from './_lib/constants';
@@ -61,16 +62,16 @@ function parseLogsResponse(json: LogsApiResponse): {
   };
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined) {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   // Only root users can access logs
   const parentData = await parent();
   if (parentData.user?.role !== 'root') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   try {

@@ -158,9 +158,9 @@ describe('CreateEscrowUnlockTicketSchema', () => {
       expect(result.success).toBe(true);
       // Type assertion (not conditional) — we just asserted success above.
       // Keeps the parsed value check unconditional for vitest/no-conditional-expect.
-      expect(
-        (result as { success: true; data: { wrappingKey: string } }).data.wrappingKey,
-      ).toBe(VALID_WRAPPING_KEY);
+      expect((result as { success: true; data: { wrappingKey: string } }).data.wrappingKey).toBe(
+        VALID_WRAPPING_KEY,
+      );
     });
   });
 

@@ -170,6 +170,11 @@ groups:
       # ---------------------------------------------------------------------
       - uid: assixx-backend-logs-silent
         title: Backend logs silent
+        # Paused 2026-04-25 — local Docker Grafana spammed even after Cloud
+        # was paused (two-Grafana drift, see memory feedback_grafana_alerts_sync).
+        # Mirrors isPaused state from docker/grafana/alerts/06-backend-logs-silent.json.
+        # To re-enable: flip to false here AND in the Cloud JSON, then run apply.sh.
+        isPaused: true
         condition: C
         for: 5m
         noDataState: OK

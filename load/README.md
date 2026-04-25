@@ -111,14 +111,14 @@ http_req_duration: 'p(95)<500ms';
 
 ## Troubleshooting
 
-| Symptom                                               | Ursache                                 | Lösung                                                             |
-| ----------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ |
-| `login returns 200: false, got 429`                   | Redis-Throttle voll                     | `docker exec assixx-redis redis-cli ... FLUSHDB`                   |
-| `login returns 200: false, got 401`                   | Passwort geändert oder Tenant fehlt     | HOW-TO-CREATE-TEST-USER folgen                                     |
-| `connect: connection refused`                         | Backend down                            | `cd docker && docker-compose up -d`                                |
-| `permission denied` auf `$PWD/load`                   | Docker-Mount-Rechte (selten)            | Absoluter Pfad: `-v /home/scs/projects/Assixx/load:/scripts`       |
-| Thresholds passen alle, aber `/tpm/plans/cards` → 403 | Addon `tpm` nicht für apitest aktiviert | `INSERT INTO tenant_addons ...` (siehe HOW-TO-TEST §3) |
-| Endpoints liefern 404 statt 200                       | Route-Pfad hat sich geändert            | Smoke-Test updaten (`load/tests/smoke.ts`)                         |
+| Symptom                                               | Ursache                                 | Lösung                                                       |
+| ----------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------ |
+| `login returns 200: false, got 429`                   | Redis-Throttle voll                     | `docker exec assixx-redis redis-cli ... FLUSHDB`             |
+| `login returns 200: false, got 401`                   | Passwort geändert oder Tenant fehlt     | HOW-TO-CREATE-TEST-USER folgen                               |
+| `connect: connection refused`                         | Backend down                            | `cd docker && docker-compose up -d`                          |
+| `permission denied` auf `$PWD/load`                   | Docker-Mount-Rechte (selten)            | Absoluter Pfad: `-v /home/scs/projects/Assixx/load:/scripts` |
+| Thresholds passen alle, aber `/tpm/plans/cards` → 403 | Addon `tpm` nicht für apitest aktiviert | `INSERT INTO tenant_addons ...` (siehe HOW-TO-TEST §3)       |
+| Endpoints liefern 404 statt 200                       | Route-Pfad hat sich geändert            | Smoke-Test updaten (`load/tests/smoke.ts`)                   |
 
 ---
 
@@ -133,10 +133,10 @@ mit per-Tag-Thresholds und CI-Diff. Siehe Header-Kommentar in
 Rate-Limits sind PRO JWT-User-ID getrackt: `admin` = 2000/15min ≈ 2.2 req/s.
 **Single-Tenant @ >5 VU produziert 429s, keine Latency-Daten.** Daher:
 
-| Profil   | VU-Peak | Pool-Mindest | Wall-Time | Ziel                             |
-| -------- | ------- | ------------ | --------- | -------------------------------- |
-| `light`  | 5       | 1 (apitest)  | ~5 min    | Regression-Detection + p95-Drift |
-| `full`   | 500     | 5+           | ~8 min    | Pool-Saturation-Bruchpunkt       |
+| Profil  | VU-Peak | Pool-Mindest | Wall-Time | Ziel                             |
+| ------- | ------- | ------------ | --------- | -------------------------------- |
+| `light` | 5       | 1 (apitest)  | ~5 min    | Regression-Detection + p95-Drift |
+| `full`  | 500     | 5+           | ~8 min    | Pool-Saturation-Bruchpunkt       |
 
 ```bash
 # Light (Default — pre-merge regression check)

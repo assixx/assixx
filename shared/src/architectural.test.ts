@@ -295,6 +295,35 @@ describe('Frontend: Apex-Login Redirect Centralization (ADR-050 Amendment)', () 
       ).toEqual([]);
     });
   }
+
+  /**
+   * Phase 2 ban (2026-04-25): the *bare* `redirect(302, '/login')` SSR
+   * pattern is now forbidden. It used to litter ~71 `+page.server.ts` files
+   * as a defense-in-depth no-token guard — but the relative URL kept the
+   * user on the tenant subdomain, defeating the cross-origin apex-login
+   * design from the ADR-050 Amendment 2026-04-22. Mass-refactored to
+   * `redirect(302, buildLoginUrl('session-expired', undefined, url))` —
+   * this guard prevents regression.
+   *
+   * Allowlist mirrors the per-reason checks above (the helper file owns
+   * the literal; its test file asserts the literal-to-URL mapping). No
+   * other file should construct a `/login` redirect by hand.
+   */
+  it("SSR: only build-apex-url.ts owns bare `redirect(302, '/login')` — use buildLoginUrl() elsewhere", () => {
+    // Match `redirect(302, '/login')` exactly — no query, no params.
+    // The query-bearing variants are caught by the loop above; this guard
+    // closes the gap left by the bare form (the original bug class that
+    // ADR-050 Phase 2 cleaned up).
+    const pattern = "redirect\\(302, '/login'\\)";
+    const tsMatches = grepFiles(pattern, 'frontend/src', '*.ts');
+    const svelteMatches = grepFiles(pattern, 'frontend/src', '*.svelte');
+    const violations = [...tsMatches, ...svelteMatches].filter((f) => !ALLOWED_FILES.has(f));
+
+    expect(
+      violations,
+      `Found bare \`redirect(302, '/login')\` SSR redirect outside build-apex-url.ts. Per ADR-050 Amendment 2026-04-22, every SSR redirect to login MUST go through buildLoginUrl(reason, undefined, url) so the response Location: header points at the apex origin (cross-origin hard-nav out of the tenant subdomain), NOT a relative path that keeps the browser stuck on \`<slug>.assixx.com\`. Replace with: redirect(302, buildLoginUrl('session-expired', undefined, url))\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
 });
 
 describe('Backend: Shared db-helpers (Maßnahme #13)', () => {

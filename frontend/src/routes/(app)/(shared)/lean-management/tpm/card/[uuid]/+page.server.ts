@@ -9,6 +9,7 @@ import { redirect } from '@sveltejs/kit';
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { extractArray } from '$lib/utils/api-response';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -19,9 +20,10 @@ import type {
   TpmTimeEstimate,
 } from '../../_lib/types';
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent, params }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, params, url }) => {
   const token = cookies.get('accessToken');
-  if (token === undefined || token === '') redirect(302, '/login');
+  if (token === undefined || token === '')
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
 
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'tpm');

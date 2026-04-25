@@ -8,6 +8,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import { LIST_LIMITS, CALENDAR_MONTHS_AHEAD } from './_lib/constants';
 
@@ -79,11 +80,11 @@ function extractUpcomingEvents(
  * PERFORMANCE: All API calls run IN PARALLEL via Promise.all
  * SECURITY: Token read from httpOnly cookie
  */
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   // 1. Get auth token from httpOnly cookie
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   // 2. Get user from parent layout - check access rights
@@ -91,7 +92,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const user = parentData.user;
   const allowedRoles = ['employee', 'admin', 'root'];
   if (user === null || !allowedRoles.includes(user.role)) {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   // 3. Build date range and fetch dashboard data in PARALLEL

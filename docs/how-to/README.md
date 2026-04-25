@@ -27,11 +27,11 @@
 
 ### Testing
 
-| Guide                                                   | Description                                                                                                            |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Guide                                                   | Description                                                                                                                                                                                                            |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [HOW-TO-TEST](./HOW-TO-TEST.md)                         | **Umbrella-Guide** für alle 4 Test-Tiers — Unit (Vitest), Permission, Frontend-Unit, API-Integration, E2E (Playwright), Load (k6 smoke + baseline). Decision-Matrix „welcher Befehl wann?", Templates, Troubleshooting |
-| [HOW-TO-CREATE-TEST-USER](./HOW-TO-CREATE-TEST-USER.md) | Create test tenant + users after fresh install                                                                         |
-| [load/README.md](../../load/README.md)                  | Tier-4-Detailkonfiguration (k6 smoke + baseline) — vertieft den Load-Abschnitt aus HOW-TO-TEST                         |
+| [HOW-TO-CREATE-TEST-USER](./HOW-TO-CREATE-TEST-USER.md) | Create test tenant + users after fresh install                                                                                                                                                                         |
+| [load/README.md](../../load/README.md)                  | Tier-4-Detailkonfiguration (k6 smoke + baseline) — vertieft den Load-Abschnitt aus HOW-TO-TEST                                                                                                                         |
 
 ### Feature Development
 

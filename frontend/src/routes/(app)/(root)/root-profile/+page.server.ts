@@ -8,20 +8,21 @@ import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
 import { profileForRole } from '$lib/server/role-redirects';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { PageServerLoad } from './$types';
 import type { UserProfile, ApprovalItem } from './_lib/types';
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   // Guard: only root can access their profile
   const parentData = await parent();
   if (!parentData.user) {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
   if (parentData.user.role !== 'root') {
     redirect(302, profileForRole(parentData.user.role));

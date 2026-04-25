@@ -12,6 +12,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { PageServerLoad } from './$types';
 import type { DashboardData, ActivityLog, LogsApiResponse } from './_lib/types';
@@ -60,12 +61,12 @@ function shouldShowEmployeeModal(employeeNumber: string | null | undefined): boo
  * - Dashboard + logs fetched in parallel (no waterfall)
  * - Total: ~80-120ms instead of ~200-300ms
  */
-export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, locals, url }) => {
   // 1. Get auth token from httpOnly cookie
   const token = cookies.get('accessToken');
 
   if (token === undefined) {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   // 2. Get user from RBAC hook (already fetched - no waiting!)

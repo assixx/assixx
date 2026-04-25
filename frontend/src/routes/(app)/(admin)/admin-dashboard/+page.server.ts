@@ -10,6 +10,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import { LIST_LIMITS, CALENDAR_MONTHS_AHEAD } from './_lib/constants';
 
@@ -79,9 +80,10 @@ function filterUpcomingEvents(events: CalendarEvent[], today: Date): CalendarEve
  * PERFORMANCE: All API calls run IN PARALLEL via Promise.all
  * SECURITY: Token read from httpOnly cookie (set by backend on login)
  */
-export const load: PageServerLoad = async ({ cookies, fetch }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
   const token = cookies.get('accessToken');
-  if (token === undefined || token === '') redirect(302, '/login');
+  if (token === undefined || token === '')
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
 
   const { startISO, endISO, today } = buildCalendarDateRange();
 

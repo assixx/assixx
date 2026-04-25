@@ -370,7 +370,7 @@ docker exec assixx-backend pnpm run lint
 | [COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md)                                       | All daily commands, categorised             |
 | [docs/how-to/README.md](./docs/how-to/README.md)                                      | HOW-TO catalog (Doppler, psql, Vitest …)    |
 | [HOW-TO-USE-CHANGESETS.md](./docs/how-to/HOW-TO-USE-CHANGESETS.md)                    | Versioning + changelog workflow             |
-| [HOW-TO-TEST.md](./docs/how-to/HOW-TO-TEST.md)                | API testing with Vitest                     |
+| [HOW-TO-TEST.md](./docs/how-to/HOW-TO-TEST.md)                                        | API testing with Vitest                     |
 | [PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) | Docker / Nginx / SvelteKit setup            |
 | [ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md)                   | Zod validation in NestJS                    |
 | [ADR Index](./docs/infrastructure/adr/README.md)                                      | Architecture Decision Records (ADR-001…041) |

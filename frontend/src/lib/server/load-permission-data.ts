@@ -9,6 +9,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { API_BASE } from '$lib/server/api-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 
 const log = createLogger('PermissionDataLoader');
@@ -93,6 +94,10 @@ interface LoadParams {
   cookies: { get: (name: string) => string | undefined };
   fetch: typeof globalThis.fetch;
   params: { uuid: string };
+  // Required by ADR-050 Amendment 2026-04-22: SSR redirects to apex login
+  // need the inbound request URL so the dev-without-Doppler fallback in
+  // `buildLoginUrl` can derive apex from the current host.
+  url: URL;
 }
 
 const EMPTY_RESULT: PermissionPageData = {
@@ -165,9 +170,13 @@ export async function loadPermissionData({
   cookies,
   fetch,
   params,
+  url,
 }: LoadParams): Promise<PermissionPageData> {
   const token = cookies.get('accessToken');
-  if (token === undefined || token === '') redirect(302, '/login');
+  // ADR-050 Amendment 2026-04-22: cross-origin redirect to apex login.
+  if (token === undefined || token === '') {
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
+  }
 
   const headers = {
     Authorization: `Bearer ${token}`,

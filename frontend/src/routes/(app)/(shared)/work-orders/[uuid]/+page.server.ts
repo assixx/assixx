@@ -8,6 +8,7 @@ import { error, redirect } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -46,10 +47,10 @@ function buildComments(data: PaginatedResponse<WorkOrderComment> | null): Pagina
   };
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, params, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   const parentData = await parent();

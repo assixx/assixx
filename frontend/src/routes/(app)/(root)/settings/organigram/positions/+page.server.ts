@@ -6,6 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger.js';
 
 import type { PageServerLoad } from './$types';
@@ -34,10 +35,10 @@ function extractData(json: ApiResponse<PositionCatalogEntry[]>): PositionCatalog
   return [];
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   const headers = {

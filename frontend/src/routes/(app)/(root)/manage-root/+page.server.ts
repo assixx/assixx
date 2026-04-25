@@ -7,6 +7,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -14,10 +15,10 @@ import type { RootUser } from './_lib/types';
 
 const log = createLogger('ManageRoot');
 
-export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, locals, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   // Get current user ID from locals (set by RBAC hook)

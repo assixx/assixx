@@ -20,6 +20,7 @@ import { minify } from 'html-minifier-terser';
 import { dev } from '$app/environment';
 
 import { resilientFetch } from '$lib/server/resilient-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { extractSlug } from '$lib/utils/extract-slug';
 import { createLogger } from '$lib/utils/logger';
 
@@ -211,7 +212,12 @@ const authHandle: Handle = async ({ event, resolve }) => {
   const token = event.cookies.get('accessToken');
   if (token === undefined || token === '') {
     log.debug({ pathname }, 'Auth: No token, redirecting to login');
-    redirect(302, '/login');
+    // ADR-050 Amendment 2026-04-22: cross-origin redirect to apex login.
+    // No reason discriminator — the user may be a fresh visitor without a
+    // prior session, so a "session expired" toast would be misleading. The
+    // 227+252 paths below DO get the discriminator because they fire only
+    // after a token was present and failed to validate.
+    redirect(302, buildLoginUrl(undefined, undefined, event.url));
   }
 
   // Fetch user data for downstream layouts (FAST PATH optimization)
@@ -224,7 +230,10 @@ const authHandle: Handle = async ({ event, resolve }) => {
       log.warn({ pathname }, 'Auth: Failed to fetch user data');
       event.cookies.delete('accessToken', { path: '/' });
       event.cookies.delete('refreshToken', { path: '/api/v2/auth' });
-      redirect(302, '/login');
+      // ADR-050 Amendment 2026-04-22: cross-origin redirect to apex login.
+      // Token existed and failed validation (expired / user deactivated /
+      // backend rejected) — `session-expired` is the correct semantic.
+      redirect(302, buildLoginUrl('session-expired', undefined, event.url));
     }
 
     // Store user in locals — group layouts access via parent()
@@ -249,7 +258,9 @@ const authHandle: Handle = async ({ event, resolve }) => {
       throw err;
     }
     log.error({ err, pathname }, 'Auth: Error during authentication');
-    redirect(302, '/login');
+    // ADR-050 Amendment 2026-04-22: cross-origin redirect to apex login.
+    // Auth flow had a token but threw during validation — treat as expired.
+    redirect(302, buildLoginUrl('session-expired', undefined, event.url));
   }
 
   return await resolve(event);

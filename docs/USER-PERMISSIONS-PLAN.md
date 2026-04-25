@@ -63,14 +63,14 @@ user-permissions/
 
 ### Projekt-Dokumentation
 
-| Dokument                                 | Relevant für                                                     |
-| ---------------------------------------- | ---------------------------------------------------------------- |
-| `docs/DATABASE-MIGRATION-GUIDE.md`       | Phase 1: Migration-Format, RLS-Pattern, NULLIF, GRANTs           |
-| `docs/TYPESCRIPT-STANDARDS.md`           | Alle Phasen: `$1,$2,$3`, `??`, kein `any`, explicit return types |
-| `docs/CODE-OF-CONDUCT.md`                | Alle Phasen: KISS, Power-of-Ten, max 60 Zeilen/Funktion          |
-| `docs/CODE-OF-CONDUCT-SVELTE.md`         | Phase 7: Svelte 5 Runes, $state/$derived/$props                  |
-| `docs/how-to/HOW-TO-TEST.md` | Phase 5+8: Test-Setup, Mocking, Projekt-Konfiguration            |
-| `backend/docs/ZOD-INTEGRATION-GUIDE.md`  | Phase 3: Zod + nestjs-zod DTO-Pattern                            |
+| Dokument                                | Relevant für                                                     |
+| --------------------------------------- | ---------------------------------------------------------------- |
+| `docs/DATABASE-MIGRATION-GUIDE.md`      | Phase 1: Migration-Format, RLS-Pattern, NULLIF, GRANTs           |
+| `docs/TYPESCRIPT-STANDARDS.md`          | Alle Phasen: `$1,$2,$3`, `??`, kein `any`, explicit return types |
+| `docs/CODE-OF-CONDUCT.md`               | Alle Phasen: KISS, Power-of-Ten, max 60 Zeilen/Funktion          |
+| `docs/CODE-OF-CONDUCT-SVELTE.md`        | Phase 7: Svelte 5 Runes, $state/$derived/$props                  |
+| `docs/how-to/HOW-TO-TEST.md`            | Phase 5+8: Test-Setup, Mocking, Projekt-Konfiguration            |
+| `backend/docs/ZOD-INTEGRATION-GUIDE.md` | Phase 3: Zod + nestjs-zod DTO-Pattern                            |
 
 ### ADRs
 

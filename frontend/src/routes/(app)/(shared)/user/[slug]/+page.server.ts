@@ -11,6 +11,7 @@
 import { error, redirect } from '@sveltejs/kit';
 
 import { apiFetchWithPermission } from '$lib/server/api-fetch.js';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import { UUID_REGEX } from './_lib/constants.js';
 
@@ -34,9 +35,10 @@ function redirectToOwnProfile(role: string): never {
   redirect(302, target);
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, params, parent, url }) => {
   const token = cookies.get('accessToken');
-  if (token === undefined || token === '') redirect(302, '/login');
+  if (token === undefined || token === '')
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
 
   const { user } = await parent();
   const uuid = extractUuid(params.slug);

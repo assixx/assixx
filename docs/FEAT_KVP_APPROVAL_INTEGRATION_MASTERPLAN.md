@@ -662,7 +662,7 @@ export function validateApprovalStatusTransition(
 | [ADR-038](./infrastructure/adr/ADR-038-position-catalog-architecture.md)     | Position catalog (enables "Qualitätsmanager as KVP Master")              |
 | [ADR-004](./infrastructure/adr/ADR-004-persistent-notification-counts.md)    | Dual-pattern: EventBus (SSE) + DB notifications (persistent badges)      |
 | [ADR-018](./infrastructure/adr/ADR-018-testing-strategy.md)                  | Two-Tier Testing: unit (`vi.mock()`) + API (`fetch()`, `authHeaders()`)  |
-| [HOW-TO-TEST.md](./HOW-TO-TEST.md)                   | API test patterns, One-Request-per-Describe, `flushThrottleKeys()`       |
+| [HOW-TO-TEST.md](./HOW-TO-TEST.md)                                           | API test patterns, One-Request-per-Describe, `flushThrottleKeys()`       |
 | [FEAT_DEPUTY_LEADS_MASTERPLAN.md](./FEAT_DEPUTY_LEADS_MASTERPLAN.md)         | **Prerequisite** — Deputy Lead can act as Team Lead (must be done first) |
 
 ---

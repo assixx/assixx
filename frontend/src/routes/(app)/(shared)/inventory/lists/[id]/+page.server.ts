@@ -7,6 +7,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -80,7 +81,7 @@ function buildSuccessResult(
 export const load: PageServerLoad = async ({ params, cookies, fetch, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   const pg = url.searchParams.get('page') ?? '1';
