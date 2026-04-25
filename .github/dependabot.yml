@@ -86,10 +86,6 @@ updates:
     commit-message:
       prefix: "chore(docker)"
       include: "scope"
-    # Grafana paused 2026-04-25 — manual review required (vendor-bug concerns).
-    # Re-enable by removing this block once cleared.
-    ignore:
-      - dependency-name: "grafana/grafana"
     # Group by stack to keep PR noise manageable
     groups:
       plg-stack:
