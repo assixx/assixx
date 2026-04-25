@@ -2,6 +2,13 @@
   /**
    * WelcomeHero — Welcome banner with animated sakura petals.
    * Self-contained: owns floatingDotsCount state and onMount lifecycle.
+   *
+   * Wind reaction: cursor proximity blows petals out of reach via a quadratic
+   * falloff so the user can never quite touch one. Implemented as
+   * rAF-throttled mousemove → per-petal `--wind-x/-y` CSS custom properties →
+   * standalone `translate` that composes additively with the existing float
+   * keyframes (CSS Transforms 2: `translate` and `transform` stack, do not
+   * overwrite). (Issue: dashboard hero polish, 2026-04-25)
    */
   import { onMount } from 'svelte';
 
@@ -20,11 +27,96 @@
   // visible at first byte. (Issue: dashboard hero perf, 2026-04-25)
   const floatingDotsCount = FLOATING_DOTS_COUNT;
 
+  // Petal refs — populated by `bind:this` on mount; written to imperatively to
+  // set per-element `--wind-x/-y`. `$state` keeps Svelte 5's array-index binding
+  // semantics happy without forcing reactivity into the markup.
+  const petalEls: HTMLDivElement[] = $state([]);
+
+  /**
+   * Wind reaction tuning.
+   *
+   * REACTION_RADIUS — distance (px) at which a petal starts fleeing the cursor.
+   * MAX_PUSH        — max displacement (px) when cursor is dead-centre on a
+   *                   petal. Quadratic falloff makes the flee feel like wind:
+   *                   gentle near the boundary, snappy near the cursor — petal
+   *                   always escapes before the cursor visually overlaps it.
+   */
+  const REACTION_RADIUS = 100;
+  const MAX_PUSH = 75;
+
+  let rafId = 0;
+  let cursorX = -9999;
+  let cursorY = -9999;
+  // Cached once at mount: gating the handler entirely is cheaper than calling
+  // matchMedia on every event tick.
+  let reducedMotion = false;
+
+  function updatePetals(): void {
+    rafId = 0;
+    const radiusSq = REACTION_RADIUS * REACTION_RADIUS;
+
+    // Two-pass to avoid layout thrashing: batch all `getBoundingClientRect()`
+    // reads first, then all `setProperty` writes. `translate` and `transform`
+    // are independent CSS properties (CSS Transforms 2 spec) — they stack
+    // ADDITIVELY, so wind composes with the keyframe float without fighting it.
+    const updates: { el: HTMLDivElement; x: number; y: number }[] = [];
+    for (const petal of petalEls) {
+      const rect = petal.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = cx - cursorX;
+      const dy = cy - cursorY;
+      const distSq = dx * dx + dy * dy;
+
+      if (distSq > radiusSq) {
+        updates.push({ el: petal, x: 0, y: 0 });
+        continue;
+      }
+
+      const dist = Math.sqrt(distSq);
+      const strength = 1 - dist / REACTION_RADIUS;
+      const pushMag = strength * strength * MAX_PUSH;
+      const dirX = dist > 0 ? dx / dist : 0;
+      const dirY = dist > 0 ? dy / dist : 0;
+      updates.push({ el: petal, x: dirX * pushMag, y: dirY * pushMag });
+    }
+
+    for (const { el, x, y } of updates) {
+      el.style.setProperty('--wind-x', `${x.toFixed(1)}px`);
+      el.style.setProperty('--wind-y', `${y.toFixed(1)}px`);
+    }
+  }
+
+  function handlePointerMove(e: MouseEvent): void {
+    if (reducedMotion) return;
+    cursorX = e.clientX;
+    cursorY = e.clientY;
+    if (rafId !== 0) return;
+    rafId = requestAnimationFrame(updatePetals);
+  }
+
+  function handlePointerLeave(): void {
+    if (reducedMotion) return;
+    // Cursor left the hero — relax all petals back to their natural drift.
+    cursorX = -9999;
+    cursorY = -9999;
+    for (const petal of petalEls) {
+      petal.style.setProperty('--wind-x', '0px');
+      petal.style.setProperty('--wind-y', '0px');
+    }
+  }
+
   onMount(() => {
+    reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     // Triggers fade-in for blackboard widget — see blackboard-widget.css `.loaded`.
     setTimeout(() => {
       document.body.classList.add('loaded');
     }, 100);
+
+    return () => {
+      if (rafId !== 0) cancelAnimationFrame(rafId);
+    };
   });
 </script>
 
@@ -32,11 +124,18 @@
   class="welcome-hero-custom relative mb-8 flex min-h-[120px] items-center
     justify-between overflow-hidden px-4 py-4
     md:px-6 md:py-5 lg:px-8 lg:py-6"
+  onmousemove={handlePointerMove}
+  onmouseleave={handlePointerLeave}
 >
-  <!-- Floating sakura petals (generated via floatingDotsCount) -->
+  <!-- Floating sakura petals (generated via floatingDotsCount).
+       Wind reaction: cursor proximity drives `--wind-x/-y` per petal so the
+       blossoms drift just out of reach — see handlePointerMove in <script>. -->
   <div class="floating-elements">
     {#each Array(floatingDotsCount) as _, i (i)}
-      <div class="floating-dot"></div>
+      <div
+        class="floating-dot"
+        bind:this={petalEls[i]}
+      ></div>
     {/each}
   </div>
 
@@ -103,8 +202,18 @@
     position: absolute;
     animation: float 15s infinite ease-in-out;
 
-    /* Promote to GPU layer: prevents box-shadow repaint on every transform tick */
-    will-change: transform;
+    /* Promote to GPU layer: prevents box-shadow repaint on every transform tick.
+       `translate` is hinted alongside `transform` because the wind handler
+       animates it independently of the keyframe-driven transform. */
+    will-change: transform, translate;
+    /* Wind reaction: `--wind-x/-y` are set imperatively from handlePointerMove
+       (see <script> in this file). The standalone `translate` property is
+       applied INDEPENDENTLY of `transform` per CSS Transforms 2 spec, so it
+       composes with the keyframe-driven `transform` (float animation) instead
+       of overwriting it. Snappy ease-out: fast initial flee (escape!), gentle
+       settle (relaxes back when the cursor leaves the radius). */
+    translate: var(--wind-x, 0) var(--wind-y, 0);
+    transition: translate 0.35s cubic-bezier(0.22, 1, 0.36, 1);
     box-shadow:
       0 0 4px oklch(84.74% 0.0858 9.04 / 40%),
       inset 0 0 2px color-mix(in oklch, var(--color-white) 60%, transparent);
@@ -362,5 +471,15 @@
   /* Apply vertical fall to every 3rd petal */
   .floating-dot:nth-child(3n) {
     animation-name: float-down;
+  }
+
+  /* prefers-reduced-motion: keep the existing float animation (pre-change
+     behavior) but disable the wind reaction — no sudden darts for users
+     sensitive to motion. JS handler also short-circuits via `reducedMotion`. */
+  @media (prefers-reduced-motion: reduce) {
+    .floating-dot {
+      transition: none;
+      translate: none;
+    }
   }
 </style>
