@@ -5,12 +5,13 @@
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
-  import { goto, invalidateAll } from '$app/navigation';
+  import { invalidateAll } from '$app/navigation';
 
   import ImageCropModal from '$lib/components/ImageCropModal.svelte';
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
+  import { buildLoginUrl } from '$lib/utils/build-apex-url';
   import { analyzePassword } from '$lib/utils/password-strength';
 
   // Local modules
@@ -251,7 +252,8 @@
     await e2e.lock();
     localStorage.removeItem('accessToken');
     localStorage.removeItem('tokenReceivedAt');
-    await goto('/login', { replaceState: true });
+    // ADR-050 Amendment 2026-04-22: cross-origin hard-nav to apex login.
+    window.location.href = buildLoginUrl('logout-success');
   }
 
   /** Handle password change API errors */

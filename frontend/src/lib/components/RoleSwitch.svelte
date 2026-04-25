@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { resolve } from '$app/paths';
-
   import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import { getApiClient } from '$lib/utils/api-client';
   import { setActiveRole } from '$lib/utils/auth';
+  import { buildLoginUrl } from '$lib/utils/build-apex-url';
   import { getErrorMessage } from '$lib/utils/error';
   import { createLogger } from '$lib/utils/logger';
   import { broadcastRoleSwitch } from '$lib/utils/role-sync.svelte';
@@ -232,7 +230,8 @@
     // wrongly assumed localStorage is the only truth — OAuth users have a
     // valid session in cookies only, so the gate threw them to /login.
     if (!getTokenManager().hasValidToken()) {
-      void goto(resolve('/login'));
+      // ADR-050 Amendment 2026-04-22: cross-origin hard-nav to apex login.
+      window.location.href = buildLoginUrl('session-expired');
       return;
     }
 

@@ -10,8 +10,9 @@
   @see frontend/src/design-system/primitives/empty-states/README.md
 -->
 <script lang="ts">
-  import { goto } from '$app/navigation';
   import { page } from '$app/state';
+
+  import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
   /**
    * Navigate back in browser history
@@ -21,10 +22,13 @@
   }
 
   /**
-   * Navigate to home/login
+   * Navigate to home/login.
+   * ADR-050 Amendment 2026-04-22: cross-origin hard-nav to apex login.
+   * `goto()` is client-router-bound and would keep the user on the tenant
+   * subdomain — error pages are tenant-agnostic so apex is the correct exit.
    */
   function goHome(): void {
-    void goto('/login');
+    window.location.href = buildLoginUrl();
   }
 
   // Error info from page state

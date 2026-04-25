@@ -10,7 +10,7 @@
    */
   import { onDestroy, onMount, type Snippet } from 'svelte';
 
-  import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
+  import { afterNavigate, beforeNavigate } from '$app/navigation';
 
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
@@ -19,6 +19,7 @@
   import { syncThemeFromSSR } from '$lib/stores/theme.svelte';
   import { getApiClient } from '$lib/utils/api-client';
   import { setActiveRole } from '$lib/utils/auth';
+  import { buildLoginUrl } from '$lib/utils/build-apex-url';
   import { createLogger } from '$lib/utils/logger';
   import { perf, logPageLoadTiming, logResourceTiming } from '$lib/utils/perf-logger';
   import { getRoleSyncManager, type RoleSyncManager } from '$lib/utils/role-sync.svelte';
@@ -346,7 +347,11 @@
       onError: (msg: string) => {
         log.error(msg);
       },
-      onAuthError: () => void goto('/login'),
+      onAuthError: () => {
+        // ADR-050 Amendment 2026-04-22: cross-origin hard-nav to apex login.
+        // `goto()` is client-router-bound and cannot leave the subdomain origin.
+        window.location.href = buildLoginUrl('session-expired');
+      },
     });
     setPresenceCallbacks(callbacks);
     await wsConnect(callbacks);

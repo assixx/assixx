@@ -324,6 +324,69 @@ describe('Frontend: Apex-Login Redirect Centralization (ADR-050 Amendment)', () 
       `Found bare \`redirect(302, '/login')\` SSR redirect outside build-apex-url.ts. Per ADR-050 Amendment 2026-04-22, every SSR redirect to login MUST go through buildLoginUrl(reason, undefined, url) so the response Location: header points at the apex origin (cross-origin hard-nav out of the tenant subdomain), NOT a relative path that keeps the browser stuck on \`<slug>.assixx.com\`. Replace with: redirect(302, buildLoginUrl('session-expired', undefined, url))\n${violations.join('\n')}`,
     ).toEqual([]);
   });
+
+  /**
+   * Phase 3 ban (2026-04-25): client-side navigation to `/login` via
+   * SvelteKit's `goto()` is forbidden. `goto()` is bound to the SvelteKit
+   * client router and CANNOT leave the current origin — a logout from a
+   * tenant subdomain ends up back on the same subdomain `/login`, not the
+   * apex. The smoking gun: the user observed token-timeout redirects
+   * landing on `testfirma.localhost:5173/login?session=expired` instead of
+   * the apex even after Phase 2 fixed every SSR `redirect(302, '/login')`,
+   * because token-manager.ts and ~10 other client-side sites used `goto()`
+   * or relative `window.location` instead.
+   *
+   * Replacement: `window.location.href = buildLoginUrl(reason)` — full
+   * cross-origin hard-nav. The browser's Location resolution applies the
+   * absolute apex URL the helper returns.
+   */
+  it('Client: no `goto(...)` to /login — use window.location.href = buildLoginUrl() (apex hop)', () => {
+    // Match `goto(` followed (with possibly nested helpers like resolve())
+    // by a string literal beginning with `/login`. Catches `goto('/login')`,
+    // `goto('/login?...')`, `goto(resolve('/login'))`, `goto(resolve('/login?...'))`.
+    // The pattern is intentionally loose to defend against whatever wrapper
+    // someone reaches for next.
+    // `\x27` = hex escape for `'` — avoids breaking the single-quoted shell
+    // arg that `grepFiles` builds. Prettier enforces single-quoted JS string
+    // literals project-wide so this catches every production caller.
+    const pattern = 'goto\\([^)]*\\x27/login';
+    const tsMatches = grepFiles(pattern, 'frontend/src', '*.ts');
+    const svelteMatches = grepFiles(pattern, 'frontend/src', '*.svelte');
+    const violations = [...tsMatches, ...svelteMatches].filter((f) => !ALLOWED_FILES.has(f));
+
+    expect(
+      violations,
+      `Found client-side \`goto(.../login...)\` outside build-apex-url.ts. Per ADR-050 Amendment 2026-04-22, SvelteKit's \`goto()\` is client-router-bound and cannot cross origins — the user stays on the tenant subdomain instead of the apex. Replace with:\n  window.location.href = buildLoginUrl('session-expired')   // auth-error context\n  window.location.href = buildLoginUrl('logout-success')    // post-action context\n  window.location.href = buildLoginUrl()                    // neutral entry\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  /**
+   * Phase 3 ban (2026-04-25): direct relative-path assignments to
+   * `window.location.href` / `window.location.replace()` are forbidden.
+   * The token-manager was the canonical bug (built `/login?session=expired`
+   * via URLSearchParams + relative window.location.replace) — relative
+   * URLs resolve against the current origin, so a session-timeout on a
+   * tenant subdomain redirected back to the SAME subdomain. This guard
+   * catches that pattern even when a future caller programmatically
+   * constructs the URL string and assigns it.
+   */
+  it('Client: no relative `window.location.{href,replace}` to /login — use buildLoginUrl() (absolute apex URL)', () => {
+    // Match `window.location.href = '/login...'` or `.replace('/login...')`.
+    // Allowed: `window.location.href = buildLoginUrl(...)` (absolute apex
+    // URL). The literal `/login` slash is the giveaway that the URL is
+    // relative — buildLoginUrl always returns `http(s)://<apex>/login...`.
+    // `\x27` = hex escape for `'` (same shell-quoting rationale as the
+    // goto-ban above). Prettier-enforced single quotes cover all callers.
+    const pattern = 'window\\.location\\.(href\\s*=\\s*|replace\\s*\\()\\x27/login';
+    const tsMatches = grepFiles(pattern, 'frontend/src', '*.ts');
+    const svelteMatches = grepFiles(pattern, 'frontend/src', '*.svelte');
+    const violations = [...tsMatches, ...svelteMatches].filter((f) => !ALLOWED_FILES.has(f));
+
+    expect(
+      violations,
+      `Found client-side \`window.location.{href,replace}\` with a relative \`/login\` URL outside build-apex-url.ts. Per ADR-050 Amendment 2026-04-22, the URL must be the absolute apex form returned by \`buildLoginUrl(reason)\` — relative paths keep the user on the tenant subdomain. Replace with:\n  window.location.href = buildLoginUrl('session-expired')\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
 });
 
 describe('Backend: Shared db-helpers (Maßnahme #13)', () => {

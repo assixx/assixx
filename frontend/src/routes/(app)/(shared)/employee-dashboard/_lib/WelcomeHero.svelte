@@ -129,8 +129,7 @@
 -->
 <div
   class="welcome-hero-custom relative mb-8 flex min-h-[120px] items-center
-    justify-between overflow-hidden px-4 py-4
-    md:px-6 md:py-5 lg:px-8 lg:py-6"
+    overflow-hidden py-4 md:py-5 lg:py-6"
   role="presentation"
   onmousemove={handlePointerMove}
   onmouseleave={handlePointerLeave}

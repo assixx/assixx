@@ -2,11 +2,9 @@
 // MANAGE DEPARTMENTS - API FUNCTIONS
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient } from '$lib/utils/api-client';
 import { extractArray, extractId } from '$lib/utils/api-response';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 import { handleSessionExpired, isSessionExpiredError } from '$lib/utils/session-expired.js';
 
@@ -77,7 +75,8 @@ export function checkSession(): boolean {
   const userRole = localStorage.getItem('userRole');
 
   if (token === null || (userRole !== 'root' && userRole !== 'admin')) {
-    void goto(resolve('/login'));
+    // ADR-050 Amendment 2026-04-22: cross-origin hard-nav to apex login.
+    window.location.href = buildLoginUrl('session-expired');
     return false;
   }
   return true;

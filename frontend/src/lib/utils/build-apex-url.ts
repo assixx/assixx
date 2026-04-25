@@ -27,15 +27,27 @@ import { env } from '$env/dynamic/public';
  * page picks the correct toast tone (success / warning / error) without
  * heuristics:
  *
- * - `logout-success`    → User-initiated logout completed cleanly. Active
- *                         action-result. Success toast.
- * - `session-expired`   → JWT / refresh token expired mid-session. Passive
- *                         system event. Warning toast.
- * - `session-forbidden` → JWT decoded OK but host did not match
- *                         (CROSS_TENANT_HOST_MISMATCH, ADR-050 §Decision).
- *                         Passive system event. Error toast.
+ * - `logout-success`     → User-initiated logout completed cleanly. Active
+ *                          action-result. Success toast.
+ * - `session-expired`    → JWT / refresh token expired mid-session. Passive
+ *                          system event. Warning toast.
+ * - `session-forbidden`  → JWT decoded OK but host did not match
+ *                          (CROSS_TENANT_HOST_MISMATCH, ADR-050 §Decision).
+ *                          Passive system event. Error toast.
+ * - `inactivity-timeout` → Client-side inactivity watchdog reached zero
+ *                          (token-manager timer tick). Distinct from
+ *                          `session-expired` because the cause is "user
+ *                          went idle" rather than "JWT exp passed" — the
+ *                          login page may show a friendlier "you got
+ *                          logged out for inactivity" message. Maps to
+ *                          the legacy `?timeout=true` query the login
+ *                          page already handles.
  */
-export type LoginRedirectReason = 'logout-success' | 'session-expired' | 'session-forbidden';
+export type LoginRedirectReason =
+  | 'logout-success'
+  | 'session-expired'
+  | 'session-forbidden'
+  | 'inactivity-timeout';
 
 // Reason → query-string mapping. Only the values here are allowed on the
 // login URL; the architectural test forbids hardcoded `/login?logout=...`
@@ -44,6 +56,7 @@ const REASON_TO_QUERY: Record<LoginRedirectReason, string> = {
   'logout-success': 'logout=success',
   'session-expired': 'session=expired',
   'session-forbidden': 'session=forbidden',
+  'inactivity-timeout': 'timeout=true',
 };
 
 const DEFAULT_PUBLIC_APP_URL = 'https://www.assixx.com';
