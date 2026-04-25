@@ -17,7 +17,7 @@
 > 2. `TYPESCRIPT-STANDARDS.md` — Code standards (`??` not `||`, explicit booleans, no `any`)
 > 3. `CODE-OF-CONDUCT.md` + `CODE-OF-CONDUCT-SVELTE.md` — Backend + Frontend conventions
 > 4. `DATABASE-MIGRATION-GUIDE.md` — Migration format with node-pg-migrate
-> 5. `HOW-TO-TEST-WITH-VITEST.md` — Test patterns (unit + API integration)
+> 5. `HOW-TO-TEST.md` — Test patterns (unit + API integration)
 > 6. `ZOD-INTEGRATION-GUIDE.md` — DTO patterns with nestjs-zod
 > 7. Design System `README.md` — Available CSS primitives
 

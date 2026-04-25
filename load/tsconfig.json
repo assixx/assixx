@@ -12,7 +12,8 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "skipLibCheck": true,
-    "lib": ["ES2022"]
+    "lib": ["ES2022"],
+    "types": ["k6"]
   },
   "include": ["**/*.ts"],
   "exclude": ["results"]

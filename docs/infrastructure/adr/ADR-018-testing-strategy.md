@@ -1,4 +1,4 @@
-# ADR-018: Testing Strategy (Unit + API Integration)
+# ADR-018: Testing Strategy (Unit + API Integration + E2E + Load)
 
 | Metadata                | Value                                                                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------------- |
@@ -419,25 +419,27 @@ export default defineConfig({
 
 Performance tests are a separate axis from functional tests — they measure
 **how fast** endpoints respond, not **whether** they respond correctly. Added
-2026-04-18 alongside the Tempo + OTel observability work (see ADR-048). The
-suite guards against performance regressions that unit / API / E2E tiers cannot
-detect (e.g. an added N+1 query, a new middleware, a slow serializer).
+2026-04-18 alongside the Tempo + OTel observability work (see ADR-048).
+Expanded 2026-04-25 with a **Baseline** suite (mixed read/write, optional
+WS-Soak, CI diff) covering ground Smoke cannot — namely write-amplification,
+RLS-`set_config` overhead, pool-saturation knees, and persistent-connection
+behaviour.
 
-| Aspect        | Decision                                                                            |
-| ------------- | ----------------------------------------------------------------------------------- |
-| Tool          | [k6](https://grafana.com/docs/k6/) via Docker (`grafana/k6:latest`)                 |
-| Scope         | `load/tests/*.ts` — currently one smoke test                                        |
-| Execution     | Single VU × 1 min against running Docker backend, via `pnpm run test:load:smoke`    |
-| HTTP Client   | k6's built-in `k6/http` (not fetch — k6 runs in goja VM, not Node)                  |
-| Auth          | `loginApitest()` in `load/lib/auth.ts` — port of `backend/test/helpers.ts`          |
-| Rate Limiting | Script's pre-step `test:load:flush` runs `FLUSHDB` against the Redis container      |
-| Thresholds    | `p95 < 500 ms`, `p99 < 1000 ms`, `http_req_failed < 1 %`, `checks > 99 %`           |
-| TypeScript    | k6 ≥ 0.54 supports `.ts` natively — no transpile step; `load/tsconfig.json` for IDE |
-| Prerequisites | Docker backend healthy, `apitest` tenant seeded, Redis reachable                    |
+| Aspect        | Decision                                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------------------- |
+| Tool          | [k6](https://grafana.com/docs/k6/) via Docker (`grafana/k6:latest`)                                     |
+| Scope         | `load/tests/*.ts` — `smoke.ts` + `baseline.ts`                                                          |
+| Execution     | Smoke: 1 VU × 1 min · Baseline: ramping-vus, 5 VU light or 500 VU full                                  |
+| HTTP Client   | k6 built-in `k6/http` + `k6/ws` (k6 runs in goja VM, not Node)                                          |
+| Auth          | `loginApitest()` in `load/lib/auth.ts` — port of `backend/test/helpers.ts`                              |
+| Rate Limiting | Pre-step `test:load:flush` runs `FLUSHDB`; Baseline-Wrapper additionally `--user "$(id -u):$(id -g)"`   |
+| Thresholds    | Smoke: `p95 < 500 ms` · Baseline per-tag: `read p95 < 100`, `write p95 < 250`, `error rate < 0.1 %`     |
+| TypeScript    | k6 ≥ 0.54 supports `.ts` natively — no transpile step; `load/tsconfig.json` for IDE                     |
+| Prerequisites | Docker backend healthy, `apitest` tenant seeded, Redis reachable                                        |
 
-**1 Smoke Test, 10 Endpoints:**
+#### Smoke: 1 file, 10 endpoints
 
-Hot-path endpoints that every user hits — chosen to catch regressions early:
+Pre-release sanity gate. Hot-path endpoints that every user hits:
 
 | #   | Endpoint                                | Why in smoke                    |
 | --- | --------------------------------------- | ------------------------------- |
@@ -452,27 +454,113 @@ Hot-path endpoints that every user hits — chosen to catch regressions early:
 | 9   | `GET /api/v2/tpm/plans`                 | Paginated list (Addon, ADR-033) |
 | 10  | `GET /api/v2/addons`                    | Tenant-addon catalog            |
 
-**Baseline (2026-04-18):** p95 = 23.64 ms, p99 = 38.11 ms, 0 % failure, 541/541 checks passing.
+**Baseline values (2026-04-25):** Smoke p95 ≈ 24 ms, p99 ≈ 39 ms, 0 % failure, 531/531 checks passing.
+
+#### Baseline: 1 file, 70/30 read/write mix + optional WS-Soak
+
+Beyond Smoke. Tagged read/write metrics, profile-driven VU ramps, automatic
+cleanup of `LOAD-*`-tagged blackboard entries, snapshot-based regression diff.
+
+**Throttler-Constraint (ADR-001 — non-negotiable):**
+
+Rate limits are tracked PER JWT user-id. `admin` tier = 2000 reqs / 15 min ≈
+2.2 req/s sustained per user. Single-tenant @ >5 VU produces 429s, not latency
+data. Two profiles encode this reality:
+
+| Profile | VU peak | Pool min          | Wall-time | Goal                                      |
+| ------- | ------- | ----------------- | --------- | ----------------------------------------- |
+| `light` | 5       | 1 (apitest)       | ~5 min    | Regression detection + p95 drift          |
+| `full`  | 500     | 5+ (multi-tenant) | ~8 min    | Pool-saturation knee, capacity ceiling    |
+
+`setup()` validates pool size and aborts if `PROFILE=full && pool < 5`.
+
+**Per-tag thresholds (`load/tests/baseline.ts`):**
+
+```ts
+'http_req_duration{op:read}':       ['p(95)<100', 'p(99)<300']    // 4× Smoke baseline
+'http_req_duration{op:write}':      ['p(95)<250', 'p(99)<800']    // RLS write + audit_trail (ADR-009)
+'http_req_failed':                  ['rate<0.001']                // 0.1% error budget
+'ws_connecting{scenario:ws_soak}':  ['p(95)<500']                 // WS handshake (when WS=1)
+```
+
+**Baseline values (2026-04-25, light profile):** read p95 ≈ 28 ms, read p99 ≈ 36 ms, write p95 ≈ 44 ms, write p99 ≈ 51 ms, 0 % failure (981/981 checks). Reproducibility drift between back-to-back runs <3 %.
+
+**Wrapper script (`scripts/run-load-baseline.sh`)** — invoked via `test:load:baseline`:
+
+1. Pre-flight: Postgres + Backend + Redis health check
+2. Redis FLUSHDB (throttle reset)
+3. `docker run --user "$(id -u):$(id -g)"` — fixes summary-export permission
+4. Auto-cleanup of `LOAD-*` blackboard entries via `trap` (runs on pass, fail, Ctrl-C)
+5. Snapshot bootstrap: writes `load/baselines/baseline-<profile>.json` if missing
+6. CI diff against existing snapshot via `scripts/load-diff.ts`
+
+**CI-Diff (`scripts/load-diff.ts`):**
+
+Compares two k6 `--summary-export` JSON files. Fails if any tracked metric
+regressed beyond budget:
+
+| Metric                                 | Mode        | Default tolerance       |
+| -------------------------------------- | ----------- | ----------------------- |
+| `http_req_duration` p95/p99            | Relative    | +20 % over baseline     |
+| `http_req_duration{op:read}` p95/p99   | Relative    | +20 %                   |
+| `http_req_duration{op:write}` p95/p99  | Relative    | +20 %                   |
+| `http_req_failed` rate                 | Absolute    | +0.5 percentage points  |
+
+Exit code: 0 pass, 1 regression, 2 usage error. Designed for GitHub
+Actions / GitLab CI.
+
+**Tail-sampling cross-link (ADR-048 update 2026-04-25):**
+
+OTel collector slow-trace threshold tightened from 500 ms → 200 ms in the same
+PR as the baseline suite. With Smoke p95 = 24 ms and Baseline write p95 = 44 ms,
+500 ms only caught 20×-median outliers; 200 ms is ~5× write-p95 = real outlier
+territory. See [`docker/otel-collector/collector.yaml`](../../../docker/otel-collector/collector.yaml)
+inline rationale.
 
 **Commands:**
 
 ```bash
-# Standalone smoke (flushes Redis throttle keys automatically, then runs k6)
+# Smoke (1 VU × 1 min) — pre-release sanity
 pnpm run test:load:smoke
 
-# Flush Redis throttle keys only (for troubleshooting)
+# Baseline light (default — single-tenant safe, ~5 min)
+pnpm run test:load:baseline
+
+# +WebSocket-Soak (50 persistent /chat-ws connections, parallel)
+WS=1 pnpm run test:load:baseline
+
+# Full capacity (~8 min — needs multi-tenant pool ≥ 5)
+PROFILE=full LOGINS='[…5+ tenants…]' pnpm run test:load:baseline
+
+# CI regression diff (after snapshot is checked in)
+pnpm run test:load:diff -- \
+  --baseline=load/baselines/baseline-light.json \
+  --current=load/results/baseline-latest.json
+
+# Manual cleanup (Wrapper does this automatically on every run)
+docker exec assixx-postgres psql -U assixx_user -d assixx -c \
+  "DELETE FROM blackboard_entries WHERE title LIKE 'LOAD-%';"
+
+# Manual throttle flush (debugging)
 pnpm run test:load:flush
 
-# Full `pnpm test` now includes Vitest + Playwright + k6 smoke (total ~3 min)
+# Full `pnpm test` includes Vitest + Playwright + k6 smoke (NOT baseline — too slow)
 pnpm test
 ```
 
-**Not in CI (yet):** load tests need Docker backend + Redis + postgres. Currently runs locally pre-merge. A scheduled CI job against a staging environment is the natural next step.
+**Not in CI (yet):** load tests need Docker backend + Redis + Postgres. Currently
+runs locally pre-merge. Scheduled CI against staging is the natural next step,
+together with multi-tenant seed automation for `PROFILE=full`.
 
 **References:**
 
 - [load/README.md](../../../load/README.md) — complete setup + troubleshooting
-- [ADR-048 Distributed Tracing with Tempo + OTel](./ADR-048-distributed-tracing-tempo-otel.md) — traces generated by the smoke suite land in Tempo (Phase 2b+)
+- [`load/tests/baseline.ts`](../../../load/tests/baseline.ts) — file-header is the source-of-truth for baseline behaviour
+- [`scripts/run-load-baseline.sh`](../../../scripts/run-load-baseline.sh) — wrapper script (pre-flight, cleanup, bootstrap, diff)
+- [`scripts/load-diff.ts`](../../../scripts/load-diff.ts) — CI-grade JSON-summary diff
+- [HOW-TO-TEST.md](../../how-to/HOW-TO-TEST.md) — task-oriented guide covering all 4 tiers, including baseline workflows
+- [ADR-001 Rate Limiting](./ADR-001-rate-limiting.md) — throttler tiers (the math behind `light` vs `full` profiles)
+- [ADR-048 Distributed Tracing with Tempo + OTel](./ADR-048-distributed-tracing-tempo-otel.md) — tail-sampling 200 ms threshold catches every Tier-4 outlier
 - [k6 TypeScript Support](https://grafana.com/docs/k6/latest/using-k6/javascript-typescript-compatibility-mode/)
 
 ### All Test Commands (Quick Reference)
@@ -505,6 +593,10 @@ pnpm run test:e2e:report                            # Open HTML report
 # ── Load / Performance Tests (k6) ────────────────────────────
 pnpm run test:load                                  # Alias for smoke (same command)
 pnpm run test:load:smoke                            # 10 endpoints × 1 VU × 1 min (~65s, flushes Redis first)
+pnpm run test:load:baseline                         # 70/30 read/write mix, ~5min light, auto-cleanup + snapshot diff
+WS=1 pnpm run test:load:baseline                    # +WebSocket-Soak (50 persistent /chat-ws connections)
+PROFILE=full LOGINS='[…]' pnpm run test:load:baseline # Capacity test, ~8min, needs multi-tenant pool ≥5
+pnpm run test:load:diff -- --baseline=… --current=… # CI regression gate (exit 1 on >20% drift)
 pnpm run test:load:flush                            # Flush Redis throttle keys (manual debug)
 
 # ── Coverage ──────────────────────────────────────────────────
@@ -719,7 +811,7 @@ Settings → Branches → main:
 
 - [VITEST-UNIT-TEST-PLAN.md](../../VITEST-UNIT-TEST-PLAN.md) — Detailed phase plan (Phase 0-8)
 - [VITEST-API-MIGRATION.md](../../VITEST-API-MIGRATION.md) — Bruno → Vitest migration (103 tests)
-- [HOW-TO-TEST-WITH-VITEST.md](../../how-to/HOW-TO-TEST-WITH-VITEST.md) — User guide for API tests
+- [HOW-TO-TEST.md](../../how-to/HOW-TO-TEST.md) — User guide for API tests
 - [HOW-TO-CREATE-TEST-USER.md](../../how-to/HOW-TO-CREATE-TEST-USER.md) — Test-Tenant `apitest` erstellen (Voraussetzung für API Integration Tests)
 
 ## Related ADRs
@@ -733,4 +825,6 @@ Settings → Branches → main:
 
 ---
 
-_Last Updated: 2026-04-18 (v12 - Phase 13: Tier 4 Load & Performance Regression tests with k6 v0.54+ (Docker `grafana/k6:latest`). 1 smoke test, 10 hot-path endpoints, 1 VU × 1 min, thresholds p95<500ms / p99<1000ms / err<1%. Baseline recorded: p95=23.64ms, p99=38.11ms. Integrated into `pnpm test`. Total: 8080 test artefacts across 6 tiers._
+_Last Updated: 2026-04-25 (v13 - Tier 4 expansion: Baseline suite (`load/tests/baseline.ts`) added alongside smoke. Per-tag thresholds (read p95<100, write p95<250), profile-driven VU ramps (`light` 5 VU / `full` 500 VU), optional WS-Soak scenario (50 persistent /chat-ws connections), wrapper script (`scripts/run-load-baseline.sh`) with pre-flight + auto-cleanup + snapshot bootstrap + CI diff. New CI-grade diff utility (`scripts/load-diff.ts`) with 20% relative / 0.5pp absolute regression budgets. Tail-sampling threshold tightened 500ms → 200ms in `docker/otel-collector/collector.yaml` (cross-ADR-048). Baseline values: read p95≈28ms, write p95≈44ms, 0% failure. ADR title broadened to reflect Tier-3/4 inclusion. Companion HOW-TO renamed `HOW-TO-TEST-WITH-VITEST.md` → `HOW-TO-TEST.md` and expanded into umbrella covering all 4 tiers._
+
+_Previously: 2026-04-18 (v12) — Tier 4 Load & Performance Regression tests with k6 v0.54+ (Docker `grafana/k6:latest`). 1 smoke test, 10 hot-path endpoints, 1 VU × 1 min, thresholds p95<500ms / p99<1000ms / err<1%. Baseline recorded: p95=23.64ms, p99=38.11ms. Integrated into `pnpm test`._

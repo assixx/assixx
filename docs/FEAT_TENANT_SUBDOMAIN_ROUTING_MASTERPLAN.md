@@ -779,7 +779,7 @@ consistency.
 ## Phase 3: Unit Tests
 
 > **Dependency:** Phase 2 complete.
-> **Pattern:** `backend/src/nest/{module}/{file}.test.ts` per HOW-TO-TEST-WITH-VITEST.md
+> **Pattern:** `backend/src/nest/{module}/{file}.test.ts` per HOW-TO-TEST.md
 
 ### Test files
 
@@ -854,7 +854,7 @@ shared/src/architectural.test.ts                                    # +3 asserti
 ## Phase 4: API Integration Tests
 
 > **Dependency:** Phase 3 complete.
-> **Pattern:** `backend/test/*.api.test.ts` (HOW-TO-TEST-WITH-VITEST.md)
+> **Pattern:** `backend/test/*.api.test.ts` (HOW-TO-TEST.md)
 
 ### Test file
 

@@ -48,8 +48,19 @@ processors:
   #
   # Keep-rules:
   #   1. Every trace that errored (HTTP 5xx, thrown exception, etc.)
-  #   2. Every trace that was slow (>500ms root-span duration)
+  #   2. Every trace that was slow (>200ms root-span duration)
   #   3. 10% random sample of the rest (happy-path baseline)
+  #
+  # Threshold tuning (ADR-048 — "Tuning nach ~2 Wochen Betrieb"):
+  #   2026-04-25: lowered slow-threshold 500ms → 200ms. Rationale:
+  #   ADR-048 itself notes "Assixx-Endpoints haben p95 typischerweise <50 ms"
+  #   and Smoke-Test 2026-04-25 confirmed p95=24ms. At 500ms only 20×-median
+  #   outliers were being captured — most real tail-events (pool waits,
+  #   audit-log spikes, RLS slow-paths in 50-150ms range) slipped into the
+  #   10% probabilistic bucket and were mostly dropped. 200ms = ~8× median
+  #   ⇒ catches every realistic outlier while still blocking happy-path
+  #   noise. Volume impact: estimated +3-5% trace ingest, negligible vs
+  #   Grafana Cloud Free-Tier (50 GB).
   #
   # decision_wait: how long to buffer spans before deciding. 10s covers
   # most request lifecycles in Assixx. Longer traces get dropped from buffer
@@ -67,7 +78,7 @@ processors:
       - name: slow-keep-all
         type: latency
         latency:
-          threshold_ms: 500
+          threshold_ms: 200
       - name: random-sample
         type: probabilistic
         probabilistic:

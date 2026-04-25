@@ -444,7 +444,7 @@ backend/src/nest/{feature}/
 ## Phase 4: API Integration Tests
 
 > **Dependency:** Phase 3 complete.
-> **Pattern:** `backend/test/*.api.test.ts` (`HOW-TO-TEST-WITH-VITEST.md`)
+> **Pattern:** `backend/test/*.api.test.ts` (`HOW-TO-TEST.md`)
 
 ### Test file
 
@@ -841,6 +841,6 @@ at Phase H. That is the entire point of the proof-gate.
 
 ## Related
 
-- [HOW-TO-TEST-WITH-VITEST.md](./HOW-TO-TEST-WITH-VITEST.md) — writing API integration tests
+- [HOW-TO-TEST.md](./HOW-TO-TEST.md) — writing API integration tests
 - [HOW-TO-INTEGRATE-FEATURE.md](./HOW-TO-INTEGRATE-FEATURE.md) — addon integration checklist
 - `CLAUDE-KAIZEN-MANIFEST.md` — failure catalogue (root of repo, if present)

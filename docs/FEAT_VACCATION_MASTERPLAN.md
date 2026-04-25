@@ -641,7 +641,7 @@ backend/src/nest/vacation/
 ## Phase 4: API Integration Tests
 
 > **Dependency:** Phase 3 complete
-> **Pattern:** `backend/test/*.api.test.ts` (HOW-TO-TEST-WITH-VITEST.md)
+> **Pattern:** `backend/test/*.api.test.ts` (HOW-TO-TEST.md)
 
 ### Test File
 

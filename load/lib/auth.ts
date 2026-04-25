@@ -3,7 +3,7 @@
  *
  * Mirrors `backend/test/helpers.ts` shape: login against apitest tenant,
  * expose authHeaders/authOnly split (Fastify rejects Content-Type on
- * body-less requests, see ADR-018 / HOW-TO-TEST-WITH-VITEST).
+ * body-less requests, see ADR-018 / HOW-TO-TEST).
  *
  * Difference vs. Vitest helpers: k6's `http.post()` is synchronous (runs
  * in the goja VM, not Node). `setup()` executes once before VUs start —
