@@ -117,9 +117,11 @@ const WRITE_DENIED_MESSAGES: Record<
   'not_assignee' | 'outside_window' | 'shift_times_missing',
   string
 > = {
-  not_assignee: 'Du bist dieser Schicht nicht zugeteilt.',
-  outside_window: 'Diese Schicht liegt außerhalb des Schreibfensters.',
-  shift_times_missing: 'Schichtzeiten sind für diese Schicht nicht konfiguriert.',
+  not_assignee: 'Du bist für diese Schicht nicht eingeteilt.',
+  outside_window:
+    'Bearbeitung nicht mehr möglich — Übergaben können nur während der Schicht oder bis zu 24 Stunden nach Schichtende erstellt werden.',
+  shift_times_missing:
+    'Schichtzeiten sind für diese Schicht nicht hinterlegt — bitte beim Team-Lead melden.',
 };
 
 export interface UpdateDraftInput {

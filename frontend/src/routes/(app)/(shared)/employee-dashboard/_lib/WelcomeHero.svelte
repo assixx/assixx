@@ -14,11 +14,14 @@
 
   const { employeeName }: Props = $props();
 
-  let floatingDotsCount = $state(0);
+  // Render petals in SSR markup (no $state + onMount gating).
+  // WHY: previously `$state(0)` + onMount-assignment delayed petals until after
+  // JS hydration → ~1 s pop-in on first paint. Constant value is SSR-safe and
+  // visible at first byte. (Issue: dashboard hero perf, 2026-04-25)
+  const floatingDotsCount = FLOATING_DOTS_COUNT;
 
   onMount(() => {
-    floatingDotsCount = FLOATING_DOTS_COUNT;
-
+    // Triggers fade-in for blackboard widget — see blackboard-widget.css `.loaded`.
     setTimeout(() => {
       document.body.classList.add('loaded');
     }, 100);
@@ -89,6 +92,9 @@
     position: absolute;
     z-index: 1;
     inset: 0;
+
+    /* Isolate paint area: 24 box-shadow petals must not invalidate parent paints */
+    contain: layout paint;
     pointer-events: none;
   }
 
@@ -96,6 +102,9 @@
   .floating-dot {
     position: absolute;
     animation: float 15s infinite ease-in-out;
+
+    /* Promote to GPU layer: prevents box-shadow repaint on every transform tick */
+    will-change: transform;
     box-shadow:
       0 0 4px oklch(84.74% 0.0858 9.04 / 40%),
       inset 0 0 2px color-mix(in oklch, var(--color-white) 60%, transparent);

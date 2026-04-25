@@ -4,7 +4,8 @@
 // Extracted from +page.svelte for modularity
 // =============================================================================
 
-import { invalidateAll } from '$app/navigation';
+import { invalidateAll, goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 
 import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 import {
@@ -16,6 +17,7 @@ import {
   showConfirmWarning,
 } from '$lib/utils/alerts';
 import { createLogger } from '$lib/utils/logger';
+import { checkSessionExpired } from '$lib/utils/session-expired';
 
 import {
   saveSchedule,
@@ -32,12 +34,15 @@ import {
   fetchTeamMembers,
   generateRotationFromConfig,
 } from './api';
+import { getOrCreateDraft } from './api-shift-handover';
 import { convertTeamMembersToEmployees, getWeekDateBounds } from './data-loader';
 import { loadShiftPlan, navigateToWeekContainingDate } from './plan-loader';
 import { buildAlgorithmConfig, buildRotationAssignments } from './rotation';
-import { shiftsState } from './state.svelte';
+import { type createHandoverState, type HandoverContext, shiftsState } from './state.svelte';
 
 import type { ShiftTimesMap, ShiftFavorite, CustomRotationConfig } from './types';
+
+type HandoverState = ReturnType<typeof createHandoverState>;
 
 const log = createLogger('ShiftsActions');
 
@@ -332,4 +337,67 @@ export async function handleCustomRotationGenerate(config: CustomRotationConfig)
     log.error({ err: error }, 'Custom rotation error');
     showErrorAlert(error instanceof Error ? error.message : 'Fehler bei der Custom Rotation');
   }
+}
+
+// =============================================================================
+// SHIFT-HANDOVER OPEN/CREATE
+// =============================================================================
+
+/**
+ * Open or create a shift-handover entry for a given grid cell.
+ *
+ * Behaviour by cell state:
+ *   - entry exists                            → /shift-handover/${uuid}
+ *   - no entry, writable (assignee OR manager) → POST /shift-handover/entries
+ *                                                 (idempotent `getOrCreateDraft`),
+ *                                                 then nav to detail page;
+ *                                                 4xx → toast with backend's
+ *                                                 German reason from
+ *                                                 WRITE_DENIED_MESSAGES.
+ *   - no entry, read-only peek                → warning toast, no nav
+ *
+ * Spec Deviation #11 (supersedes #9, 2026-04-25): replaces the previous
+ * server-load trampoline `/shift-handover/new?team&date&slot` + URL-param
+ * toast bridge with direct client-side POST. Matches the canonical pattern
+ * used across the codebase (Blackboard / KVP / Surveys / TPM). Eliminates
+ * the router-init `replaceState` race + the dedupe bug that swallowed
+ * repeat-toasts on subsequent clicks with the same denial reason.
+ *
+ * Sync wrapper around an async IIFE so the grid's `onhandoverClick` prop
+ * (typed `(ctx) => void`) accepts this handler without `no-misused-promises`
+ * complaints.
+ *
+ * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §Spec Deviations #11
+ * @see docs/infrastructure/adr/ADR-052-shift-handover-protocol.md
+ */
+export function handleHandoverOpen(
+  ctx: HandoverContext,
+  handover: HandoverState,
+  canManage: boolean,
+): void {
+  const teamId = shiftsState.selectedContext.teamId;
+  if (teamId === null) return;
+
+  const existingId = handover.lookupEntryId(ctx.shiftDate, ctx.shiftKey);
+  if (existingId !== null) {
+    void goto(resolve(`/shift-handover/${existingId}`));
+    return;
+  }
+
+  const empIds = shiftsState.getShiftEmployees(ctx.shiftDate, ctx.shiftKey);
+  const isAssignee = empIds.includes(shiftsState.currentUserId ?? -1);
+  if (!canManage && !isAssignee) {
+    showWarningAlert('Für diese Schicht wurde keine Übergabe angelegt.');
+    return;
+  }
+
+  void (async () => {
+    try {
+      const entry = await getOrCreateDraft(teamId, ctx.shiftDate, ctx.shiftKey);
+      void goto(resolve(`/shift-handover/${entry.id}`));
+    } catch (err: unknown) {
+      if (checkSessionExpired(err)) return;
+      showErrorAlert(err instanceof Error ? err.message : 'Übergabe konnte nicht angelegt werden.');
+    }
+  })();
 }

@@ -84,6 +84,13 @@ const config = {
           'https://*.assixx.com',
           'wss://*.assixx.com',
           'https://login.microsoftonline.com',
+          // Turnstile bot-detection telemetry: the widget POSTs to
+          // /cdn-cgi/challenge-platform/h/g/flow/... and GETs PAT challenges
+          // from challenges.cloudflare.com. Without this entry those XHRs
+          // are blocked by connect-src, the widget falls back to a degraded
+          // path, and the console fills with CSP violations.
+          // @see https://developers.cloudflare.com/turnstile/reference/content-security-policy/
+          'https://challenges.cloudflare.com',
         ],
         // Allow Web Workers (CryptoWorker uses blob: in dev, self in prod)
         'worker-src': ['self', 'blob:'],

@@ -226,7 +226,7 @@ describe('ShiftHandoverEntriesService', () => {
 
       await expect(
         service.getOrCreateDraft(1, 10, new Date('2026-04-22T00:00:00Z'), 'early', 5),
-      ).rejects.toThrow(/außerhalb des Schreibfensters/u);
+      ).rejects.toThrow(/Bearbeitung nicht mehr möglich/u);
       // INSERT must not run after forbidden check.
       expect(mockClient.query).toHaveBeenCalledTimes(2);
     });
@@ -242,7 +242,7 @@ describe('ShiftHandoverEntriesService', () => {
 
       await expect(
         service.getOrCreateDraft(1, 10, new Date('2026-04-22T00:00:00Z'), 'early', 5),
-      ).rejects.toThrow(/dieser Schicht nicht zugeteilt/u);
+      ).rejects.toThrow(/nicht eingeteilt/u);
     });
 
     it('falls back to a fetch when ON CONFLICT DO NOTHING returns no row (race)', async () => {

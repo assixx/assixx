@@ -2,13 +2,11 @@
   // SHIFTS PAGE - Svelte 5 + SSR
   import { onMount } from 'svelte';
 
-  import { beforeNavigate, goto, replaceState } from '$app/navigation';
-  import { resolve } from '$app/paths';
-  import { page } from '$app/stores';
+  import { beforeNavigate, goto } from '$app/navigation';
 
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showErrorAlert, showSuccessAlert, showWarningAlert } from '$lib/utils/alerts';
+  import { showWarningAlert } from '$lib/utils/alerts';
 
   import AdminActions from './_lib/AdminActions.svelte';
   import { fetchAssignmentCounts, fetchDepartments, fetchAssets, fetchTeams } from './_lib/api';
@@ -37,6 +35,7 @@
     handleAddToFavorites,
     handleFavoriteClick,
     handleCustomRotationGenerate,
+    handleHandoverOpen,
   } from './_lib/page-actions';
   import {
     loadShiftPlan,
@@ -217,72 +216,10 @@
       ssrOrgScope.type !== 'none',
   );
 
-  /**
-   * Button click → navigate to the dedicated detail page (Session 15
-   * modal → page migration). Behaviour by cell state:
-   *   - entry exists  → /shift-handover/${uuid}           (read or edit)
-   *   - no entry, writable (assignee OR manager)
-   *                    → /shift-handover/new?team&date&slot  (idempotent
-   *                       trampoline — backend getOrCreateDraft + redirect)
-   *   - no entry, read-only peek → warning toast, no nav
-   */
-  function handleHandoverOpen(ctx: HandoverContext): void {
-    const teamId = shiftsState.selectedContext.teamId;
-    if (teamId === null) return;
-
-    const existingId = handover.lookupEntryId(ctx.shiftDate, ctx.shiftKey);
-    if (existingId !== null) {
-      void goto(resolve(`/shift-handover/${existingId}`));
-      return;
-    }
-
-    const empIds = shiftsState.getShiftEmployees(ctx.shiftDate, ctx.shiftKey);
-    const isAssignee = empIds.includes(shiftsState.currentUserId ?? -1);
-    if (!canManageHandover && !isAssignee) {
-      showWarningAlert('Für diese Schicht wurde keine Übergabe angelegt.');
-      return;
-    }
-
-    const qs = new URLSearchParams({
-      team: String(teamId),
-      date: ctx.shiftDate,
-      slot: ctx.shiftKey,
-    });
-    void goto(resolve(`/shift-handover/new?${qs.toString()}`));
-  }
-
-  /**
-   * Toast-bridge for the /shift-handover/new trampoline + the detail page:
-   * both reach back to `/shifts` via redirect with a query flag so the
-   * German reason message (backend WRITE_DENIED_MESSAGES) stays visible
-   * as a global toast instead of an inline modal alert. After firing,
-   * `replaceState` strips the query so the URL stays clean and refreshes
-   * don't re-toast.
-   */
-  let lastToastQuery = '';
-  // Extracted to keep the `$effect` below under the 10-complexity cap —
-  // three identical "if string non-null/non-empty → toast" branches
-  // collapse into one helper call per message.
-  const toastIfPresent = (msg: string | null, show: (m: string) => void): void => {
-    if (msg !== null && msg !== '') show(msg);
-  };
-  $effect(() => {
-    const q = $page.url.searchParams;
-    const errMsg = q.get('handover-error');
-    const okMsg = q.get('handover-success');
-    const infoMsg = q.get('handover-info');
-    const fingerprint = `${errMsg ?? ''}|${okMsg ?? ''}|${infoMsg ?? ''}`;
-    if (fingerprint === '||' || fingerprint === lastToastQuery) return;
-    lastToastQuery = fingerprint;
-    toastIfPresent(errMsg, showErrorAlert);
-    toastIfPresent(okMsg, showSuccessAlert);
-    toastIfPresent(infoMsg, showWarningAlert);
-    const cleaned = new URL($page.url);
-    cleaned.searchParams.delete('handover-error');
-    cleaned.searchParams.delete('handover-success');
-    cleaned.searchParams.delete('handover-info');
-    replaceState(cleaned.pathname + cleaned.search, {});
-  });
+  // Handover open/create logic lives in `_lib/page-actions.ts#handleHandoverOpen`
+  // (Spec Deviation #11). Call site below threads `handover` + `canManageHandover`
+  // — those are component-local, so the action takes them as parameters rather
+  // than re-deriving them inside page-actions.
 
   // --- SSR INIT ---
   $effect(() => {
@@ -673,7 +610,9 @@
               onemployeeClick={swapEnabled && !shiftsState.isManager ?
                 handleEmployeeClick
               : undefined}
-              onhandoverClick={handleHandoverOpen}
+              onhandoverClick={(ctx: HandoverContext) => {
+                handleHandoverOpen(ctx, handover, canManageHandover);
+              }}
               getHandoverStatus={handover.getStatus}
             />
 

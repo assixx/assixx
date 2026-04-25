@@ -67,7 +67,24 @@ echo "127.0.0.1 meinefirma.localhost firma-c.localhost firma-d.localhost" \
 > ```
 >
 > **Wichtig:** `EOF` muss ganz links stehen, kein Leerzeichen davor — sonst
-> hängt die Shell.
+> hängt die Shell. Tipp: Heredoc komplett vermeiden mit `printf`:
+> `printf '127.0.0.1 meinefirma.localhost\n' | sudo tee -a /etc/hosts`.
+
+> **WSL2-Hinweis (KRITISCH für Persistenz):** Per Default regeneriert WSL bei
+> jedem Distro-Start `/etc/hosts` aus den Windows-Defaults und **überschreibt
+> deinen Eintrag**. Ohne den folgenden Schritt ist dein Subdomain-Eintrag nach
+> dem nächsten `wsl --shutdown` / Reboot **weg** — du erlebst dann genau das
+> R15-Bouncing aus §Troubleshooting unten und denkst, der Login sei kaputt.
+>
+> **Einmalig setzen:**
+>
+> ```bash
+> printf '[network]\ngenerateHosts = false\n' | sudo tee /etc/wsl.conf > /dev/null
+> ```
+>
+> Greift erst beim nächsten WSL-Start (`wsl --shutdown` aus PowerShell oder
+> Windows-Reboot). Für die laufende Session hat dein manueller `/etc/hosts`-Eintrag
+> sofort Wirkung — `wsl.conf` schützt nur künftige Boots.
 
 ### 3. Verifizieren
 
