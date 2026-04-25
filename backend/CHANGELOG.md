@@ -1,5 +1,21 @@
 # assixx-backend
 
+## 0.4.12
+
+### Patch Changes
+
+- 1031d27: chore: add version reference and bug report
+- 1031d27: feat: add subdomain in url | Tenant isolation prevention
+- 1031d27: feat: add microsoft oAuth
+- 1031d27: feat: add shift handover
+- 1031d27: chore: add grafana tempo
+- 1031d27: chore: bump node 24.15.0 LTS
+- 1031d27: chore: add otelementry
+- Updated dependencies [1031d27]
+- Updated dependencies [1031d27]
+- Updated dependencies [1031d27]
+  - @assixx/shared@0.4.12
+
 ## 0.4.11
 
 ### Patch Changes

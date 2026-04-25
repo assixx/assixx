@@ -5,6 +5,18 @@
 > CHANGELOGs after `pnpm changeset:version`. Do not hand-edit — changes
 > will be overwritten on the next release.
 
+## 0.4.12
+
+### Patch Changes
+
+- 1031d27: chore: add version reference and bug report
+- 1031d27: feat: add subdomain in url | Tenant isolation prevention
+- 1031d27: feat: add microsoft oAuth
+- 1031d27: feat: add shift handover
+- 1031d27: chore: add grafana tempo
+- 1031d27: chore: bump node 24.15.0 LTS
+- 1031d27: chore: add otelementry
+
 ## 0.4.11
 
 ### Patch Changes
@@ -70,3 +82,4 @@
 ### Minor Changes
 
 - 852a237: TPM (Total Productive Maintenance) feature complete: maintenance plans, Kamishibai board, card execution workflow, approval system, schedule projection, slot assistant, escalation, photo uploads, execution history, plan archive/unarchive, work order integration, shift assignments, category/interval/status color config, time estimates, rename machine to assets, audit trail logging, TPM card creation limits, template removal, API tests and full frontend UI
+
