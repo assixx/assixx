@@ -141,20 +141,51 @@ function buildFieldSchema(field: ShiftHandoverFieldDef): z.ZodType {
 }
 
 /**
+ * Validation mode for `buildEntryValuesSchema`.
+ *
+ * - **`'strict'`** — required fields must be present and pass type validation.
+ *   Used by `submitEntry` to enforce the full template contract before the
+ *   entry is sealed (snapshot + status flip).
+ *
+ * - **`'draft'`** — every field is treated as optional regardless of its
+ *   `required` flag. Type validation still runs on whatever IS provided
+ *   (e.g. a `decimal` field with the value `"hello"` is rejected). Used by
+ *   `updateDraft` so partial fills round-trip cleanly without the user
+ *   being forced to populate every required field on each save.
+ *
+ * Rationale: a draft is by definition incomplete. Forcing required-field
+ *   completeness at every PATCH defeats the purpose of drafts and produces
+ *   400s on legitimate intermediate states (Session 23 finding 2026-04-25).
+ *   Submit-time strict validation remains the authoritative gate on
+ *   completeness.
+ *
+ * Mirrors the validation split used by KVP suggestions and Inventory custom
+ * fields where partial-edit roundtrips are first-class.
+ */
+export type EntryValuesValidationMode = 'draft' | 'strict';
+
+/**
  * Build a Zod object schema that validates `custom_values` against the
- * given field definitions. Required fields are non-optional; non-required
- * fields allow the key to be missing (NOT explicitly `undefined`, per the
- * project's `exactOptionalPropertyTypes` rule). Unknown keys are rejected
- * via `.strict()` so a submitted entry can only carry keys declared by
- * the template snapshot.
+ * given field definitions.
+ *
+ *  - In `strict` mode required fields are non-optional; non-required fields
+ *    allow the key to be missing (NOT explicitly `undefined`, per the
+ *    project's `exactOptionalPropertyTypes` rule).
+ *  - In `draft` mode every field is `.optional()` — partial fills are valid;
+ *    only the type of provided values is checked.
+ *
+ * Unknown keys are rejected via `.strict()` in both modes so a `custom_values`
+ * payload can only carry keys declared by the template snapshot.
  */
 export function buildEntryValuesSchema(
   fields: readonly ShiftHandoverFieldDef[],
+  mode: EntryValuesValidationMode = 'strict',
 ): z.ZodType<Record<string, unknown>> {
   const shape: Record<string, z.ZodType> = {};
   for (const field of fields) {
     const base = buildFieldSchema(field);
-    shape[field.key] = field.required ? base : base.optional();
+    const isRequired = mode === 'strict' && field.required;
+    shape[field.key] = isRequired ? base : base.optional();
   }
   return z.object(shape).strict();
 }

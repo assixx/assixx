@@ -76,6 +76,7 @@ import { ShiftHandoverTemplatesService } from './shift-handover-templates.servic
 import { SHIFT_HANDOVER_CLOCK, type ShiftHandoverClock } from './shift-handover.tokens.js';
 import type {
   ShiftHandoverEntryRow,
+  ShiftHandoverEntryRowWithAuthor,
   ShiftHandoverEntryStatus,
   ShiftHandoverSlot,
 } from './shift-handover.types.js';
@@ -203,7 +204,7 @@ export class ShiftHandoverEntriesService {
         throw new BadRequestException(`Entry is locked (status=${entry.status})`);
       }
       if (dto.customValues !== undefined) {
-        await this.validateCustomValues(entry.team_id, dto.customValues);
+        await this.validateCustomValues(entry.team_id, dto.customValues, 'draft');
       }
       const nextProtocol = dto.protocolText ?? entry.protocol_text;
       const nextCustom = dto.customValues ?? entry.custom_values;
@@ -229,7 +230,10 @@ export class ShiftHandoverEntriesService {
         throw new BadRequestException(`Entry is already ${entry.status}; cannot re-submit`);
       }
       const fields = await this.resolveSnapshotFields(entry.team_id);
-      const parsed = buildEntryValuesSchema(fields).safeParse(entry.custom_values);
+      // Submit is strict: every required field MUST be present + pass type
+      // validation. Drafts use the lenient `'draft'` mode in updateDraft; the
+      // gate flips to strict only at submit-time. See Session 23.
+      const parsed = buildEntryValuesSchema(fields, 'strict').safeParse(entry.custom_values);
       if (!parsed.success) {
         throw new BadRequestException(
           `custom_values fails template validation: ${getErrorMessage(parsed.error)}`,
@@ -303,9 +307,29 @@ export class ShiftHandoverEntriesService {
     return { items, total, page, limit };
   }
 
-  async getEntry(entryId: string): Promise<ShiftHandoverEntryRow> {
-    const rows = await this.db.tenantQuery<ShiftHandoverEntryRow>(
-      `SELECT * FROM shift_handover_entries WHERE id = $1 AND is_active = $2`,
+  /**
+   * Single-entry detail read with the author display name JOINed in.
+   *
+   * `created_by_name` denormalises `users.first_name + ' ' + last_name` (or
+   * `email` if both name parts are blank) into the row so the detail page
+   * can show "who had the shift" in the meta block without a second
+   * round-trip. JOIN runs through `tenantQuery` (app_user, RLS strict-mode
+   * per ADR-019) so a foreign-tenant `users` row is impossible to surface.
+   * `LEFT JOIN` so a soft-deleted creator (legacy data) doesn't 0-row the
+   * entry — the meta just shows "Unbekannt" in that edge case.
+   *
+   * Resolves the Session-18 Known Limitation ("no assignee display on
+   * the detail page" — modal era had grid state, page era did not).
+   * Inventory items + KVP suggestions use the same JOIN pattern. Session 24.
+   */
+  async getEntry(entryId: string): Promise<ShiftHandoverEntryRowWithAuthor> {
+    const rows = await this.db.tenantQuery<ShiftHandoverEntryRowWithAuthor>(
+      `SELECT e.*,
+              COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email)
+                AS created_by_name
+         FROM shift_handover_entries e
+         LEFT JOIN users u ON u.id = e.created_by
+        WHERE e.id = $1 AND e.is_active = $2`,
       [entryId, IS_ACTIVE.ACTIVE],
     );
     const row = rows[0];
@@ -486,12 +510,24 @@ export class ShiftHandoverEntriesService {
     return row;
   }
 
+  /**
+   * Type-validates `custom_values` against the team's live template fields.
+   *
+   * `mode='draft'` (default for `updateDraft`) keeps every field optional —
+   * a partial fill is valid; only provided values are type-checked. This is
+   * the user-experience contract for drafts: incremental edits, no forced
+   * completion (Session 23 finding 2026-04-25).
+   *
+   * `mode='strict'` is reserved for `submitEntry` — required fields MUST be
+   * present and pass type validation; that's the gate that seals the entry.
+   */
   private async validateCustomValues(
     teamId: number,
     values: Record<string, unknown>,
+    mode: 'draft' | 'strict',
   ): Promise<void> {
     const fields = await this.resolveSnapshotFields(teamId);
-    const parsed = buildEntryValuesSchema(fields).safeParse(values);
+    const parsed = buildEntryValuesSchema(fields, mode).safeParse(values);
     if (!parsed.success) {
       throw new BadRequestException(`Invalid custom_values: ${getErrorMessage(parsed.error)}`);
     }

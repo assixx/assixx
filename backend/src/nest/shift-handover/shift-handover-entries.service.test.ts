@@ -542,6 +542,27 @@ describe('ShiftHandoverEntriesService', () => {
 
       await expect(service.getEntry('missing')).rejects.toThrow(NotFoundException);
     });
+
+    it('JOINs users for created_by_name and surfaces it on the result (Session 24)', async () => {
+      const row = { ...entryRow(), created_by_name: 'Erika Mustermann' };
+      mockDb.tenantQuery.mockResolvedValueOnce([row]);
+
+      const result = await service.getEntry('entry-1');
+
+      expect(result.created_by_name).toBe('Erika Mustermann');
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('LEFT JOIN users u ON u.id = e.created_by');
+      expect(sql).toContain('AS created_by_name');
+    });
+
+    it('passes through a null created_by_name when the JOIN finds no user row', async () => {
+      const row = { ...entryRow(), created_by_name: null };
+      mockDb.tenantQuery.mockResolvedValueOnce([row]);
+
+      const result = await service.getEntry('entry-1');
+
+      expect(result.created_by_name).toBeNull();
+    });
   });
 
   // ---------------------------------------------------------------

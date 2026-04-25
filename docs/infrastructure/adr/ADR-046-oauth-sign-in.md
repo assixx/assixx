@@ -805,3 +805,57 @@ Existing OAuth-linked users will see Microsoft's "Read your profile" consent scr
 | `docs/how-to/HOW-TO-AZURE-AD-SETUP.md`                             | `User.Read` permission documented                                                                  |
 | `docs/FEATURES.md`                                                 | OAuth profile-photo sync mentioned                                                                 |
 | `docs/FEAT_OAUTH_PROFILE_PHOTO_MASTERPLAN.md`                      | NEW — execution plan                                                                               |
+
+---
+
+## Amendment 2026-04-25: Bug F — refresh paths still gated by localStorage-only check
+
+**Observed (production logs, 2026-04-25):** On a tenant subdomain (`testfirma.localhost:5173`),
+mouse-move on the `/shifts` page produced
+`[ERROR] TokenManager: No access token available, cannot refresh` in the browser console
+(and Sentry) every time the access token's remaining lifetime fell below 10 minutes — even
+though every API call in the same session returned 200. Token never got refreshed; once it
+expired, the user would be hard-logged-out instead of seamlessly rotated.
+
+**Root cause — fourth and fifth occurrence of the D1 anti-pattern** in `token-manager.ts`:
+
+1. `canRefresh()` (Z. 318) gated on `this.accessToken === null` and emitted `log.error`.
+2. `refreshIfNeeded()` (Z. 264) gated on `this.accessToken === null` and silently no-op'd.
+
+Both predated the cookie-canonical migration in Bugs B/C/D. Cookie-only sessions (OAuth
+login-success, ADR-050 cross-origin tenant-subdomain handoff, or any reload that hydrates
+the singleton with empty localStorage) had a valid `accessTokenExp` cookie + valid HttpOnly
+`refreshToken` cookie, but `getRemainingTime()` (cookie-aware) and these two gates
+(localStorage-only) disagreed about whether a session existed. The activity-triggered
+refresh path therefore aborted with a logged error; the proactive api-client refresh path
+aborted silently — exactly the failure mode pattern §"D1 third occurrence" warned about.
+
+**Decision — same as B/C/D: route both gates through `hasSessionSignal()`.**
+
+- `canRefresh()` now early-returns on `!hasSessionSignal()` instead of `accessToken === null`.
+  Log level downgraded from `error` to `warn` because a missing session signal is a
+  legitimate logged-out state, not an anomaly worth a Sentry issue.
+- `refreshIfNeeded()` now early-returns on `!hasSessionSignal()` instead of
+  `accessToken === null`. No log emitted — it is the proactive-refresh hot path, called by
+  api-client before every authenticated request; silence is correct when there is no session.
+
+The actual refresh request (`POST /auth/refresh` with `credentials: 'include'`) was already
+correct: the HttpOnly `refreshToken` cookie travels regardless of localStorage state, so
+removing the gate self-heals — a successful refresh re-populates `localStorage.accessToken`
+via `setTokens()`, putting the singleton back in sync on the next tick.
+
+### Pattern-recurrence note
+
+This is the second confirmation of the "every remaining call-site must migrate" follow-up
+recorded after Bug D. The pattern is now suppressed inside `TokenManager` itself. The
+remaining surface is **callers outside TokenManager** that read
+`localStorage.getItem('accessToken')` or `getAccessToken() === null` as a session-existence
+check. An architectural test (analogous to the `is_active` magic-number guard in
+`shared/src/architectural.test.ts`) is the logical next step to prevent occurrence #6 —
+tracked as a separate Open Item, not in this amendment's scope.
+
+### Files touched by this amendment
+
+| File                                      | Change                                                                              |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| `frontend/src/lib/utils/token-manager.ts` | `canRefresh` + `refreshIfNeeded` switched to `hasSessionSignal()`; log level `warn` |

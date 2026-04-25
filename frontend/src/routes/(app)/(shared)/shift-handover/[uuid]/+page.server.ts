@@ -38,7 +38,7 @@ import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
-  ShiftHandoverEntry,
+  ShiftHandoverEntryWithAttachments,
   ShiftHandoverMyPermissions,
   ShiftHandoverTemplateResponse,
 } from '../../shifts/_lib/api-shift-handover';
@@ -64,7 +64,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) =
     error(400, 'Ungültige Übergabe-ID');
   }
 
-  const entryResult = await apiFetchWithPermission<ShiftHandoverEntry>(
+  const entryResult = await apiFetchWithPermission<ShiftHandoverEntryWithAttachments>(
     `/shift-handover/entries/${uuid}`,
     token,
     fetch,

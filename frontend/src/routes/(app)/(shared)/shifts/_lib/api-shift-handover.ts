@@ -65,6 +65,24 @@ export interface ShiftHandoverAttachment {
   created_by: number;
 }
 
+/**
+ * `GET /shift-handover/entries/:id` response. Plain entry plus the embedded
+ * attachment list AND the denormalised author display name — backend returns
+ * them inline (Inventory pattern). `created_by_name` shows "who had the shift"
+ * in the meta block; backend builds it from `users.first_name + last_name`
+ * with `email` as fallback (Session 24, resolves the Session-18 Known
+ * Limitation about no-assignee-display).
+ *
+ * Mutations (`POST` / `PATCH` / `submit` / `reopen`) intentionally return the
+ * bare `ShiftHandoverEntry` because their callers immediately `goto('/shifts')`
+ * and do not render attachments or the author chip — pulling them on every
+ * write would be wasted I/O. Mirrors backend `ShiftHandoverEntryWithAttachments`.
+ */
+export interface ShiftHandoverEntryWithAttachments extends ShiftHandoverEntry {
+  attachments: ShiftHandoverAttachment[];
+  created_by_name: string | null;
+}
+
 export interface ShiftHandoverMyPermissions {
   templates: { canRead: boolean; canWrite: boolean; canDelete: boolean };
   entries: { canRead: boolean; canWrite: boolean; canDelete: boolean };
@@ -103,10 +121,13 @@ export async function getOrCreateDraft(
   });
 }
 
-export async function getEntry(entryId: string): Promise<ShiftHandoverEntry> {
-  return await apiClient.get<ShiftHandoverEntry>(`/shift-handover/entries/${entryId}`, {
-    skipCache: true,
-  });
+export async function getEntry(entryId: string): Promise<ShiftHandoverEntryWithAttachments> {
+  return await apiClient.get<ShiftHandoverEntryWithAttachments>(
+    `/shift-handover/entries/${entryId}`,
+    {
+      skipCache: true,
+    },
+  );
 }
 
 /** List entries for a team within an optional date range (used for grid button status). */

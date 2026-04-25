@@ -172,6 +172,34 @@ export class ShiftHandoverAttachmentsService {
   }
 
   /**
+   * Lists active attachments for an entry, ordered by upload time. Used by
+   * the controller's `GET /entries/:id` to embed attachments on the detail
+   * response (Inventory pattern — see ShiftHandoverEntryWithAttachments).
+   *
+   * Tenant isolation: `tenantQuery` runs as `app_user` under RLS strict
+   * mode (ADR-019), so an attachment for a foreign tenant is filtered at
+   * the engine level. Same-team / same-entry scope is enforced one layer
+   * up — the controller has already loaded the entry (RLS-scoped) and
+   * checked `assertCanReadTeam` before calling here, so an attacker who
+   * cannot read the entry cannot reach this method.
+   *
+   * Soft-deleted rows (`is_active = 0`) are excluded — same as the upload
+   * cap counter and the streaming endpoint, so the three views agree on
+   * what "exists" means.
+   *
+   * Resolves Spec Deviation #6 / Known Limitation #15 (Session 22).
+   */
+  async listForEntry(entryId: string): Promise<ShiftHandoverAttachmentRow[]> {
+    return await this.db.tenantQuery<ShiftHandoverAttachmentRow>(
+      `SELECT *
+         FROM shift_handover_attachments
+        WHERE entry_id = $1 AND is_active = $2
+        ORDER BY created_at ASC, id ASC`,
+      [entryId, IS_ACTIVE.ACTIVE],
+    );
+  }
+
+  /**
    * Returns the disk path + metadata for streaming. Tenant isolation is
    * enforced by RLS (queryAsTenant via CLS inside `tenantQuery`); the
    * same-team scope filter lives at the controller (ADR-045 Layer 1 +

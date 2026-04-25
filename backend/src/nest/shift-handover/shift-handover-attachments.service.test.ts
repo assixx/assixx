@@ -303,4 +303,48 @@ describe('ShiftHandoverAttachmentsService', () => {
       await expect(service.streamAttachment('missing')).rejects.toThrow(NotFoundException);
     });
   });
+
+  // ---------------------------------------------------------------
+  // listForEntry — embed source for `GET /entries/:id` (Session 22)
+  // ---------------------------------------------------------------
+
+  describe('listForEntry', () => {
+    it('returns active attachments for the entry, ordered by created_at then id', async () => {
+      const rows = [
+        {
+          id: 'a1',
+          tenant_id: 1,
+          entry_id: 'e1',
+          file_path: '/uploads/shift-handover/1/e1/a.jpg',
+          file_name: 'a.jpg',
+          mime_type: 'image/jpeg',
+          file_size_bytes: 1024,
+          sort_order: 0,
+          caption: null,
+          is_active: 1,
+          created_at: new Date('2026-04-25T10:00:00Z'),
+          created_by: 5,
+        },
+      ];
+      mockDb.tenantQuery.mockResolvedValueOnce(rows);
+
+      const result = await service.listForEntry('e1');
+
+      expect(result).toEqual(rows);
+      const [sql, params] = mockDb.tenantQuery.mock.calls[0] ?? [];
+      expect(sql).toContain('FROM shift_handover_attachments');
+      expect(sql).toContain('entry_id = $1');
+      expect(sql).toContain('is_active = $2');
+      expect(sql).toContain('ORDER BY created_at ASC, id ASC');
+      expect(params).toEqual(['e1', 1]);
+    });
+
+    it('returns an empty array when the entry has no attachments', async () => {
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+
+      const result = await service.listForEntry('e1');
+
+      expect(result).toEqual([]);
+    });
+  });
 });

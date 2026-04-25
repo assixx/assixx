@@ -73,6 +73,50 @@ export interface ShiftHandoverAttachmentRow {
 }
 
 /**
+ * Entry row + author display name from `users` JOIN.
+ *
+ * `created_by_name` is denormalised into the GET-detail response so the
+ * detail page can show "who had the shift" in the meta block without a
+ * second round-trip. Resolves the Session-18 Known Limitation
+ * ("no assignee display on the detail page" — modal era had grid state,
+ * page era did not). Backfills 99% of cases correctly because
+ * `getOrCreateDraft` enforces `assertWriteAllowed` (assignee-check) before
+ * inserting, so `created_by` IS an assignee at draft-creation time.
+ *
+ * Edge case (TL pre-creates on behalf of an employee): `created_by` is the
+ * TL, which surfaces "Verfasser = TL name". Acceptable for V1; full
+ * roster resolution from `shifts` + `shift_rotation_history` is V2.
+ *
+ * COALESCE fallback: `first_name + ' ' + last_name`, falling back to
+ * `email` when both name parts are NULL/empty. Standard pattern in this
+ * repo (Inventory items, KVP suggestions, Blackboard entries).
+ */
+export type ShiftHandoverEntryRowWithAuthor = ShiftHandoverEntryRow & {
+  created_by_name: string | null;
+};
+
+/**
+ * `GET /shift-handover/entries/:id` response shape. Plain entry row plus the
+ * embedded list of currently-active attachments and the denormalised author
+ * display name.
+ *
+ * Embedding (Inventory pattern, ADR-040 §getItem) was chosen over a dedicated
+ * `GET /entries/:id/attachments` endpoint to keep the detail-page render to a
+ * single round-trip. The list endpoint (`listEntriesForTeam`) intentionally
+ * does NOT carry attachments — list views in the shift grid only need the
+ * status badge, and pulling N×M attachment rows for a week of cells would be
+ * needless. Mirrors the Inventory `getItem` (single, photos[]) vs `getItems`
+ * (list, no photos) split.
+ *
+ * Resolves Spec Deviation #6 / Known Limitation #15 from the masterplan
+ * (Session 22, 2026-04-25). The `created_by_name` field resolves the
+ * Session-18 Known Limitation (Session 24, 2026-04-25).
+ */
+export type ShiftHandoverEntryWithAttachments = ShiftHandoverEntryRowWithAuthor & {
+  attachments: ShiftHandoverAttachmentRow[];
+};
+
+/**
  * Context injected into the active-shift resolver (Phase 2.3).
  * All time inputs are parameters — services MUST NOT call `Date.now()`
  * directly; tests substitute a fixed `nowUtc`.

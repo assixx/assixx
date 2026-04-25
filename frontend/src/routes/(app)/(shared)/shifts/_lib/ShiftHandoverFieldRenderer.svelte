@@ -49,24 +49,29 @@
     onchange((event.currentTarget as HTMLInputElement | HTMLTextAreaElement).value);
   }
 
+  // Empty/cleared inputs emit `undefined` (NOT `null`). Backend Zod's
+  // `z.number().optional()` accepts undefined but rejects null — sending
+  // null produces a 400 even on draft saves. The page's
+  // `handleFieldChange` strips keys whose value is undefined, so the wire
+  // payload omits the field entirely. Session 23 finding 2026-04-25.
   function handleInteger(event: Event): void {
     const raw = (event.currentTarget as HTMLInputElement).value;
     if (raw === '') {
-      onchange(null);
+      onchange(undefined);
       return;
     }
     const parsed = Number.parseInt(raw, 10);
-    onchange(Number.isNaN(parsed) ? null : parsed);
+    onchange(Number.isNaN(parsed) ? undefined : parsed);
   }
 
   function handleDecimal(event: Event): void {
     const raw = (event.currentTarget as HTMLInputElement).value;
     if (raw === '') {
-      onchange(null);
+      onchange(undefined);
       return;
     }
     const parsed = Number.parseFloat(raw);
-    onchange(Number.isNaN(parsed) ? null : parsed);
+    onchange(Number.isNaN(parsed) ? undefined : parsed);
   }
 
   function handleBoolean(event: Event): void {
@@ -75,7 +80,7 @@
 
   function handleSelect(event: Event): void {
     const raw = (event.currentTarget as HTMLSelectElement).value;
-    onchange(raw === '' ? null : raw);
+    onchange(raw === '' ? undefined : raw);
   }
 </script>
 

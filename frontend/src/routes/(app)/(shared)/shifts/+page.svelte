@@ -24,6 +24,7 @@
   } from './_lib/dnd-orchestration';
   import EmployeeSidebar from './_lib/EmployeeSidebar.svelte';
   import FilterDropdowns from './_lib/FilterDropdowns.svelte';
+  import { resolveHandoverButtonStatus } from './_lib/handover-visibility';
   import {
     ensureDiscardConfirmed,
     handleSaveSchedule,
@@ -62,6 +63,7 @@
   import WeekNavigation from './_lib/WeekNavigation.svelte';
 
   import type { PageData } from './$types';
+  import type { HandoverButtonStatus, HandoverSlot } from './_lib/shift-handover-types';
   import type { HandoverContext } from './_lib/state.svelte';
   import type { AssignmentCount, ShiftDetailData, ShiftTimesMap } from './_lib/types';
 
@@ -220,6 +222,43 @@
   // (Spec Deviation #11). Call site below threads `handover` + `canManageHandover`
   // — those are component-local, so the action takes them as parameters rather
   // than re-deriving them inside page-actions.
+
+  /**
+   * Wraps `handover.getStatus` with the visibility filter. Returns `null`
+   * for cells that should hide the 📋 button entirely (no entry +
+   * outside write window OR not assignee/manager). Smoke-test refinement
+   * 2026-04-25 — kills the previously-reachable "Bearbeitung nicht mehr
+   * möglich …" + "Für diese Schicht wurde keine Übergabe angelegt."
+   * toast paths in favor of just hiding the icon.
+   *
+   * `today`/`yesterday` are computed inline (not `$derived`) — the function
+   * is called during render so the values are fresh each pass, and keeping
+   * mutable Date instances out of reactive state avoids the
+   * `svelte/prefer-svelte-reactivity` rule. A day-boundary refresh would
+   * only matter for sessions held open across midnight; the backend
+   * re-validates on POST, so any drift is purely visual.
+   */
+  function getHandoverButtonStatus(
+    dateKey: string,
+    shiftKey: HandoverSlot,
+  ): HandoverButtonStatus | null {
+    const now = new Date();
+    const todayKey = formatDate(now);
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const yesterdayKey = formatDate(yesterday);
+    return resolveHandoverButtonStatus({
+      rawStatus: handover.getStatus(dateKey, shiftKey),
+      dateKey,
+      shiftKey,
+      canManage: canManageHandover,
+      assignees: shiftsState.getShiftEmployees(dateKey, shiftKey),
+      currentUserId: shiftsState.currentUserId,
+      shiftTimesMap,
+      todayKey,
+      yesterdayKey,
+      now,
+    });
+  }
 
   // --- SSR INIT ---
   $effect(() => {
@@ -613,7 +652,7 @@
               onhandoverClick={(ctx: HandoverContext) => {
                 handleHandoverOpen(ctx, handover, canManageHandover);
               }}
-              getHandoverStatus={handover.getStatus}
+              getHandoverStatus={getHandoverButtonStatus}
             />
 
             <!-- Right Column: Controls + Sidebar -->

@@ -58,8 +58,14 @@
      * handover feature wired yet.
      */
     onhandoverClick?: (ctx: HandoverContext) => void;
-    /** `(dateKey, shiftKey)` → status. Missing key = 'none' (no entry). */
-    getHandoverStatus?: (dateKey: string, shiftKey: HandoverSlot) => HandoverButtonStatus;
+    /**
+     * `(dateKey, shiftKey)` → status, or `null` to hide the button entirely.
+     * Hidden cells are those where clicking would only produce an
+     * error/warning toast (no entry + outside write window OR no
+     * permission) — see `_lib/handover-visibility.ts`. Missing key
+     * still defaults to 'none' for legacy callers without the filter.
+     */
+    getHandoverStatus?: (dateKey: string, shiftKey: HandoverSlot) => HandoverButtonStatus | null;
   }
 
   const {
@@ -193,17 +199,26 @@
             ></span>
           {/if}
 
-          <!-- Shift-handover 📋 button (Plan §5.1) -->
+          <!--
+            Shift-handover 📋 button (Plan §5.1).
+            `null` from `getHandoverStatus` means "hide" — the cell would
+            only produce an error toast on click (no entry + outside
+            write window OR no permission). See `_lib/handover-visibility.ts`
+            for the rules. Smoke-test refinement 2026-04-25.
+          -->
           {#if onhandoverClick !== undefined && getHandoverStatus !== undefined}
-            <ShiftHandoverButton
-              status={getHandoverStatus(dateKey, shiftType)}
-              context={{ teamId: 0, shiftDate: dateKey, shiftKey: shiftType }}
-              onopen={(ctx: HandoverContext) => {
-                // teamId is injected by the parent via `onhandoverClick` —
-                // the grid is team-agnostic; the page wraps this handler.
-                onhandoverClick({ ...ctx, shiftDate: dateKey, shiftKey: shiftType });
-              }}
-            />
+            {@const handoverStatus = getHandoverStatus(dateKey, shiftType)}
+            {#if handoverStatus !== null}
+              <ShiftHandoverButton
+                status={handoverStatus}
+                context={{ teamId: 0, shiftDate: dateKey, shiftKey: shiftType }}
+                onopen={(ctx: HandoverContext) => {
+                  // teamId is injected by the parent via `onhandoverClick` —
+                  // the grid is team-agnostic; the page wraps this handler.
+                  onhandoverClick({ ...ctx, shiftDate: dateKey, shiftKey: shiftType });
+                }}
+              />
+            {/if}
           {/if}
 
           <div class="employee-assignment">

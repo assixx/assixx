@@ -42,12 +42,15 @@
   from `entry.schema_snapshot` for submitted entries (frozen at submit
   time) or from the live template fields otherwise.
 
-  Known Limitation carried over from modal (plan §Known Limitations):
-  attachment list is not loaded on GET — session-freshly-uploaded
-  attachments render in-memory only. Refresh clears the visible list
-  (the files remain on disk). V2 needs a dedicated GET endpoint.
+  Attachment rehydration (Session 22, 2026-04-25): the SSR loader receives
+  the entry with its attachment list embedded inline (Inventory pattern —
+  `GET /shift-handover/entries/:id` returns `{ ...entry, attachments[] }`).
+  We seed the local `attachments` state from `initialEntry.attachments`
+  on first load and on every navigation, so reopening a draft after a
+  page round-trip shows the previously uploaded files instead of an empty
+  list. Resolves Spec Deviation #6 / Known Limitation #15.
 
-  @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §5.3 + Session 15
+  @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §5.3 + Session 15 + Session 22
   @see docs/infrastructure/adr/ADR-007-api-response-standardization.md
   @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md §6
   @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
@@ -69,7 +72,7 @@
     updateEntry,
     uploadAttachment,
     type ShiftHandoverAttachment,
-    type ShiftHandoverEntry,
+    type ShiftHandoverEntryWithAttachments,
   } from '../../shifts/_lib/api-shift-handover';
   import ShiftHandoverFieldRenderer from '../../shifts/_lib/ShiftHandoverFieldRenderer.svelte';
   import { getWeekNumber } from '../../shifts/_lib/utils';
@@ -103,14 +106,40 @@
       DEFAULT_HIERARCHY_LABELS,
   );
 
+  /**
+   * Strips `null`/`undefined` from `custom_values` on seed.
+   *
+   * Legacy drafts (pre-Session-23) may carry explicit nulls in
+   * `custom_values` — the renderer used to emit `null` on cleared number/
+   * select inputs. Backend Zod (`z.number().optional()`) rejects `null`,
+   * so reopening + re-saving such a draft would 400 even without user
+   * edits. The seed normalisation drops nulls so the next save sends a
+   * clean payload (key absent = "not set"). Session 23 finding 2026-04-25.
+   */
+  function normaliseCustomValues(raw: Record<string, unknown>): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (value !== null && value !== undefined) out[key] = value;
+    }
+    return out;
+  }
+
   // Local mutable entry — server data is the initial seed; we reassign
   // after PATCH/submit so the UI stays in sync without a page round-trip.
-  let entry = $state<ShiftHandoverEntry | null>(null);
+  // Type widens to bare `ShiftHandoverEntry` after a PATCH/submit response
+  // (no embedded attachments on those endpoints), but the seed always
+  // carries the attachments array from the GET — see Session 22 rationale
+  // in the JSDoc banner above.
+  let entry = $state<ShiftHandoverEntryWithAttachments | null>(null);
   $effect(() => {
     entry = initialEntry;
     if (initialEntry !== null) {
       protocolText = initialEntry.protocol_text;
-      customValues = { ...initialEntry.custom_values };
+      customValues = normaliseCustomValues(initialEntry.custom_values);
+      // `attachments` is guaranteed non-null by the controller's
+      // `GET /entries/:id` composition (Session 22) — backend always
+      // returns the embed array, never omits it.
+      attachments = initialEntry.attachments;
     }
   });
 
@@ -162,7 +191,26 @@
     return Number.isNaN(parsed.getTime()) ? '–' : String(getWeekNumber(parsed));
   });
 
+  /**
+   * Apply a single field edit to `customValues`.
+   *
+   * Cleared inputs come through with `newValue === undefined` (renderer
+   * contract since Session 23 — `null` was rejected by backend Zod). When
+   * that happens we DROP the key from `customValues` rather than store
+   * `undefined`/`null`, so the wire payload only carries set values.
+   * Backend draft validation is lenient (`mode='draft'` in
+   * `validateCustomValues`), so a missing key for a required field is
+   * accepted on PATCH; submit-time strict validation enforces presence.
+   */
   function handleFieldChange(key: string, newValue: unknown): void {
+    if (newValue === undefined || newValue === null) {
+      // Drop the key — `delete next[key]` would trip `no-dynamic-delete`,
+      // and the destructuring-rest trick conflicts with the naming-convention
+      // rule (no leading underscore on variables). filter+fromEntries is
+      // the rule-clean idiom.
+      customValues = Object.fromEntries(Object.entries(customValues).filter(([k]) => k !== key));
+      return;
+    }
     customValues = { ...customValues, [key]: newValue };
   }
 
@@ -296,6 +344,11 @@
             <span><i class="fas fa-calendar"></i>{dateDisplay} · KW {kwDisplay}</span>
             <span><i class="fas fa-clock"></i>{shiftLabel}</span>
             <span><i class="fas fa-users"></i>{labels.team} #{entry.team_id}</span>
+            <!-- Author chip: who had the shift / opened the draft. Backend
+                 denormalises `users.first_name + last_name` (or email fallback)
+                 into `created_by_name` on the GET response — Session 24
+                 resolves the Session-18 Known Limitation. -->
+            <span><i class="fas fa-user"></i>{entry.created_by_name ?? 'Unbekannt'}</span>
           </div>
         </div>
         <div class="status-priority">

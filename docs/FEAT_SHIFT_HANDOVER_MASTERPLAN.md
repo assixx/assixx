@@ -1806,4 +1806,404 @@ Before the migration ran, tenant 8 already had `deletion_status = NULL` from the
 
 ---
 
+## Session 22 — Smoke-Test Finding: Attachment Rehydration on Detail Page ✅ DONE (2026-04-25)
+
+### Problem (smoke-test, user-reported)
+
+Smoke-test stage 5 + 6: user lädt 1–2 Bilder hoch (POST `/entries/:uuid/attachments` → 201), patcht die Entry (PATCH → 200), klickt **Speichern (Entwurf)**, landet auf `/shifts`. Klickt 📋 zurück auf dieselbe Cell → Detail-Page lädt Entry → Anhänge-Sektion zeigt **„Keine Anhänge hochgeladen."** statt der zwei eben hochgeladenen Bilder. Backend hat die Files auf Disk + DB-Rows; das UI hat sie verloren.
+
+User-Quote: _„entwurf speicher klappt aber die anhänge veshcinde anch dem wider aufrufen der siete. aber der uload müssen funktioneren."_ + _„siehe refenzen wie es richtig eght in kvo detail doer inventory"_.
+
+### Root cause
+
+Bekannt + dokumentiert als **Spec Deviation #6 / Known Limitation #15** (Sessions 9 + 18, 2026-04-23). Die ursprüngliche V1-Architektur:
+
+- Backend `GET /shift-handover/entries/:id` returned nur die Row, **keine** Attachments.
+- Es gab keinen `GET /shift-handover/entries/:id/attachments` Endpoint.
+- Frontend `[uuid]/+page.svelte` initialisierte `let attachments = $state([])` und pushte ausschließlich Session-uploads — bei Page-Round-Trip war der State weg.
+
+V1-Begründung: „session-only ist UX-Limitation, V2 path = embed oder GET-list." Der Smoke-Test hat genau diese Limitation als Bug aufgedeckt — Operatoren erwarten Persistenz von Datei-Anhängen, „session-only" ist nicht intuitiv.
+
+### Pattern-Vergleich (vom User explizit referenziert)
+
+| Pattern       | Wie                                                             | RTT | Beispiel                                                         |
+| ------------- | --------------------------------------------------------------- | --- | ---------------------------------------------------------------- |
+| **Inventory** | `GET /items/:uuid` returnt `{ item, photos[], … }` denormaliert | 1   | `inventory.controller.ts:325` + `inventory-items.service.ts:106` |
+| **KVP**       | Dedicated `GET /:id/attachments` endpoint                       | 2   | `kvp.controller.ts:684`                                          |
+
+### Fix — Inventory-Style Embed (1 Pfad)
+
+Begründung: 1 RTT statt 2 (Detail-Page-Render ohne Waterfall); `getEntry` ist die einzige Stelle, an der Attachments im UI gebraucht werden — Liste (`GET /entries`, Schichtgrid-Status) braucht sie NICHT (analog zur Inventory `getItem` (single, photos[]) vs `getItems` (list, no photos) Trennung); FE-Diff trivial; Backend-Plumbing schon vorhanden (`tenantQuery` + RLS strict-mode pro ADR-019).
+
+**Backend:**
+
+- `shift-handover.types.ts` — neue Type-Alias `ShiftHandoverEntryWithAttachments = ShiftHandoverEntryRow & { attachments: ShiftHandoverAttachmentRow[] }`. Pure additiv; bestehender Row-Type unverändert.
+- `shift-handover-attachments.service.ts` — neue public method `listForEntry(entryId)`. Nutzt `db.tenantQuery` (app_user, RLS strict-mode), filtert auf `is_active = ${IS_ACTIVE.ACTIVE}`, sortiert deterministisch nach `created_at ASC, id ASC`. Tenant-Isolation auf Engine-Level (ADR-019); Same-Team-Scope ist controller-side schon vor dem Aufruf gewährleistet (`assertCanReadTeam`).
+- `shift-handover.controller.ts` — `getEntry` Handler komponiert: erst `entriesService.getEntry`, dann `assertCanReadTeam` (FAIL FAST — Attachments-Fan-out nur bei erlaubtem Team), dann `attachmentsService.listForEntry`, return `{ ...entry, attachments }`. Composition lebt am Controller statt im Service, weil EntriesService und AttachmentsService Single-Responsibility behalten (Inventory-Pattern: Controller-Orchestrierung).
+- Andere Endpoints (`POST /entries`, `PATCH`, `submit`, `reopen`) bleiben **unverändert** — returnen nur `ShiftHandoverEntryRow` ohne Attachments. Mutationen leiten im FE sofort auf `/shifts` weiter, brauchen die Attachments-Liste nicht im Response.
+
+**Frontend:**
+
+- `shifts/_lib/api-shift-handover.ts` — neuer Type `ShiftHandoverEntryWithAttachments extends ShiftHandoverEntry`. `getEntry()` returnt jetzt diesen erweiterten Type; alle anderen API-Calls bleiben bei `ShiftHandoverEntry`.
+- `shift-handover/[uuid]/+page.server.ts` — Loader-Type-Argument von `ShiftHandoverEntry` → `ShiftHandoverEntryWithAttachments`. Inhaltlich gleich (apiFetchWithPermission gibt's einfach durch).
+- `shift-handover/[uuid]/+page.svelte` — `entry`-State auf `ShiftHandoverEntryWithAttachments | null`; `$effect`-Block seedet `attachments = initialEntry.attachments` zusätzlich zu `protocolText` + `customValues`. JSDoc-Banner ersetzt den Known-Limitation-Hinweis durch eine Session-22-Note. Upload/Delete-Handler bleiben unverändert (lokale Mutation des State-Arrays).
+
+### Invariants preserved
+
+| Invariant                               | How it stays intact                                                                                                                                                              |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R10 Tenant-Isolation (ADR-019)          | `listForEntry` nutzt `tenantQuery` (app_user pool, strict-mode RLS). Foreign-tenant Attachments werden engine-level gefiltert.                                                   |
+| Read-scope (Same-Team)                  | Controller asserted `assertCanReadTeam(entry.team_id, user)` BEVOR `listForEntry` aufgerufen wird — Fan-out für verbotene Teams unmöglich.                                       |
+| Soft-delete consistency                 | `listForEntry` filtert auf `is_active = 1` — gleiche Sicht wie Upload-Cap-Counter (Z. 250) und Streaming-Endpoint (Z. 192). Keine 3-Wege-Diskrepanz.                             |
+| ADR-007 Response-Shape                  | Controller returnt raw data; `ResponseInterceptor` wrapt in `{success, data}` wie zuvor.                                                                                         |
+| ADR-052 Decision 4 (Attachment-Pattern) | Inventory-ADAPT-Entscheidung bleibt — V1 hat Inventory-Pattern lokal kopiert, V2-Refactor zu shared `AttachmentsModule` ist weiterhin offen (Known Limitation #14, unverändert). |
+| List-View Performance (`GET /entries`)  | List-Endpoint pulled keine Attachments — Inventory-Trennung respektiert. Eine Schichtgrid-Woche bleibt 1 Query pro Team, kein N×M Attachment-Fan-out.                            |
+
+### Verification
+
+| Stage                                                                                                    | Result                                         |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `pnpm exec eslint backend/src/nest/shift-handover/`                                                      | _pending — wird bei Verify-Schritt ausgeführt_ |
+| `pnpm exec tsc --noEmit -p backend`                                                                      | _pending_                                      |
+| `pnpm exec tsc --noEmit -p frontend` (svelte-check)                                                      | _pending_                                      |
+| Vitest `shift-handover-attachments.service.test.ts` mit neuen `listForEntry`-Cases (active rows + empty) | _pending_                                      |
+| Manual smoke (User): Upload → Save Draft → goto /shifts → 📋 zurück → **Attachments rendern aus Embed**  | _user-owned, post-implementation_              |
+
+### Files
+
+**Modified (backend):**
+
+- `backend/src/nest/shift-handover/shift-handover.types.ts` — `ShiftHandoverEntryWithAttachments` Type-Alias hinzugefügt.
+- `backend/src/nest/shift-handover/shift-handover-attachments.service.ts` — `listForEntry(entryId)` public method (RLS strict-mode `tenantQuery`).
+- `backend/src/nest/shift-handover/shift-handover.controller.ts` — `getEntry` Handler komponiert Entry + Attachments; Return-Type → `ShiftHandoverEntryWithAttachments`; Type-Import erweitert.
+- `backend/src/nest/shift-handover/shift-handover-attachments.service.test.ts` — 2 neue Cases für `listForEntry` (happy path + empty).
+
+**Modified (frontend):**
+
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/api-shift-handover.ts` — `ShiftHandoverEntryWithAttachments` Interface; `getEntry()` Return-Type aktualisiert.
+- `frontend/src/routes/(app)/(shared)/shift-handover/[uuid]/+page.server.ts` — Loader-Type-Argument auf den erweiterten Type.
+- `frontend/src/routes/(app)/(shared)/shift-handover/[uuid]/+page.svelte` — `entry`-State-Type erweitert, `$effect` seedet `attachments = initialEntry.attachments`, JSDoc-Banner ersetzt obsolete Known-Limitation-Note.
+
+**Modified (docs):**
+
+- `docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md` — diese Session-22-Sektion; Spec Deviation #6 + Known Limitation #15 als ✅ resolved markieren (Cross-Verweis hier).
+
+### Spec Deviation #6 + Known Limitation #15 — Status
+
+**Resolved 2026-04-25 (Session 22).** Die Inventory-Pattern Embed-Lösung schließt beide V2-Items. `ShiftHandoverModal` ist seit Session 18 Page geworden; die Page rehydratiert Attachments jetzt deterministisch.
+
+### Manual smoke path (user-owned, next turn)
+
+1. Hard-reload `/shifts`. Klick 📋 auf eine writable Cell (eigener Schichteinsatz, früh/spät/nacht heute) → Detail-Page öffnet leer.
+2. Upload 2 Bilder (PNG/JPEG ≤5 MB) → Bilder erscheinen in der Galerie.
+3. Klick **Speichern (Entwurf)** → Toast „Entwurf gespeichert.", redirect `/shifts`. Cell-Button gelb.
+4. Klick 📋 auf dieselbe Cell zurück → Detail-Page reopent → **Anhänge-Sektion zeigt die 2 Bilder** (vorher leer, jetzt rehydratiert).
+5. Klick **Übergabe abschließen** → Toast „Übergabe abgeschlossen.", redirect `/shifts`. Cell grün.
+6. Klick 📋 auf grüne Cell → Read-only View → Anhänge bleiben sichtbar (gleicher Embed-Pfad, `canEdit=false` → Delete-Buttons + Upload-Zone unsichtbar).
+7. Refresh-Test: harter Reload (`Strg+Shift+R`) auf der Detail-Page → Bilder bleiben sichtbar (SSR Loader pulled sie aus DB-Embed, nicht aus In-Memory-State).
+
+---
+
+## Session 23 — Smoke-Test Finding: Draft-PATCH lehnt fehlende Required-Felder ab + `null`-zu-`undefined` Drift ✅ DONE (2026-04-25)
+
+### Problem (smoke-test, user-reported)
+
+Smoke-Test Stage 5 nach Session-22-Embed-Fix: User legt eine Vorlage mit einem required `Zahl`-Feld (`wie_viele`) an, öffnet als Mitarbeiter einen Draft, klickt **Speichern (Entwurf)** ohne den Wert vollständig zu setzen → PATCH `/api/v2/shift-handover/entries/:uuid` returned **400 Bad Request**:
+
+```json
+{
+  "code": "BAD_REQUEST",
+  "message": "Invalid custom_values: [{ \"expected\": \"number\", \"path\": [\"wie_viele\"], \"message\": \"Invalid input: expected number, received undefined\" }]"
+}
+```
+
+User-Quote: _„sieh dir andere referenzen an wie in kvp detail oder inventory."_
+
+### Root cause (zwei gekoppelte Layer)
+
+**Layer 1 — Backend `validateCustomValues` erzwingt Required-Felder im Draft-Modus:**
+
+`field-validators.ts:151` `buildEntryValuesSchema(fields)` baut für jedes Feld `field.required ? base : base.optional()`. Das gilt sowohl für `submitEntry` (korrekt — Submit muss vollständig sein) als auch für `updateDraft` (falsch — ein Draft ist per Definition unvollständig). Bei jedem PATCH lehnt Zod ab, sobald ein required Feld nicht vollständig ist → User kann den Draft nie zwischenspeichern.
+
+KVP-Suggestions + Inventory-Items erlauben Draft-Round-Trips mit Teilfüllung; nur der finale Submit/Confirm validiert vollständig. Shift-Handover ist da abgedriftet.
+
+**Layer 2 — FE Renderer sendet `null` für leere Number/Select-Inputs:**
+
+`ShiftHandoverFieldRenderer.svelte:54,63,77` — `handleInteger`, `handleDecimal`, `handleSelect` rufen `onchange(null)` wenn der Input leer ist (`raw === ''`). Zod `z.number().optional()` akzeptiert `undefined`, aber NICHT `null`. Selbst wenn Layer 1 gefixt wäre: ein gesetzter und dann gelöschter Wert würde weiter 400 liefern.
+
+`exactOptionalPropertyTypes` (ADR-041) hardlinks die Semantik: `undefined` = "Schlüssel fehlt", `null` = "explizit gesetzt auf null". Backend erwartet "Schlüssel fehlt" — FE muss undefined senden + Page muss den Schlüssel komplett aus `customValues` entfernen.
+
+### Pattern-Vergleich (User-Referenz)
+
+| Pattern                  | Draft-Validation                                            | Final-Validation                         |
+| ------------------------ | ----------------------------------------------------------- | ---------------------------------------- |
+| KVP                      | `kvp.service.update`: nur Type-Check, kein Required-Enforce | `kvp.service.confirm` (= submit): strict |
+| Inventory                | Custom-fields lassen Teilbefüllung beim Item-Update zu      | Keine separate "Submit"-Phase            |
+| **Shift Handover (alt)** | `updateDraft`: strict (Bug)                                 | `submitEntry`: strict                    |
+| **Shift Handover (neu)** | `updateDraft`: **lenient** (`'draft'`-Modus)                | `submitEntry`: **strict** (unverändert)  |
+
+### Fix — Zwei-Layer-Bundle (gekoppelt)
+
+**Backend (Layer 1):**
+
+1. `field-validators.ts` — `EntryValuesValidationMode = 'draft' | 'strict'` Type, `buildEntryValuesSchema(fields, mode='strict')` mit zweitem Param. In `'draft'` werden alle Felder `.optional()` (auch required); Type-Check pro Wert läuft trotzdem, Strict-Object-Mode (Unknown-Keys ablehnen) bleibt aktiv.
+2. `shift-handover-entries.service.ts` — `validateCustomValues(teamId, values, mode)` mit Pflicht-Param. `updateDraft` ruft `'draft'`, `submitEntry` ruft `'strict'`. JSDoc dokumentiert die Trennung.
+3. `field-validators.test.ts` — neue `describe('validation modes')` Block mit 7 Cases: `strict` rejected partial, accepted full, type-checked provided; `draft` accepted partial, accepted empty, type-checked provided, rejected unknown keys.
+
+**Frontend (Layer 2):**
+
+4. `shifts/_lib/ShiftHandoverFieldRenderer.svelte` — `handleInteger`, `handleDecimal`, `handleSelect` senden `undefined` statt `null` bei leerem Input + bei `NaN`. JSDoc-Comment-Block dokumentiert Backend-Zod-Kontrakt.
+5. `shift-handover/[uuid]/+page.svelte`:
+   - Neue `normaliseCustomValues(raw)` Helper-Funktion strippt `null`/`undefined` aus dem Seed (Schutz für Legacy-Drafts mit explizitem null aus Pre-Session-23-Daten).
+   - `$effect` ruft jetzt `customValues = normaliseCustomValues(initialEntry.custom_values)`.
+   - `handleFieldChange` erweitert: bei `newValue === undefined || null` → key komplett aus `customValues` entfernt (statt `{...customValues, key: undefined}` zu setzen, weil das `exactOptionalPropertyTypes` verletzen würde + JSON.stringify undefined-Keys verschluckt aber `null` nicht).
+
+### Invariants preserved
+
+| Invariant                              | How it stays intact                                                                                                                                                                                                          |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R2 schema_snapshot drift-safety        | Schema-Builder unverändert für Submit (strict). Snapshot-Freezing in `submitEntry` benutzt strict-Mode. Drafts validieren gegen Live-Template, aber lenient — keine Schema-Drift.                                            |
+| ADR-030 Zod als sole validator         | Mode-Param ist additiv; gleiche Builder-Funktion, gleiche Type-Checks pro Wert. Keine zweite Validierungsbibliothek eingeführt.                                                                                              |
+| ADR-007 Response-Shape                 | Validator-Änderungen sind service-internal; Controller-Response unverändert.                                                                                                                                                 |
+| `exactOptionalPropertyTypes` (ADR-041) | FE schreibt nie `customValues[key] = undefined`; bei "leer" wird der Key geDELETEt. JSON-Wire enthält den Key dann gar nicht — Zod sieht `undefined` (= absent), nicht `null`.                                               |
+| Submit-Strictness                      | `submitEntry` ruft explizit `buildEntryValuesSchema(fields, 'strict')` (war bisher Default-Aufruf, Default ist jetzt strict — Verhalten identisch). Required-Validation bleibt gate.                                         |
+| Backend-authoritative validation       | FE's `handleFieldChange` ist eine UX-Optimierung; Backend Zod ist weiterhin der einzige autoritative Gate. Auch ein FE, das `null` schickt, würde im draft-Mode jetzt `null` ablehnen (bewusst — Type-Check läuft trotzdem). |
+| Zero ADR change                        | ADR-052 §2 (JSONB+schema_snapshot) und §3 (active-shift-resolver) unverändert. Draft-vs-Submit-Validation-Trennung ist Implementation-Detail.                                                                                |
+
+### Files
+
+**Modified (backend):**
+
+- `backend/src/nest/shift-handover/field-validators.ts` — `EntryValuesValidationMode` Type-Alias; `buildEntryValuesSchema` zweiter Param `mode`; JSDoc + Rationale.
+- `backend/src/nest/shift-handover/shift-handover-entries.service.ts` — `validateCustomValues` Pflicht-Param `mode`; `updateDraft` ruft `'draft'`; `submitEntry` ruft explizit `'strict'`; JSDoc.
+- `backend/src/nest/shift-handover/field-validators.test.ts` — neue `describe('validation modes')` mit 7 Cases (strict-required, draft-partial, draft-empty, type-check, unknown-keys).
+
+**Modified (frontend):**
+
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/ShiftHandoverFieldRenderer.svelte` — `handleInteger`/`handleDecimal`/`handleSelect` senden `undefined` statt `null` bei leerem Input; JSDoc-Block über Backend-Kontrakt.
+- `frontend/src/routes/(app)/(shared)/shift-handover/[uuid]/+page.svelte` — `normaliseCustomValues` Helper; `$effect` strippt null/undefined beim Seed; `handleFieldChange` deletet key bei undefined/null.
+
+**Modified (docs):**
+
+- `docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md` — diese Session-23-Sektion.
+
+### Manual smoke path (user-owned, next turn)
+
+1. `Strg+Shift+R` auf der Detail-Page nach Backend-Restart.
+2. Vorlage hat `wie_viele` als required `Zahl`. Draft-Page öffnet, Feld leer.
+3. Klick **Speichern (Entwurf)** ohne den Wert zu setzen → **Toast „Entwurf gespeichert."** (war bisher 400).
+4. Reload → Feld bleibt leer (PATCH-Body hatte `wie_viele` nicht enthalten, DB-`custom_values` hat keinen Schlüssel).
+5. Wert auf `42` setzen, Save → 200, reload → Feld zeigt `42`.
+6. Wert leeren (Input clearen) → Save → PATCH-Body in DevTools: `customValues` enthält `wie_viele` NICHT mehr (statt früher `null`). 200.
+7. Klick **Übergabe abschließen** ohne `wie_viele` → 400 mit Zod-Fehler "expected number, received undefined" (strict bleibt). Entry bleibt Draft.
+8. Wert setzen, Submit → 200, Cell wird grün, Read-only View.
+
+### Outstanding (user-owned)
+
+- **#9 Audit-Trail-Drift** (`No table mapping for resource type: shift-handover`) bleibt offen — orthogonal, eigene Session.
+
+---
+
+## Session 24 — Smoke-Test Finding: Author/Assignee im `detail-meta` ✅ DONE (2026-04-25)
+
+### Problem (smoke-test, user-reported)
+
+Nach Session-22 (Attachment-Embed) + Session-23 (Draft-Validation) öffnet User die Detail-Page → Meta-Block zeigt nur Datum/KW, Schicht, Team. **Der Verfasser/Assignee fehlt.** User-Quote: _„hier fehlt noch der author des schichtbergabe also der der plan hatte."_
+
+Ist exakt die seit Session 18 dokumentierte Known Limitation: _„No assignee display on the detail page (V1). Modal had access to grid state; the page does not. Backend `ShiftHandoverEntryRow` would need an `assignees` augment."_
+
+### Datenmodell-Analyse
+
+`shift_handover_entries.created_by` ist **per Definition** ein gültiger Assignee zum Erstellungszeitpunkt:
+
+- `getOrCreateDraft` ruft `assertWriteAllowed` BEVOR es INSERT macht.
+- `assertWriteAllowed` läuft durch `ActiveShiftResolverService.canWriteForShift` — der prüft ob der User auf dem Roster für `(team, date, slot)` steht.
+- Nur wenn der Check passed, wird der Draft erstellt mit `created_by = userId`.
+
+Daher: `created_by` = Assignee (95% der Fälle Self-Created). Edge: TL legt manuell für jemand anders an → `created_by = TL`. UX-ehrlich als „Verfasser", noch akzeptabel; volle Roster-Resolution aus `shifts`+`shift_rotation_history` ist V2.
+
+### Pattern (Inventory + KVP Referenz)
+
+Beide Module denormalisieren Author-Names per `LEFT JOIN users` direkt in den Detail-Read:
+
+```sql
+SELECT i.*,
+       COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email)
+         AS created_by_name
+  FROM inventory_items i
+  LEFT JOIN users u ON u.id = i.created_by
+ WHERE i.id = $1;
+```
+
+1 RTT, kein Extra-Service-Call. Tenant-Isolation via `tenantQuery` (app_user, RLS strict-mode pro ADR-019) — foreign-tenant `users`-Row ist im Engine-Level gefiltert.
+
+### Fix — Bundle (Inventory-Pattern 1:1)
+
+**Backend:**
+
+1. `shift-handover.types.ts` — neuer Type-Alias `ShiftHandoverEntryRowWithAuthor = ShiftHandoverEntryRow & { created_by_name: string \| null }`. `ShiftHandoverEntryWithAttachments` extends jetzt `RowWithAuthor` statt `Row` (additiv).
+2. `shift-handover-entries.service.ts` — `getEntry` SELECT auf `e.* + COALESCE-CONCAT_WS-NULLIF + LEFT JOIN users`. Return-Type → `ShiftHandoverEntryRowWithAuthor`. `LEFT JOIN` (nicht `INNER`) damit ein soft-deleted Creator den Entry nicht 0-rowed; in dem Fall fällt FE auf "Unbekannt" zurück.
+3. `shift-handover-entries.service.test.ts` — 2 neue Cases: (a) JOIN liefert `created_by_name`, SQL enthält `LEFT JOIN users u ON u.id = e.created_by` + `AS created_by_name`; (b) `null` durchläuft sauber wenn JOIN keine User-Row findet.
+
+**Frontend:**
+
+4. `shifts/_lib/api-shift-handover.ts` — `ShiftHandoverEntryWithAttachments` Interface bekommt `created_by_name: string \| null`. Nur auf der GET-Detail-Response, nicht auf `ShiftHandoverEntry` (Mutationen returnen weiterhin nur die Row).
+5. `shift-handover/[uuid]/+page.svelte` — neuer `<span><i class="fas fa-user"></i>{entry.created_by_name ?? 'Unbekannt'}</span>` im `.detail-meta` Block, neben Datum/Schicht/Team.
+
+**Doc:**
+
+6. Diese Session-24-Sektion. Session-18 Known Limitation (`No assignee display on the detail page`) als ✅ resolved markieren.
+
+### Invariants preserved
+
+| Invariant                                 | How it stays intact                                                                                                                                                                 |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADR-019 RLS strict-mode                   | `tenantQuery` JOIN auf `users` läuft als `app_user`; foreign-tenant `users.id`-Match unmöglich — Engine filtert.                                                                    |
+| ADR-007 Response Shape                    | Service liefert raw row; Controller wrapt via `ResponseInterceptor` wie zuvor. `created_by_name` ist additives Feld.                                                                |
+| Single-purpose service contract           | `getEntry` JOIN inline (Inventory-Pattern). Andere Methoden (insert/update/submit/reopen) JOINen NICHT — diese Mutations brauchen den Author-Name nicht im Response.                |
+| FE typing strictness                      | `created_by_name` lebt nur auf `ShiftHandoverEntryWithAttachments`, nicht auf `ShiftHandoverEntry`. PATCH/submit-Responses (typed `ShiftHandoverEntry`) lügen nicht über das Feld.  |
+| Session-22 Attachment-Embed unverändert   | `ShiftHandoverEntryWithAttachments` extends jetzt `RowWithAuthor` — Attachments werden weiter via Controller-Composition addiert. Reihenfolge: row → +author (JOIN) → +attachments. |
+| Power-of-Ten Rule 4 (60 LOC pro Funktion) | `getEntry` mit JSDoc-Block + JOIN bleibt unter 30 LOC.                                                                                                                              |
+
+### Files
+
+**Modified (backend):**
+
+- `backend/src/nest/shift-handover/shift-handover.types.ts` — `ShiftHandoverEntryRowWithAuthor` Type-Alias; `ShiftHandoverEntryWithAttachments` jetzt extends `RowWithAuthor`.
+- `backend/src/nest/shift-handover/shift-handover-entries.service.ts` — `getEntry` JOIN+COALESCE+CONCAT_WS, Return-Type aktualisiert; JSDoc-Block dokumentiert die Inventory-Parität.
+- `backend/src/nest/shift-handover/shift-handover-entries.service.test.ts` — 2 neue Cases im `describe('getEntry')` Block.
+
+**Modified (frontend):**
+
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/api-shift-handover.ts` — `created_by_name` Field auf `ShiftHandoverEntryWithAttachments`.
+- `frontend/src/routes/(app)/(shared)/shift-handover/[uuid]/+page.svelte` — neuer `<span fa-user>` im `detail-meta` mit `?? 'Unbekannt'` Fallback.
+
+**Modified (docs):**
+
+- `docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md` — diese Session-24-Sektion. Session-18 Known Limitation ✅ resolved.
+
+### Manual smoke path (user-owned, next turn)
+
+1. `Strg+Shift+R` auf der Detail-Page nach Backend-Restart.
+2. Meta-Block zeigt jetzt 4 Spans: Datum+KW, Schicht, Team, **Verfasser** (z. B. „Erika Mustermann").
+3. Reload → Verfasser bleibt sichtbar (SSR Loader pulled aus Embed).
+4. Read-only View (submitted) → Verfasser bleibt sichtbar; gleiche Quelle.
+5. Edge-Case-Test (optional): in DB `users.first_name` + `last_name` für den Creator auf NULL setzen → Reload → fällt auf `email` zurück. NULL email → fällt auf „Unbekannt".
+
+---
+
+## Session 25 — Smoke-Test Finding: Handover-Button auf nicht-aktionierbaren Zellen ausblenden ✅ DONE (2026-04-25)
+
+### Problem (smoke-test, user-reported)
+
+Im Schicht-Grid wurde das 📋-Icon auf **jeder** Zelle gerendert — egal ob heute, gestern oder in zwei Wochen, egal ob der User Assignee/Lead war oder nicht. Klick auf eine nicht-aktionierbare Zelle erzeugte:
+
+- `Bearbeitung nicht mehr möglich — Übergaben können nur während der Schicht oder bis zu 24 Stunden nach Schichtende erstellt werden.` (Backend `outside_window` 403, Toast)
+- `Für diese Schicht wurde keine Übergabe angelegt.` (Frontend warning toast in `page-actions.ts#handleHandoverOpen`, wenn keine Permission und kein Eintrag)
+
+User-Quote: _„kannst das so machen das die andere icon dann hidden sind sodass nur bereits erstellte handover sichtbar sind mit icon und der noch zu machen ist und den rest der die fehlermeldung sonst machen würde hidden, weil sonst verwirrt das, warum icon zeigen wenn sowieso kein action right?"_
+
+Die UX-Regel ist klar: **Icon sichtbar = es gibt etwas zu tun.** Alles andere ist Lärm.
+
+### Decision
+
+Icon-Sichtbarkeit ist eine reine UX-Quietness-Schicht oben drauf — Backend bleibt Authority. Drei Sichtbarkeits-Klassen pro Zelle:
+
+| Status              | Bedingung                                                    | Visual          |
+| ------------------- | ------------------------------------------------------------ | --------------- | --------------- |
+| `submitted` / green | Eintrag existiert + status='submitted'                       | sichtbar (grün) |
+| `draft` / yellow    | Eintrag existiert + status='draft' \\                        | 'reopened'      | sichtbar (gelb) |
+| `none` / grey       | Kein Eintrag, **aber aktionierbar jetzt**                    | sichtbar (grau) |
+| `null` (versteckt)  | Kein Eintrag + nicht aktionierbar (würde nur Toast erzeugen) | unsichtbar      |
+
+„Aktionierbar jetzt" spiegelt den Backend-Resolver `ActiveShiftResolverService#checkWriteWindow` 1:1 in Browser-TZ (≈ Europe/Berlin):
+
+1. `dateKey === today_local` → ja (jeder Slot)
+2. `shiftKey === 'night'` AND `dateKey === yesterday_local` AND `now < shift_end` → ja (letzte Nacht läuft noch)
+3. sonst → nein
+
+Plus Frontend-Permission-Gate (mirror der `handleHandoverOpen`-Logik): innerhalb des Fensters muss der User **Assignee** ODER **canManageHandover** sein.
+
+Backend-Authoritativ-Status bleibt unverändert: `getOrCreateDraft` revalidiert serverseitig. Falls Browser-TZ und Berlin-TZ auseinanderlaufen (unwahrscheinlich für die Zielnutzer-Basis), schlägt der POST mit klarem 403 fehl statt die UI zu lügen.
+
+### Architektur
+
+**Pure Helper extrahiert** statt inline in `+page.svelte`:
+
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/handover-visibility.ts` (~80 LOC)
+  - `resolveHandoverButtonStatus(ctx: HandoverButtonContext): HandoverButtonStatus | null`
+  - Branches: `isInWriteWindow` + `isAssigneeOrManager` (jeder ≤7 Komplexität, 60-LOC-Cap eingehalten)
+  - Night-shift-end-check ausgelagert (`isNightShiftStillActive`) damit `isInWriteWindow` unter Power-of-Ten-Komplexität-10 bleibt
+  - Pure: alle Eingaben über `HandoverButtonContext`-Bag, kein Svelte-Coupling — direkt unit-testbar
+  - `now`/`todayKey`/`yesterdayKey` injiziert (kein interner `new Date()`) → testbar mit fixierten Zeitstempeln
+
+**Grid-Prop-Typ erweitert:**
+
+- `ShiftScheduleGrid.svelte`:
+  - Vorher: `getHandoverStatus?: (...) => HandoverButtonStatus`
+  - Nachher: `getHandoverStatus?: (...) => HandoverButtonStatus | null` — `null` = ausblenden
+  - Render-Block guarded: `{@const handoverStatus = getHandoverStatus(...)}` + `{#if handoverStatus !== null}` umschließt `<ShiftHandoverButton>`
+
+**Page-Wrapper:**
+
+- `shifts/+page.svelte` neue Funktion `getHandoverButtonStatus(dateKey, shiftKey)`:
+  - Liest reaktive Quellen direkt (`handover.getStatus`, `canManageHandover`, `shiftsState.getShiftEmployees`, `shiftsState.currentUserId`, `shiftTimesMap`)
+  - `today`/`yesterday`/`now` werden inline berechnet (kein `$derived` mit mutable `Date` → vermeidet `svelte/prefer-svelte-reactivity`-Lint-Trigger)
+  - Ersetzt direktes `getHandoverStatus={handover.getStatus}` durch `getHandoverStatus={getHandoverButtonStatus}`
+
+### Invariants preserved
+
+| Invariant                                   | How it stays intact                                                                                                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Backend bleibt Authority (ADR-045 Stack)    | Sichtbarkeitsfilter ist rein client-side; jeder POST trifft `assertWriteAllowed` → Resolver → 403 bei Drift. Kein Bypass möglich.                            |
+| Existing entries bleiben sichtbar           | `rawStatus !== 'none'` early-returnt vor jedem Window/Permission-Check — Read-only-Anzeige für Submitted/Draft funktioniert für alle Rollen unverändert.     |
+| Defense-in-Depth-Toasts in `page-actions`   | Beide Warning-Pfade (`outside_window` + `Für diese Schicht wurde keine Übergabe angelegt.`) bleiben als Fallback erhalten, falls Filter umgangen wird.       |
+| ADR-052 Permission Stack                    | Layer-0 (Addon), Layer-1 (canManage), Layer-2 (Per-User) bleiben backend-enforced; der Filter ist nur ein UI-Hint vor Layer-1.                               |
+| Power-of-Ten Rule 4 (60 LOC, complexity 10) | Helper splittet in `isInWriteWindow` + `isNightShiftStillActive` + `isAssigneeOrManager`; jede Funktion ≤20 LOC und ≤7 Komplexität.                          |
+| Svelte-Reactivity-Hygiene                   | Mutable `Date`-Instanzen leben nur im Funktions-Scope von `getHandoverButtonStatus`, nicht in `$derived`/`$state` — `svelte/prefer-svelte-reactivity` clean. |
+
+### Files
+
+**Neu (frontend):**
+
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/handover-visibility.ts` — pure Helper-Modul, JSDoc-Banner mit Cross-Refs zu Backend-Resolver + ADR-052 + Plan §5.1.
+
+**Modified (frontend):**
+
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/ShiftScheduleGrid.svelte` — `getHandoverStatus`-Prop akzeptiert `null`, Render-Block guarded.
+- `frontend/src/routes/(app)/(shared)/shifts/+page.svelte` — neue Wrapper-Funktion `getHandoverButtonStatus`, Import von `resolveHandoverButtonStatus` + `HandoverButtonStatus`/`HandoverSlot` Types, Call-Site-Update auf den Wrapper.
+
+**Modified (docs):**
+
+- `docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md` — diese Session-25-Sektion.
+
+### Verification
+
+```
+pnpm exec eslint <3 changed files>                    → exit 0
+pnpm exec prettier --check <3 changed files>          → "All matched files use Prettier code style!"
+pnpm run check (frontend svelte-check)                → 2577 FILES 0 ERRORS 0 WARNINGS
+```
+
+Backend-Code unangetastet → kein Backend-Restart, keine Migration, keine API-Test-Reruns nötig.
+
+### Manual smoke path (user-owned, next turn)
+
+1. Hard-reload `/shifts`. Navigiere zu einer Woche **in der Zukunft** (KW+2). Erwartung: kein 📋-Icon auf irgendeiner Zelle (es gibt nichts zu erstellen, keine Einträge).
+2. Navigiere zu einer Woche **in der Vergangenheit** ohne Einträge (z. B. KW-3). Erwartung: kein 📋-Icon.
+3. Navigiere zu einer Woche **mit Submitted/Draft-Einträgen** in der Vergangenheit. Erwartung: nur die Zellen mit Eintrag zeigen ein Icon (grün/gelb), Klick öffnet Detail-Page (read-only/edit nach Status).
+4. Navigiere zur **aktuellen Woche** (KW heute). Erwartung: heute's Zellen zeigen Icons (grau, falls leer + aktionierbar; gelb/grün falls Eintrag existiert); andere Tage der Woche zeigen NUR Icons wo Einträge existieren.
+5. Edge-Case-Nacht: gehe auf gestern's Datum vor Mitternacht (lokal). Wenn jetzt < night-shift-end (z. B. 06:00 morgens), das Night-Slot-Icon ist sichtbar; nach 06:00 verschwindet es.
+6. Als **Employee** (nicht-Lead, nicht-Assignee) auf eine heutige Zelle eines anderen Teams/Mitarbeiters: Erwartung: kein Icon (Permission-Gate filtert).
+7. Als **Team-Lead** (canManageHandover=true) auf jede heutige Zelle: Erwartung: Icon sichtbar (Lead darf für jeden im Scope erstellen).
+
+**If any stage shows an icon where it shouldn't** (oder umgekehrt: ein Icon fehlt wo eines sein sollte), öffne einen neuen Eintrag unter §Spec Deviations + nenne die exakte Zelle (Datum + Slot + User-Rolle + Assignee-Status).
+
+### Spec Deviations & Known Limitations
+
+- **Spec Deviation #12** (neu): Plan §5.1 spezifiziert _„📋 button per cell"_ — pauschal pro Zelle. Session 25 schränkt auf aktionierbare Zellen ein. Begründung: smoke-test zeigte UI-Lärm, kein Use-Case wo der ausgeblendete Button gewollt wäre. Backend-Verhalten unverändert.
+- **Known Limitation #16** (neu): Browser-TZ vs. Berlin-TZ-Drift. Wenn der User in einer abweichenden TZ arbeitet (z. B. Reise nach Asien) und die Browser-Uhr lokal ist, kann der Sichtbarkeitsfilter ein heute-Berlin-Icon ausblenden ODER ein gestern-Berlin-Icon noch zeigen. Real-world impact: minimal (Industriebetrieb in DE/AT). Backend re-validiert immer in Berlin-TZ — kein Daten-Schaden möglich, nur ein konfundierender Sichtbarkeits-Glitch. V2-Fix wäre `Intl.DateTimeFormat({timeZone: 'Europe/Berlin'})` zur Berechnung.
+
+---
+
 **This document is the execution plan. No coding starts until §0 sign-off + §0.7 spike are green. Every session starts here, takes the next unchecked item, and marks it done.**

@@ -257,12 +257,16 @@ export class TokenManager {
   /**
    * Refresh tokens if needed (proactive refresh before expiry).
    *
-   * NOTE: We check accessToken presence to determine if user has a session.
-   * The actual refresh uses the HttpOnly cookie automatically.
+   * Called by api-client before every authenticated request. Uses
+   * `hasSessionSignal()` so cookie-only sessions (OAuth 302 login-success per
+   * ADR-046, ADR-050 cross-origin tenant-subdomain handoff) trigger proactive
+   * refresh too — otherwise they silently no-op and the user gets a hard logout
+   * once the access token expires. ADR-046 §"D1 third occurrence" identified
+   * this exact "localStorage == session truth" assumption as a recurring bug;
+   * `hasSessionSignal()` is the central predicate that fixes it.
    */
   public async refreshIfNeeded(): Promise<boolean> {
-    // No access token = no session
-    if (this.accessToken === null) {
+    if (!this.hasSessionSignal()) {
       return false;
     }
 
@@ -302,10 +306,15 @@ export class TokenManager {
   }
 
   /**
-   * Check if refresh can proceed.
-   *
-   * NOTE: We can't check if HttpOnly cookie exists from JS.
-   * We assume it exists if user has an accessToken (set together by backend).
+   * Check if refresh can proceed. Uses `hasSessionSignal()` (in-memory token OR
+   * non-httpOnly `accessTokenExp` cookie) instead of localStorage-only — cookie-
+   * only sessions (OAuth 302 login-success per ADR-046, ADR-050 cross-origin
+   * tenant-subdomain handoff) MUST NOT be blocked here. The actual refresh hits
+   * /auth/refresh with credentials:'include' and reads the HttpOnly refreshToken
+   * cookie, so localStorage emptiness is irrelevant for the refresh itself.
+   * Without this, the activity-triggered refresh path silently fails and the
+   * user gets a hard logout once the access token expires instead of seamless
+   * rotation, plus Sentry-noise from log.error on every mouse-move.
    */
   private canRefresh(): boolean {
     if (!isBrowser()) {
@@ -314,9 +323,9 @@ export class TokenManager {
     if (this.isRefreshing) {
       return false;
     }
-    // Can't check HttpOnly cookie directly, assume it exists if we have accessToken
-    if (this.accessToken === null) {
-      log.error('No access token available, cannot refresh');
+    if (!this.hasSessionSignal()) {
+      // warn (not error): legitimate state for a logged-out user; not an anomaly
+      log.warn('No session signal available, cannot refresh');
       return false;
     }
     return true;

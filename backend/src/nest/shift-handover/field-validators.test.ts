@@ -213,4 +213,56 @@ describe('buildEntryValuesSchema', () => {
       expect(schema.safeParse({ any: 'thing' }).success).toBe(false);
     });
   });
+
+  // ───────────────────────────────────────────────────────────────────
+  // Validation modes — Session 23 (2026-04-25 smoke-test finding)
+  // ───────────────────────────────────────────────────────────────────
+
+  describe('validation modes', () => {
+    const fields: ShiftHandoverFieldDef[] = [
+      { key: 'qty', label: 'Menge', type: 'decimal', required: true },
+      { key: 'note', label: 'Notiz', type: 'text', required: false },
+    ];
+
+    describe('strict mode (default — submitEntry)', () => {
+      it('rejects a partial fill where a required field is missing', () => {
+        const schema = buildEntryValuesSchema(fields, 'strict');
+        const result = schema.safeParse({ note: 'fyi' });
+        expect(result.success).toBe(false);
+      });
+
+      it('accepts a fully-populated payload', () => {
+        const schema = buildEntryValuesSchema(fields, 'strict');
+        expect(schema.safeParse({ qty: 12.5, note: 'fyi' }).success).toBe(true);
+      });
+
+      it('still type-checks the values that ARE provided', () => {
+        const schema = buildEntryValuesSchema(fields, 'strict');
+        expect(schema.safeParse({ qty: 'not-a-number', note: 'fyi' }).success).toBe(false);
+      });
+    });
+
+    describe('draft mode (updateDraft — partial fills allowed)', () => {
+      it('accepts a payload with the required field absent', () => {
+        const schema = buildEntryValuesSchema(fields, 'draft');
+        expect(schema.safeParse({ note: 'work in progress' }).success).toBe(true);
+      });
+
+      it('accepts an empty payload (no fields filled yet)', () => {
+        const schema = buildEntryValuesSchema(fields, 'draft');
+        expect(schema.safeParse({}).success).toBe(true);
+      });
+
+      it('still type-checks values when they ARE provided (qty must be a number)', () => {
+        const schema = buildEntryValuesSchema(fields, 'draft');
+        expect(schema.safeParse({ qty: 'oops' }).success).toBe(false);
+        expect(schema.safeParse({ qty: 12.5 }).success).toBe(true);
+      });
+
+      it('still rejects unknown keys via strict-object mode', () => {
+        const schema = buildEntryValuesSchema(fields, 'draft');
+        expect(schema.safeParse({ qty: 1, ghost: 'x' }).success).toBe(false);
+      });
+    });
+  });
 });

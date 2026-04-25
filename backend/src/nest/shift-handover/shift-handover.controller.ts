@@ -95,6 +95,7 @@ import {
   SHIFT_HANDOVER_MAX_ATTACHMENT_SIZE,
   type ShiftHandoverAttachmentRow,
   type ShiftHandoverEntryRow,
+  type ShiftHandoverEntryWithAttachments,
   type ShiftHandoverMyPermissions,
   type ShiftHandoverTemplateRow,
 } from './shift-handover.types.js';
@@ -247,15 +248,30 @@ export class ShiftHandoverController {
     });
   }
 
+  /**
+   * Single-entry detail read. Embeds the entry's attachment list inline so
+   * the detail page renders in one round-trip (Inventory `getItem` pattern,
+   * Spec Deviation #6 / Known Limitation #15 resolution — Session 22).
+   *
+   * Composition lives at the controller layer rather than inside
+   * `EntriesService.getEntry()` to keep both services single-purpose
+   * (entries handles the entry row, attachments handles its own lifecycle);
+   * mirrors the way Inventory's controller injects both services and
+   * returns `{ item, photos, customValues, fields }`.
+   *
+   * Read-scope is asserted BEFORE the attachments fan-out — no point
+   * loading attachments for a forbidden team.
+   */
   @Get('entries/:id')
   @RequirePermission(SHIFT_PLANNING_ADDON, SHIFT_HANDOVER_ENTRIES_MODULE, 'canRead')
   async getEntry(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
-  ): Promise<ShiftHandoverEntryRow> {
+  ): Promise<ShiftHandoverEntryWithAttachments> {
     const entry = await this.entriesService.getEntry(id);
     await this.assertCanReadTeam(entry.team_id, user);
-    return entry;
+    const attachments = await this.attachmentsService.listForEntry(id);
+    return { ...entry, attachments };
   }
 
   @Patch('entries/:id')
