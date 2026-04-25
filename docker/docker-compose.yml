@@ -515,7 +515,7 @@ services:
   # Prometheus - Metrics Collection
   # Scrapes /api/v2/metrics from backend
   prometheus:
-    image: prom/prometheus:v3.11.1
+    image: prom/prometheus:v3.11.2
     container_name: assixx-prometheus
     restart: unless-stopped
     deploy:
@@ -635,7 +635,7 @@ services:
   # Query API exposed on :3200 for the Grafana Tempo datasource.
   # ===========================================================================
   tempo:
-    image: grafana/tempo:2.10.4
+    image: grafana/tempo:2.10.5
     container_name: assixx-tempo
     restart: unless-stopped
     deploy:
