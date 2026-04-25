@@ -1,6 +1,6 @@
 {
   "name": "assixx-frontend",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "private": true,
   "type": "module",
   "scripts": {
@@ -33,7 +33,7 @@
     "html-minifier-terser": "7.2.0",
     "prettier": "^3.8.3",
     "prettier-plugin-svelte": "^3.5.1",
-    "prettier-plugin-tailwindcss": "0.7.2",
+    "prettier-plugin-tailwindcss": "0.7.3",
     "rollup-plugin-visualizer": "^7.0.1",
     "svelte": "~5.55.5",
     "svelte-check": "^4.4.6",
