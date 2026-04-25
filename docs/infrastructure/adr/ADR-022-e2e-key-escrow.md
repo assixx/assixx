@@ -588,12 +588,19 @@ of historical 1:1 traffic.
 - OAuth users (ADR-046) do not benefit — no password available to derive
   a wrappingKey. They still require admin reset on device change, as
   documented in ADR-021's "Consequences → Negative #1".
-- New-user scenario (no escrow yet): the apex flow skips ticket mint
+- ~~New-user scenario (no escrow yet): the apex flow skips ticket mint
   when `/e2e/escrow` returns null; the subdomain generates the initial
   key pair without a paired escrow. A future amendment may extend the
   ticket payload with `argon2Salt + argon2Params` so the subdomain can
   CREATE the first escrow post-generation — deferred, because all
-  current known-affected users already have an escrow.
+  current known-affected users already have an escrow.~~
+  **RESOLVED 2026-04-25** (see Amendment below). The "all current
+  known-affected users already have an escrow" assumption proved wrong
+  in practice — every user provisioned after a DB restore (or any new
+  signup that did not bridge `setLoginPassword`) ended up key-on-server
+  / no-escrow, and the next cross-origin login fail-closed with
+  `recoveryRequired`. The bootstrap-variant of the unlock ticket now
+  carries the salt + params; subdomain creates the first escrow.
 
 ### Files Changed
 
@@ -615,3 +622,168 @@ of historical 1:1 traffic.
   preserves `?unlock=` through the handoff redirect.
 - `frontend/src/routes/(app)/+layout.svelte` —
   `bootstrapE2eFromUrlAndInitialize` before `initialize()`.
+
+---
+
+## Amendment 2026-04-25 — Cross-Origin First-Escrow Bootstrap (Resolves §"New-user scenario" Deferred)
+
+### Context
+
+Real-world verification on `testfirma.localhost` surfaced the deferred
+"New-user scenario" path as actively broken — not just theoretical:
+
+1. **DB-state in production-equivalent dev** — `e2e_user_keys` had 5 rows,
+   `e2e_key_escrow` had 0. Every key in the system was orphaned. Every
+   single user was one cross-origin login away from `recoveryRequired`.
+2. **The "all current known-affected users already have an escrow"
+   assumption from the 2026-04-22 Amendment is empirically false** the
+   moment a database is restored, a tenant is reseeded, or a new user
+   signs up via the cross-origin path. The first login on a brand-new
+   subdomain origin generates the key (no `setLoginPassword` because
+   sessionStorage is origin-scoped) but skips escrow creation entirely.
+3. **The next cross-origin login then fail-closes** because
+   `mintUnlockTicketOrFallback` finds `escrow === null`, skips the
+   ticket, and the subdomain's `initialize()` collides 409 against
+   the previously-registered key with no Argon2id-equivalent recovery
+   path → `recoveryRequired = true`.
+
+The deferred follow-up is no longer optional; it is the production
+correctness gate for every fresh deployment.
+
+### Decision
+
+**Bootstrap-variant of the unlock ticket** carries `argon2Salt` +
+`argon2Params` so the subdomain can create the user's first escrow blob
+without re-prompting for the password and without a second Argon2id pass:
+
+```
+Apex login use:enhance:
+  GET /e2e/escrow
+    ├─ exists → derive wrappingKey from (password, escrow.salt, escrow.params)
+    │           mint UNLOCK ticket { wrappingKey } (existing 2026-04-22 path)
+    │
+    └─ null → GET /e2e/keys/me
+              ├─ exists → SKIP ticket (existing user without escrow → admin reset
+              │           remains the recovery path; bootstrap would 409 on the
+              │           subdomain's POST /e2e/keys and corrupt local state)
+              │
+              └─ null → generate fresh argon2Salt (32 random bytes, base64)
+                        derive wrappingKey from (password, fresh_salt, defaults)
+                        mint BOOTSTRAP ticket { wrappingKey, argon2Salt, argon2Params }
+
+Subdomain bootstrapFromUnlockTicket:
+  consume ticket → { wrappingKey, bootstrap? }
+    ├─ bootstrap === undefined → existing UNLOCK path (unwrap + restorative rotation)
+    │
+    └─ bootstrap !== undefined →
+         cryptoBridge.generateKeys()
+         POST /e2e/keys { publicKey } (409 → abort, fail-closed downstream)
+         cryptoBridge.wrapKeyWithDerivedKey(wrappingKey)  ← NEW Worker handler
+         POST /e2e/escrow { encryptedBlob, argon2Salt, xchachaNonce, argon2Params }
+```
+
+### Pre-flight check (apex-side)
+
+The apex `mintUnlockTicketOrFallback` MUST `GET /e2e/keys/me` before
+choosing the bootstrap branch. If the server already holds an active
+key but no escrow (the 5 legacy rows that motivated this amendment),
+bootstrap is unsafe — the subdomain's `POST /e2e/keys` would 409 and
+the local IndexedDB would already hold a fresh key that does not
+match the server's. We skip the ticket entirely and let the
+subdomain's `initialize()` fail-close cleanly with `recoveryRequired`.
+Admin reset (`UPDATE e2e_user_keys SET is_active = 0`) followed by a
+new login then takes the bootstrap path.
+
+### Subdomain abort on 409
+
+If the subdomain's `POST /e2e/keys` returns 409 inside the bootstrap
+path (race condition or unexpected pre-existing key), the helper
+`registerBootstrapKeyOrAbort` returns `false` immediately. The freshly
+generated key remains in the subdomain's IndexedDB, but `initialize()`
+will then run `resolveExistingKey` → server fingerprint mismatch →
+`E2eKeyError('key_mismatch')` → `recoveryRequired = true`. Same
+fail-closed semantics as ADR-021 §Amendment 2026-04-22, just with a
+clean abort path that doesn't silently corrupt anything.
+
+### Worker addition
+
+`crypto-worker.ts` gains `wrapWithDerivedKey` — symmetric to the
+existing `unwrapWithDerivedKey`. Sync handler (no IndexedDB writes,
+just XChaCha20-Poly1305 encrypt with a fresh 24-byte random nonce).
+Bridge wrapper `cryptoBridge.wrapKeyWithDerivedKey()` returns the
+base64 ciphertext + nonce ready for `POST /e2e/escrow`.
+
+### Threat-model delta vs. 2026-04-22 Amendment
+
+The bootstrap ticket payload now contains `wrappingKey + argon2Salt +
+argon2Params`. The salt and params are public values per Argon2id
+threat model (RFC 9106) — knowing them does not weaken the
+unbreakability of the resulting key. Same 60-second Redis TTL,
+single-use GETDEL, user-bound consume-check apply. ZK guarantee
+unchanged: a Redis dump alone (without the password) cannot derive
+the wrappingKey; password + bcrypt-hash combo from a DB dump still
+hits Argon2id memory-hardness for offline brute-force.
+
+### Verification (live, 2026-04-25)
+
+Verified end-to-end against User 249 (tenant 8, subdomain
+`testfirma.localhost`) after `TRUNCATE e2e_user_keys`:
+
+```
+Login 1 (BOOTSTRAP path):
+  apex   GET  /e2e/escrow            → 200 { data: null }
+  apex   GET  /e2e/keys/me           → 200 { data: null }
+  apex   POST /e2e/escrow/unlock-ticket  (with argon2Salt + argon2Params) → 201 { ticketId }
+  → redirect testfirma.localhost/?unlock=…
+  sub    POST /e2e/escrow/consume-unlock → 200 { wrappingKey, bootstrap }
+  sub    POST /e2e/keys              → 201 (fingerprint e73129e3…)
+  sub    POST /e2e/escrow            → 201 (blob_version 1)
+  sub    log: "Escrow bootstrap complete — first escrow stored"
+
+Login 2 (UNLOCK path, same user, fresh subdomain IndexedDB):
+  apex   GET  /e2e/escrow            → 200 { data: { encryptedBlob, salt, nonce, params } }
+  apex   POST /e2e/escrow/unlock-ticket  (no bootstrap fields) → 201 { ticketId }
+  → redirect testfirma.localhost/?unlock=…
+  sub    POST /e2e/escrow/consume-unlock → 200 { wrappingKey } (no bootstrap)
+  sub    GET  /e2e/escrow            → 200 (blob fetched)
+  sub    cryptoBridge.unwrapKeyWithDerivedKey → fingerprint e73129e3… (matches)
+  sub    GET  /e2e/keys/me            → server fingerprint matches → no rotation needed
+  sub    log: "Private key bootstrapped from unlock ticket"
+                "Server key matches local key"
+                "E2E initialization COMPLETE — isReady=true"
+```
+
+Both paths produce the same fingerprint (`e73129e304ef45be…`) — the
+escrow is decryptable with the user's password across origin
+boundaries. No 409, no `recoveryRequired`, no admin intervention.
+
+### Files Changed (Amendment 2026-04-25)
+
+- `backend/src/nest/e2e-escrow/escrow-unlock-ticket.service.ts` —
+  new `BootstrapMaterial` + exported `UnlockTicketConsumeResult` types.
+  `create(…, bootstrap?)` accepts optional bootstrap payload; `consume()`
+  returns wrappingKey + optional bootstrap. Type-guard validates the
+  optional sub-shape exhaustively.
+- `backend/src/nest/e2e-escrow/dto/create-unlock-ticket.dto.ts` —
+  optional `argon2Salt` (base64 32-byte) + `argon2Params` with cross-field
+  refine ("set both, or neither"). ADR-041 `exactOptionalPropertyTypes`
+  compatible.
+- `backend/src/nest/e2e-escrow/e2e-escrow.controller.ts` — both
+  endpoints pass-through the bootstrap variant; consume returns the
+  extended response shape.
+- `frontend/src/lib/crypto/crypto-worker.ts` — `wrapWithDerivedKey`
+  request type + `privateKeyWrappedWithDerivedKey` response type +
+  sync handler `handleWrapWithDerivedKey` (no IndexedDB writes).
+- `frontend/src/lib/crypto/crypto-bridge.ts` —
+  `wrapKeyWithDerivedKey()` promise wrapper.
+- `frontend/src/routes/(public)/login/+page.svelte` — refactored
+  `mintUnlockTicketOrFallback` into 3 branches (unlock / bootstrap /
+  skip-because-server-has-key). Helpers `fetchEscrow`, `serverHasActiveKey`,
+  `freshArgon2Salt`, `mintTicketOrFallback` extracted for KISS +
+  cognitive-complexity compliance.
+- `frontend/src/lib/crypto/e2e-state.svelte.ts` — local
+  `UnlockTicketConsumeResult` type matching backend; refactored
+  `bootstrapFromUnlockTicket` branches on `bootstrap` field. New helpers
+  `bootstrapFreshEscrow` (gen + register + wrap + store) +
+  `recoverFromExistingEscrow` (extracted from prior body) +
+  `registerBootstrapKeyOrAbort` (409-handling).

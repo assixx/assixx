@@ -260,26 +260,124 @@
     return hasValidUser(data);
   }
 
+  /** Default Argon2id params used when bootstrapping an escrow for a brand-new user.
+   * Matches the in-Worker `wrapKey` defaults so a same-origin password-change re-encrypt
+   * can be done with comparable cost. Stored alongside the blob for future param upgrades. */
+  const DEFAULT_ARGON2_PARAMS = { memory: 65536, iterations: 3, parallelism: 1 } as const;
+
+  interface EscrowMetadata {
+    encryptedBlob: string;
+    argon2Salt: string;
+    xchachaNonce: string;
+    argon2Params: { memory: number; iterations: number; parallelism: number };
+  }
+
+  /** Fetch existing escrow metadata. Returns null on 4xx/5xx OR `data: null`. */
+  async function fetchEscrow(accessToken: string): Promise<EscrowMetadata | null> {
+    const resp = await fetch('/api/v2/e2e/escrow', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!resp.ok) {
+      log.warn(
+        { status: resp.status },
+        'Escrow fetch failed during handoff — continuing without unlock ticket',
+      );
+      return null;
+    }
+    const body = (await resp.json()) as {
+      success?: boolean;
+      data?: EscrowMetadata | null;
+    };
+    return body.data ?? null;
+  }
+
+  /** Pre-flight check: does the server already hold an active E2E key for this user?
+   * Used to distinguish "first-ever login" (no key, no escrow → bootstrap) from
+   * "existing user without escrow" (key present, escrow null → admin reset path). */
+  async function serverHasActiveKey(accessToken: string): Promise<boolean> {
+    const resp = await fetch('/api/v2/e2e/keys/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!resp.ok) {
+      return false;
+    }
+    const body = (await resp.json()) as { success?: boolean; data?: unknown };
+    return body.data !== null && body.data !== undefined;
+  }
+
+  /** Generate a fresh 32-byte salt as base64. */
+  function freshArgon2Salt(): string {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    let binary = '';
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+    return btoa(binary);
+  }
+
+  /** Mint the Redis ticket, return the URL with `?unlock=<id>` appended.
+   * Returns `redirectTo` unchanged on any failure (silent → fail-closed downstream). */
+  async function mintTicketOrFallback(
+    redirectTo: string,
+    accessToken: string,
+    body: Record<string, unknown>,
+  ): Promise<string> {
+    const resp = await fetch('/api/v2/e2e/escrow/unlock-ticket', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      log.warn({ status: resp.status }, 'Unlock ticket mint failed — continuing without ticket');
+      return redirectTo;
+    }
+    const respBody = (await resp.json()) as {
+      success?: boolean;
+      data?: { ticketId: string };
+    };
+    const ticketId = respBody.data?.ticketId;
+    if (typeof ticketId !== 'string' || ticketId === '') {
+      log.warn({ respBody }, 'Unlock ticket response malformed — continuing without ticket');
+      return redirectTo;
+    }
+    const url = new URL(redirectTo);
+    url.searchParams.set('unlock', ticketId);
+    return url.toString();
+  }
+
   /**
    * ADR-050 × ADR-022 — cross-origin escrow-unlock-ticket mint.
    *
    * Runs client-side on apex AFTER successful login, BEFORE the redirect to
-   * the subdomain. Derives the escrow wrappingKey from the password the user
-   * just typed, mints a single-use Redis-backed ticket, and appends the
-   * ticket ID to the handoff URL so the subdomain can bootstrap E2E
-   * without a password re-prompt or a ~1s second Argon2id pass.
+   * the subdomain. Two branches discriminated by the server's escrow state:
    *
-   * Fail-closed by design: if ANY step fails (no escrow on server, network
-   * error, Worker crash, malformed response) we return the original
-   * `redirectTo` unchanged. The subdomain's layout will then fall through to
-   * `e2e.initialize()` which — per Phase A — fail-closes with a clear error
-   * if the server has a key it cannot recover. Better a loud fail than a
-   * silent rotation.
+   *  1. **Unlock branch** — escrow exists. Derive wrappingKey from
+   *     `(password, escrow.salt, escrow.params)`. Mint a regular unlock
+   *     ticket. Subdomain unwraps the existing blob.
    *
-   * Security: `accessToken` is used ONLY for the two authenticated fetches
+   *  2. **Bootstrap branch** (ADR-022 §"New-user scenario") — no escrow yet
+   *     AND server has no active key (true first login). Generate a fresh
+   *     salt, derive wrappingKey from `(password, fresh_salt, defaults)`,
+   *     mint a bootstrap ticket carrying salt + params. Subdomain generates
+   *     its first key + creates the user's first escrow blob.
+   *
+   *  3. **Skip** — no escrow but server already has a key (existing user
+   *     who lost local state on this origin). Bootstrap is unsafe (would
+   *     409 on the subdomain's `generateAndRegisterKey`); fail-closed
+   *     downstream is the correct semantics. Admin reset is the recovery.
+   *
+   * Fail-closed by design: any failure in network, Worker, or response
+   * shape returns `redirectTo` unchanged → subdomain `initialize()` runs
+   * normally and either generates a fresh key (if server has none) or
+   * fail-closes with `recoveryRequired: true` (if it does).
+   *
+   * Security: `accessToken` is used ONLY for the authenticated fetches
    * below and never leaves this function's scope. `wrappingKey` is derived
-   * inside the Worker and serialized ONCE into the POST body; it lives in
-   * this function's local scope until garbage-collected by the page unload.
+   * inside the Worker and serialised ONCE into the POST body; it lives in
+   * this function's local scope until GC'd by the page unload.
    */
   async function mintUnlockTicketOrFallback(
     redirectTo: string,
@@ -289,78 +387,47 @@
   ): Promise<string> {
     try {
       // Spin up the Worker. On apex this opens a per-user IndexedDB with no
-      // existing key — a harmless no-op side-effect. The Worker is terminated
-      // by the page unload that follows the redirect; nothing persists here.
+      // existing key — a harmless no-op. The Worker is terminated by the
+      // page unload that follows the redirect; nothing persists here.
       await cryptoBridge.init(userId);
 
-      // Fetch escrow metadata. If the user has no escrow yet (new user or
-      // legacy pre-ADR-022 account), there is nothing to unlock — skip.
-      const escrowResp = await fetch('/api/v2/e2e/escrow', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (!escrowResp.ok) {
-        log.warn(
-          { status: escrowResp.status },
-          'Escrow fetch failed during handoff — continuing without unlock ticket',
+      const escrow = await fetchEscrow(accessToken);
+      if (escrow !== null) {
+        // Unlock branch: derive from the server-stored salt + params.
+        const wrappingKey = await cryptoBridge.deriveWrappingKey(
+          loginPasswordValue,
+          escrow.argon2Salt,
+          escrow.argon2Params,
+        );
+        return await mintTicketOrFallback(redirectTo, accessToken, { wrappingKey });
+      }
+
+      // No escrow → check whether the server already has a key. If yes, this
+      // is an existing user who lost local state on this origin — bootstrap
+      // is unsafe (key already registered, can't reconcile escrow). Skip the
+      // ticket and let the subdomain fail-close with `recoveryRequired`.
+      if (await serverHasActiveKey(accessToken)) {
+        log.info(
+          'No escrow but server has key — skipping bootstrap (admin reset required for this user)',
         );
         return redirectTo;
       }
 
-      // Backend ResponseInterceptor wraps responses in `{success, data}`
-      // (ADR-007 / ADR-050). `data === null` means "no escrow row" — valid.
-      const escrowBody = (await escrowResp.json()) as {
-        success?: boolean;
-        data?: {
-          encryptedBlob: string;
-          argon2Salt: string;
-          xchachaNonce: string;
-          argon2Params: { memory: number; iterations: number; parallelism: number };
-        } | null;
-      };
-      const escrow = escrowBody.data ?? null;
-      if (escrow === null) {
-        log.info('No escrow on server — skipping unlock ticket (first-time or legacy user)');
-        return redirectTo;
-      }
-
-      // Derive wrappingKey client-side — password never leaves the browser.
+      // Bootstrap branch: true first login. Mint fresh salt + params, derive,
+      // mint a bootstrap ticket. Subdomain generates the key and stores the
+      // first escrow.
+      const argon2Salt = freshArgon2Salt();
+      const argon2Params = { ...DEFAULT_ARGON2_PARAMS };
       const wrappingKey = await cryptoBridge.deriveWrappingKey(
         loginPasswordValue,
-        escrow.argon2Salt,
-        escrow.argon2Params,
+        argon2Salt,
+        argon2Params,
       );
-
-      // Mint the Redis ticket. 60s TTL, single-use GETDEL server-side.
-      const mintResp = await fetch('/api/v2/e2e/escrow/unlock-ticket', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ wrappingKey }),
+      return await mintTicketOrFallback(redirectTo, accessToken, {
+        wrappingKey,
+        argon2Salt,
+        argon2Params,
       });
-      if (!mintResp.ok) {
-        log.warn(
-          { status: mintResp.status },
-          'Unlock ticket mint failed — continuing without ticket',
-        );
-        return redirectTo;
-      }
-      const mintBody = (await mintResp.json()) as {
-        success?: boolean;
-        data?: { ticketId: string };
-      };
-      const ticketId = mintBody.data?.ticketId;
-      if (typeof ticketId !== 'string' || ticketId === '') {
-        log.warn({ mintBody }, 'Unlock ticket response malformed — continuing without ticket');
-        return redirectTo;
-      }
-
-      // Append to redirect URL. The subdomain's (app) layout reads and
-      // strips `?unlock=` before `e2e.initialize()`.
-      const url = new URL(redirectTo);
-      url.searchParams.set('unlock', ticketId);
-      return url.toString();
     } catch (err: unknown) {
       log.warn(
         { err: err instanceof Error ? err.message : 'unknown' },

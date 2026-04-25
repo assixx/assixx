@@ -27,7 +27,10 @@ import {
 } from './dto/index.js';
 import { E2eEscrowService } from './e2e-escrow.service.js';
 import type { E2eEscrowResponse } from './e2e-escrow.types.js';
-import { EscrowUnlockTicketService } from './escrow-unlock-ticket.service.js';
+import {
+  EscrowUnlockTicketService,
+  type UnlockTicketConsumeResult,
+} from './escrow-unlock-ticket.service.js';
 
 @Controller('e2e/escrow')
 export class E2eEscrowController {
@@ -122,7 +125,19 @@ export class E2eEscrowController {
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
   ): Promise<{ ticketId: string }> {
-    const ticketId = await this.unlockTicketService.create(user.id, tenantId, dto.wrappingKey);
+    // Bootstrap variant: salt + params present together → user has no escrow
+    // yet, the subdomain will create the first one (ADR-022 §"New-user
+    // scenario"). DTO refine guarantees both are present or both absent.
+    const bootstrap =
+      dto.argon2Salt !== undefined && dto.argon2Params !== undefined ?
+        { argon2Salt: dto.argon2Salt, argon2Params: dto.argon2Params }
+      : undefined;
+    const ticketId = await this.unlockTicketService.create(
+      user.id,
+      tenantId,
+      dto.wrappingKey,
+      bootstrap,
+    );
     return { ticketId };
   }
 
@@ -150,8 +165,10 @@ export class E2eEscrowController {
     @Body() dto: ConsumeEscrowUnlockTicketDto,
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
-  ): Promise<{ wrappingKey: string }> {
-    const wrappingKey = await this.unlockTicketService.consume(dto.ticketId, user.id, tenantId);
-    return { wrappingKey };
+  ): Promise<UnlockTicketConsumeResult> {
+    // Returns `{ wrappingKey }` for unlock tickets, plus optional `bootstrap`
+    // (salt + params) for bootstrap tickets. Subdomain branches on the
+    // presence of `bootstrap` (ADR-022 §"New-user scenario").
+    return await this.unlockTicketService.consume(dto.ticketId, user.id, tenantId);
   }
 }

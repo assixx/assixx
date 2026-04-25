@@ -61,12 +61,52 @@ const UNLOCK_KEY_PREFIX = 'unlock:';
  * enough that an unused ticket is irrelevant before the user notices. */
 const UNLOCK_TTL_SECONDS = 60;
 
+/** Argon2id parameters carried in bootstrap tickets — same shape as escrow row. */
+interface Argon2Params {
+  memory: number;
+  iterations: number;
+  parallelism: number;
+}
+
+/**
+ * Bootstrap material — only set when the apex login could not find an
+ * existing server-side escrow during cross-origin handoff. Carries the
+ * salt + Argon2 params that were used to derive the wrappingKey, so the
+ * subdomain can create the user's FIRST escrow blob without another
+ * password Argon2id round-trip on a fresh origin.
+ *
+ * When absent, the ticket is a regular `unlock` ticket and the subdomain
+ * unwraps an existing escrow with the pre-derived wrappingKey.
+ *
+ * @see ADR-022 §"New-user scenario" (deferred → resolved by this addition)
+ */
+interface BootstrapMaterial {
+  argon2Salt: string;
+  argon2Params: Argon2Params;
+}
+
 /** Server-side payload — NEVER exposed in responses other than as `wrappingKey` on consume. */
 interface UnlockTicketPayload {
   wrappingKey: string;
   userId: number;
   tenantId: number;
   createdAt: number;
+  /** Present iff the apex created a bootstrap ticket (no existing escrow). */
+  bootstrap?: BootstrapMaterial;
+}
+
+/**
+ * Public consume result — exposes the wrappingKey unconditionally, plus
+ * optional bootstrap fields (salt + params) when the apex minted a
+ * bootstrap ticket. The subdomain branches on `bootstrap !== undefined`:
+ *   - present → generate fresh key + create first escrow
+ *   - absent → unwrap existing escrow blob
+ *
+ * @see ADR-022 §"New-user scenario"
+ */
+export interface UnlockTicketConsumeResult {
+  wrappingKey: string;
+  bootstrap?: BootstrapMaterial;
 }
 
 @Injectable()
@@ -78,14 +118,26 @@ export class EscrowUnlockTicketService {
   /**
    * Mint a single-use unlock ticket. Returns the UUIDv7 ticket ID; the
    * caller embeds this in the subdomain handoff URL as `?unlock=<id>`.
+   *
+   * Pass `bootstrap` when the user has no server-side escrow yet — the
+   * subdomain will use the carried salt + Argon2 params to create the
+   * first escrow blob via `wrapKeyWithDerivedKey` without re-deriving from
+   * the password. Without `bootstrap` this is a regular unlock ticket.
    */
-  async create(userId: number, tenantId: number, wrappingKey: string): Promise<string> {
+  async create(
+    userId: number,
+    tenantId: number,
+    wrappingKey: string,
+    bootstrap?: BootstrapMaterial,
+  ): Promise<string> {
     const ticketId = uuidv7();
     const payload: UnlockTicketPayload = {
       wrappingKey,
       userId,
       tenantId,
       createdAt: Date.now(),
+      // Avoid emitting `bootstrap: undefined` in the JSON — keep payload shape minimal.
+      ...(bootstrap !== undefined ? { bootstrap } : {}),
     };
     await this.redis.set(
       `${UNLOCK_KEY_PREFIX}${ticketId}`,
@@ -94,12 +146,16 @@ export class EscrowUnlockTicketService {
       UNLOCK_TTL_SECONDS,
     );
     // Audit log — ticket ID is safe (already returned to client), wrappingKey is NOT logged.
-    this.logger.log(`Escrow unlock ticket minted for user ${userId} (tenant ${tenantId})`);
+    // Kind is logged so log search can distinguish bootstrap vs unlock at a glance.
+    const kind = bootstrap !== undefined ? 'bootstrap' : 'unlock';
+    this.logger.log(`Escrow ${kind} ticket minted for user ${userId} (tenant ${tenantId})`);
     return ticketId;
   }
 
   /**
-   * Consume a ticket atomically. Returns the stored wrappingKey exactly once.
+   * Consume a ticket atomically. Returns the stored wrappingKey exactly once,
+   * plus optional bootstrap fields when the apex minted a bootstrap ticket
+   * (no escrow on server yet — see ADR-022 §"New-user scenario").
    *
    * Cross-check: the payload's `userId` + `tenantId` MUST match the
    * authenticated caller. This defends against a leaked ticket being
@@ -109,7 +165,11 @@ export class EscrowUnlockTicketService {
    * @throws UnauthorizedException if ticket is unknown, expired, consumed,
    *         tampered, or bound to a different user.
    */
-  async consume(ticketId: string, userId: number, tenantId: number): Promise<string> {
+  async consume(
+    ticketId: string,
+    userId: number,
+    tenantId: number,
+  ): Promise<UnlockTicketConsumeResult> {
     const raw = await this.redis.getdel(`${UNLOCK_KEY_PREFIX}${ticketId}`);
     if (raw === null) {
       throw new UnauthorizedException('Invalid or expired escrow unlock ticket');
@@ -129,7 +189,11 @@ export class EscrowUnlockTicketService {
       throw new UnauthorizedException('Escrow unlock ticket does not match consumer identity');
     }
 
-    return payload.wrappingKey;
+    return {
+      wrappingKey: payload.wrappingKey,
+      // Forward bootstrap iff present — subdomain branches on this field.
+      ...(payload.bootstrap !== undefined ? { bootstrap: payload.bootstrap } : {}),
+    };
   }
 
   /** Parse + type-check the JSON payload. Never log `raw` — it contains the wrappingKey. */
@@ -153,11 +217,42 @@ export class EscrowUnlockTicketService {
       return false;
     }
     const v = value as Record<string, unknown>;
+    if (
+      typeof v['wrappingKey'] !== 'string' ||
+      typeof v['userId'] !== 'number' ||
+      typeof v['tenantId'] !== 'number' ||
+      typeof v['createdAt'] !== 'number'
+    ) {
+      return false;
+    }
+    // bootstrap is optional, but when present must match BootstrapMaterial shape.
+    // We validate exhaustively here so a tampered Redis blob cannot smuggle a
+    // partial payload past the controller layer.
+    const bootstrap = v['bootstrap'];
+    if (bootstrap === undefined) {
+      return true;
+    }
+    return EscrowUnlockTicketService.isBootstrapMaterial(bootstrap);
+  }
+
+  /** Type guard for the optional bootstrap sub-object. */
+  private static isBootstrapMaterial(value: unknown): value is BootstrapMaterial {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+    const v = value as Record<string, unknown>;
+    if (typeof v['argon2Salt'] !== 'string') {
+      return false;
+    }
+    const params = v['argon2Params'];
+    if (typeof params !== 'object' || params === null) {
+      return false;
+    }
+    const p = params as Record<string, unknown>;
     return (
-      typeof v['wrappingKey'] === 'string' &&
-      typeof v['userId'] === 'number' &&
-      typeof v['tenantId'] === 'number' &&
-      typeof v['createdAt'] === 'number'
+      typeof p['memory'] === 'number' &&
+      typeof p['iterations'] === 'number' &&
+      typeof p['parallelism'] === 'number'
     );
   }
 }

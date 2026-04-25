@@ -42,6 +42,11 @@ type WorkerResponse = { requestId: string } & (
   | { type: 'privateKeyUnwrapped'; publicKey: string; fingerprint: string }
   | { type: 'unwrapFailed'; reason: string }
   | { type: 'wrappingKeyDerived'; wrappingKey: string }
+  | {
+      type: 'privateKeyWrappedWithDerivedKey';
+      encryptedBlob: string;
+      xchachaNonce: string;
+    }
   | { type: 'locked' }
   | { type: 'pong' }
   | { type: 'error'; message: string }
@@ -180,6 +185,37 @@ class CryptoBridge {
       throw new Error(response.message);
     }
     throw new Error(`Unexpected getFingerprint response: ${response.type}`);
+  }
+
+  /**
+   * Wrap the in-memory private key with a pre-derived wrappingKey — no
+   * Argon2id pass on this side. Used in the ADR-022 §"New-user scenario"
+   * cross-origin bootstrap: apex derived the key from `(password,
+   * fresh_salt)` during login, the bootstrap ticket carries it to the
+   * subdomain, the subdomain wraps its just-generated private key with
+   * the same derived key. The resulting blob becomes the user's first
+   * escrow.
+   *
+   * Caller MUST have called `generateKeys()` before this method (the
+   * Worker validates and returns an error if no private key is loaded).
+   *
+   * No "wrong password" branch here — encryption succeeds for any 32-byte
+   * key; failure is a Worker / wire-format problem and propagates as throw.
+   */
+  async wrapKeyWithDerivedKey(
+    wrappingKey: string,
+  ): Promise<{ encryptedBlob: string; xchachaNonce: string }> {
+    const response = await this.send({ type: 'wrapWithDerivedKey', wrappingKey });
+    if (response.type === 'privateKeyWrappedWithDerivedKey') {
+      return {
+        encryptedBlob: response.encryptedBlob,
+        xchachaNonce: response.xchachaNonce,
+      };
+    }
+    if (response.type === 'error') {
+      throw new Error(response.message);
+    }
+    throw new Error(`Unexpected wrapKeyWithDerivedKey response: ${response.type}`);
   }
 
   /**
