@@ -89,24 +89,32 @@ const BLACKBOARD_SUBMENU: NavItem[] = [
 /**
  * Shift-planning submenu (all roles, addon-gated).
  *
- * Base structure contains BOTH children. The `shift-handover-templates` child is
- * removed by `applyShiftHandoverVariant()` when the user cannot manage templates
- * (ADR-045 Layer-1 canManage gate). The child's own `addonCode: 'shift_planning'`
- * is defense-in-depth — the parent's `addonCode` already strips the whole branch
- * when the addon is inactive.
+ * Base contains only the always-visible `shift-plan` child. The
+ * `shift-handover-templates` entry is **added** by
+ * `applyShiftHandoverVariant()` when the user can manage templates
+ * (ADR-045 Layer-1 canManage gate). This direction (default-bare,
+ * manager-upgrade) mirrors `applySurveysVariant` for consistency.
  *
  * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md Session 11
  * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
  */
 const SHIFT_SUBMENU: NavItem[] = [
   { id: 'shift-plan', label: 'Schichtplanung', url: '/shifts', badgeType: 'shiftSwap' },
-  {
-    id: 'shift-handover-templates',
-    label: 'Übergabe-Templates',
-    url: '/shift-handover-templates',
-    addonCode: 'shift_planning',
-  },
 ];
+
+/**
+ * Manager-only sidebar entry for the shift-handover template editor.
+ * Added to `SHIFT_SUBMENU` by `applyShiftHandoverVariant` when the user
+ * passes the canManage gate (ADR-045 Layer-1). The `addonCode` here is
+ * defense-in-depth; the parent Schichtplanung entry already carries the
+ * same `addonCode` so the whole branch disappears when the addon is off.
+ */
+const SHIFT_HANDOVER_TEMPLATES_ENTRY: NavItem = {
+  id: 'shift-handover-templates',
+  label: 'Übergabe-Templates',
+  url: '/shift-handover-templates',
+  addonCode: 'shift_planning',
+};
 
 /** Shared documents submenu (all roles) */
 const DOCUMENTS_SUBMENU: NavItem[] = [
@@ -1053,22 +1061,22 @@ export function applySurveysVariant(items: NavItem[], canManage: boolean): NavIt
 }
 
 /**
- * Remove the "Übergabe-Templates" sub-entry from the Schichtplanung submenu
- * when the user cannot manage shift-handover templates.
+ * Append the "Übergabe-Templates" sub-entry to the Schichtplanung submenu
+ * when the user can manage shift-handover templates. Otherwise pass through
+ * unchanged (the bare `SHIFT_SUBMENU` is the default for non-managers).
  *
  * Pipeline position: runs AFTER `filterMenuByAddons` — if the `shift_planning`
  * addon is inactive, the parent Schichtplanung entry is already gone and this
- * function is a no-op. Mirrors `applySurveysVariant` (ADR-045 Layer-1 canManage
- * → sidebar visibility; see `canManageShiftHandoverTemplates` wrapper above).
+ * function is a no-op. Mirrors `applySurveysVariant` (default-bare, manager-
+ * upgrade) for consistency across feature variant filters (ADR-045 Layer-1).
  *
  * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md Session 11
  * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
  */
 export function applyShiftHandoverVariant(items: NavItem[], canManage: boolean): NavItem[] {
-  if (canManage) return items;
+  if (!canManage) return items;
   return items.map((item) => {
     if (item.id !== 'shifts' || item.submenu === undefined) return item;
-    const submenu = item.submenu.filter((child) => child.id !== 'shift-handover-templates');
-    return { ...item, submenu };
+    return { ...item, submenu: [...item.submenu, SHIFT_HANDOVER_TEMPLATES_ENTRY] };
   });
 }

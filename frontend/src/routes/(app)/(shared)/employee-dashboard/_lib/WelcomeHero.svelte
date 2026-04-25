@@ -120,10 +120,18 @@
   });
 </script>
 
+<!--
+  role="presentation" — the mousemove/leave handlers drive a purely
+  decorative cursor-aware sakura-petal wind effect (no semantic action,
+  no keyboard equivalent, irrelevant on touch). Suppresses the
+  a11y_no_static_element_interactions warning correctly without faking
+  an interactive role. WAI-ARIA 1.1: role="presentation" === role="none".
+-->
 <div
   class="welcome-hero-custom relative mb-8 flex min-h-[120px] items-center
     justify-between overflow-hidden px-4 py-4
     md:px-6 md:py-5 lg:px-8 lg:py-6"
+  role="presentation"
   onmousemove={handlePointerMove}
   onmouseleave={handlePointerLeave}
 >
@@ -206,6 +214,7 @@
        `translate` is hinted alongside `transform` because the wind handler
        animates it independently of the keyframe-driven transform. */
     will-change: transform, translate;
+
     /* Wind reaction: `--wind-x/-y` are set imperatively from handlePointerMove
        (see <script> in this file). The standalone `translate` property is
        applied INDEPENDENTLY of `transform` per CSS Transforms 2 spec, so it

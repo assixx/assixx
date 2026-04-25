@@ -82,14 +82,14 @@
 
     transition: all 150ms ease;
     cursor: pointer;
-    border: 1px solid var(--color-glass-border);
     border-radius: 50%;
 
     background: var(--glass-bg-hover);
     padding: 0;
+    margin: -5px;
 
-    width: 22px;
-    height: 22px;
+    width: 19px;
+    height: 19px;
     color: var(--text-secondary);
 
     font-size: 11px;
@@ -104,8 +104,6 @@
   }
 
   .handover-btn--draft {
-    border-color: var(--color-warning);
-    background: color-mix(in oklch, var(--color-warning) 20%, transparent);
     color: var(--color-warning);
   }
 

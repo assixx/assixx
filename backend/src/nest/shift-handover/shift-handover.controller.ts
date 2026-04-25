@@ -75,7 +75,6 @@ import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
-import { ActiveShiftResolverService } from './active-shift-resolver.service.js';
 import {
   CreateEntryDto,
   CreateTemplateDto,
@@ -125,16 +124,9 @@ export class ShiftHandoverController {
     private readonly templatesService: ShiftHandoverTemplatesService,
     private readonly entriesService: ShiftHandoverEntriesService,
     private readonly attachmentsService: ShiftHandoverAttachmentsService,
-    private readonly resolver: ActiveShiftResolverService,
     private readonly scope: ScopeService,
     private readonly activityLogger: ActivityLoggerService,
-  ) {
-    // resolver is wired here so Phase-5 UI can reach getShiftEndClock via
-    // a small future endpoint without reshaping DI. Currently unused at
-    // this level — intentional placeholder that avoids a DI refactor in
-    // Session 7+ when the frontend needs shift-window metadata.
-    void this.resolver;
-  }
+  ) {}
 
   // ──────────────────────────────────────────────────────────────────
   // Templates — plan §2.6 rows 1–3

@@ -438,9 +438,11 @@ export class ShiftHandoverEntriesService {
   /**
    * Race-safe INSERT. ON CONFLICT DO NOTHING lets a concurrent
    * transaction win; on that path our RETURNING yields nothing and we
-   * re-fetch the committed row. The composite UNIQUE (plan §1.2) is
-   * DEFERRABLE INITIALLY IMMEDIATE, so the conflict surfaces on INSERT
-   * (no deferred surprise).
+   * re-fetch the committed row. The composite UNIQUE constraint is
+   * intentionally non-DEFERRABLE — see Spec Deviation #5 in the
+   * masterplan: PostgreSQL rejects ON CONFLICT against deferrable
+   * constraints, which is why migration #145 dropped the original
+   * DEFERRABLE INITIALLY IMMEDIATE clause.
    */
   private async insertDraftOrFetch(
     client: PoolClient,
