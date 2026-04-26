@@ -15,14 +15,15 @@
 
 ## Changelog
 
-| Version | Date       | Change                                                                                                                                                                                                                                                                         |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0.1.0   | 2026-03-20 | Initial Draft — 4 phases, 4 sessions planned                                                                                                                                                                                                                                   |
-| 0.1.1   | 2026-03-20 | Added: ADR-004 persistent notifications (Step 1.5), ADR-018 test reference, Related Documents section, linked parent masterplans                                                                                                                                               |
-| 0.2.0   | 2026-03-21 | Real-Life Workflow documented, TBD resolved: dynamic dropdown rules, CRON archives BOTH rejected+implemented, `status='archived'` (no is_active on kvp_suggestions)                                                                                                            |
-| 0.3.0   | 2026-03-21 | Validation pass: fixed permission codes (kvp-suggestions.canRead/canWrite), EventBus payload shape (nested, sourceUuid missing), added Step 1.6 backend enforcement, button only for status=new, notification_type ENUM doesn't exist note                                     |
-| 0.4.0   | 2026-03-21 | Review fixes: C1 `restored` status. C2 type `'kvp'`. C3 `addonEntityId: number`. M1 `:id`. M2 Deputy Lead. M3 camelCase. M4 backup CRON. M5 raw SQL side effects                                                                                                               |
-| 0.5.0   | 2026-03-21 | Deputy Lead = prerequisite (FEAT_DEPUTY_LEADS_MASTERPLAN.md), not implemented here. Modularity: `+page.svelte` 927 lines (>850 limit) → extract `StatusDropdown.svelte`. `kvp.service.ts` 963 lines (>900 limit) → validation in `kvp.helpers.ts`. ESLint max-lines compliance |
+| Version | Date       | Change                                                                                                                                                                                                                                                                                      |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-03-20 | Initial Draft — 4 phases, 4 sessions planned                                                                                                                                                                                                                                                |
+| 0.1.1   | 2026-03-20 | Added: ADR-004 persistent notifications (Step 1.5), ADR-018 test reference, Related Documents section, linked parent masterplans                                                                                                                                                            |
+| 0.2.0   | 2026-03-21 | Real-Life Workflow documented, TBD resolved: dynamic dropdown rules, CRON archives BOTH rejected+implemented, `status='archived'` (no is_active on kvp_suggestions)                                                                                                                         |
+| 0.3.0   | 2026-03-21 | Validation pass: fixed permission codes (kvp-suggestions.canRead/canWrite), EventBus payload shape (nested, sourceUuid missing), added Step 1.6 backend enforcement, button only for status=new, notification_type ENUM doesn't exist note                                                  |
+| 0.4.0   | 2026-03-21 | Review fixes: C1 `restored` status. C2 type `'kvp'`. C3 `addonEntityId: number`. M1 `:id`. M2 Deputy Lead. M3 camelCase. M4 backup CRON. M5 raw SQL side effects                                                                                                                            |
+| 0.5.0   | 2026-03-21 | Deputy Lead = prerequisite (FEAT_DEPUTY_LEADS_MASTERPLAN.md), not implemented here. Modularity: `+page.svelte` 927 lines (>850 limit) → extract `StatusDropdown.svelte`. `kvp.service.ts` 963 lines (>900 limit) → validation in `kvp.helpers.ts`. ESLint max-lines compliance              |
+| 0.6.0   | 2026-04-26 | **Hard-Gate**: KVP submission blocks when no approval master is configured for the requester's org scope. Reverses the v0.5.0 "backward compatible" promise. Bypass for system users (root + admin-with-hasFullAccess). Existing test data was truncated. See ADR-037 Amendment 2026-04-26. |
 
 ---
 
@@ -531,7 +532,7 @@ export function validateApprovalStatusTransition(
 | `implemented`  | LOCKED (disabled) | hidden               | Final state                                   |
 | `restored`     | `abgelehnt` only  | visible              | Behaves like `new` after unarchive            |
 
-**Without approval config:** Old behavior — all status options available, no "Freigabe anfordern" button. Backward compatible.
+**Without approval config:** ~~Old behavior — all status options available, no "Freigabe anfordern" button. Backward compatible.~~ **Superseded by Hard-Gate (v0.6.0, ADR-037 Amendment 2026-04-26):** KVP submission is now blocked entirely when no approval master is configured for the requester's org scope. Bypass only for system users (root + admin-with-hasFullAccess). The "+ Neuer KVP" button is rendered `disabled` with a tooltip when `hasConfigForUser=false`. Status-dropdown logic for already-existing KVPs in pre-Hard-Gate tenants is moot — the migration path mandates a TRUNCATE before rollout (test data only, see Changelog v0.6.0).
 
 **Implementation:** `StatusDropdown.svelte` receives `hasApprovalConfig` prop. When true, calls `getApprovalStatusOptions(currentStatus)` from constants.ts to filter options. When status is `in_review`/`rejected`/`implemented`, renders as disabled badge instead of dropdown.
 

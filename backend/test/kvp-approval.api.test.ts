@@ -51,6 +51,15 @@ describe('KVP Approval: Config Status', () => {
   it('should return hasConfig as boolean', () => {
     expect(typeof body.data.hasConfig).toBe('boolean');
   });
+
+  // Hard-Gate flag (ADR-037 Amendment 2026-04-26 + Masterplan §3.4 v0.6.0):
+  // scope-aware companion to hasConfig. Drives the "+ Neuer KVP" button
+  // and the backend block in createSuggestion. Apitest tenant has a
+  // whole-tenant config (NULL scope arrays), so for the apitest admin both
+  // flags are true.
+  it('should return hasConfigForUser as boolean', () => {
+    expect(typeof body.data.hasConfigForUser).toBe('boolean');
+  });
 });
 
 // ---- seq: 1 -- Get Approval (no approval exists) -------------------------

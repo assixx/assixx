@@ -264,6 +264,33 @@ describe('KvpApprovalService', () => {
   });
 
   // -----------------------------------------------------------
+  // canRequesterFindApprovalMaster — backs the Hard-Gate in
+  // KvpService.createSuggestion (ADR-037 Amendment 2026-04-26).
+  // We check that the result tracks resolveApprovers().length > 0
+  // so submission is blocked when the user's org scope has no
+  // configured master.
+  // -----------------------------------------------------------
+
+  describe('canRequesterFindApprovalMaster()', () => {
+    it('returns true when resolveApprovers yields at least one approver', async () => {
+      mockConfig.resolveApprovers.mockResolvedValueOnce([42]);
+
+      const result = await service.canRequesterFindApprovalMaster(7);
+
+      expect(result).toBe(true);
+      expect(mockConfig.resolveApprovers).toHaveBeenCalledWith('kvp', 7);
+    });
+
+    it('returns false when resolveApprovers returns an empty list', async () => {
+      mockConfig.resolveApprovers.mockResolvedValueOnce([]);
+
+      const result = await service.canRequesterFindApprovalMaster(7);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // -----------------------------------------------------------
   // handleApprovalDecision (via EventBus)
   // -----------------------------------------------------------
 

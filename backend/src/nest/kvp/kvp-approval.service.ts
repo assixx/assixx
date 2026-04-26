@@ -140,7 +140,7 @@ export class KvpApprovalService implements OnModuleInit {
     return await this.approvalsService.findById(row.uuid.trim());
   }
 
-  /** Check if any approval master is configured for addon 'kvp' */
+  /** Check if any approval master is configured for addon 'kvp' (tenant-wide) */
   async hasApprovalConfig(tenantId: number): Promise<boolean> {
     const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*)::text AS count
@@ -152,6 +152,26 @@ export class KvpApprovalService implements OnModuleInit {
     );
 
     return Number(rows[0]?.count ?? '0') > 0;
+  }
+
+  /**
+   * Check if a KVP approval master is reachable for the requester's
+   * organizational scope (area/department/team).
+   *
+   * Backs the Hard-Gate in `KvpService.createSuggestion()` and the per-user
+   * branch of `GET /kvp/approval-config-status` (Masterplan §3.4 v0.6.0,
+   * ADR-037 Hard-Gate Amendment 2026-04-26). Why scope-aware instead of
+   * tenant-wide: a tenant might have configured a master for Area 1 only —
+   * a user in Area 2 must still be blocked, even though `hasApprovalConfig`
+   * returns true.
+   *
+   * Delegates to `ApprovalsConfigService.resolveApprovers('kvp', userId)`,
+   * which already implements the scope resolution via the `requester_org`
+   * CTE (ADR-037 Org-Scope Amendment 2026-03-23).
+   */
+  async canRequesterFindApprovalMaster(userId: number): Promise<boolean> {
+    const approvers = await this.approvalsConfigService.resolveApprovers('kvp', userId);
+    return approvers.length > 0;
   }
 
   // ==========================================================================

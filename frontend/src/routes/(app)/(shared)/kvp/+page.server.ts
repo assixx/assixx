@@ -64,17 +64,38 @@ function mapParentUserToCurrentUser(parentUser: ParentUser | null) {
 }
 
 /**
+ * Approval-config status for the create-button gate. `hasConfigForUser` is
+ * the scope-aware flag that drives the "+ Neuer KVP" button — when false,
+ * the backend will refuse the POST anyway (Hard-Gate, ADR-037 Amendment
+ * 2026-04-26 + Masterplan §3.4 v0.6.0). `hasConfig` is kept for tenant-level
+ * UI hints. Endpoint defaults are conservative — both false on fetch errors.
+ */
+interface ApprovalConfigStatus {
+  hasConfig: boolean;
+  hasConfigForUser: boolean;
+}
+
+/**
  * Fetches all KVP data in parallel
  */
 async function fetchKvpData(token: string, fetchFn: typeof fetch, isAdmin: boolean) {
   // apiFetchWithPermission for /kvp to detect 403 (permission denied vs empty data)
-  const [kvpResult, categoriesData, departmentsData, orgsData, statsData] = await Promise.all([
-    apiFetchWithPermission<SuggestionsApiResponse>('/kvp', token, fetchFn),
-    apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
-    apiFetch<Department[]>('/departments', token, fetchFn),
-    apiFetch<UserTeamWithAssets[]>('/kvp/my-organizations', token, fetchFn),
-    isAdmin ? apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn) : Promise.resolve(null),
-  ]);
+  const [kvpResult, categoriesData, departmentsData, orgsData, statsData, approvalStatus] =
+    await Promise.all([
+      apiFetchWithPermission<SuggestionsApiResponse>('/kvp', token, fetchFn),
+      apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
+      apiFetch<Department[]>('/departments', token, fetchFn),
+      apiFetch<UserTeamWithAssets[]>('/kvp/my-organizations', token, fetchFn),
+      isAdmin ? apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn) : Promise.resolve(null),
+      apiFetch<ApprovalConfigStatus>('/kvp/approval-config-status', token, fetchFn),
+    ]);
+
+  // Conservative default: if the status endpoint fails, treat as "no config"
+  // so the button is disabled rather than presenting a broken POST.
+  const approval: ApprovalConfigStatus = approvalStatus ?? {
+    hasConfig: false,
+    hasConfigForUser: false,
+  };
 
   if (kvpResult.permissionDenied) {
     return {
@@ -84,6 +105,7 @@ async function fetchKvpData(token: string, fetchFn: typeof fetch, isAdmin: boole
       suggestions: [] as KvpSuggestion[],
       userOrganizations: [] as UserTeamWithAssets[],
       statistics: null,
+      approvalConfig: approval,
     };
   }
 
@@ -94,6 +116,7 @@ async function fetchKvpData(token: string, fetchFn: typeof fetch, isAdmin: boole
     suggestions: parseSuggestionsResponse(kvpResult.data),
     userOrganizations: Array.isArray(orgsData) ? orgsData : [],
     statistics: statsData,
+    approvalConfig: approval,
   };
 }
 

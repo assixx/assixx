@@ -429,14 +429,27 @@ export class KvpController {
 
   /**
    * GET /kvp/approval-config-status
-   * Check if an approval master is configured for addon 'kvp'
-   * Static route — MUST be before parameterized /:id routes (Fastify ordering)
+   *
+   * Returns two flags so the frontend can drive both tenant-level UI hints
+   * and per-user button states:
+   *   - `hasConfig`: any KVP master configured in the tenant (admin/settings hint)
+   *   - `hasConfigForUser`: a master is reachable for the current user's
+   *     org scope (drives the "+ Neuer KVP" button — see Hard-Gate in
+   *     `KvpService.createSuggestion`, ADR-037 Amendment 2026-04-26).
+   *
+   * Static route — MUST be before parameterized /:id routes (Fastify ordering).
    */
   @Get('approval-config-status')
   @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canRead')
-  async getApprovalConfigStatus(@TenantId() tenantId: number): Promise<{ hasConfig: boolean }> {
-    const hasConfig = await this.kvpApprovalService.hasApprovalConfig(tenantId);
-    return { hasConfig };
+  async getApprovalConfigStatus(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ hasConfig: boolean; hasConfigForUser: boolean }> {
+    const [hasConfig, hasConfigForUser] = await Promise.all([
+      this.kvpApprovalService.hasApprovalConfig(tenantId),
+      this.kvpApprovalService.canRequesterFindApprovalMaster(user.id),
+    ]);
+    return { hasConfig, hasConfigForUser };
   }
 
   /**

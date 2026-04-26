@@ -201,7 +201,14 @@ function createService(): ServiceMocks {
   const mockComments = createMockComments();
   const mockAttachments = createMockAttachments();
   const mockConfirmations = createMockConfirmations();
-  const mockKvpApproval = { hasApprovalConfig: vi.fn().mockResolvedValue(false) };
+  // Default mock returns true so the Hard-Gate (ADR-037 Amendment 2026-04-26)
+  // is satisfied by default — individual tests can override per-call to verify
+  // the block path. `hasApprovalConfig` stays for compatibility with existing
+  // test setups that pre-date the scope-aware helper.
+  const mockKvpApproval = {
+    hasApprovalConfig: vi.fn().mockResolvedValue(false),
+    canRequesterFindApprovalMaster: vi.fn().mockResolvedValue(true),
+  };
   const mockLifecycle = createMockLifecycle();
   const mockParticipants = createMockParticipants();
   const mockScope = createMockScope();

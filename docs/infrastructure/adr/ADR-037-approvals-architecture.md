@@ -525,6 +525,56 @@ Every addon integration follows the same pattern:
 - **Notification Bridge:** Creates persistent notifications + SSE events for both request and decision.
 - **No Supersede:** KVP prevents new approvals while one is pending (different approach from TPM, same result).
 
+---
+
+## Amendment: KVP Hard-Gate (2026-04-26)
+
+### Problem
+
+The 2026-03-29 amendment recorded `Config Gate (D6)`: "If no config → bridge skips approval creation entirely. Otherwise orphaned approvals accumulate." That was a _bridge-level_ skip — the underlying KVP submission still went through. In production this meant a tenant could collect KVP suggestions that had no defined route to a decision-maker, leaving the workflow promise (every KVP gets reviewed) silently broken. The "Kein Master konfiguriert" hint at `/settings/approvals` warned admins, but employees could still submit suggestions that would never be approved.
+
+### Decision
+
+**KVP submission is hard-blocked when no approval master is reachable for the requester's organizational scope.** Bypass for system users only — `role === 'root'` or `role === 'admin' && has_full_access === true`. Lead-only admins, employees, and employee-leads must wait until the tenant admin has wired an approval config that covers their area/department/team.
+
+The check delegates to `ApprovalsConfigService.resolveApprovers('kvp', userId)` — single source of truth for scope resolution (added in the 2026-03-23 Org-Scope amendment). Length > 0 = pass, otherwise `BadRequestException` with code `KVP_NO_APPROVAL_MASTER`.
+
+### Implementation
+
+| Layer        | Change                                                                                                      | File                                                  |
+| ------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Helper       | `KvpApprovalService.canRequesterFindApprovalMaster(userId)` — wraps `resolveApprovers()`                    | `backend/src/nest/kvp/kvp-approval.service.ts`        |
+| Backend gate | `KvpService.createSuggestion()` — bypass for system users, else throw `KVP_NO_APPROVAL_MASTER` (BadRequest) | `backend/src/nest/kvp/kvp.service.ts`                 |
+| API shape    | `GET /kvp/approval-config-status` returns `{ hasConfig, hasConfigForUser }` (was `{ hasConfig }` only)      | `backend/src/nest/kvp/kvp.controller.ts`              |
+| Frontend     | "+ Neuer KVP" floating button is `disabled` with tooltip when `hasConfigForUser=false`                      | `frontend/src/routes/(app)/(shared)/kvp/+page.svelte` |
+
+### Reverses
+
+The `Config Gate (D6)` 2026-03-29 amendment ("skip approval creation, but allow submission") and the Masterplan §3.4 v0.5.0 "Backward compatible — old behavior preserved when no config exists" decision. Both are explicitly superseded for KVP. The pattern is now: **no config in scope → no submission**. Other addon integrations (e.g. TPM) continue to use the soft-gate pattern; this is a per-addon policy, not a global change.
+
+### Risiko-Tabelle Update
+
+| Risiko                             | Vorher                                                      | Mitigation neu                                                                                               |
+| ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Kein Master konfiguriert           | "UI zeigt Warnung wenn Config leer; Backend blockt Anfrage" | Hard-Gate auf Submission-Ebene; UI disabled-Button mit Tooltip; bypass nur für root + admin-with-full-access |
+| Orphan KVPs in Tenants ohne Config | Bridge skippte Approval, Submission ging durch              | Submission selbst blockiert — keine Orphans mehr möglich                                                     |
+
+### Migration
+
+Hartes Inkrafttreten ab Deploy. Bestehende KVP-Test-Daten wurden mit `TRUNCATE TABLE kvp_suggestions CASCADE` + `DELETE FROM approvals WHERE addon_code='kvp'` + `DELETE FROM notifications WHERE type='kvp'` entfernt (nur Test-Daten — Solo-Produkt vor erstem Production-Deploy). Für zukünftige Tenants gilt: Approval-Master für KVP einrichten, **bevor** das Addon freigeschaltet wird, sonst können Mitarbeiter keine Vorschläge einreichen.
+
+### Verification
+
+```bash
+# Helper unit tests:
+pnpm exec vitest run --project unit backend/src/nest/kvp/kvp-approval.service.test.ts
+# → 17 tests pass, including 2 new for canRequesterFindApprovalMaster
+
+# Endpoint shape:
+curl -s http://localhost:3000/api/v2/kvp/approval-config-status -H "Authorization: Bearer $TOKEN" | jq
+# → { "data": { "hasConfig": true, "hasConfigForUser": true } }
+```
+
 ### TPM-specific Patterns
 
 - **Informational Only (D1):** Approval status is documentary (ISO 9001). Plans remain fully operational regardless of pending/rejected status.

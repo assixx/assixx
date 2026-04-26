@@ -13,7 +13,13 @@
  * @see kvp.constants.ts — SQL queries, error messages, defaults
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
@@ -359,6 +365,43 @@ export class KvpService {
   }
 
   /**
+   * Submission gate for `createSuggestion()`.
+   *
+   * Combines two independent checks:
+   *   1. Role gate (legacy): admin/root needs `has_full_access` OR a team-lead
+   *      position. Pure employees pass implicitly.
+   *   2. Hard-Gate (ADR-037 Amendment 2026-04-26 + Masterplan §3.4 v0.6.0):
+   *      a KVP master must be configured for the requester's org scope.
+   *      Bypass for system users — root or admin-with-`hasFullAccess` —
+   *      so a fresh tenant can bootstrap. Lead-only admins, employees and
+   *      employee-leads must wait until an approval config covers their
+   *      area/department/team. Scope resolution is delegated to
+   *      `ApprovalsConfigService.resolveApprovers` (single source of truth,
+   *      ADR-037 Org-Scope Amendment 2026-03-23).
+   */
+  private async assertCanSubmit(userId: number, userRole: string): Promise<void> {
+    const orgInfo = userRole !== 'employee' ? await this.getExtendedUserOrgInfo() : null;
+
+    if (orgInfo !== null && !orgInfo.hasFullAccess && orgInfo.teamLeadOf.length === 0) {
+      throw new ForbiddenException(
+        'Nur Mitarbeiter und Teamleiter dürfen KVP-Vorschläge erstellen.',
+      );
+    }
+
+    const isSystemUser = userRole === 'root' || orgInfo?.hasFullAccess === true;
+    if (isSystemUser) return;
+
+    const hasMaster = await this.kvpApprovalService.canRequesterFindApprovalMaster(userId);
+    if (!hasMaster) {
+      throw new BadRequestException({
+        code: 'KVP_NO_APPROVAL_MASTER',
+        message:
+          'Für deinen Bereich ist kein KVP-Master konfiguriert. Bitte wende dich an deinen Administrator.',
+      });
+    }
+  }
+
+  /**
    * Create a new suggestion
    * Permission: employees, or admin/root who are team leads
    * Rate limit: 1 suggestion per user per day (employees only)
@@ -371,15 +414,7 @@ export class KvpService {
   ): Promise<KVPSuggestionResponse> {
     this.logger.log(`Creating suggestion: ${dto.title}`);
 
-    // Permission: admin/root with full access can always create, others need team lead
-    if (userRole !== 'employee') {
-      const orgInfo = await this.getExtendedUserOrgInfo();
-      if (!orgInfo.hasFullAccess && orgInfo.teamLeadOf.length === 0) {
-        throw new ForbiddenException(
-          'Nur Mitarbeiter und Teamleiter dürfen KVP-Vorschläge erstellen.',
-        );
-      }
-    }
+    await this.assertCanSubmit(userId, userRole);
 
     // Rate limit: all users except root and admin+has_full_access
     await this.assertDailyLimitNotReached(tenantId, userId, userRole);
