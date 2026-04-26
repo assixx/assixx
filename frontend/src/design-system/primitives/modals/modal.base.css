@@ -193,8 +193,10 @@
   background: var(--color-glass-border);
 }
 
-/* Cap dropdown menus inside modals so they don't grow endlessly */
-.ds-modal__body .dropdown__menu {
+/* Cap normal dropdown menus inside modals so they don't grow endlessly.
+   Searchable dropdowns are excluded — they manage their own scroll
+   via .dropdown__options (see searchable-dropdown.css). */
+.ds-modal__body .dropdown__menu:not(:has(.dropdown__search)) {
   max-height: 13rem;
   overflow-y: auto;
 }

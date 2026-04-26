@@ -44,21 +44,22 @@
 
   const log = createLogger('ParticipantChips');
 
-  // Visual order + per-type configuration (icon + chip badge variant).
-  // Reuses existing `badge--visibility-*` palette so the chip color
-  // matches the org-level coloring used elsewhere (see badge.workflow.css).
+  // Visual order + per-type icon (used in the dropdown options + group
+  // headers only — chips themselves carry type info via colour modifier
+  // classes, not icons, mirroring the `pos-chip` pattern in
+  // frontend/src/lib/components/UserPositionChips.svelte).
+  // Per-type colour palette is defined in the style block at the bottom
+  // of this file as `.participant-chip--{type}` modifiers — uses the same
+  // tokens as the calendar legend (`--color-sky` / `--color-emerald` /
+  // `--color-carrot` / `--color-danger-hover`) for cross-feature visual
+  // consistency. NOTE: avoid bare HTML-style tags in script comments —
+  // Svelte's tokenizer still scans them and breaks parsing.
   const TYPE_ORDER: ParticipantType[] = ['user', 'team', 'department', 'area'];
   const TYPE_ICON: Record<ParticipantType, string> = {
     user: 'fa-user',
     team: 'fa-users',
     department: 'fa-building',
     area: 'fa-th-large',
-  };
-  const TYPE_BADGE: Record<ParticipantType, string> = {
-    user: 'badge--role-employee',
-    team: 'badge--visibility-team',
-    department: 'badge--visibility-department',
-    area: 'badge--visibility-area',
   };
 
   let searchQuery = $state('');
@@ -193,11 +194,19 @@
   }
 
   // Renderable groups — buckets in fixed order; unselected entries only.
+  // Inject the discriminator `type` from the bucket name onto each option:
+  // the backend `/options` endpoint returns `{ users: [{id,label,sublabel}],
+  // teams: […], … }` and uses the bucket *key* as the type signal — no
+  // inline `type` field per row (see kvp-participants.service.ts
+  // searchUsers/searchTeams/searchDepartments/searchAreas). Without this
+  // map(), `chipKey(opt)`, `addParticipant(opt)` and the
+  // `participant-chip--{type}` colour modifier all see `opt.type ===
+  // undefined`, producing class="participant-chip--" with no colour.
   const visibleGroups = $derived(
     TYPE_ORDER.map((t) => {
-      const items = options[bucketKey(t)].filter(
-        (opt: EnrichedParticipant) => !selectedKeys.has(chipKey(opt)),
-      );
+      const items = options[bucketKey(t)]
+        .map((opt) => ({ ...opt, type: t }))
+        .filter((opt: EnrichedParticipant) => !selectedKeys.has(chipKey(opt)));
       return { type: t, items };
     }),
   );
@@ -209,11 +218,21 @@
   <div class="participant-chips__list">
     {#each value as p (chipKey(p))}
       {@const sub = chipSublabel(p)}
+      <!--
+        Chip markup mirrors the `pos-chip` pattern from
+        frontend/src/lib/components/UserPositionChips.svelte — text + remove
+        button, no icon inside the chip, no badge wrapper class. Type info
+        is conveyed by the `participant-chip--{type}` colour modifier (see
+        chip rules in the style block below) using the same tokens as the
+        calendar legend so the four types pop visually with low cognitive
+        cost. ADR-017 design system §4. NOTE: avoid bare HTML tags inside
+        comments — Svelte's tokenizer treats them as real elements and
+        breaks parsing.
+      -->
       <span
-        class="participant-chip badge {TYPE_BADGE[p.type]}"
+        class="participant-chip participant-chip--{p.type}"
         title={sub ?? chipLabel(p)}
       >
-        <i class="fas {TYPE_ICON[p.type]} mr-1"></i>
         <span class="participant-chip__label">{chipLabel(p)}</span>
         <button
           type="button"
@@ -319,12 +338,43 @@
     align-items: center;
   }
 
+  /* Chip layout mirrors `pos-chip` (UserPositionChips.svelte:195) — pill
+     shape, 15 % colour-mix bg, bold same-hue text. Per-type colour is
+     parameterised via the `--participant-chip-color` custom property; the
+     four `--user`/`--team`/`--department`/`--area` modifiers each set this
+     to the corresponding calendar-legend token, giving a single chip rule
+     instead of four. ADR-017 design-system §"Token-First". */
   .participant-chip {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    padding-right: 0.5rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-xl, 9999px);
+    background: color-mix(
+      in oklch,
+      var(--participant-chip-color, var(--color-primary)) 15%,
+      transparent
+    );
+    color: var(--participant-chip-color, var(--color-primary));
+    font-size: 0.8125rem;
+    font-weight: 500;
     max-width: 100%;
+  }
+
+  .participant-chip--user {
+    --participant-chip-color: var(--color-sky);
+  }
+
+  .participant-chip--team {
+    --participant-chip-color: var(--color-emerald);
+  }
+
+  .participant-chip--department {
+    --participant-chip-color: var(--color-carrot);
+  }
+
+  .participant-chip--area {
+    --participant-chip-color: var(--color-danger-hover);
   }
 
   .participant-chip__label {
