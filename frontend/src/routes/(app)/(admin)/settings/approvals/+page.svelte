@@ -894,6 +894,24 @@
     min-width: 200px;
   }
 
+  /*
+   * Align search-input height & font with dropdown trigger in the same row.
+   * Default search-input enforces a 44px touch target (a11y standard) and uses
+   * a hardcoded 0.938rem font — both diverge from .dropdown__trigger which
+   * derives size from --form-field-padding-y/x + --form-field-font-size.
+   * Scoped override keeps the 44px default intact for the ~20 other pages
+   * that use search-input outside of a form-row context.
+   * Both elements already share --radius-xl + --spacing-3 horizontal padding.
+   */
+  .add-row :global(.search-input) {
+    min-height: auto;
+  }
+
+  .add-row :global(.search-input__field) {
+    padding: var(--form-field-padding-y) 0;
+    font-size: var(--form-field-font-size);
+  }
+
   .user-chips {
     display: flex;
     flex-wrap: wrap;

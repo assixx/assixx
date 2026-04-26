@@ -35,7 +35,7 @@ Concretely:
 - **Skip:** self-edits under `docs/infrastructure/adr/`, `docs/how-to/`, `.claude/`; paths outside the project; invalid input (fail-open).
 - **Payload:** `awk`-extracted tables from `docs/infrastructure/adr/README.md` (the `## Index` section) and `docs/how-to/README.md` (the `## Guide Catalog` section), prefixed with a MANDATORY reminder line.
 - **No dedup.** The catalog is re-injected on every edit so the reminder stays fresh and resilient to cache-eviction later in the session.
-- **Budget guard.** The test harness asserts the emitted payload stays below 25 KB (currently ~13 KB). If a README bloats or a section heading is renamed (breaking the `awk` range), the guard fires before it ships.
+- **Budget guard.** The test harness asserts the emitted payload stays below 25 KB (currently ~17 KB). If a README bloats or a section heading is renamed (breaking the `awk` range), the guard fires before it ships.
 
 Regression coverage: 19 test cases in `.claude/hooks/pre-edit-adr-context.test.sh` covering catalog presence, no-dedup semantics, all guards, JSON output shape, and the byte budget.
 
@@ -43,14 +43,14 @@ Regression coverage: 19 test cases in `.claude/hooks/pre-edit-adr-context.test.s
 
 ### A. Catalog only on the first edit per session (dedup), reminder-only afterwards
 
-- **Pro:** minimal token overhead (~13 KB once per session).
+- **Pro:** minimal token overhead (~17 KB once per session).
 - **Con:** if Claude's attention window evicts the catalog mid-session, later edits have no reliable reference. The hook's one job — _guarantee_ the docs are visible — becomes probabilistic.
 - **Rejected.** Variance in reliability was the main problem we were fixing.
 
 ### B. Catalog on every edit, no dedup _(chosen)_
 
 - **Pro:** simplest possible contract. Every edit sees the catalog. No session-state files, no dedup logic, no race conditions.
-- **Con:** measurable token overhead — ~13 KB per edit. On a 100-edit session that is ~1.3 MB of repeated index text.
+- **Con:** measurable token overhead — ~17 KB per edit. On a 100-edit session that is ~1.7 MB of repeated index text.
 - **Accepted.** Claude Code uses prompt caching, so repeated identical catalog content is cheap to send. The mental-model simplicity and reliability improvement outweigh the cost.
 
 ### C. Keep token matching + add catalog as fallback
@@ -83,8 +83,8 @@ Regression coverage: 19 test cases in `.claude/hooks/pre-edit-adr-context.test.s
 
 ### Negative
 
-- **Token cost.** ~13 KB of repeated catalog text per edit. Mitigated by Anthropic prompt caching for identical content, but not free.
-- **Catalog depends on README hygiene.** If `docs/infrastructure/adr/README.md` misses a new ADR, the hook also misses it. ADR-046 is currently not in the README — a follow-up fix, not an ADR-047 regression.
+- **Token cost.** ~17 KB of repeated catalog text per edit. Mitigated by Anthropic prompt caching for identical content, but not free.
+- **Catalog depends on README hygiene.** If `docs/infrastructure/adr/README.md` misses a new ADR, the hook also misses it. The byte-budget guard catches bloat but not omission — README updates after every new ADR are the manual safety net.
 - **No targeted nudge.** Claude must actively scan the catalog every time. The MANDATORY reminder text is the only incentive — if Claude treats it as noise, the hook cannot help.
 
 ### Neutral

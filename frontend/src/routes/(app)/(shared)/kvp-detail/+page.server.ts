@@ -212,6 +212,10 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
       approval: null as ApprovalInfo | null,
       hasApprovalConfig: false,
       isApprovalMaster: false,
+      // Leerer Reward-Katalog hält den Page-Type-Contract symmetrisch zum
+      // success-Branch (Z. 164). Modal rendert in dem Branch ohnehin nicht
+      // (PermissionDenied-Komponente), aber svelte-check erwartet das Feld.
+      rewardTiers: [] as { id: number; amount: number; sortOrder: number }[],
       currentUser: parentData.user,
     };
   }

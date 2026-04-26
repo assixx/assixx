@@ -56,6 +56,27 @@ interface ApprovalRow {
   decision_note: string | null;
 }
 
+/**
+ * Compose a human display name from the (nullable) `first_name` /
+ * `last_name` columns of `users`, falling back through email and finally
+ * a placeholder. Used by `getApprovalMastersForRequester` for the KVP
+ * info banner — keeping the fallback order explicit so the UI never
+ * shows blanks.
+ */
+function buildDisplayName(row: {
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+}): string {
+  const first = row.first_name?.trim() ?? '';
+  const last = row.last_name?.trim() ?? '';
+  if (first !== '' && last !== '') return `${first} ${last}`;
+  if (first !== '') return first;
+  if (last !== '') return last;
+  if (row.email.trim() !== '') return row.email;
+  return 'Unbekannt';
+}
+
 // =============================================================================
 // SERVICE
 // =============================================================================
@@ -140,7 +161,7 @@ export class KvpApprovalService implements OnModuleInit {
     return await this.approvalsService.findById(row.uuid.trim());
   }
 
-  /** Check if any approval master is configured for addon 'kvp' */
+  /** Check if any approval master is configured for addon 'kvp' (tenant-wide) */
   async hasApprovalConfig(tenantId: number): Promise<boolean> {
     const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*)::text AS count
@@ -152,6 +173,63 @@ export class KvpApprovalService implements OnModuleInit {
     );
 
     return Number(rows[0]?.count ?? '0') > 0;
+  }
+
+  /**
+   * Check if a KVP approval master is reachable for the requester's
+   * organizational scope (area/department/team).
+   *
+   * Backs the Hard-Gate in `KvpService.createSuggestion()` and the per-user
+   * branch of `GET /kvp/approval-config-status` (Masterplan §3.4 v0.6.0,
+   * ADR-037 Hard-Gate Amendment 2026-04-26). Why scope-aware instead of
+   * tenant-wide: a tenant might have configured a master for Area 1 only —
+   * a user in Area 2 must still be blocked, even though `hasApprovalConfig`
+   * returns true.
+   *
+   * Delegates to `ApprovalsConfigService.resolveApprovers('kvp', userId)`,
+   * which already implements the scope resolution via the `requester_org`
+   * CTE (ADR-037 Org-Scope Amendment 2026-03-23).
+   */
+  async canRequesterFindApprovalMaster(userId: number): Promise<boolean> {
+    const approvers = await this.approvalsConfigService.resolveApprovers('kvp', userId);
+    return approvers.length > 0;
+  }
+
+  /**
+   * Resolve the KVP approval masters for the requester and return display
+   * names so the frontend can show an info banner ("Dein KVP-Master: …").
+   *
+   * The display name falls back through `first_name last_name` →
+   * `first_name` → `last_name` → `email` → `'Unbekannt'`, since
+   * `users.first_name` and `users.last_name` are both nullable. RLS on
+   * `users` (ADR-019) restricts to the current tenant — `resolveApprovers`
+   * already pre-filtered to in-tenant IDs, so the JOIN is a no-op for
+   * cross-tenant safety but kept for defense in depth.
+   */
+  async getApprovalMastersForRequester(
+    userId: number,
+  ): Promise<{ id: number; displayName: string }[]> {
+    const approverIds = await this.approvalsConfigService.resolveApprovers('kvp', userId);
+    if (approverIds.length === 0) return [];
+
+    interface MasterRow {
+      id: number;
+      first_name: string | null;
+      last_name: string | null;
+      email: string;
+    }
+    const rows = await this.db.tenantQuery<MasterRow>(
+      `SELECT id, first_name, last_name, email
+         FROM users
+        WHERE id = ANY($1::int[])
+        ORDER BY last_name NULLS LAST, first_name NULLS LAST, email`,
+      [approverIds],
+    );
+
+    return rows.map((r: MasterRow) => ({
+      id: r.id,
+      displayName: buildDisplayName(r),
+    }));
   }
 
   // ==========================================================================

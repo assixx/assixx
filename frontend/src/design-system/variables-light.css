@@ -28,7 +28,7 @@
   --input-border-radius: var(--radius-xl);
   --input-font-size: var(--font-size-base);
   --input-padding-x: var(--spacing-3);
-  --input-padding-y: var(--spacing-2);
+  --input-padding-y: var(--spacing-2-5);
 
   /* Typography Families */
   --font-primary:

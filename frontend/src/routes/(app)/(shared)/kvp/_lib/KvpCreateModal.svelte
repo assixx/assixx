@@ -7,21 +7,34 @@
 
   import { createSuggestion, uploadPhotos } from './api';
   import { UPLOAD_CONFIG } from './constants';
+  import ParticipantChips from './ParticipantChips.svelte';
   import { kvpState } from './state.svelte';
   import { validatePhotoFile, readFileAsDataUrl, isFaIcon } from './utils';
 
-  import type { KvpFormData } from './types';
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
+  import type { KvpFormData, Participant } from './types';
 
   interface Props {
     onclose: () => void;
     onsuccess: () => void;
+    // Required so <ParticipantChips> dropdown can render tenant-customised
+    // group headers (ADR-034). Threaded explicitly from +page.svelte —
+    // ADR-034 forbids reading $page.data inside components (hidden coupling,
+    // not testable).
+    hierarchyLabels: HierarchyLabels;
   }
 
-  const { onclose, onsuccess }: Props = $props();
+  const { onclose, onsuccess, hierarchyLabels }: Props = $props();
 
   // Photo state
   let photoPreviews = $state<string[]>([]);
   let selectedPhotos = $state<File[]>([]);
+
+  // Participant tags (Step 5.2). Local component state — mirrors the
+  // photoPreviews/selectedPhotos precedent. Reset alongside other fields
+  // in handleClose() so a fresh modal opens with an empty list.
+  // @see docs/FEAT_KVP_PARTICIPANTS_MASTERPLAN.md §5.2
+  let participants = $state<Participant[]>([]);
 
   // Dropdown state
   let activeDropdown = $state<string | null>(null);
@@ -106,6 +119,10 @@
     formCategoryIcon = undefined;
     formCategoryColor = undefined;
     formCategoryValue = '';
+    // Reset participants alongside other modal-local state — handleClose() is
+    // invoked from both the explicit Cancel button and the post-submit success
+    // path, so a fresh modal opens with an empty list either way (Step 5.2).
+    participants = [];
     formElement?.reset();
     onclose();
   }
@@ -135,6 +152,10 @@
       customCategoryId,
       expectedBenefit: expectedBenefit !== '' ? expectedBenefit : undefined,
       departmentId: kvpState.currentUser?.departmentId ?? null,
+      // Empty array sent verbatim — backend Zod schema treats `[]` and absent
+      // as equivalent (`participants.optional().default([])`), and an explicit
+      // shape keeps the wire payload self-documenting (Step 2.1).
+      participants,
     };
   }
 
@@ -267,6 +288,29 @@
             minlength="10"
             maxlength="5000"
           ></textarea>
+        </div>
+
+        <!--
+          Beteiligung — co-originator tagging (ADR-045 annotation only,
+          masterplan §5.2). Optional; empty list = "author alone".
+          Sits between description and category so it's grouped with the
+          idea-narrative fields. Pure form-field (no md:col-span-2) lets
+          it share its row with the category dropdown on the desktop grid.
+        -->
+        <div class="form-field">
+          <span class="form-field__label">
+            <i class="fas fa-users mr-1"></i>
+            Beteiligung
+          </span>
+          <ParticipantChips
+            bind:value={participants}
+            {hierarchyLabels}
+            disabled={kvpState.isSubmitting}
+          />
+          <span class="form-field__message">
+            <i class="fas fa-info-circle mr-1"></i>
+            Optional — wer hatte die Idee mit dir? Personen, Teams, Abteilungen oder Bereiche.
+          </span>
         </div>
 
         <div class="form-field">
@@ -418,11 +462,12 @@
                   <button
                     type="button"
                     class="remove-photo"
+                    aria-label="Foto entfernen"
                     onclick={() => {
                       handleRemovePhoto(index);
                     }}
                   >
-                    ×
+                    <i class="fas fa-times"></i>
                   </button>
                 </div>
               {/each}
@@ -497,6 +542,8 @@
     object-fit: cover;
   }
 
+  /* Visual parity with .ds-modal__close (modal.base.css) — same glass surface
+     and danger-on-hover color, scaled down to 24px to fit the 100px thumbnail. */
   .photo-preview-item .remove-photo {
     display: flex;
     position: absolute;
@@ -504,18 +551,23 @@
     right: 4px;
     justify-content: center;
     align-items: center;
+    transition: all 0.2s ease;
     cursor: pointer;
     border: none;
-    border-radius: 50%;
-    background: color-mix(in oklch, var(--color-danger) 90%, transparent);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-hover);
     width: 24px;
     height: 24px;
-    color: var(--color-white);
-    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
   }
 
   .photo-preview-item .remove-photo:hover {
-    transform: scale(1.1);
-    background: var(--color-danger);
+    background: var(--glass-bg-active);
+    color: var(--color-danger);
+  }
+
+  .photo-preview-item .remove-photo:active {
+    transform: scale(0.95);
   }
 </style>

@@ -17,9 +17,6 @@
   /**
    * Navigate back in browser history
    */
-  function goBack(): void {
-    history.back();
-  }
 
   /**
    * Navigate to home/login.
@@ -113,15 +110,6 @@
 
     <!-- Actions -->
     <div class="empty-state__actions">
-      <button
-        type="button"
-        class="btn btn-cancel"
-        onclick={goBack}
-      >
-        <i class="fas fa-arrow-left"></i>
-        Zurück
-      </button>
-
       <button
         type="button"
         class="btn btn-primary"

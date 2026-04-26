@@ -13,8 +13,15 @@
  * @see kvp.constants.ts — SQL queries, error messages, defaults
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
+import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { eventBus } from '../../utils/event-bus.js';
@@ -30,6 +37,7 @@ import { KvpAttachmentsService } from './kvp-attachments.service.js';
 import { KvpCommentsService } from './kvp-comments.service.js';
 import { KvpConfirmationsService } from './kvp-confirmations.service.js';
 import { KvpLifecycleService } from './kvp-lifecycle.service.js';
+import { KvpParticipantsService } from './kvp-participants.service.js';
 import { EMPLOYEE_MEMBERSHIP_QUERY, ERROR_SUGGESTION_NOT_FOUND } from './kvp.constants.js';
 import {
   buildCountQuery,
@@ -86,6 +94,11 @@ export class KvpService {
     private readonly confirmationsService: KvpConfirmationsService,
     private readonly kvpApprovalService: KvpApprovalService,
     private readonly lifecycleService: KvpLifecycleService,
+    // Co-originator tagging — masterplan FEAT_KVP_PARTICIPANTS §2.3.
+    // Wired here so `createSuggestion()` can hand its tx client through to
+    // `replaceParticipants()`, keeping suggestion-INSERT and participants-INSERT
+    // atomic (closes risk R7: orphan suggestion when participant insert fails).
+    private readonly participantsService: KvpParticipantsService,
     private readonly scopeService: ScopeService,
     private readonly cls: ClsService,
   ) {}
@@ -340,7 +353,52 @@ export class KvpService {
       throw new NotFoundException(ERROR_SUGGESTION_NOT_FOUND);
     }
 
-    return transformSuggestion(suggestion);
+    // Detail enrichment (FEAT_KVP_PARTICIPANTS_MASTERPLAN §2.4): merge the
+    // co-originator list onto the response. `transformSuggestion` already
+    // seeded `participants: []`; we override with the enriched join here so
+    // GET /:id and POST / (which round-trips through this method) both
+    // surface the full list. The list path (`listSuggestions`) does NOT
+    // call this method per row — that is intentional for payload size.
+    const transformed = transformSuggestion(suggestion);
+    transformed.participants = await this.participantsService.getParticipants(suggestion.id);
+    return transformed;
+  }
+
+  /**
+   * Submission gate for `createSuggestion()`.
+   *
+   * Combines two independent checks:
+   *   1. Role gate (legacy): admin/root needs `has_full_access` OR a team-lead
+   *      position. Pure employees pass implicitly.
+   *   2. Hard-Gate (ADR-037 Amendment 2026-04-26 + Masterplan §3.4 v0.6.0):
+   *      a KVP master must be configured for the requester's org scope.
+   *      Bypass for system users — root or admin-with-`hasFullAccess` —
+   *      so a fresh tenant can bootstrap. Lead-only admins, employees and
+   *      employee-leads must wait until an approval config covers their
+   *      area/department/team. Scope resolution is delegated to
+   *      `ApprovalsConfigService.resolveApprovers` (single source of truth,
+   *      ADR-037 Org-Scope Amendment 2026-03-23).
+   */
+  private async assertCanSubmit(userId: number, userRole: string): Promise<void> {
+    const orgInfo = userRole !== 'employee' ? await this.getExtendedUserOrgInfo() : null;
+
+    if (orgInfo !== null && !orgInfo.hasFullAccess && orgInfo.teamLeadOf.length === 0) {
+      throw new ForbiddenException(
+        'Nur Mitarbeiter und Teamleiter dürfen KVP-Vorschläge erstellen.',
+      );
+    }
+
+    const isSystemUser = userRole === 'root' || orgInfo?.hasFullAccess === true;
+    if (isSystemUser) return;
+
+    const hasMaster = await this.kvpApprovalService.canRequesterFindApprovalMaster(userId);
+    if (!hasMaster) {
+      throw new BadRequestException({
+        code: 'KVP_NO_APPROVAL_MASTER',
+        message:
+          'Für deinen Bereich ist kein KVP-Master konfiguriert. Bitte wende dich an deinen Administrator.',
+      });
+    }
   }
 
   /**
@@ -356,15 +414,7 @@ export class KvpService {
   ): Promise<KVPSuggestionResponse> {
     this.logger.log(`Creating suggestion: ${dto.title}`);
 
-    // Permission: admin/root with full access can always create, others need team lead
-    if (userRole !== 'employee') {
-      const orgInfo = await this.getExtendedUserOrgInfo();
-      if (!orgInfo.hasFullAccess && orgInfo.teamLeadOf.length === 0) {
-        throw new ForbiddenException(
-          'Nur Mitarbeiter und Teamleiter dürfen KVP-Vorschläge erstellen.',
-        );
-      }
-    }
+    await this.assertCanSubmit(userId, userRole);
 
     // Rate limit: all users except root and admin+has_full_access
     await this.assertDailyLimitNotReached(tenantId, userId, userRole);
@@ -380,26 +430,43 @@ export class KvpService {
       RETURNING id
     `;
 
-    const rows = await this.db.tenantQuery<{ id: number }>(query, [
-      uuid,
-      tenantId,
-      dto.title,
-      dto.description,
-      dto.categoryId ?? null,
-      dto.customCategoryId ?? null,
-      dto.departmentId ?? null,
-      teamId,
-      userId,
-      dto.priority ?? 'normal',
-      dto.expectedBenefit ?? null,
-      dto.estimatedCost ?? null,
-    ]);
+    // Single tx for INSERT + participants tagging so a participants failure
+    // rolls back the suggestion (closes risk R7 — orphan suggestion impossible).
+    // The same `client` is threaded into `replaceParticipants` so RLS context
+    // and rollback boundary match. Masterplan FEAT_KVP_PARTICIPANTS §2.3.
+    const suggestionId = await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<number> => {
+        const result = await client.query<{ id: number }>(query, [
+          uuid,
+          tenantId,
+          dto.title,
+          dto.description,
+          dto.categoryId ?? null,
+          dto.customCategoryId ?? null,
+          dto.departmentId ?? null,
+          teamId,
+          userId,
+          dto.priority ?? 'normal',
+          dto.expectedBenefit ?? null,
+          dto.estimatedCost ?? null,
+        ]);
 
-    if (rows[0] === undefined) {
-      throw new Error('Failed to create suggestion');
-    }
+        if (result.rows[0] === undefined) {
+          throw new Error('Failed to create suggestion');
+        }
+        const newId = result.rows[0].id;
 
-    const suggestionId = rows[0].id;
+        // `dto.participants` is `Participant[]` (never undefined): the Zod
+        // schema in dto/create-suggestion.dto.ts uses `.optional().default([])`,
+        // so the parsed DTO contract guarantees an array. The masterplan's
+        // speculative `?? []` (§2.3 pseudo-code) predates that schema choice
+        // and would fail `@typescript-eslint/no-unnecessary-condition`. Logged
+        // as Spec Deviation #5.
+        await this.participantsService.replaceParticipants(newId, dto.participants, userId, client);
+
+        return newId;
+      },
+    );
 
     const createdSuggestion = await this.getSuggestionById(suggestionId, tenantId, userId, 'admin');
 

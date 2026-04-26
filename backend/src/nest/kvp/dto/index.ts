@@ -19,3 +19,13 @@ export {
   UpdateCustomCategorySchema,
 } from './update-custom-category.dto.js';
 export { UpdateKvpSettingsDto, UpdateKvpSettingsSchema } from './update-kvp-settings.dto.js';
+export {
+  type Participant,
+  ParticipantDto,
+  ParticipantSchema,
+  ParticipantsArraySchema,
+} from './participant.dto.js';
+export {
+  ParticipantOptionsQueryDto,
+  ParticipantOptionsQuerySchema,
+} from './participant-options-query.dto.js';

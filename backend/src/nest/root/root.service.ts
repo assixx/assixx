@@ -324,10 +324,24 @@ export class RootService {
   }
 
   /**
-   * Delete root user
+   * Soft-delete root user.
+   *
+   * WHY soft-delete (ADR-020 + ADR-045 + Audit 2026-04-26):
+   *   See `RootAdminService.deleteAdmin` for the full rationale (audit trail,
+   *   FK integrity, reactivation, email re-use). The same constraints apply
+   *   to root users — possibly stronger, since root accounts typically own
+   *   tenant-wide resources (areas, halls, inventory) that would trigger the
+   *   24 RESTRICT-FKs on hard-delete.
+   *
+   * The Last-Root-Guard below stays — it is a credential-loss safety net,
+   * orthogonal to the delete-strategy choice.
+   *
+   * Hard-delete is reserved for tenant erasure (DSGVO Art. 17) inside
+   * `tenant-deletion-executor.service.ts`. Enforced by the architectural test
+   * in `shared/src/architectural.test.ts`.
    */
   async deleteRootUser(id: number, tenantId: number, currentUserId: number): Promise<void> {
-    this.logger.log(`Deleting root user ${id} for tenant ${tenantId}`);
+    this.logger.log(`Soft-deleting root user ${id} for tenant ${tenantId}`);
 
     // Prevent self-deletion
     if (id === currentUserId) {
@@ -374,22 +388,28 @@ export class RootService {
       },
     );
 
-    // Delete related data first (foreign key constraints)
-    await this.db.systemQuery('DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2', [
-      id,
-      tenantId,
-    ]);
-    await this.db.systemQuery('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
-      id,
-      tenantId,
-    ]);
+    // Soft-delete: mirrors the canonical pattern in users.service.ts:512.
+    // The previous code pre-deleted oauth_tokens / user_teams / user_departments
+    // because RESTRICT/CASCADE-FKs would otherwise block or wipe them on the
+    // hard-delete that followed. With soft-delete those preludes become
+    // dead code: RESTRICT-FKs no longer fire (no DELETE on users), and
+    // membership rows survive intentionally for audit-trail continuity
+    // (downstream queries filter by users.is_active = 1, so the soft-deleted
+    // root disappears from operational lists without losing history).
     await this.db.systemQuery(
-      'DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2',
+      `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
 
-    // Delete the user
-    await this.db.systemQuery('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    // Defense-in-Depth: revoke auth artifacts so the soft-deleted root cannot
+    // continue using existing JWTs / refresh tokens. See deleteAdmin for the
+    // full rationale (CASCADE does not fire on UPDATE, JwtAuthGuard is_active
+    // check is primary defence, this is secondary).
+    await this.db.systemQuery('DELETE FROM user_sessions WHERE user_id = $1', [id]);
+    await this.db.systemQuery('DELETE FROM refresh_tokens WHERE user_id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
   }
 
   // ==========================================================================

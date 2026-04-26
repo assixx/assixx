@@ -48,6 +48,25 @@
   const ssrUserOrganizations = $derived(data.userOrganizations);
   const permissionDenied = $derived(data.permissionDenied);
   const showStats = $derived(data.showStats);
+  // Hard-Gate flag (ADR-037 Amendment 2026-04-26 + Masterplan §3.4 v0.6.0):
+  // when no KVP master is reachable for the user's org scope, the backend
+  // refuses POST /kvp. Disable the create button instead of letting the user
+  // open the modal and hit a 400 after filling it in.
+  const canCreateKvp = $derived(data.approvalConfig.hasConfigForUser);
+  // Admin/root see a direct link to /settings/approvals in the no-master
+  // banner so the fix path is one click away. Employees and leads see the
+  // warning but no link — they can't self-service this.
+  const isAdminOrRoot = $derived(
+    ssrCurrentUser?.role === 'admin' || ssrCurrentUser?.role === 'root',
+  );
+  // Master display names, pre-resolved server-side (handles nullable
+  // first_name/last_name + email fallback). Joined with comma when multiple
+  // masters cover the user's scope. Empty when no master is reachable —
+  // info banner is mutually exclusive with the warning banner via
+  // canCreateKvp gate. The server-load fallback (+page.server.ts) already
+  // guarantees masters: [] on null fetch, so no runtime nullish guard needed.
+  const masters = $derived(data.approvalConfig.masters);
+  const masterNames = $derived(masters.map((m) => m.displayName).join(', '));
 
   // Sync SSR data to state store (for UI components that depend on it)
   // IMPORTANT: Use untrack to prevent infinite loop - setUser calls updateEffectiveRole
@@ -144,6 +163,26 @@
   <PermissionDenied addonName="das KVP-Modul" />
 {:else}
   <div class="container">
+    <!-- Hard-Gate banner (ADR-037 Amendment 2026-04-26): mutually exclusive.
+         No master in scope → warning + admin deep-link to /settings/approvals.
+         Master(s) present → info banner with display names so the employee
+         knows who their suggestion will be routed to. -->
+    {#if !canCreateKvp}
+      <div class="alert alert--warning mb-4">
+        <i class="fas fa-exclamation-triangle"></i>
+        Für deinen Bereich ist kein KVP-Master konfiguriert.
+        {#if isAdminOrRoot}
+          <a href={resolve('/settings/approvals')}>Jetzt einrichten →</a>
+        {/if}
+      </div>
+    {:else if masters.length > 0}
+      <div class="alert alert--info mb-4">
+        <i class="fas fa-info-circle"></i>
+        {masters.length === 1 ? 'Dein KVP-Master:' : 'Deine KVP-Master:'}
+        {masterNames}
+      </div>
+    {/if}
+
     <!-- Statistics Overview (Admin, Root, Team Lead) -->
     {#if showStats}
       <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -280,7 +319,13 @@
   <button
     type="button"
     class="btn-float"
-    aria-label="Neuen Vorschlag erstellen"
+    aria-label={canCreateKvp ?
+      'Neuen Vorschlag erstellen'
+    : 'Für deinen Bereich ist kein KVP-Master konfiguriert'}
+    title={canCreateKvp ?
+      'Neuen Vorschlag erstellen'
+    : 'Kein KVP-Master für deinen Bereich konfiguriert. Bitte wende dich an deinen Administrator.'}
+    disabled={!canCreateKvp}
     onclick={handleOpenCreateModal}
   >
     <i class="fas fa-plus"></i>
@@ -291,6 +336,7 @@
     <KvpCreateModal
       onclose={handleCloseCreateModal}
       onsuccess={handleModalSuccess}
+      hierarchyLabels={labels}
     />
   {/if}
 {/if}

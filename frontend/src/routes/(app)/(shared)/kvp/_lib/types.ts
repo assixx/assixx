@@ -148,6 +148,39 @@ export interface KvpStats {
 }
 
 /**
+ * Participant tag — informational co-originator of a KVP suggestion.
+ * Polymorphic: `type` discriminates the entity table referenced by `id`.
+ *
+ * @see ADR-045 §"3-Schichten-Modell" — annotation only, no permission grant
+ * @see docs/FEAT_KVP_PARTICIPANTS_MASTERPLAN.md §0 Q2
+ */
+export type ParticipantType = 'user' | 'team' | 'department' | 'area';
+
+/** Wire shape sent to backend on POST /kvp (createSuggestion). */
+export interface Participant {
+  type: ParticipantType;
+  id: number;
+}
+
+/**
+ * Backend-enriched participant returned by GET /kvp/:id and the
+ * /kvp/participants/options search endpoint. Soft-deleted users are
+ * filtered out server-side (KvpParticipantsService.getParticipants).
+ */
+export interface EnrichedParticipant extends Participant {
+  label: string;
+  sublabel?: string;
+}
+
+/** Response shape of GET /kvp/participants/options — 4 buckets, hard cap 50/type. */
+export interface ParticipantOptions {
+  users: EnrichedParticipant[];
+  teams: EnrichedParticipant[];
+  departments: EnrichedParticipant[];
+  areas: EnrichedParticipant[];
+}
+
+/**
  * Form data for creating KVP suggestion
  */
 export interface KvpFormData {
@@ -157,6 +190,8 @@ export interface KvpFormData {
   customCategoryId: number | null;
   expectedBenefit?: string;
   departmentId: number | null;
+  /** Optional co-originator tags (Step 5.5). Empty array = "author alone". */
+  participants?: Participant[];
 }
 
 /** User's team with assigned assets — from GET /kvp/my-organizations */

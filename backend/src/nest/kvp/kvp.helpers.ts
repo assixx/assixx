@@ -37,6 +37,14 @@ export function transformSuggestion(suggestion: DbSuggestion): KVPSuggestionResp
     suggestion as unknown as Record<string, unknown>,
   ) as unknown as KVPSuggestionResponse;
 
+  // Always-present participants array. List path keeps the empty default;
+  // detail path (`KvpService.getSuggestionById`) overrides with the enriched
+  // list returned by `KvpParticipantsService.getParticipants`. Single shape
+  // for the frontend (FEAT_KVP_PARTICIPANTS_MASTERPLAN §2.4 — "List response
+  // does not include participants" read as no per-item enrichment query, not
+  // as wire-format omission).
+  base.participants = [];
+
   attachCategoryIfPresent(base, suggestion);
   attachSubmitterIfPresent(base, suggestion);
   attachConfirmationStatus(base, suggestion);
@@ -102,14 +110,20 @@ function attachConfirmationStatus(base: KVPSuggestionResponse, suggestion: DbSug
  *   positions + hierarchy cascade (dept/area/company).
  * - Always visible: creator's own, implemented, company-level
  */
-/** L0: Not shared — creator + team lead/deputy of assigned team */
+/**
+ * L0: Not shared — only team lead (and deputy when ADR-039 toggle is on) of the
+ * KVP's team can see it. Author and `status='implemented'` are handled by the
+ * outer OR-chain in `buildVisibilityClause`.
+ *
+ * The deputy is resolved upstream by `ScopeService` → `HierarchyPermissionService.getScope()`,
+ * which respects the per-tenant `deputy_has_lead_scope` toggle (ADR-039) when
+ * building `leadTeamIds`. We therefore consume `teamLeadOf` directly instead
+ * of joining `teams.team_deputy_lead_id` here — that earlier subquery bypassed
+ * the toggle and granted deputies KVP visibility on tenants that had the
+ * toggle disabled.
+ */
 function buildUnsharedClause(h: OrgPlaceholders): string {
-  return `(s.is_shared = false AND (
-    s.org_level = 'team' AND s.org_id IN (
-      SELECT t.id FROM teams t
-      WHERE (t.team_lead_id = ${h.userId} OR t.team_deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
-    )
-  ))`;
+  return `(s.is_shared = false AND s.org_level = 'team' AND s.org_id = ANY(${h.teamLeadOf}))`;
 }
 
 /**
@@ -138,6 +152,15 @@ function buildSharedClause(h: OrgPlaceholders): string {
  * approval master (user or position type) and the KVP falls within their scope.
  * Uses approval_configs.scope_area_ids/scope_department_ids/scope_team_ids.
  * NULL scope = whole tenant. dep_kvp JOIN derives area_id from department_id.
+ *
+ * Status guard (ADR-037 + KVP-SHARING-VISIBILITY): the master only enters the
+ * picture once the team lead has actually escalated. `new` and `restored` are
+ * the team-lead-zone states defined by `validateApprovalStatusTransition()` —
+ * exposing them to the master would flood their inbox with noise that the team
+ * lead may still reject directly (`new|restored → rejected` is a permitted
+ * direct transition without ever passing through the master). Once the status
+ * leaves that zone (`in_review`, `approved`, `rejected`-via-master,
+ * `implemented`, `archived`) the master regains visibility for audit + action.
  */
 function buildApprovalMasterClause(h: OrgPlaceholders): string {
   return `EXISTS (
@@ -146,6 +169,7 @@ function buildApprovalMasterClause(h: OrgPlaceholders): string {
     WHERE ac.addon_code = 'kvp'
       AND ac.tenant_id = s.tenant_id
       AND ac.is_active = ${IS_ACTIVE.ACTIVE}
+      AND s.status NOT IN ('new', 'restored')
       AND (
         ac.approver_user_id = ${h.userId}
         OR ac.approver_position_id IN (

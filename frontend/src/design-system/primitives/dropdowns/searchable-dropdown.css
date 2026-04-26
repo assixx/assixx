@@ -63,7 +63,7 @@
 
   /* Scrollable options container below search */
   .dropdown__options {
-    max-height: 200px;
+    max-height: 18rem;
     overflow-y: auto;
   }
 

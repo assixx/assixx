@@ -71,6 +71,7 @@ import {
   CreateSuggestionDto,
   ListSuggestionsQueryDto,
   OverrideCategoryNameDto,
+  ParticipantOptionsQueryDto,
   ShareSuggestionDto,
   UpdateCustomCategoryDto,
   UpdateKvpSettingsDto,
@@ -79,6 +80,8 @@ import {
 import { KvpApprovalService } from './kvp-approval.service.js';
 import type { CustomizableCategoriesResponse } from './kvp-categories.service.js';
 import { KvpCategoriesService } from './kvp-categories.service.js';
+import type { ParticipantOptions } from './kvp-participants.service.js';
+import { KvpParticipantsService } from './kvp-participants.service.js';
 import type { RewardTier } from './kvp-reward-tiers.service.js';
 import { KvpRewardTiersService } from './kvp-reward-tiers.service.js';
 import type {
@@ -127,6 +130,11 @@ export class KvpController {
     private readonly categoriesService: KvpCategoriesService,
     private readonly kvpApprovalService: KvpApprovalService,
     private readonly rewardTiersService: KvpRewardTiersService,
+    // Participants sub-service drives the new GET /participants/options endpoint
+    // (FEAT_KVP_PARTICIPANTS_MASTERPLAN §2.4). KvpService already injects this
+    // for getSuggestionById enrichment, but the search/options path is a
+    // controller-level concern (no business logic) and is wired directly.
+    private readonly participantsService: KvpParticipantsService,
   ) {}
 
   // ==========================================================================
@@ -225,11 +233,14 @@ export class KvpController {
 
   /**
    * PUT /kvp/categories/override/:categoryId
-   * Upsert a name override for a global default category
+   * Upsert a name override for a global default category.
+   *
+   * ADR-045: `@Roles('admin','root')` removed (was redundant + blocked
+   * Employee-Team-Leads). `@RequirePermission(...,'canWrite')` covers Layer 1
+   * (canManage = root || admin+hasFullAccess || isAnyLead) and Layer 2
+   * (canWrite). FEAT_KVP_PARTICIPANTS_MASTERPLAN Phase 2 DoD.
    */
   @Put('categories/override/:categoryId')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canWrite')
   async upsertOverride(
     @Param('categoryId') categoryId: string,
@@ -249,11 +260,13 @@ export class KvpController {
 
   /**
    * DELETE /kvp/categories/override/:categoryId
-   * Reset override, restoring default name
+   * Reset override, restoring default name.
+   *
+   * ADR-045: `@Roles('admin','root')` removed; `@RequirePermission(...,
+   * 'canDelete')` already enforces canManage + canDelete. See upsertOverride
+   * comment.
    */
   @Delete('categories/override/:categoryId')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canDelete')
   async deleteOverride(
     @Param('categoryId') categoryId: string,
@@ -267,11 +280,12 @@ export class KvpController {
 
   /**
    * POST /kvp/categories/custom
-   * Create a new tenant-specific category
+   * Create a new tenant-specific category.
+   *
+   * ADR-045: `@Roles('admin','root')` removed; `@RequirePermission(...,
+   * 'canWrite')` covers Layer 1 + 2. See upsertOverride comment.
    */
   @Post('categories/custom')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createCustomCategory(
@@ -292,11 +306,12 @@ export class KvpController {
 
   /**
    * PUT /kvp/categories/custom/:id
-   * Update a tenant-specific custom category
+   * Update a tenant-specific custom category.
+   *
+   * ADR-045: `@Roles('admin','root')` removed; `@RequirePermission(...,
+   * 'canWrite')` covers Layer 1 + 2. See upsertOverride comment.
    */
   @Put('categories/custom/:id')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canWrite')
   async updateCustomCategory(
     @Param('id') id: string,
@@ -312,10 +327,11 @@ export class KvpController {
    * DELETE /kvp/categories/custom/:id
    * Soft-delete a tenant-specific custom category (is_active = 4).
    * Preserves category data for existing KVP suggestions (shown with strikethrough).
+   *
+   * ADR-045: `@Roles('admin','root')` removed; `@RequirePermission(...,
+   * 'canDelete')` covers Layer 1 + 2. See upsertOverride comment.
    */
   @Delete('categories/custom/:id')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canDelete')
   async deleteCustomCategory(
     @Param('id') id: string,
@@ -378,20 +394,67 @@ export class KvpController {
     return await this.kvpService.getMyOrganizations(user.id, tenantId);
   }
 
+  /**
+   * GET /kvp/participants/options
+   *
+   * Tenant-wide search over users / teams / departments / areas for the
+   * participant-tag dropdown on the KVP create modal. Hard cap of 50 results
+   * per type (server-side, see KvpParticipantsService.searchOptions); soft-
+   * deleted entities filtered out via `is_active != IS_ACTIVE.DELETED`.
+   *
+   * Static route — declared BEFORE parameterized `/:id` routes (Fastify route
+   * matcher would otherwise capture `participants` as `:id`). Matches the
+   * existing pattern of `unconfirmed-count`, `my-organizations`, `approval-
+   * config-status`.
+   *
+   * Tenant-wide scope is intentional (FEAT_KVP_PARTICIPANTS_MASTERPLAN §0 Q3):
+   * a participant tag is a *reference*, not a management action — ADR-036
+   * organizational scope does not apply. RLS (ADR-019) is the security
+   * boundary.
+   *
+   * @see FEAT_KVP_PARTICIPANTS_MASTERPLAN.md §2.4 — endpoint contract
+   * @see kvp-participants.service.ts — searchOptions parallel-fetch logic
+   */
+  @Get('participants/options')
+  @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canRead')
+  async getParticipantOptions(
+    @Query() query: ParticipantOptionsQueryDto,
+  ): Promise<ParticipantOptions> {
+    return await this.participantsService.searchOptions(query.q, query.types);
+  }
+
   // ==========================================================================
   // APPROVAL INTEGRATION (ADR-037)
   // ==========================================================================
 
   /**
    * GET /kvp/approval-config-status
-   * Check if an approval master is configured for addon 'kvp'
-   * Static route — MUST be before parameterized /:id routes (Fastify ordering)
+   *
+   * Drives three frontend states:
+   *   - `hasConfig`: any KVP master configured in the tenant (admin hint)
+   *   - `hasConfigForUser`: derived from `masters.length > 0`; gates the
+   *     "+ Neuer KVP" button — see Hard-Gate in `KvpService.createSuggestion`
+   *     (ADR-037 Amendment 2026-04-26)
+   *   - `masters`: resolved approver display names, used for the info
+   *     banner ("Dein KVP-Master: …"). Empty when no master is reachable.
+   *
+   * Static route — MUST be before parameterized /:id routes (Fastify ordering).
    */
   @Get('approval-config-status')
   @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canRead')
-  async getApprovalConfigStatus(@TenantId() tenantId: number): Promise<{ hasConfig: boolean }> {
-    const hasConfig = await this.kvpApprovalService.hasApprovalConfig(tenantId);
-    return { hasConfig };
+  async getApprovalConfigStatus(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{
+    hasConfig: boolean;
+    hasConfigForUser: boolean;
+    masters: { id: number; displayName: string }[];
+  }> {
+    const [hasConfig, masters] = await Promise.all([
+      this.kvpApprovalService.hasApprovalConfig(tenantId),
+      this.kvpApprovalService.getApprovalMastersForRequester(user.id),
+    ]);
+    return { hasConfig, hasConfigForUser: masters.length > 0, masters };
   }
 
   /**
@@ -545,11 +608,13 @@ export class KvpController {
 
   /**
    * POST /kvp/:id/archive
-   * Archive a suggestion (admin/root only)
+   * Archive a suggestion.
+   *
+   * ADR-045: `@Roles('admin','root')` removed (was blocking Employee-Team-
+   * Leads from archiving their own team's KVPs); `@RequirePermission(...,
+   * 'canWrite')` covers Layer 1 + 2. See upsertOverride comment.
    */
   @Post(':id/archive')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canWrite')
   @HttpCode(HttpStatus.OK)
   async archiveSuggestion(
@@ -563,11 +628,12 @@ export class KvpController {
 
   /**
    * POST /kvp/:id/unarchive
-   * Restore an archived suggestion (admin/root only)
+   * Restore an archived suggestion.
+   *
+   * ADR-045: `@Roles('admin','root')` removed; `@RequirePermission(...,
+   * 'canWrite')` covers Layer 1 + 2. See archiveSuggestion comment.
    */
   @Post(':id/unarchive')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_ADDON, KVP_SUGGESTIONS, 'canWrite')
   @HttpCode(HttpStatus.OK)
   async unarchiveSuggestion(

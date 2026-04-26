@@ -242,10 +242,29 @@ export class RootAdminService {
   }
 
   /**
-   * Delete admin user
+   * Soft-delete admin user.
+   *
+   * WHY soft-delete (ADR-020 + ADR-045 + Audit 2026-04-26):
+   *   - Audit trail preservation: 32 CASCADE-FKs on `users.id` would wipe
+   *     permission history (admin_area_permissions, user_addon_permissions),
+   *     read-status (notification/document/blackboard/kvp), e2e keys, and
+   *     refresh-token telemetry on a hard-delete.
+   *   - FK integrity: 24 RESTRICT-FKs (inventory_items.created_by,
+   *     calendar_events.user_id, admin_logs.user_id, areas.created_by, …)
+   *     would block hard-delete on any admin who has ever produced content,
+   *     leaving the previous DELETE crashing in production with 23503.
+   *   - Reactivation: `is_active = 4 → 1` is a single UPDATE; row resurrection
+   *     after hard-delete is impossible.
+   *   - Email re-use stays available because `checkDuplicateEmail` filters
+   *     by `is_active = 1` (UserRepository.isEmailTaken).
+   *
+   * Hard-delete is reserved for tenant erasure (DSGVO Art. 17) inside
+   * `tenant-deletion-executor.service.ts` — tenant_id ON DELETE CASCADE makes
+   * that cleanup deterministic. The architectural test in
+   * `shared/src/architectural.test.ts` enforces this boundary in CI.
    */
   async deleteAdmin(id: number, tenantId: number, actingUserId: number): Promise<void> {
-    this.logger.log(`Deleting admin ${id} for tenant ${tenantId}`);
+    this.logger.log(`Soft-deleting admin ${id} for tenant ${tenantId}`);
 
     // Check if admin exists
     const admin = await this.getAdminById(id, tenantId);
@@ -271,7 +290,24 @@ export class RootAdminService {
       },
     );
 
-    await this.db.systemQuery('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    // Soft-delete: mirrors the canonical pattern in users.service.ts:512.
+    await this.db.systemQuery(
+      `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
+      [id, tenantId],
+    );
+
+    // Defense-in-Depth: revoke auth artifacts so the soft-deleted admin cannot
+    // continue using existing JWTs / refresh tokens. CASCADE-FKs do NOT fire
+    // on UPDATE, so without this an active access token would still succeed
+    // for ≤15 min and the refresh chain would survive indefinitely. The
+    // is_active=1 check in JwtAuthGuard (ADR-005) is the primary defence;
+    // this is the secondary one. user_sessions is a global table (no
+    // tenant_id, see ADR-019); refresh_tokens is tenant-scoped.
+    await this.db.systemQuery('DELETE FROM user_sessions WHERE user_id = $1', [id]);
+    await this.db.systemQuery('DELETE FROM refresh_tokens WHERE user_id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
   }
 
   /**

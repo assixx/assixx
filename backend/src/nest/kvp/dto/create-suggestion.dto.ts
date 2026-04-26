@@ -8,6 +8,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 import { IdSchema } from '../../../schemas/common.schema.js';
+import { ParticipantsArraySchema } from './participant.dto.js';
 
 /**
  * Priority enum
@@ -48,6 +49,19 @@ export const CreateSuggestionSchema = z
       .trim()
       .max(100, 'Estimated cost cannot exceed 100 characters')
       .optional(),
+    /**
+     * Co-originators ("Beteiligte") tagged at create time.
+     * Optional; defaults to empty list — author alone is the implicit creator.
+     * Hard cap of 100 enforced by ParticipantsArraySchema.
+     *
+     * V1 only on create — UpdateSuggestionDto deliberately does NOT accept
+     * `participants` (no Edit UI exists; see
+     * docs/FEAT_KVP_PARTICIPANTS_MASTERPLAN.md Known Limitations §1).
+     * Adding it on update with `.default([])` would silently clear the list
+     * on every PATCH that omits the field (status changes, comments) — that
+     * was the v0.1.0 bug fixed in v0.2.0 of the masterplan.
+     */
+    participants: ParticipantsArraySchema.optional().default([]),
   })
   .refine(
     (data: {

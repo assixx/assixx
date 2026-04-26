@@ -18,6 +18,9 @@ export const API_ENDPOINTS = {
   kvpAttachments: (id: number) => `/kvp/${id}/attachments`,
   KVP_CATEGORIES: '/kvp/categories',
   KVP_STATS: '/kvp/dashboard/stats',
+  // GET /kvp/participants/options — server-side search for chip dropdown.
+  // Hard cap 50/type, RLS-scoped to tenant. See ADR-045 §"Annotation only".
+  KVP_PARTICIPANT_OPTIONS: '/kvp/participants/options',
   DEPARTMENTS: '/departments',
   TEAMS: '/teams',
   USER_ME: '/users/me',

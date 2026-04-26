@@ -21,6 +21,7 @@ import type {
   PaginatedResponse,
   KvpFilter,
   UserTeamWithAssets,
+  ParticipantOptions,
 } from './types';
 
 const log = createLogger('KvpApi');
@@ -272,6 +273,52 @@ export async function fetchStatistics(): Promise<KvpStats | null> {
     log.error({ err }, 'Error fetching statistics');
     checkSessionExpired(err);
     return null;
+  }
+}
+
+// =============================================================================
+// PARTICIPANTS — co-originator tagging on KVP suggestions
+// =============================================================================
+
+/**
+ * Empty bucket fallback returned on network errors so the dropdown
+ * degrades to "no options" instead of crashing the UI.
+ */
+const EMPTY_PARTICIPANT_OPTIONS: ParticipantOptions = {
+  users: [],
+  teams: [],
+  departments: [],
+  areas: [],
+};
+
+/**
+ * Search participants for the ParticipantChips dropdown.
+ *
+ * - `q` empty → top 50 of each type (no ILIKE filter, server-side cap).
+ * - `q` non-empty → ILIKE-filtered, still capped at 50/type.
+ * - `types` (comma-separated) optional narrow to a subset (e.g. "user,team").
+ *
+ * @see docs/FEAT_KVP_PARTICIPANTS_MASTERPLAN.md §Phase 2.4 (endpoint contract)
+ * @see backend/src/nest/kvp/kvp-participants.service.ts `searchOptions()`
+ */
+export async function getParticipantOptions(
+  q: string,
+  types?: string,
+): Promise<ParticipantOptions> {
+  try {
+    const params = new URLSearchParams();
+    if (q !== '') params.append('q', q);
+    if (types !== undefined && types !== '') params.append('types', types);
+    const qs = params.toString();
+    const url =
+      qs === '' ?
+        API_ENDPOINTS.KVP_PARTICIPANT_OPTIONS
+      : `${API_ENDPOINTS.KVP_PARTICIPANT_OPTIONS}?${qs}`;
+    return await apiClient.get<ParticipantOptions>(url);
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading participant options');
+    checkSessionExpired(err);
+    return EMPTY_PARTICIPANT_OPTIONS;
   }
 }
 

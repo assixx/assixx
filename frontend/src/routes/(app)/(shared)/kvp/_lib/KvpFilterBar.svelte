@@ -429,4 +429,22 @@
   .kvp-search-field {
     width: 220px;
   }
+
+  /*
+   * Align search-input height & font with sibling .dropdown__trigger in the
+   * same .kvp-filter-row. Default search-input enforces a 44px touch target
+   * (a11y standard) and uses a hardcoded 0.938rem font — both diverge from
+   * .dropdown__trigger which derives size from --form-field-padding-y/x +
+   * --form-field-font-size. Scoped override keeps the 44px default intact
+   * for the ~20 other pages that use search-input outside a filter-row context.
+   * Both elements already share --radius-xl + --spacing-3 horizontal padding.
+   */
+  .kvp-search-field :global(.search-input) {
+    min-height: auto;
+  }
+
+  .kvp-search-field :global(.search-input__field) {
+    padding: var(--form-field-padding-y) 0;
+    font-size: var(--form-field-font-size);
+  }
 </style>

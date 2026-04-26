@@ -48,7 +48,11 @@
   );
 }
 
-/* Active/Pressed State */
+/* Active/Pressed State — light-mode default.
+ * WHY: previous `var(--color-gray-800)` rendered nearly black on the light
+ * glassmorphism surface, looking like a hole instead of a press. Aligned with
+ * btn-primary (button.primary.css:90-98) which is the canonical "Light Design"
+ * after the btn-light → btn-primary promotion noted in this file's header. */
 .btn-light:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: var(
@@ -57,6 +61,12 @@
   );
   border-color: var(--color-gray-500);
   background: var(--color-gray-300);
+}
+
+/* Dark-mode keeps the original deep press (ADR-017 dark-mode override pattern). */
+html.dark .btn-light:active:not(:disabled) {
+  border-color: var(--color-gray-700);
+  background: var(--color-gray-800);
 }
 
 /* Focus State */
