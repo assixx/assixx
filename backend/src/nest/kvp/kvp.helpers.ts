@@ -37,6 +37,14 @@ export function transformSuggestion(suggestion: DbSuggestion): KVPSuggestionResp
     suggestion as unknown as Record<string, unknown>,
   ) as unknown as KVPSuggestionResponse;
 
+  // Always-present participants array. List path keeps the empty default;
+  // detail path (`KvpService.getSuggestionById`) overrides with the enriched
+  // list returned by `KvpParticipantsService.getParticipants`. Single shape
+  // for the frontend (FEAT_KVP_PARTICIPANTS_MASTERPLAN §2.4 — "List response
+  // does not include participants" read as no per-item enrichment query, not
+  // as wire-format omission).
+  base.participants = [];
+
   attachCategoryIfPresent(base, suggestion);
   attachSubmitterIfPresent(base, suggestion);
   attachConfirmationStatus(base, suggestion);

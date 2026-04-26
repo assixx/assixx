@@ -32,6 +32,11 @@
   // semantics happy without forcing reactivity into the markup.
   const petalEls: HTMLDivElement[] = $state([]);
 
+  // Hero ref — used by `updatePetals` to clamp wind displacement against the
+  // hero's bounding box so petals can never be pushed past the visible edge.
+  // (Issue: petals disappearing under cursor wind, 2026-04-26)
+  let heroEl: HTMLDivElement;
+
   /**
    * Wind reaction tuning.
    *
@@ -40,9 +45,13 @@
    *                   petal. Quadratic falloff makes the flee feel like wind:
    *                   gentle near the boundary, snappy near the cursor — petal
    *                   always escapes before the cursor visually overlaps it.
+   * RIM_PADDING     — keep petal at least this many px inside the hero rim
+   *                   when wind clamping kicks in (prevents 1-px clips from
+   *                   subpixel rounding).
    */
   const REACTION_RADIUS = 100;
   const MAX_PUSH = 75;
+  const RIM_PADDING = 2;
 
   let rafId = 0;
   let cursorX = -9999;
@@ -54,6 +63,9 @@
   function updatePetals(): void {
     rafId = 0;
     const radiusSq = REACTION_RADIUS * REACTION_RADIUS;
+    // One read of the hero rect per frame — petals all clamp against the same
+    // box. Read here (not per-petal) to keep the read-then-write batching.
+    const heroRect = heroEl.getBoundingClientRect();
 
     // Two-pass to avoid layout thrashing: batch all `getBoundingClientRect()`
     // reads first, then all `setProperty` writes. `translate` and `transform`
@@ -68,17 +80,38 @@
       const dy = cy - cursorY;
       const distSq = dx * dx + dy * dy;
 
-      if (distSq > radiusSq) {
-        updates.push({ el: petal, x: 0, y: 0 });
-        continue;
+      // 1. Compute desired wind push from cursor proximity (0 if out of range).
+      let pushX = 0;
+      let pushY = 0;
+      if (distSq <= radiusSq) {
+        const dist = Math.sqrt(distSq);
+        const strength = 1 - dist / REACTION_RADIUS;
+        const pushMag = strength * strength * MAX_PUSH;
+        const dirX = dist > 0 ? dx / dist : 0;
+        const dirY = dist > 0 ? dy / dist : 0;
+        pushX = dirX * pushMag;
+        pushY = dirY * pushMag;
       }
 
-      const dist = Math.sqrt(distSq);
-      const strength = 1 - dist / REACTION_RADIUS;
-      const pushMag = strength * strength * MAX_PUSH;
-      const dirX = dist > 0 ? dx / dist : 0;
-      const dirY = dist > 0 ? dy / dist : 0;
-      updates.push({ el: petal, x: dirX * pushMag, y: dirY * pushMag });
+      // 2. Clamp push so the petal's final on-screen box stays inside the hero
+      //    rim — this is what guarantees petals never disappear behind the
+      //    hero's overflow-hidden edge under cursor wind. `rect.left/top`
+      //    reflect the CURRENT visual position INCLUDING the previously
+      //    applied --wind-x/y, so back those out to recover the base
+      //    (animation-only) position before computing the allowable delta.
+      //    (Issue: petals disappearing past hero rim under wind, 2026-04-26)
+      const currentWindX = parseFloat(petal.style.getPropertyValue('--wind-x')) || 0;
+      const currentWindY = parseFloat(petal.style.getPropertyValue('--wind-y')) || 0;
+      const baseLeft = rect.left - currentWindX;
+      const baseTop = rect.top - currentWindY;
+      const minPushX = heroRect.left + RIM_PADDING - baseLeft;
+      const maxPushX = heroRect.right - RIM_PADDING - rect.width - baseLeft;
+      const minPushY = heroRect.top + RIM_PADDING - baseTop;
+      const maxPushY = heroRect.bottom - RIM_PADDING - rect.height - baseTop;
+      pushX = Math.max(minPushX, Math.min(maxPushX, pushX));
+      pushY = Math.max(minPushY, Math.min(maxPushY, pushY));
+
+      updates.push({ el: petal, x: pushX, y: pushY });
     }
 
     for (const { el, x, y } of updates) {
@@ -128,6 +161,7 @@
   an interactive role. WAI-ARIA 1.1: role="presentation" === role="none".
 -->
 <div
+  bind:this={heroEl}
   class="welcome-hero-custom relative mb-8 flex min-h-[120px] items-center
     overflow-hidden py-4 md:py-5 lg:py-6"
   role="presentation"
@@ -194,18 +228,32 @@
   }
 
   /* Floating Elements Container.
-     `inset` carves out the right half (left: 50%) so petals never render behind
-     the welcome heading on the left — they only drift in the empty space next
-     to the greeting. All `.floating-dot` left/right percentages are relative
-     to this container, so they re-flow into the right half automatically.
-     (Issue: dashboard hero polish — petals overlapping welcome text, 2026-04-25) */
+     `inset` carves out the right portion (left: 25%) so petals never render
+     behind the welcome heading on the left, AND pulls top/right/bottom inward
+     so petals' physical positions sit clear of the hero's overflow-hidden rim.
+     Buffer sizes match the float keyframe amplitudes:
+       - top    18px → clears  float  -15px lift
+       - right  32px → clears  float  ±30px sway + max petal width 18px
+       - bottom 38px → clears  float-down +35px drop + petal height
+     Combined with dropping `paint` containment (see below), petals can drift
+     freely without being clipped at either the floating-elements edge or the
+     hero rim. All `.floating-dot` left/right percentages remain relative to
+     this container, so they re-flow into the safe zone automatically.
+     (Issue: dashboard hero polish — petals disappearing behind hero rim,
+     2026-04-26; supersedes overlap-with-text fix from 2026-04-25) */
   .floating-elements {
     position: absolute;
     z-index: 1;
-    inset: 0 0 0 25%;
+    inset: 18px 32px 38px 25%;
 
-    /* Isolate paint area: 24 box-shadow petals must not invalidate parent paints */
-    contain: layout paint;
+    /* `layout` only (was `layout paint`). Paint containment created an extra
+       clipping rectangle AT the floating-elements edge — petals reaching for
+       the inset margin would be cut there before they ever touched the hero
+       rim. Each petal already has `will-change: transform, translate, rotate`
+       promoting it to its own compositor layer, so removing paint-containment
+       does NOT re-introduce the original 24-petal box-shadow repaint cost on
+       the parent paint. (Issue: as above, 2026-04-26) */
+    contain: layout;
     pointer-events: none;
   }
 

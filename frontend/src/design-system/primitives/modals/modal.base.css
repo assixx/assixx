@@ -128,7 +128,7 @@
   border: none;
 
   /* Styling */
-  border-radius: var(--radius-md); /* 8px */
+  border-radius: var(--radius-xl); /* 8px */
 
   background: none;
   background: var(--glass-bg-hover);

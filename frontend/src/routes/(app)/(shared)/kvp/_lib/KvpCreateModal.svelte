@@ -7,21 +7,34 @@
 
   import { createSuggestion, uploadPhotos } from './api';
   import { UPLOAD_CONFIG } from './constants';
+  import ParticipantChips from './ParticipantChips.svelte';
   import { kvpState } from './state.svelte';
   import { validatePhotoFile, readFileAsDataUrl, isFaIcon } from './utils';
 
-  import type { KvpFormData } from './types';
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
+  import type { KvpFormData, Participant } from './types';
 
   interface Props {
     onclose: () => void;
     onsuccess: () => void;
+    // Required so <ParticipantChips> dropdown can render tenant-customised
+    // group headers (ADR-034). Threaded explicitly from +page.svelte —
+    // ADR-034 forbids reading $page.data inside components (hidden coupling,
+    // not testable).
+    hierarchyLabels: HierarchyLabels;
   }
 
-  const { onclose, onsuccess }: Props = $props();
+  const { onclose, onsuccess, hierarchyLabels }: Props = $props();
 
   // Photo state
   let photoPreviews = $state<string[]>([]);
   let selectedPhotos = $state<File[]>([]);
+
+  // Participant tags (Step 5.2). Local component state — mirrors the
+  // photoPreviews/selectedPhotos precedent. Reset alongside other fields
+  // in handleClose() so a fresh modal opens with an empty list.
+  // @see docs/FEAT_KVP_PARTICIPANTS_MASTERPLAN.md §5.2
+  let participants = $state<Participant[]>([]);
 
   // Dropdown state
   let activeDropdown = $state<string | null>(null);
@@ -106,6 +119,10 @@
     formCategoryIcon = undefined;
     formCategoryColor = undefined;
     formCategoryValue = '';
+    // Reset participants alongside other modal-local state — handleClose() is
+    // invoked from both the explicit Cancel button and the post-submit success
+    // path, so a fresh modal opens with an empty list either way (Step 5.2).
+    participants = [];
     formElement?.reset();
     onclose();
   }
@@ -135,6 +152,10 @@
       customCategoryId,
       expectedBenefit: expectedBenefit !== '' ? expectedBenefit : undefined,
       departmentId: kvpState.currentUser?.departmentId ?? null,
+      // Empty array sent verbatim — backend Zod schema treats `[]` and absent
+      // as equivalent (`participants.optional().default([])`), and an explicit
+      // shape keeps the wire payload self-documenting (Step 2.1).
+      participants,
     };
   }
 
@@ -267,6 +288,29 @@
             minlength="10"
             maxlength="5000"
           ></textarea>
+        </div>
+
+        <!--
+          Beteiligung — co-originator tagging (ADR-045 annotation only,
+          masterplan §5.2). Optional; empty list = "author alone".
+          Sits between description and category so it's grouped with the
+          idea-narrative fields. Pure form-field (no md:col-span-2) lets
+          it share its row with the category dropdown on the desktop grid.
+        -->
+        <div class="form-field">
+          <span class="form-field__label">
+            <i class="fas fa-users mr-1"></i>
+            Beteiligung
+          </span>
+          <ParticipantChips
+            bind:value={participants}
+            {hierarchyLabels}
+            disabled={kvpState.isSubmitting}
+          />
+          <span class="form-field__message">
+            <i class="fas fa-info-circle mr-1"></i>
+            Optional — wer hatte die Idee mit dir? Personen, Teams, Abteilungen oder Bereiche.
+          </span>
         </div>
 
         <div class="form-field">

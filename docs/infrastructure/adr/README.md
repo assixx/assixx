@@ -78,7 +78,10 @@ ADRs document important architectural decisions:
 | [ADR-047](./ADR-047-claude-code-hook-strategy.md)                            | Claude Code Hook Strategy — Catalog Injection                | Accepted   | 2026-04-18 |
 | [ADR-048](./ADR-048-distributed-tracing-tempo-otel.md)                       | Distributed Tracing with Grafana Tempo + OpenTelemetry       | Accepted   | 2026-04-18 |
 | [ADR-049](./ADR-049-tenant-domain-verification.md)                           | Tenant Domain Verification                                   | Accepted   | 2026-04-19 |
+| [ADR-050](./ADR-050-tenant-subdomain-routing.md)                             | Tenant Subdomain Routing                                     | Proposed   | 2026-04-19 |
+| [ADR-051](./ADR-051-forgot-password-role-gate.md)                            | Forgot-Password Role-Gate                                    | Accepted   | 2026-04-21 |
 | [ADR-052](./ADR-052-shift-handover-protocol.md)                              | Shift Handover Protocol (Schichtübergabe)                    | Accepted   | 2026-04-23 |
+| [ADR-053](./ADR-053-navigation-map-pointer-injection.md)                     | Navigation Map Pointer Injection                             | Accepted   | 2026-04-23 |
 
 ## Template
 

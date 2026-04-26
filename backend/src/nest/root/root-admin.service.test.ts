@@ -256,17 +256,31 @@ describe('RootAdminService', () => {
       await expect(service.deleteAdmin(999, 10, 1)).rejects.toThrow(NotFoundException);
     });
 
-    it('should delete admin and log activity', async () => {
+    it('should soft-delete admin and revoke auth artifacts', async () => {
       // getAdminById → admin row
       mockDb.systemQuery.mockResolvedValueOnce([makeAdminRow()]);
       // last login (from getAdminById)
       mockDb.systemQuery.mockResolvedValueOnce([]);
-      // DELETE
+      // UPDATE users SET is_active = 4 (soft-delete, ADR-020/045)
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+      // DELETE FROM user_sessions
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+      // DELETE FROM refresh_tokens
       mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.deleteAdmin(1, 10, 5);
 
       expect(mockActivityLogger.logDelete).toHaveBeenCalled();
+      // Assert the SQL strategy: UPDATE on users, DELETE only on auth tables.
+      // The arch-test in shared/src/architectural.test.ts is the strict guard;
+      // this is an in-unit smoke check for regression visibility.
+      const calls = mockDb.systemQuery.mock.calls;
+      const userMutation = calls.find((c: unknown[]) => /\bUPDATE users\b/i.test(String(c[0])));
+      expect(userMutation).toBeDefined();
+      const usersHardDelete = calls.find((c: unknown[]) =>
+        /DELETE\s+FROM\s+users\b/i.test(String(c[0])),
+      );
+      expect(usersHardDelete).toBeUndefined();
     });
   });
 

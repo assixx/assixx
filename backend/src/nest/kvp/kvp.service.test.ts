@@ -19,6 +19,7 @@ import type { KvpAttachmentsService } from './kvp-attachments.service.js';
 import type { KvpCommentsService } from './kvp-comments.service.js';
 import type { KvpConfirmationsService } from './kvp-confirmations.service.js';
 import type { KvpLifecycleService } from './kvp-lifecycle.service.js';
+import type { KvpParticipantsService } from './kvp-participants.service.js';
 import { KvpService } from './kvp.service.js';
 
 // Mock uuid to avoid real UUID generation
@@ -39,7 +40,19 @@ vi.mock('../../utils/event-bus.js', () => ({
 
 function createMockDb() {
   const qf = vi.fn();
-  return { query: qf, tenantQuery: qf };
+  // `tenantTransaction` routes the callback's `client.query` back to the same
+  // `qf` mock (wrapping T[] → { rows: T[] } to match `pg` PoolClient shape) so
+  // existing `mockDb.query.mockResolvedValueOnce(...)` chains keep driving
+  // INSERT statements that moved into a transaction in
+  // FEAT_KVP_PARTICIPANTS §2.3.
+  const txClientQuery = vi.fn(async (...args: unknown[]) => ({
+    rows: (await qf(...args)) as unknown[],
+  }));
+  const tenantTransaction = vi.fn(
+    async <T>(callback: (client: { query: typeof txClientQuery }) => Promise<T>): Promise<T> =>
+      await callback({ query: txClientQuery }),
+  );
+  return { query: qf, tenantQuery: qf, tenantTransaction };
 }
 
 function createMockNotifications() {
@@ -83,6 +96,20 @@ function createMockLifecycle() {
     unshareSuggestion: vi.fn().mockResolvedValue({ message: 'Suggestion unshared successfully' }),
     archiveSuggestion: vi.fn().mockResolvedValue({ message: 'Suggestion archived successfully' }),
     unarchiveSuggestion: vi.fn().mockResolvedValue({ message: 'Suggestion restored successfully' }),
+  };
+}
+
+// `replaceParticipants` (called from `createSuggestion`, §2.3) and
+// `getParticipants` (called from `getSuggestionById` enrichment, §2.4) are the
+// two methods `KvpService` invokes. The participants service has its own
+// dedicated unit test (Phase 3 of the masterplan); here we stub both so the
+// facade test stays focused on KvpService behaviour. Default empty `[]`
+// keeps every existing assertion (`result.id === 1` etc.) green — adding
+// participants did not change the field assertions in this file.
+function createMockParticipants() {
+  return {
+    replaceParticipants: vi.fn().mockResolvedValue(undefined),
+    getParticipants: vi.fn().mockResolvedValue([]),
   };
 }
 
@@ -162,6 +189,7 @@ interface ServiceMocks {
   mockAttachments: ReturnType<typeof createMockAttachments>;
   mockConfirmations: ReturnType<typeof createMockConfirmations>;
   mockLifecycle: ReturnType<typeof createMockLifecycle>;
+  mockParticipants: ReturnType<typeof createMockParticipants>;
   mockScope: ReturnType<typeof createMockScope>;
   mockCls: ReturnType<typeof createMockCls>;
 }
@@ -175,6 +203,7 @@ function createService(): ServiceMocks {
   const mockConfirmations = createMockConfirmations();
   const mockKvpApproval = { hasApprovalConfig: vi.fn().mockResolvedValue(false) };
   const mockLifecycle = createMockLifecycle();
+  const mockParticipants = createMockParticipants();
   const mockScope = createMockScope();
   const mockCls = createMockCls();
 
@@ -187,6 +216,7 @@ function createService(): ServiceMocks {
     mockConfirmations as unknown as KvpConfirmationsService,
     mockKvpApproval as unknown as KvpApprovalService,
     mockLifecycle as unknown as KvpLifecycleService,
+    mockParticipants as unknown as KvpParticipantsService,
     mockScope as unknown as ScopeService,
     mockCls as unknown as ClsService,
   );
@@ -200,6 +230,7 @@ function createService(): ServiceMocks {
     mockAttachments,
     mockConfirmations,
     mockLifecycle,
+    mockParticipants,
     mockScope,
     mockCls,
   };

@@ -168,6 +168,25 @@ export interface CategoryOption {
   icon?: string;
 }
 
+/**
+ * Enriched participant row returned by GET /kvp/:id and POST /kvp.
+ *
+ * Defined inline (rather than imported from kvp-participants.service.ts) to
+ * keep the dependency direction `service → types`, and avoid a circular file
+ * relationship as soon as the service grows additional type imports. The
+ * runtime shape is identical to the service-side `EnrichedParticipant`;
+ * structural typing makes them assignable to one another.
+ *
+ * @see FEAT_KVP_PARTICIPANTS_MASTERPLAN.md §2.4 — wire contract for detail GET
+ * @see kvp-participants.service.ts — enrichment query producer
+ */
+export interface EnrichedParticipant {
+  type: 'user' | 'team' | 'department' | 'area';
+  id: number;
+  label: string;
+  sublabel: string;
+}
+
 export interface KVPSuggestionResponse {
   id: number;
   uuid: string;
@@ -189,6 +208,16 @@ export interface KVPSuggestionResponse {
   rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Co-originator tags — empty `[]` on list responses, populated only on
+   * detail (GET /kvp/:id) and on the response of POST /kvp (which delegates
+   * to getSuggestionById). FEAT_KVP_PARTICIPANTS_MASTERPLAN §2.4: "List
+   * response does not include participants (lazy-load on detail)" — read as
+   * a per-item-query perf statement, not a wire-shape statement. Keeping the
+   * field always-present (default `[]`) gives a single shape for the
+   * frontend and avoids defensive optional-chaining.
+   */
+  participants: EnrichedParticipant[];
   /** Whether current user has marked this suggestion as read */
   isConfirmed?: boolean;
   /** When the user confirmed (read) this suggestion */

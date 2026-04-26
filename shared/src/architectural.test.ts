@@ -257,6 +257,57 @@ describe('Backend: is_active Magic Number Prevention', () => {
 });
 
 // =============================================================================
+// BACKEND: Soft-Delete Policy on `users` (ADR-020 + ADR-045 + Audit 2026-04-26)
+// =============================================================================
+//
+// Hard-delete on the `users` table is reserved for tenant erasure (DSGVO
+// Art. 17 — Right to be Forgotten) inside `tenant-deletion-executor.service.ts`.
+// Every other deletion path MUST soft-delete via
+//   `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()`
+// This invariant rests on three load-bearing reasons:
+//
+//   1) Audit trail preservation — 32 CASCADE-FKs on users.id would wipe
+//      permission history (admin_area_permissions, admin_department_permissions,
+//      user_addon_permissions), read-status (notification/document/blackboard/
+//      kvp), e2e keys, and refresh-token telemetry on a hard-delete.
+//
+//   2) FK integrity — 24 RESTRICT-FKs (inventory_items.created_by,
+//      calendar_events.user_id, admin_logs.user_id, areas.created_by,
+//      halls.created_by, kvp_votes.user_id, notifications.created_by,
+//      oauth_tokens, password_reset_tokens, …) block hard-delete on any
+//      user who has ever produced content. Hard-delete in production crashes
+//      with PostgreSQL 23503 foreign_key_violation on every active user.
+//
+//   3) Reactivation — `is_active = 4 → 1` is a single UPDATE; row resurrection
+//      after hard-delete is impossible.
+//
+// ADR-020 explicitly documents the assumption "Assixx uses soft-delete
+// (is_active = 4), never hard-delete for users". The 2026-04-26 audit found
+// `root-admin.service.deleteAdmin` and `root.service.deleteRootUser`
+// violating this; both have been migrated to soft-delete. This guard
+// prevents regression.
+
+describe('Backend: Soft-Delete Policy on users (ADR-020 + ADR-045)', () => {
+  it('should not hard-delete from users outside tenant-deletion (DSGVO Art. 17)', () => {
+    // Allowed: tenant erasure path. tenant_id ON DELETE CASCADE makes the
+    // multi-pass cleanup deterministic; this is the only legitimate hard
+    // delete on `users` in the codebase.
+    const ALLOWED_FILES = new Set<string>([
+      'backend/src/nest/tenant-deletion/tenant-deletion-executor.service.ts',
+    ]);
+
+    const violations = grepFilesNonComment('DELETE\\s+FROM\\s+users\\b', 'backend/src', '*.ts')
+      .filter((f) => !f.includes('.test.') && !f.includes('.spec.'))
+      .filter((f) => !ALLOWED_FILES.has(f));
+
+    expect(
+      violations,
+      `Found hard-delete on users table outside tenant-deletion module. Use \`UPDATE users SET is_active = \${IS_ACTIVE.DELETED}, updated_at = NOW()\` instead — see ADR-020 §"Why ON DELETE RESTRICT" + ADR-045 + the canonical pattern in users.service.ts:512. Hard-delete is reserved for tenant erasure (DSGVO Art. 17) in tenant-deletion-executor.service.ts:\n${violations.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
+// =============================================================================
 // BACKEND: WebSocket Type Safety (Zod validation)
 // =============================================================================
 

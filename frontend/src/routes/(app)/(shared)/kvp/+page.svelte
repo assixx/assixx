@@ -291,6 +291,7 @@
     <KvpCreateModal
       onclose={handleCloseCreateModal}
       onsuccess={handleModalSuccess}
+      hierarchyLabels={labels}
     />
   {/if}
 {/if}

@@ -355,24 +355,34 @@ describe('RootService', () => {
       await expect(service.deleteRootUser(2, 10, 1)).rejects.toThrow(BadRequestException);
     });
 
-    it('should delete root user when not last', async () => {
+    it('should soft-delete root user and revoke auth artifacts when not last', async () => {
       // getRootUserById → found
       mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow({ id: 2 })]);
-      // COUNT root users → 1 remaining
+      // COUNT root users → 1 remaining (Last-Root-Guard passes)
       mockDb.systemQuery.mockResolvedValueOnce([{ count: '1' }]);
-      // logDelete activity logger
-      // DELETE oauth_tokens
+      // UPDATE users SET is_active = 4 (soft-delete, ADR-020/045 — replaces
+      // the previous chain of DELETE oauth_tokens / user_teams /
+      // user_departments / users; those preludes were FK-driven and are
+      // dead code under soft-delete)
       mockDb.systemQuery.mockResolvedValueOnce([]);
-      // DELETE user_teams
+      // DELETE FROM user_sessions
       mockDb.systemQuery.mockResolvedValueOnce([]);
-      // DELETE user_departments
-      mockDb.systemQuery.mockResolvedValueOnce([]);
-      // DELETE users
+      // DELETE FROM refresh_tokens
       mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.deleteRootUser(2, 10, 1);
 
       expect(mockActivityLogger.logDelete).toHaveBeenCalled();
+      // Smoke check: the soft-delete UPDATE must run, and there must be NO
+      // DELETE FROM users (that path is reserved for tenant erasure / DSGVO
+      // Art. 17). Strict CI-gate lives in shared/src/architectural.test.ts.
+      const calls = mockDb.systemQuery.mock.calls;
+      const userMutation = calls.find((c: unknown[]) => /\bUPDATE users\b/i.test(String(c[0])));
+      expect(userMutation).toBeDefined();
+      const usersHardDelete = calls.find((c: unknown[]) =>
+        /DELETE\s+FROM\s+users\b/i.test(String(c[0])),
+      );
+      expect(usersHardDelete).toBeUndefined();
     });
   });
 
