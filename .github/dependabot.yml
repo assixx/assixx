@@ -10,6 +10,7 @@
 #                          default in /docker/Dockerfile is the canonical Node bump.
 #                          The other three Dockerfiles inherit via compose build args.
 #   - docker-compose     : All `image:` tags in /docker/docker-compose.yml
+#                          EXCEPT locally-built images matching `assixx-*`
 #                          (closes the gap that ADR-027 amendment 2026-04-07 documented:
 #                          Grafana/Loki/Prometheus/Redis/Nginx version tracking).
 #
@@ -17,6 +18,10 @@
 #   - Dockerfile.pg-partman → FROM postgres:18.3-alpine is hardcoded, NOT via ARG
 #   - Dockerfile.dev / Dockerfile.frontend → Node version comes from compose ARG
 #     (so the Dockerfile-side default value can drift from the compose-injected one)
+#   - Locally-built compose images (`assixx-postgres`, `assixx-backend`,
+#     `assixx-frontend`) — ignored via dependency-name glob in the
+#     docker-compose block below; they have sibling `build:` directives and
+#     are not published to any registry. See ADR-013 Fix 10 (Amendment 2026-04-27).
 
 version: 2
 updates:
@@ -86,6 +91,18 @@ updates:
     commit-message:
       prefix: "chore(docker)"
       include: "scope"
+    # Skip locally-built images. They have a sibling `build:` directive in
+    # docker-compose.yml (assixx-postgres → Dockerfile.pg-partman, assixx-backend
+    # → Dockerfile.dev, assixx-frontend → Dockerfile.frontend) and are NOT
+    # published to a registry. Dependabot's docker-compose ecosystem ignores
+    # the `build:` directive and tries a Docker-Hub lookup anyway, which fails
+    # with `private_source_authentication_failure` and aborts the whole job.
+    # The base images (postgres:18.3-alpine, node:24.15.0-bookworm-slim) are
+    # tracked separately via the `docker` ecosystem on /docker/Dockerfile and
+    # the explicit FROM line in Dockerfile.pg-partman (manual bumps — see
+    # coverage map above). See ADR-013 Fix 10 (Amendment 2026-04-27).
+    ignore:
+      - dependency-name: "assixx-*"
     # Group by stack to keep PR noise manageable
     groups:
       plg-stack:

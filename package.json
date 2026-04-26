@@ -4,7 +4,8 @@
   "type": "module",
   "main": "backend/dist/nest/main.js",
   "engines": {
-    "node": ">=24.15.0",
+    "_comment_node": "Floor pinned to Dependabot's runner version (currently 24.14.1). Bumping past it breaks Dependabot npm jobs with tool_version_not_supported (see ADR-013 Fix 10 / Amendment 2026-04-27). Re-raise to a higher floor only after GitHub bumps Dependabot's runner image.",
+    "node": ">=24.14.1",
     "pnpm": ">=10.0.0",
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"

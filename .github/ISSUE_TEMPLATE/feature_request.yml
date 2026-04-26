@@ -1,0 +1,107 @@
+name: Feature Request
+description: Vorschlag für ein neues Feature, einen neuen Addon oder eine Erweiterung
+title: "feat: <kurze Beschreibung>"
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für den Vorschlag. Bitte zuerst prüfen:
+        - Existiert bereits ein Issue oder ein [Masterplan](https://github.com/assixx/assixx/tree/main/docs) dazu?
+        - Ist das Konzept schon in [`docs/ARCHITECTURE.md`](https://github.com/assixx/assixx/blob/main/docs/ARCHITECTURE.md) §1 (Navigation Map) erfasst?
+        - Berührt das Feature einen bestehenden ADR? Bitte verlinken oder einen neuen ADR-Entwurf andeuten.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Use Case
+      description: Welches konkrete Problem löst dieses Feature, wer profitiert?
+      placeholder: |
+        Als <Rolle> möchte ich <Aktion>, damit <Nutzen>.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Lösungsvorschlag
+      description: Wie sollte das aussehen? UI-Skizze, API-Form, DB-Schema-Änderung, Permission-Modell.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativen
+      description: Welche anderen Ansätze wurden erwogen, warum verworfen?
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Neuer Addon (vollständiger Modul-Stack inkl. Permission-Registry-Eintrag)
+        - Erweiterung eines bestehenden Addons
+        - Backend (Service / Guard / Migration / RLS)
+        - Frontend (Route / Component / Design-System)
+        - DevOps / Docker / CI / Observability
+        - Dokumentation / ADR
+        - Sonstiges
+    validations:
+      required: true
+
+  - type: input
+    id: addon
+    attributes:
+      label: Betroffener Addon (falls zutreffend)
+      description: Code aus `addons.code`, siehe ADR-033.
+      placeholder: tpm
+
+  - type: dropdown
+    id: roles
+    attributes:
+      label: Betroffene Rollen
+      multiple: true
+      options:
+        - root
+        - admin (mit `has_full_access`)
+        - admin (Lead / Deputy)
+        - employee
+        - employee (Lead / Deputy)
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Akzeptanzkriterien (Definition of Done)
+      description: Womit gilt das Feature als fertig? Bitte nicht zutreffende Punkte streichen.
+      value: |
+        - [ ] Backend-Service + Controller mit `@RequirePermission(ADDON, MODULE, action)` (ADR-045)
+        - [ ] Migration via `pnpm run db:migrate:create` mit RLS + GRANTs für `app_user` & `sys_user` (ADR-019)
+        - [ ] Zod-DTOs via `createZodDto()` und `idField` aus `common/dto/` (ADR-030)
+        - [ ] `IS_ACTIVE` aus `@assixx/shared/constants` (keine Magic Numbers)
+        - [ ] Frontend-Route in passender Group: `(root)` / `(admin)` / `(shared)` (ADR-012)
+        - [ ] Addon-Gate via `requireAddon(activeAddons, '<code>')` (ADR-033)
+        - [ ] 403-Pfad: `apiFetchWithPermission()` + `<PermissionDenied />` (ADR-020)
+        - [ ] Hierarchy-Labels propagiert via `createMessages(data.hierarchyLabels)` (ADR-034)
+        - [ ] Tests: Unit + API-Integration + ggf. Permission + E2E
+        - [ ] Permission-Registry-Eintrag (`*.permission.registrar.ts`) bei neuem Modul
+        - [ ] ADR neu erstellt oder bestehender ergänzt
+        - [ ] Masterplan oder `docs/ARCHITECTURE.md` §1 Navigation-Map aktualisiert
+
+  - type: textarea
+    id: references
+    attributes:
+      label: Referenzen
+      description: Verwandte ADRs, Masterpläne, Issues, externe Standards (NIST, OWASP, GDPR, ...).
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Pre-Flight Check
+      options:
+        - label: Ich habe nach Duplikaten und bestehenden Masterplänen gesucht.
+          required: true
+        - label: Ich habe `docs/ARCHITECTURE.md` und relevante ADRs gelesen.
+          required: true
