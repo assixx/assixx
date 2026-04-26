@@ -269,9 +269,9 @@ describe('KvpParticipantsService', () => {
     it('throws if tenantId is not in CLS context', async () => {
       mockDb.getTenantId.mockReturnValueOnce(undefined);
 
-      await expect(
-        service.replaceParticipants(101, [{ type: 'user', id: 5 }], 7),
-      ).rejects.toThrow(/tenantId/);
+      await expect(service.replaceParticipants(101, [{ type: 'user', id: 5 }], 7)).rejects.toThrow(
+        /tenantId/,
+      );
     });
 
     // Scenario #9 — DB CHECK violation surfaces (service does not swallow)
@@ -446,9 +446,7 @@ describe('KvpParticipantsService', () => {
     // Scenario #12 — q="ann" → ILIKE filter applied across all 4 types
     it('applies ILIKE filter and forwards trimmed q as $1 across all 4 types', async () => {
       mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1, label: 'Anna Müller', sublabel: '' }]);
-      mockDb.tenantQuery.mockResolvedValueOnce([
-        { id: 10, label: 'Annahme', sublabel: 'Halle 1' },
-      ]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 10, label: 'Annahme', sublabel: 'Halle 1' }]);
       mockDb.tenantQuery.mockResolvedValueOnce([]);
       mockDb.tenantQuery.mockResolvedValueOnce([]);
 

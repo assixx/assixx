@@ -101,6 +101,16 @@
     suggestion !== null ? getVisibilityInfo(suggestion, labels) : null,
   );
 
+  // Derived: Co-originator chips (FEAT_KVP_PARTICIPANTS_MASTERPLAN §5.4).
+  // Backend `KvpService.getSuggestionById` enriches via
+  // `KvpParticipantsService.getParticipants` (Phase 2 DoD §4 + Spec Deviation
+  // #5). Soft-deleted users are filtered out server-side, so chips silently
+  // disappear after a user is hard-deleted (Known Limitations §5). The
+  // `?? []` keeps the page render safe on legacy rows or any unforeseen
+  // backend regression — undefined collapses to empty list, the section
+  // hides via the `length > 0` gate.
+  const participants = $derived(suggestion?.participants ?? []);
+
   // effectiveRole logic moved to StatusDropdown.svelte (reads from kvpDetailState.effectiveRole)
 
   // ==========================================================================
@@ -597,6 +607,34 @@
           </div>
         </div>
 
+        <!--
+          Beteiligte (co-originators) — informational chips.
+          Section hidden when the list is empty so legacy KVPs render unchanged.
+          Chip pattern + per-type colour modifiers mirror ParticipantChips.svelte
+          in the create-modal for cross-feature visual consistency
+          (FEAT_KVP_PARTICIPANTS_MASTERPLAN §5.4 + Spec Deviation #11/#12).
+          ADR-045 §"3-Schichten-Modell": annotation only — no permission grant,
+          no notification trigger.
+        -->
+        {#if participants.length > 0}
+          <div class="content-section">
+            <h3 class="section-title">
+              <i class="fas fa-users"></i>
+              Beteiligte
+            </h3>
+            <div class="kvp-participants__chips">
+              {#each participants as p (`${p.type}:${String(p.id)}`)}
+                <span
+                  class="participant-chip participant-chip--{p.type}"
+                  title={p.sublabel !== undefined && p.sublabel !== '' ? p.sublabel : p.label}
+                >
+                  {p.label}
+                </span>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
         <!-- Details Section -->
         <div class="content-section">
           <h3 class="section-title">
@@ -953,6 +991,64 @@
     background: var(--glass-bg);
     backdrop-filter: var(--glass-backdrop);
     box-shadow: var(--glass-card-shadow);
+  }
+
+  /* ─── Beteiligte (Participants) ──────── */
+
+  /* Chip CSS mirrors ParticipantChips.svelte (kvp/_lib/) — same token set,
+     same shape, same modifier scheme. Svelte scoped CSS does not propagate
+     across components, so duplication is the KISS option here; future
+     consolidation candidate: extract to a design-system primitive
+     (`frontend/src/design-system/primitives/participant-chip/`) when a
+     third consumer appears. ADR-017 §"Token-First". Spec Deviation #12. */
+
+  .kvp-participants__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .participant-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-xl, 9999px);
+    background: color-mix(
+      in oklch,
+      var(--participant-chip-color, var(--color-primary)) 15%,
+      transparent
+    );
+    color: var(--participant-chip-color, var(--color-primary));
+    font-size: 0.8125rem;
+    font-weight: 500;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .participant-chip--user {
+    --participant-chip-color: var(--color-sky);
+  }
+
+  .participant-chip--team {
+    --participant-chip-color: var(--color-emerald);
+  }
+
+  .participant-chip--department {
+    --participant-chip-color: var(--color-carrot);
+  }
+
+  .participant-chip--area {
+    --participant-chip-color: var(--color-danger-hover);
+  }
+
+  /* Mobile: cap chip width tighter so the row wraps cleanly at 375 px,
+     matching the create-modal mobile rule. */
+  @media (width <= 480px) {
+    .participant-chip {
+      max-width: 9rem;
+    }
   }
 
   /* ─── Status Dropdown Override ──────── */

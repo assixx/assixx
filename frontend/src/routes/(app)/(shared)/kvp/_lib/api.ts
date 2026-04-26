@@ -311,9 +311,9 @@ export async function getParticipantOptions(
     if (types !== undefined && types !== '') params.append('types', types);
     const qs = params.toString();
     const url =
-      qs === ''
-        ? API_ENDPOINTS.KVP_PARTICIPANT_OPTIONS
-        : `${API_ENDPOINTS.KVP_PARTICIPANT_OPTIONS}?${qs}`;
+      qs === '' ?
+        API_ENDPOINTS.KVP_PARTICIPANT_OPTIONS
+      : `${API_ENDPOINTS.KVP_PARTICIPANT_OPTIONS}?${qs}`;
     return await apiClient.get<ParticipantOptions>(url);
   } catch (err: unknown) {
     log.error({ err }, 'Error loading participant options');
