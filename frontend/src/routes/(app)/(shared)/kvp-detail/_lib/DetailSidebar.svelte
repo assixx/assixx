@@ -254,7 +254,7 @@
         {#if canRequestApproval}
           <button
             type="button"
-            class="btn btn-warning"
+            class="btn btn-light"
             onclick={onrequestapproval}
           >
             <i class="fas fa-check-double"></i>
@@ -270,7 +270,7 @@
         {:else}
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn btn-light"
             onclick={onopenworkordermodal}
           >
             <i class="fas fa-clipboard-check"></i>
@@ -280,7 +280,7 @@
         {#if canShareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.canManage)}
           <button
             type="button"
-            class="btn btn-secondary"
+            class="btn btn-light"
             onclick={onopensharemodal}
           >
             <i class="fas fa-share-alt"></i>
@@ -290,7 +290,7 @@
         {#if canUnshareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.currentUser?.id, kvpDetailState.canManage)}
           <button
             type="button"
-            class="btn btn-secondary"
+            class="btn btn-light"
             onclick={onunshare}
           >
             <i class="fas fa-undo"></i>
@@ -310,7 +310,7 @@
         {#if canUnarchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status, kvpDetailState.canManage)}
           <button
             type="button"
-            class="btn btn-success"
+            class="btn btn-light"
             onclick={onunarchive}
           >
             <i class="fas fa-undo-alt"></i>

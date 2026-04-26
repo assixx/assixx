@@ -26,8 +26,18 @@
   backdrop-filter: blur(10px);
 
   transition: all var(--transition-normal);
-  border: 1px solid var(--color-glass-border);
-  border-radius: var(--radius-xl);
+
+  /*
+   * Border + radius use form-field tokens to match .dropdown__trigger
+   * (custom-dropdown.css). --glass-border carries the correct 1px solid +
+   * theme-aware color (15% opacity dark vs 10% on raw --color-glass-border —
+   * the divergence was visible when search-input sat next to a dropdown).
+   * --form-field-radius resolves through --input-border-radius to --radius-xl,
+   * keeping radius identical to the previous explicit value but routed through
+   * the central token so future form-field shape changes propagate everywhere.
+   */
+  border: var(--glass-border);
+  border-radius: var(--form-field-radius);
 
   background: var(--glass-bg);
   padding: 0 var(--spacing-3);
@@ -37,7 +47,7 @@
 }
 
 .search-input:hover {
-  border-color: var(--color-glass-border-hover);
+  border: var(--form-field-border-hover);
   background: var(--glass-bg-hover);
 }
 

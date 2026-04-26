@@ -462,11 +462,12 @@
                   <button
                     type="button"
                     class="remove-photo"
+                    aria-label="Foto entfernen"
                     onclick={() => {
                       handleRemovePhoto(index);
                     }}
                   >
-                    ×
+                    <i class="fas fa-times"></i>
                   </button>
                 </div>
               {/each}
@@ -541,6 +542,8 @@
     object-fit: cover;
   }
 
+  /* Visual parity with .ds-modal__close (modal.base.css) — same glass surface
+     and danger-on-hover color, scaled down to 24px to fit the 100px thumbnail. */
   .photo-preview-item .remove-photo {
     display: flex;
     position: absolute;
@@ -548,18 +551,23 @@
     right: 4px;
     justify-content: center;
     align-items: center;
+    transition: all 0.2s ease;
     cursor: pointer;
     border: none;
-    border-radius: 50%;
-    background: color-mix(in oklch, var(--color-danger) 90%, transparent);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg-hover);
     width: 24px;
     height: 24px;
-    color: var(--color-white);
-    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
   }
 
   .photo-preview-item .remove-photo:hover {
-    transform: scale(1.1);
-    background: var(--color-danger);
+    background: var(--glass-bg-active);
+    color: var(--color-danger);
+  }
+
+  .photo-preview-item .remove-photo:active {
+    transform: scale(0.95);
   }
 </style>

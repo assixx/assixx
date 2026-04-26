@@ -307,24 +307,23 @@ const SYSTEM_SUBMENU: NavItem[] = [
     submenu: ORGANIGRAM_SUBMENU,
   },
   {
-    id: 'addon-settings',
-    label: 'Modul-Konfiguration',
-    url: '/settings/company',
-  },
-  {
     id: 'approval-settings',
     label: 'Freigabe-Master',
     url: '/settings/approvals',
   },
-  // Firmen-Einstellungen: system-level tenant config (shift times, tenant deletion, design).
+  // Firmen-Einstellungen: system-level tenant config (shift times, tenant deletion,
+  // addon configuration, design).
   // WHY subgroup: /company-settings is the root view (Shift Times + Danger Zone, root-only),
-  // Design is a sibling config surface (/settings/design). Grouping them keeps the
-  // System menu shallow and signals these as company-wide — not user — settings.
+  // Modul-Konfiguration (/settings/company) and Design (/settings/design) are sibling
+  // config surfaces. Grouping them keeps the System menu shallow and signals these as
+  // company-wide — not user — settings. Modul-Konfiguration moved here 2026-04-26 to
+  // consolidate company-level configuration under one parent.
   {
     id: 'company-settings',
     label: 'Firmen-Einstellungen',
     submenu: [
       { id: 'company-settings-overview', label: 'Übersicht', url: '/company-settings' },
+      { id: 'addon-settings', label: 'Modul-Konfiguration', url: '/settings/company' },
       { id: 'design', label: 'Design', url: '/settings/design' },
     ],
   },
