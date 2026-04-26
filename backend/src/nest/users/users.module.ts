@@ -13,6 +13,7 @@ import { DomainsModule } from '../domains/domains.module.js';
 import { HierarchyPermissionModule } from '../hierarchy-permission/hierarchy-permission.module.js';
 import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { OrganigramModule } from '../organigram/organigram.module.js';
+import { RootModule } from '../root/root.module.js';
 import { SecuritySettingsModule } from '../security-settings/security-settings.module.js';
 import { UserAvailabilityService } from './user-availability.service.js';
 import { UserProfileService } from './user-profile.service.js';
@@ -38,6 +39,12 @@ import { UsersService } from './users.service.js';
     // though the HTTP route shape lives under /users. AuthModule already
     // exports AuthService; no circular dep (auth/* never references Users).
     AuthModule,
+    // RootModule provides `RootProtectionService` — required by
+    // `UsersService.deleteUser` (Layer-2 cross-root + last-root guard, see
+    // FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.3, Session 4). RootModule
+    // imports Organigram/TenantDeletion/Domains; none of them reference Users
+    // → no circular dep.
+    RootModule,
   ],
   controllers: [UsersController],
   providers: [UsersPermissionRegistrar, UserAvailabilityService, UserProfileService, UsersService],

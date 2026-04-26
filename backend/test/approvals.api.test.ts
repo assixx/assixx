@@ -4,7 +4,7 @@
  * Tests the full approval lifecycle against the real Docker backend:
  * config CRUD, approval create, approve, reject, stats.
  *
- * Runs as root (admin@apitest.de = root with has_full_access=true).
+ * Runs as root (info@assixx.com = root with has_full_access=true).
  * Core addon — no tenant_addons setup needed.
  */
 import {

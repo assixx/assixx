@@ -34,7 +34,7 @@ describe('Forgot Password: Existing user', () => {
     res = await fetch(`${BASE_URL}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'admin@apitest.de' }),
+      body: JSON.stringify({ email: 'info@assixx.com' }),
     });
     body = (await res.json()) as JsonBody;
   });
@@ -191,7 +191,7 @@ describe('Reset Password: Full E2E flow', () => {
     const res = await fetch(`${BASE_URL}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'admin@apitest.de' }),
+      body: JSON.stringify({ email: 'info@assixx.com' }),
     });
     expect(res.status).toBe(200);
 
@@ -254,7 +254,7 @@ describe('Reset Password: Full E2E flow', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'admin@apitest.de',
+        email: 'info@assixx.com',
         password: 'NewApiTestPass123!',
       }),
     });
@@ -298,7 +298,7 @@ describe('Reset Password: Full E2E flow', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'admin@apitest.de',
+        email: 'info@assixx.com',
         password: APITEST_PASSWORD,
       }),
     });

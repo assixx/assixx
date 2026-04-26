@@ -340,7 +340,7 @@ describe('OAuth signup-ticket peek — happy path (field whitelist)', () => {
   const ticketPayload = JSON.stringify({
     provider: 'microsoft',
     providerUserId: 'ms-sub-peek-happy',
-    email: 'peek-happy@apitest.de',
+    email: 'peek-happy@assixx.com',
     emailVerified: true,
     displayName: 'Peek Happy',
     microsoftTenantId: 'tid-peek',
@@ -369,7 +369,7 @@ describe('OAuth signup-ticket peek — happy path (field whitelist)', () => {
 
   it('exposes only email + displayName (ResponseInterceptor wraps in {success, data})', () => {
     expect(body.success).toBe(true);
-    expect(body.data.email).toBe('peek-happy@apitest.de');
+    expect(body.data.email).toBe('peek-happy@assixx.com');
     expect(body.data.displayName).toBe('Peek Happy');
   });
 
@@ -392,7 +392,7 @@ describe('OAuth signup-ticket peek — idempotent (two peeks both succeed)', () 
   const ticketPayload = JSON.stringify({
     provider: 'microsoft',
     providerUserId: 'ms-sub-peek-idem',
-    email: 'peek-idem@apitest.de',
+    email: 'peek-idem@assixx.com',
     emailVerified: true,
     displayName: null,
     microsoftTenantId: null,

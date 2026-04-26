@@ -1,9 +1,12 @@
 /**
  * Global teardown for API integration tests.
  *
- * Cleans transient test data for the apitest tenant AFTER tests run.
+ * Cleans transient test data for the test tenant (subdomain `assixx`) AFTER tests run.
  * Prevents stale data accumulation across repeated test runs
  * (e.g. chat messages, E2E keys, conversations piling up).
+ *
+ * 2026-04: Test-Tenant umbenannt auf subdomain `assixx` und E-Mail-Domain `assixx.com`
+ * (vorherige Test-Domain war eine fremde reale Domain → Catch-All-Risiko bei E-Mail-Sends).
  *
  * WHITELIST approach: Only cleans tables that actually accumulate
  * across test runs. Seed/config data (tenant_addons, vacation_settings,
@@ -84,13 +87,13 @@ const TRANSIENT_TABLES = [
   // Shifts: RESTRICT FK into departments — MUST delete before departments.
   // Order: shift_swap_requests (RESTRICT → shifts) → shifts (CASCADE handles
   // shift_assignments children). Shift-handover feature (2026-04) started
-  // writing real shift rows for apitest, which surfaced the blocker the
+  // writing real shift rows for the test tenant, which surfaced the blocker the
   // prior teardown comment anticipated.
   'shift_swap_requests',
   'shifts',
 
   // Document permissions: RESTRICT FK into both departments AND teams —
-  // MUST delete before either. Currently 0 rows for apitest but listed
+  // MUST delete before either. Currently 0 rows for the test tenant but listed
   // defensively so future document-scope tests don't re-break teardown.
   'document_permissions',
 
@@ -116,7 +119,7 @@ const TRANSIENT_TABLES = [
   'user_positions',
 
   // tenant_domains is intentionally NOT in this list — it needs a filtered
-  // DELETE (WHERE is_primary = false) to preserve the seed apitest.de row.
+  // DELETE (WHERE is_primary = false) to preserve the seed assixx.com row.
   // See the dedicated statement in CLEANUP_SQL below.
 ] as const;
 
@@ -129,9 +132,9 @@ DECLARE
   _deleted bigint;
   _total bigint := 0;
 BEGIN
-  SELECT id INTO _tenant_id FROM tenants WHERE subdomain = 'apitest';
+  SELECT id INTO _tenant_id FROM tenants WHERE subdomain = 'assixx';
   IF _tenant_id IS NULL THEN
-    RAISE NOTICE 'apitest tenant not found — skipping cleanup';
+    RAISE NOTICE 'assixx test tenant not found — skipping cleanup';
     RETURN;
   END IF;
 
@@ -147,7 +150,7 @@ BEGIN
   GET DIAGNOSTICS _deleted = ROW_COUNT;
   _total := _total + _deleted;
 
-  -- Tenant domains: preserve the seed primary (is_primary=true, e.g. apitest.de).
+  -- Tenant domains: preserve the seed primary (is_primary=true, e.g. assixx.com).
   -- Backend blocks POST /users + /dummy-users with 403 if the tenant has no
   -- verified primary domain (feat: add tenant domain as subdomain). Clean only
   -- non-primary rows — active test-created and soft-deleted phase4 debris.
@@ -155,19 +158,38 @@ BEGIN
   GET DIAGNOSTICS _deleted = ROW_COUNT;
   _total := _total + _deleted;
 
-  -- NOTE (2026-04-23): Accumulating role=admin/employee test users
-  -- (esp. perm-api-test-{timestamp}@apitest.de from user-permissions tests,
-  -- currently ~140 rows) are NOT cleaned here. Reason: 27 tables hold
-  -- RESTRICT FKs into users (password_reset_tokens, admin_logs, addon_usage_logs,
-  -- audit_trail children, etc.). Hard-deleting users would trip at least one
-  -- of them, and the list grows with every new feature module. Tests stay
-  -- correct because emails are unique (timestamp-based), so no UNIQUE collision
-  -- — it's pure storage bloat, not a correctness bug. A dedicated cleanup ADR
-  -- with per-FK strategy is the right way to address this; out of scope here.
+  -- NOTE (2026-04-23, updated 2026-04-26): Accumulating role=admin/employee
+  -- test users are NOT cleaned here, by design.
+  --
+  -- Two categories of accumulating users live in this tenant:
+  --
+  --   a) Timestamped throwaways (perm-api-test-{ts}, trigger-lead-{ts},
+  --      pos-test-{ts}, etc.) — created per test-run by user-permissions
+  --      tests. Email is UNIQUE due to the timestamp suffix, so no collision.
+  --      Pure storage bloat, not a correctness issue.
+  --
+  --   b) Persistent FIXTURES (stable email, idempotent re-create on each run):
+  --        • perm-test-admin@assixx.com  (admin role, 1 row) — used by
+  --          auth-forgot-password, security-settings, tenant-domains tests.
+  --        • kvp-fixture-NNN@assixx.com  (employee role, 50 rows) — needed
+  --          for kvp.api.test.ts test #11 to actually exercise the LIMIT 50
+  --          cap on /kvp/participants/options.
+  --      Both groups are created by 00-auth.api.test.ts (file-name 00 makes
+  --      it run first under alphabetic discovery). Re-creates as 409=success.
+  --      MUST stay in DB across runs so downstream files find them.
+  --
+  -- Why no hard-delete: 30 tables hold RESTRICT FKs into users
+  -- (password_reset_tokens, admin_logs, addon_usage_logs, audit_trail
+  -- children, etc.). Hard-deleting victim-class (a) would trip at least one
+  -- and the FK list grows with every new feature module. Group (b) is
+  -- explicitly load-bearing for downstream tests and must not be touched.
+  -- A dedicated cleanup ADR with per-FK strategy is the right way to bound
+  -- group (a)'s growth; out of scope here.
+  --
   -- See docs/how-to/HOW-TO-CREATE-TEST-USER.md for the intended baseline
-  -- (admin@apitest.de + employee@apitest.de).
+  -- (info@assixx.com + employee@assixx.com).
 
-  RAISE NOTICE 'apitest tenant (id=%): cleaned % rows (% from % tables + % dummy users)',
+  RAISE NOTICE 'assixx test tenant (id=%): cleaned % rows (% from % tables + % dummy users)',
     _tenant_id, _total, _total - _deleted, array_length(_tables, 1), _deleted;
 END $$;
 `;

@@ -1,7 +1,7 @@
 /**
  * Auth helpers for k6 load tests.
  *
- * Mirrors `backend/test/helpers.ts` shape: login against apitest tenant,
+ * Mirrors `backend/test/helpers.ts` shape: login against assixx test tenant,
  * expose authHeaders/authOnly split (Fastify rejects Content-Type on
  * body-less requests, see ADR-018 / HOW-TO-TEST).
  *
@@ -23,7 +23,7 @@ export interface AuthState {
 }
 
 /**
- * Login as apitest admin. Call from `setup()` — once per test run.
+ * Login as assixx test-tenant admin. Call from `setup()` — once per test run.
  * Fails loud (aborts test) on non-200 to surface config issues immediately
  * rather than cascading into 401s on every subsequent request.
  */

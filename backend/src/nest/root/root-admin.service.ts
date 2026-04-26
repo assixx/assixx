@@ -4,10 +4,12 @@
  * Handles admin user CRUD and admin logs.
  * Extracted from root.service.ts — bounded context: admin management.
  */
+import type { UserRole } from '@assixx/shared';
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -21,6 +23,8 @@ import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
 import { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import { UserPositionService } from '../organigram/user-position.service.js';
+import type { ProtectionActor, ProtectionTargetUser } from './root-protection.service.js';
+import { ROOT_PROTECTION_CODES, RootProtectionService } from './root-protection.service.js';
 import {
   ERROR_CODES,
   buildUserUpdateFields,
@@ -52,6 +56,13 @@ export class RootAdminService {
     // (AST-enclosing helper of `INSERT INTO users`, v0.3.6 D33). tenantId
     // is the helper's 5th parameter.
     private readonly tenantVerification: TenantVerificationService,
+    // Layer-2 root-protection wiring (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN
+    // .md §2.3, Session 4). Defensive: `getAdminById` filters role='admin',
+    // so the guard chain is inert in normal flow. The wiring catches the
+    // edge case where a refactor or FK bug routes a root row through this
+    // path — `assertCrossRootTerminationForbidden` then 403s before any
+    // SQL write touches the row.
+    private readonly rootProtection: RootProtectionService,
   ) {}
 
   /**
@@ -273,6 +284,33 @@ export class RootAdminService {
         code: ERROR_CODES.NOT_FOUND,
         message: 'Admin not found',
       });
+    }
+
+    // Layer-2 root protection (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md
+    // §2.3, Session 4). Defensive: `getAdminById` filters role='admin', so
+    // the gate `adminRole === 'root'` short-circuits to false in normal
+    // flow. The block exists to catch any future regression where a root
+    // row leaks into this method.
+    //
+    // `AdminUser` (camelCase API shape) does not expose `role` because it
+    // is implicit in the SQL filter — hardcode 'admin' here.
+    const adminRole: UserRole = 'admin';
+    if ((adminRole as UserRole) === 'root') {
+      const actor: ProtectionActor = { id: actingUserId, tenantId };
+      const target: ProtectionTargetUser = {
+        id,
+        tenantId,
+        role: adminRole,
+        isActive: IS_ACTIVE.ACTIVE,
+      };
+      await this.rootProtection.assertCrossRootTerminationForbidden(actor, target, 'soft-delete');
+      if (actor.id === target.id) {
+        throw new ForbiddenException({
+          code: ROOT_PROTECTION_CODES.SELF_VIA_APPROVAL_REQUIRED,
+          message: 'Root self-termination must use the peer-approval flow.',
+        });
+      }
+      await this.rootProtection.assertNotLastRoot(tenantId, id);
     }
 
     // Log activity BEFORE deleting

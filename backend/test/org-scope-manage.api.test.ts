@@ -2,7 +2,7 @@
  * API Integration Tests: Manage-* Scope Filtering
  *
  * Tests scope-based access control on teams/users endpoints.
- * Uses apitest tenant with root (admin@apitest.de) + employee@apitest.de.
+ * Uses apitest tenant with root (info@assixx.com) + employee@assixx.com.
  *
  * @see docs/FEAT_ORGANIZATIONAL_SCOPE_ACCESS_MASTERPLAN.md Step 7.2
  */
@@ -23,7 +23,7 @@ beforeAll(async () => {
     method: 'POST',
     headers: authHeaders(rootToken),
     body: JSON.stringify({
-      email: 'employee@apitest.de',
+      email: 'employee@assixx.com',
       password: APITEST_PASSWORD,
       firstName: 'Test',
       lastName: 'Employee',
@@ -36,7 +36,7 @@ beforeAll(async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: 'employee@apitest.de',
+      email: 'employee@assixx.com',
       password: APITEST_PASSWORD,
     }),
   });

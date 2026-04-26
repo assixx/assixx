@@ -236,7 +236,7 @@ const PROD_APEX_ORIGIN_REGEX = /^https:\/\/(?:www\.)?assixx\.com$/;
 const PROD_SUBDOMAIN_ORIGIN_REGEX = /^https:\/\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.assixx\.com$/;
 // Accepts both ports 5173 (normal `pnpm run dev:svelte`) and 5174 (Playwright
 // E2E parallel Vite instance, see `playwright.config.ts::webServer`). Without
-// 5174 the E2E login fails with `CORS origin not allowed: http://apitest.localhost:5174`.
+// 5174 the E2E login fails with `CORS origin not allowed: http://assixx.localhost:5174`.
 const DEV_ORIGIN_REGEX = /^http:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)?localhost:517[34]$/;
 
 function isAllowedCorsOrigin(origin: string): boolean {

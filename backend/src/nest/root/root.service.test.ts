@@ -6,7 +6,12 @@
  *        dashboard stats, delegation to sub-services.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+  PreconditionFailedException,
+} from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -16,6 +21,8 @@ import type { TenantVerificationService } from '../domains/tenant-verification.s
 import type { UserPositionService } from '../organigram/user-position.service.js';
 import type { RootAdminService } from './root-admin.service.js';
 import type { RootDeletionService } from './root-deletion.service.js';
+import type { RootProtectionService } from './root-protection.service.js';
+import { ROOT_PROTECTION_CODES } from './root-protection.service.js';
 import type { RootTenantService } from './root-tenant.service.js';
 import { RootService } from './root.service.js';
 
@@ -116,6 +123,26 @@ function createMockDeletionService() {
   };
 }
 
+/**
+ * Mock for `RootProtectionService` (Session 4 / Phase 2 §2.3).
+ *
+ * Defaults are no-op so existing happy-path tests still flow through to the
+ * SQL layer. Specific tests override `assertCrossRootTerminationForbidden`
+ * or `assertNotLastRoot` to assert the new behavior contract.
+ *
+ * The full guard semantics are covered by the dedicated unit suite in
+ * `root-protection.service.test.ts` (Session 7 / Phase 3).
+ */
+function createMockRootProtection() {
+  return {
+    assertCrossRootTerminationForbidden: vi.fn().mockResolvedValue(undefined),
+    assertNotLastRoot: vi.fn().mockResolvedValue(undefined),
+    countActiveRoots: vi.fn().mockResolvedValue(2),
+    isTerminationOp: vi.fn().mockReturnValue(true),
+    auditDeniedAttempt: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
 /** Standard DB user row for root user */
 function makeDbUserRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -152,6 +179,7 @@ describe('RootService', () => {
   let mockAdminService: ReturnType<typeof createMockAdminService>;
   let mockTenantService: ReturnType<typeof createMockTenantService>;
   let mockDeletionService: ReturnType<typeof createMockDeletionService>;
+  let mockRootProtection: ReturnType<typeof createMockRootProtection>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -161,6 +189,7 @@ describe('RootService', () => {
     mockAdminService = createMockAdminService();
     mockTenantService = createMockTenantService();
     mockDeletionService = createMockDeletionService();
+    mockRootProtection = createMockRootProtection();
     const mockUserPositions = createMockUserPositionService();
     service = new RootService(
       mockDb as unknown as DatabaseService,
@@ -176,6 +205,9 @@ describe('RootService', () => {
         assertVerified: vi.fn().mockResolvedValue(undefined),
         isVerified: vi.fn().mockResolvedValue(true),
       } as unknown as TenantVerificationService,
+      // Layer-2 root protection (Session 4 / §2.3). Default mock is no-op so
+      // happy paths flow to SQL; per-test overrides assert the guard contract.
+      mockRootProtection as unknown as RootProtectionService,
     );
   });
 
@@ -335,35 +367,69 @@ describe('RootService', () => {
   // =============================================================
 
   describe('deleteRootUser', () => {
-    it('should throw BadRequestException on self-delete', async () => {
-      await expect(service.deleteRootUser(1, 10, 1)).rejects.toThrow(BadRequestException);
-    });
-
     it('should throw NotFoundException when user not found', async () => {
-      // getRootUserById → empty
+      // getRootUserById → empty (existence check now runs before the
+      // RootProtection chain — see root.service.ts deleteRootUser comment)
       mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await expect(service.deleteRootUser(99, 10, 1)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw BadRequestException when last root user', async () => {
-      // getRootUserById → found
-      mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow({ id: 2 })]);
-      // COUNT root users (excluding this one) → 0
-      mockDb.systemQuery.mockResolvedValueOnce([{ count: '0' }]);
+    it('should throw ForbiddenException SELF_VIA_APPROVAL_REQUIRED on self-delete', async () => {
+      // Session 4 (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.3): self-
+      // termination via direct mutation is forbidden. Replaces the previous
+      // BadRequest('Cannot delete yourself') path. The legitimate path is
+      // RootSelfTerminationService.approveSelfTermination (Session 5).
+      mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow({ id: 1 })]);
 
-      await expect(service.deleteRootUser(2, 10, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.deleteRootUser(1, 10, 1)).rejects.toMatchObject({
+        constructor: ForbiddenException,
+        response: {
+          code: ROOT_PROTECTION_CODES.SELF_VIA_APPROVAL_REQUIRED,
+        },
+      });
     });
 
-    it('should soft-delete root user and revoke auth artifacts when not last', async () => {
+    it('should propagate ForbiddenException from cross-root assertion', async () => {
+      // Cross-root: actor=1 attempts to terminate target=2. The mocked
+      // RootProtectionService throws — RootService must let it bubble up
+      // unchanged so the controller serializes the canonical 403 envelope.
+      mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow({ id: 2 })]);
+      mockRootProtection.assertCrossRootTerminationForbidden.mockRejectedValueOnce(
+        new ForbiddenException({
+          code: ROOT_PROTECTION_CODES.CROSS_ROOT_FORBIDDEN,
+          message: 'Andere Root-Konten können nicht durch Sie geändert werden.',
+        }),
+      );
+
+      await expect(service.deleteRootUser(2, 10, 1)).rejects.toThrow(ForbiddenException);
+      expect(mockRootProtection.assertCrossRootTerminationForbidden).toHaveBeenCalledTimes(1);
+      // assertNotLastRoot must NOT have been called — order matters per §2.3
+      expect(mockRootProtection.assertNotLastRoot).not.toHaveBeenCalled();
+    });
+
+    it('should propagate PreconditionFailedException from last-root assertion', async () => {
+      // Last-root: actor=1 (admin promoted to root) terminates target=2 in a
+      // tenant where target=2 is the only other active root. Cross-root mock
+      // is no-op (defaults), so flow reaches assertNotLastRoot which throws.
+      mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow({ id: 2 })]);
+      mockRootProtection.assertNotLastRoot.mockRejectedValueOnce(
+        new PreconditionFailedException({
+          code: ROOT_PROTECTION_CODES.LAST_ROOT,
+          message: 'Letzter aktiver Root-Account — Termination blockiert.',
+        }),
+      );
+
+      await expect(service.deleteRootUser(2, 10, 1)).rejects.toThrow(PreconditionFailedException);
+      expect(mockRootProtection.assertNotLastRoot).toHaveBeenCalledWith(10, 2);
+    });
+
+    it('should soft-delete root user and revoke auth artifacts when guards pass', async () => {
       // getRootUserById → found
       mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow({ id: 2 })]);
-      // COUNT root users → 1 remaining (Last-Root-Guard passes)
-      mockDb.systemQuery.mockResolvedValueOnce([{ count: '1' }]);
-      // UPDATE users SET is_active = 4 (soft-delete, ADR-020/045 — replaces
-      // the previous chain of DELETE oauth_tokens / user_teams /
-      // user_departments / users; those preludes were FK-driven and are
-      // dead code under soft-delete)
+      // No mockRootProtection overrides — defaults are no-op, so the chain
+      // passes and execution reaches the SQL writes below.
+      // UPDATE users SET is_active = 4 (soft-delete, ADR-020/045)
       mockDb.systemQuery.mockResolvedValueOnce([]);
       // DELETE FROM user_sessions
       mockDb.systemQuery.mockResolvedValueOnce([]);
@@ -372,6 +438,8 @@ describe('RootService', () => {
 
       await service.deleteRootUser(2, 10, 1);
 
+      expect(mockRootProtection.assertCrossRootTerminationForbidden).toHaveBeenCalledTimes(1);
+      expect(mockRootProtection.assertNotLastRoot).toHaveBeenCalledWith(10, 2);
       expect(mockActivityLogger.logDelete).toHaveBeenCalled();
       // Smoke check: the soft-delete UPDATE must run, and there must be NO
       // DELETE FROM users (that path is reserved for tenant erasure / DSGVO

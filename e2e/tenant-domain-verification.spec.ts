@@ -12,8 +12,8 @@
  * `(app)/+layout.server.ts` based on `GET /api/v2/domains/verification-status`.
  * That fetch happens INSIDE the SvelteKit Node server (SSR), NOT in the
  * browser, so Playwright's `page.route()` cannot intercept it. The current
- * `apitest` test-tenant seed (Phase 1 Step 1.3) is pre-verified, so any E2E
- * logging in as apitest sees the banner-hidden state by default.
+ * `assixx` test-tenant seed (Phase 1 Step 1.3) is pre-verified, so any E2E
+ * logging in as the assixx test tenant sees the banner-hidden state by default.
  *
  * Two paths to unblock the full E2E — both are out of scope for Step 5.4.3:
  *
@@ -23,9 +23,9 @@
  *     seed one unverified test tenant". Touching Phase 1 here would be
  *     scope-creep across phases.
  *
- * (B) **Toggle apitest.de verified→pending in Playwright `globalSetup`,
+ * (B) **Toggle assixx.com verified→pending in Playwright `globalSetup`,
  *     restore in `globalTeardown`.** Functional but destructive: any other
- *     test in the suite that relies on apitest being verified (and most
+ *     test in the suite that relies on assixx being verified (and most
  *     do — the API tests for users/admins all require it) breaks during the
  *     E2E window.
  *
@@ -40,11 +40,11 @@
  * basic page-mount flow without needing the unverified-tenant seed.
  *
  * @see masterplan §5.4.3, §5.4 DoD
- * @see e2e/auth.setup.ts (storageState pattern, apitest credentials)
+ * @see e2e/auth.setup.ts (storageState pattern, assixx test credentials)
  */
 import { expect, test } from '@playwright/test';
 
-// Use the saved auth from auth.setup.ts (apitest root user — pre-verified
+// Use the saved auth from auth.setup.ts (assixx root user — pre-verified
 // per Phase 1 Step 1.3 seed).
 test.use({ storageState: 'e2e/.auth/admin.json' });
 
@@ -64,7 +64,7 @@ test.describe('Tenant Domain Verification — page-mount smoke', () => {
     await expect(page.getByRole('heading', { name: 'Firmen-Domains' })).toBeVisible();
     await expect(page.getByTestId('add-domain-btn')).toBeVisible();
 
-    // The pre-seeded apitest.de domain renders as a row.
+    // The pre-seeded assixx.com domain renders as a row.
     await expect(page.locator('[data-testid="domain-row"]').first()).toBeVisible();
   });
 
@@ -85,11 +85,11 @@ test.describe('Tenant Domain Verification — unverified-tenant static state', (
   // reused across all tests. Replaces the previous login-per-test pattern which
   // tripped the login rate-limiter (ADR-001) after ~2 attempts.
   //
-  // Session 12c (ADR-050): override the project-level `apitest.localhost:5174`
+  // Session 12c (ADR-050): override the project-level `assixx.localhost:5174`
   // baseURL so `page.goto('/manage-admins')` etc. stay on the UNVERIFIED tenant's
   // origin. Cookies in `unverified.json` are scoped to `unverified-e2e.localhost`,
   // so without the baseURL override relative `page.goto()` would jump back to
-  // apitest where the user has no cookies.
+  // the assixx test tenant where the user has no cookies.
   //
   // Prerequisite: `/etc/hosts` entry `127.0.0.1 unverified-e2e.localhost`.
   // See docs/how-to/HOW-TO-LOCAL-SUBDOMAINS.md.

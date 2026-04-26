@@ -141,7 +141,7 @@ describe('Users: Get User by ID (Admin)', () => {
 describe('Users: Create with positionIds', () => {
   let positionId: string;
   let createdUserId: number;
-  const testEmail = `pos-test-${Date.now()}@apitest.de`;
+  const testEmail = `pos-test-${Date.now()}@assixx.com`;
 
   beforeAll(async () => {
     // Fetch available employee positions
@@ -201,7 +201,7 @@ describe('Users: Create with positionIds', () => {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
-        email: `no-pos-${Date.now()}@apitest.de`,
+        email: `no-pos-${Date.now()}@assixx.com`,
         password: 'TestPass123!',
         firstName: 'No',
         lastName: 'Position',
@@ -218,7 +218,7 @@ describe('Users: Create with positionIds', () => {
 describe('Users: Update positionIds', () => {
   let positionIds: string[];
   let targetUserId: number;
-  const testEmail = `pos-upd-${Date.now()}@apitest.de`;
+  const testEmail = `pos-upd-${Date.now()}@assixx.com`;
 
   beforeAll(async () => {
     // Fetch 2 employee positions

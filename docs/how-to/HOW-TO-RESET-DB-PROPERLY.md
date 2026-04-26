@@ -105,12 +105,12 @@ Backend verbindet sich als `app_user` (mit RLS) zur frischen DB.
 
 Erstellt via `POST /api/v2/signup`:
 
-| Was       | Wert                                 |
-| --------- | ------------------------------------ |
-| Tenant    | API Test GmbH (subdomain: `apitest`) |
-| Root-User | admin@apitest.de                     |
-| Passwort  | `ApiTest12345!`                      |
-| Addons    | Alle aktiviert (14 Tage Trial)       |
+| Was       | Wert                                |
+| --------- | ----------------------------------- |
+| Tenant    | API Test GmbH (subdomain: `assixx`) |
+| Root-User | info@assixx.com                     |
+| Passwort  | `ApiTest12345!`                     |
+| Addons    | Alle aktiviert (14 Tage Trial)      |
 
 ### Schritt 8: Verifikation
 

@@ -19,7 +19,7 @@
  *
  * Prerequisites (see load/README.md):
  *   - Docker backend healthy on :3000
- *   - `apitest` tenant seeded (HOW-TO-CREATE-TEST-USER.md)
+ *   - `assixx` tenant seeded (HOW-TO-CREATE-TEST-USER.md)
  *   - Redis throttle keys flushed (recommended — see README)
  *
  * Execution:

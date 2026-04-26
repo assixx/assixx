@@ -16,7 +16,7 @@ import { execSync } from 'node:child_process';
 type JsonBody = Record<string, any>;
 
 const BASE_URL = 'http://localhost:3000/api/v2';
-const APITEST_EMAIL = 'admin@apitest.de';
+const APITEST_EMAIL = 'info@assixx.com';
 const APITEST_PASSWORD = 'ApiTest12345!';
 
 // Shared state across sequential describe blocks
@@ -42,14 +42,14 @@ function applyDbPrerequisites(tenantId: number, userId: number): void {
       -- Ensure a verified primary tenant_domain exists (feat: add tenant domain as subdomain).
       -- Backend rejects POST /users + POST /dummy-users with 403 if the tenant has no
       -- verified domain. For the apitest tenant, DNS-based verification is not reproducible
-      -- in Docker/CI, so we mark apitest.de as verified directly. ON CONFLICT DO NOTHING
+      -- in Docker/CI, so we mark assixx.com as verified directly. ON CONFLICT DO NOTHING
       -- makes this idempotent against all three partial-unique indexes on tenant_domains
       -- (tenant_domains_one_primary_per_tenant, tenant_domains_tenant_domain_unique,
       -- idx_tenant_domains_domain_verified) — any of them matching a live row is a
       -- no-op. Also repair a soft-deleted primary so the next test run finds a verified
       -- row (otherwise 403 on user-create returns).
       INSERT INTO tenant_domains (tenant_id, domain, status, verification_token, verified_at, is_primary, is_active)
-      VALUES (${tenantId}, 'apitest.de', 'verified',
+      VALUES (${tenantId}, 'assixx.com', 'verified',
               substr(md5(random()::text) || md5(random()::text), 1, 64),
               NOW(), true, 1)
       ON CONFLICT DO NOTHING;
@@ -57,7 +57,7 @@ function applyDbPrerequisites(tenantId: number, userId: number): void {
       UPDATE tenant_domains
       SET is_active = 1, status = 'verified', verified_at = COALESCE(verified_at, NOW()), is_primary = true
       WHERE tenant_id = ${tenantId}
-        AND domain = 'apitest.de'
+        AND domain = 'assixx.com'
         AND NOT (is_active = 1 AND is_primary = true AND status = 'verified');
 
       -- Ensure a department exists (required FK for teams)
@@ -124,14 +124,14 @@ describe('Setup: Apitest Tenant', () => {
   beforeAll(() => flushThrottleKeys());
 
   it('should check subdomain availability', async () => {
-    const res = await fetch(`${BASE_URL}/signup/check-subdomain/apitest`);
+    const res = await fetch(`${BASE_URL}/signup/check-subdomain/assixx`);
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
     expect(body.data).toHaveProperty('available');
     expect(body.data).toHaveProperty('subdomain');
-    expect(body.data.subdomain).toBe('apitest');
+    expect(body.data.subdomain).toBe('assixx');
   });
 
   it('should create tenant or confirm it already exists', async () => {
@@ -140,8 +140,8 @@ describe('Setup: Apitest Tenant', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         companyName: 'API Test GmbH',
-        subdomain: 'apitest',
-        email: 'info@apitest.de',
+        subdomain: 'assixx',
+        email: 'info@assixx.com',
         phone: '+49123456789',
         street: 'Musterstraße',
         houseNumber: '42',
@@ -162,7 +162,7 @@ describe('Setup: Apitest Tenant', () => {
     expect(body).toBeDefined();
 
     // eslint-disable-next-line vitest/no-conditional-expect -- Integration test: response shape differs by HTTP status (201 vs 409)
-    if (res.status === 201) expect(body.data.subdomain).toBe('apitest');
+    if (res.status === 201) expect(body.data.subdomain).toBe('assixx');
   });
 
   it('should login as apitest admin', async () => {
@@ -277,4 +277,127 @@ describe('Auth: Logout', () => {
     _userId = body.data.user.id;
     _tenantId = body.data.user.tenantId;
   });
+});
+
+// ─── Setup: Persistent Fixture Users (alphabetic-order safe) ─────────────────
+//
+// WHY: Several test files (auth-forgot-password, security-settings,
+// tenant-domains) and the kvp `/options caps users at 50` test need persistent
+// users that exist before they run. Vitest's API project (`pool: 'forks',
+// maxWorkers: 1, isolate: false`) executes files alphabetically, so anything
+// created here (file 00-*) is reliably present in every later file.
+//
+// Persistence is by design: global-teardown.ts intentionally does NOT
+// hard-delete role=admin/employee users (30 RESTRICT FKs into users — see
+// teardown NOTE for context). These fixtures accumulate harmlessly across
+// runs because the email is stable (no timestamp) — POST /users returns 409
+// on the second run, which we treat as success.
+//
+// Two concerns covered:
+//   1. `perm-test-admin@assixx.com` (admin role) — login fixture for the 3
+//      tests above (auth-forgot-password, security-settings, tenant-domains).
+//      admin-permissions.api.test.ts also creates this user, but file order
+//      vs. alphabetic-vs-discovery is not guaranteed in vitest, so 00-* is
+//      the safe place.
+//   2. `kvp-fixture-NNN@assixx.com` (50 users, employee role) — needed for
+//      `GET /kvp/participants/options` to actually exercise the 50-row LIMIT
+//      cap. With <50 users in the tenant, the test asserts on a no-op cap.
+//
+// First-run cost: ~50 POST /users requests. Subsequent runs: ~50 cheap 409s.
+// Idempotency is enforced by the 'kvp-fixture-NNN' naming pattern (no
+// timestamp), so existing rows don't multiply.
+//
+// @see backend/test/global-teardown.ts NOTE about user accumulation
+// @see backend/test/kvp.api.test.ts test #11 (`/options caps users at 50`)
+
+const FIXTURE_ADMIN_EMAIL = 'perm-test-admin@assixx.com';
+const KVP_FIXTURE_USER_COUNT = 50;
+const KVP_FIXTURE_PREFIX = 'kvp-fixture-';
+
+async function fetchPositionId(token: string): Promise<string> {
+  const res = await fetch(`${BASE_URL}/organigram/positions`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const body = (await res.json()) as JsonBody;
+  const positions = body.data as Array<{ id: string; roleCategory: string }>;
+  const employeePos = positions.find((p) => p.roleCategory === 'employee');
+  if (!employeePos) throw new Error('No employee position in catalog');
+  return employeePos.id;
+}
+
+async function createUserIfMissing(
+  token: string,
+  payload: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: 'admin' | 'employee';
+    positionId: string;
+  },
+): Promise<void> {
+  const res = await fetch(`${BASE_URL}/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      email: payload.email,
+      password: APITEST_PASSWORD,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      role: payload.role,
+      phone: '+49123456000',
+      positionIds: [payload.positionId],
+    }),
+  });
+  // 201 = created, 409 = already exists. Both are success for this fixture.
+  if (res.status !== 201 && res.status !== 409) {
+    throw new Error(`Fixture user create failed for ${payload.email}: ${String(res.status)}`);
+  }
+}
+
+describe('Setup: Persistent Fixture Users', () => {
+  it('should ensure perm-test-admin + 50 kvp-fixture users exist for downstream tests', async () => {
+    const positionId = await fetchPositionId(authToken);
+
+    // 1. Persistent admin used by 3 tests (auth-forgot-password,
+    //    security-settings, tenant-domains).
+    await createUserIfMissing(authToken, {
+      email: FIXTURE_ADMIN_EMAIL,
+      firstName: 'PermTest',
+      lastName: 'Admin',
+      role: 'admin',
+      positionId,
+    });
+
+    // 2. 50 employees needed by kvp test #11 (`/options caps users at 50`).
+    //    Guarantees the LIMIT cap actually triggers on a fresh DB.
+    for (let i = 0; i < KVP_FIXTURE_USER_COUNT; i++) {
+      await createUserIfMissing(authToken, {
+        email: `${KVP_FIXTURE_PREFIX}${String(i).padStart(3, '0')}@assixx.com`,
+        firstName: 'KvpFixture',
+        lastName: String(i).padStart(3, '0'),
+        role: 'employee',
+        positionId,
+      });
+    }
+
+    // Verify the seed actually landed: re-running createUserIfMissing for the
+    // admin must produce 409 (already exists). Catches silent regressions
+    // where POST /users returned 201 but the row never persisted.
+    // Avoids GET /users?limit=200 — the endpoint enforces limit<=100, and
+    // pagination would add complexity for no functional gain here.
+    const reverifyRes = await fetch(`${BASE_URL}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({
+        email: FIXTURE_ADMIN_EMAIL,
+        password: APITEST_PASSWORD,
+        firstName: 'PermTest',
+        lastName: 'Admin',
+        role: 'admin',
+        phone: '+49123456000',
+        positionIds: [positionId],
+      }),
+    });
+    expect(reverifyRes.status).toBe(409);
+  }, 60_000); // runs short-circuit on 409 in <2s. // First run takes ~50× POST + retries. 60s gives generous headroom; later
 });

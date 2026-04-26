@@ -31,6 +31,8 @@ import { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-pe
 import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { UserPositionService } from '../organigram/user-position.service.js';
+import type { ProtectionActor, ProtectionTargetUser } from '../root/root-protection.service.js';
+import { ROOT_PROTECTION_CODES, RootProtectionService } from '../root/root-protection.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
@@ -93,6 +95,12 @@ export class UsersService {
     // literal, v0.3.6 D33) to block user creation for tenants without a
     // verified domain. `tenantId` is the helper's 4th parameter.
     private readonly tenantVerification: TenantVerificationService,
+    // Layer-2 root protection (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md
+    // §2.3, Session 4). Wired into `deleteUser` (full chain) and
+    // `archiveUser` (defensive role-block — archive is NOT in §Operations
+    // Covered, but root accounts must not be removed-from-active via this
+    // generic path; lifecycle goes through Root* services).
+    private readonly rootProtection: RootProtectionService,
   ) {}
 
   // ============================================
@@ -507,6 +515,32 @@ export class UsersService {
     const scope = await this.scopeService.getScope();
     await this.ensureUserInScope(scope, userId, tenantId);
 
+    // Layer-2 root protection (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md
+    // §2.3, Session 4). For root targets the chain blocks cross-root +
+    // last-root. The `isTerminationOp` gate from the canonical pattern is
+    // omitted: this method's only mutation IS a soft-delete (1→4) — calling
+    // the helper would just re-prove that. Self-delete is already blocked
+    // upstream by `userId === currentUserId`, so the SELF_VIA_APPROVAL
+    // branch is unreachable but kept for grep-friendly parity with the
+    // other wired sites.
+    if (user.role === 'root') {
+      const actor: ProtectionActor = { id: currentUserId, tenantId };
+      const target: ProtectionTargetUser = {
+        id: userId,
+        tenantId,
+        role: user.role,
+        isActive: IS_ACTIVE.ACTIVE,
+      };
+      await this.rootProtection.assertCrossRootTerminationForbidden(actor, target, 'soft-delete');
+      if (actor.id === target.id) {
+        throw new ForbiddenException({
+          code: ROOT_PROTECTION_CODES.SELF_VIA_APPROVAL_REQUIRED,
+          message: 'Root self-termination must use the peer-approval flow.',
+        });
+      }
+      await this.rootProtection.assertNotLastRoot(tenantId, userId);
+    }
+
     // Soft delete (is_active = 4 = deleted)
     await this.databaseService.tenantQuery(
       `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
@@ -538,6 +572,22 @@ export class UsersService {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
+    // Layer-2 root protection (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md
+    // §2.3, Session 4). Archive (is_active 1→3) is NOT in §Operations
+    // Covered as a "termination", so the canonical §2.3 chain via
+    // `isTerminationOp` is intentionally inert here. We add a defensive
+    // role-block instead: root accounts must not be removed-from-active
+    // through the generic users path. Their lifecycle is managed by
+    // RootService.deleteRootUser + the Session-5 self-termination flow.
+    // Reuses CROSS_ROOT_FORBIDDEN — the user-facing meaning is identical
+    // ("you cannot mutate this root account from here").
+    if (user.role === 'root') {
+      throw new ForbiddenException({
+        code: ROOT_PROTECTION_CODES.CROSS_ROOT_FORBIDDEN,
+        message: 'Root-Konten können nicht über diesen Pfad archiviert werden.',
+      });
+    }
+
     await this.databaseService.tenantQuery(
       `UPDATE users SET is_active = ${IS_ACTIVE.ARCHIVED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
@@ -546,7 +596,17 @@ export class UsersService {
     return { message: 'User archived successfully' };
   }
 
-  /** Unarchive user (is_active = 1) */
+  /**
+   * Unarchive user (is_active = 1).
+   *
+   * NOT wired into RootProtectionService per
+   * FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.3 Session-4 verification:
+   * unarchive sets `is_active=1` (ACTIVE), NOT 0 (INACTIVE/deactivate). The
+   * "(only if it can DEACTIVATE a root — verify)" clause in §2.3 is therefore
+   * resolved as NO. Reactivating a previously-archived user is the inverse
+   * of a termination — strictly outside §Operations Covered (Soft-Delete=4,
+   * Deactivate=0, Demote, Hard-Delete).
+   */
   async unarchiveUser(userId: number, tenantId: number): Promise<{ message: string }> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {

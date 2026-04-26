@@ -275,8 +275,8 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT pg_stat_sta
 Full Log↔Trace pipeline verification. Prerequisite: all observability containers healthy + backend started with `OTEL_TEMPO_ENABLED=true`.
 
 ```bash
-# Login + get a token for triggering log-producing endpoints (apitest admin)
-TOKEN=$(curl -s -X POST http://localhost:3000/api/v2/auth/login -H 'Content-Type: application/json' -d '{"email":"admin@apitest.de","password":"ApiTest12345!"}' | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['accessToken'])")
+# Login + get a token for triggering log-producing endpoints (assixx admin)
+TOKEN=$(curl -s -X POST http://localhost:3000/api/v2/auth/login -H 'Content-Type: application/json' -d '{"email":"info@assixx.com","password":"ApiTest12345!"}' | python3 -c "import json,sys;print(json.load(sys.stdin)['data']['accessToken'])")
 
 # Trigger a WARN log inside an active OTel span (E2E-key duplicate returns 409 → AllExceptionsFilter logs)
 curl -s -X POST http://localhost:3000/api/v2/e2e/keys -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"publicKey":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}' -o /dev/null
@@ -347,7 +347,7 @@ curl -s http://localhost:3001/health | jq '.'                # Frontend-Health (
 curl -s http://localhost:5173                                 # Dev-Server erreichbar?
 
 # API Login testen
-curl -s http://localhost:3000/api/v2/auth/login -X POST -H "Content-Type: application/json" -d '{"email":"admin@apitest.de","password":"ApiTest12345!"}' | jq '.'
+curl -s http://localhost:3000/api/v2/auth/login -X POST -H "Content-Type: application/json" -d '{"email":"info@assixx.com","password":"ApiTest12345!"}' | jq '.'
 
 # Nginx Routing prüfen (Production)
 curl -sI http://localhost/login | head -10                   # Response-Headers der Login-Seite

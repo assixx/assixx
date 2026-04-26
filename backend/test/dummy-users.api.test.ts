@@ -64,7 +64,7 @@ describe('Dummy Users: Auth', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'employee@apitest.de',
+        email: 'employee@assixx.com',
         password: APITEST_PASSWORD,
       }),
     });

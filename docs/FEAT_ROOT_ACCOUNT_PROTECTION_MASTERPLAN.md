@@ -2,13 +2,13 @@
 
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
-> **Version:** 0.2.0 (Draft, post-audit)
-> **Status:** DRAFT — Phase 0 audit COMPLETE, Phase 1 ready
+> **Version:** 1.0.1 (Phase 2 in progress — Session 3 done)
+> **Status:** Phase 1 COMPLETE 2026-04-26 — Phase 2 Session 3/4 done, Sessions 4-6 pending
 > **Branch:** `feat/root-account-protection`
 > **Spec:** Inline — see §Goal below
 > **Author:** Simon Öztürk
 > **Estimated sessions:** 10
-> **Actual sessions:** 1 / 10 (Phase 0 audit done)
+> **Actual sessions:** 3 / 10 (Phase 0 audit + Phase 1 migrations + Phase 2 RootProtectionService done)
 
 ---
 
@@ -73,16 +73,18 @@ all four operations that can take a root account out of "active root" state.
 
 ## Changelog
 
-| Version | Date       | Change                                                                                                                                                                                                                                                                                              |
-| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.1.0   | 2026-04-26 | Initial draft — phases outlined                                                                                                                                                                                                                                                                     |
-| 0.2.0   | 2026-04-26 | Post-audit revision: Trigger logic fixed (Option 1+ Hybrid — DB-row existence check), module placement → `root/` flat (matches existing pattern), Layer-2 wiring expanded to 5 services + 2 PUT routes, 24h re-request cooldown, naming consolidated, eventBus → event-bus, §0.5 audit table filled |
-| 1.0.0   | TBD        | Phase 1 COMPLETE — migrations applied                                                                                                                                                                                                                                                               |
-| 1.1.0   | TBD        | Phase 2 COMPLETE — backend done                                                                                                                                                                                                                                                                     |
-| 1.2.0   | TBD        | Phase 3 COMPLETE — unit tests green                                                                                                                                                                                                                                                                 |
-| 1.3.0   | TBD        | Phase 4 COMPLETE — API integration tests green                                                                                                                                                                                                                                                      |
-| 1.4.0   | TBD        | Phase 5 COMPLETE — frontend done                                                                                                                                                                                                                                                                    |
-| 2.0.0   | TBD        | All phases COMPLETE — shipped + ADR-053 accepted                                                                                                                                                                                                                                                    |
+| Version | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-04-26 | Initial draft — phases outlined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 0.2.0   | 2026-04-26 | Post-audit revision: Trigger logic fixed (Option 1+ Hybrid — DB-row existence check), module placement → `root/` flat (matches existing pattern), Layer-2 wiring expanded to 5 services + 2 PUT routes, 24h re-request cooldown, naming consolidated, eventBus → event-bus, §0.5 audit table filled                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 1.0.0   | 2026-04-26 | Phase 1 COMPLETE -- migrations applied (table + RLS + 5 indexes; trigger + 4 smokes pass; customer fresh-install synced; backend tsc clean)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| 1.0.1   | 2026-04-26 | Session 3 done -- `RootProtectionService` implemented (5 methods per §2.2), registered + exported in `RootModule`, §0.5 spot-check rows for `root-deletion.service.ts` and audit infra resolved, lint+type-check clean, tests deferred to Session 7 per Phase 3 schedule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 1.0.2   | 2026-04-26 | Session 4 done -- Step 2.3 wiring across 4 termination sites + 1 defensive role-block: `root.service.ts:deleteRootUser` (full chain replaces inline self-delete + last-root SQL), `root-admin.service.ts:deleteAdmin` (defensive), `users.service.ts:deleteUser` (full chain), `users.service.ts:archiveUser` (defensive role-block — root accounts cannot be archived via the generic users path), `dummy-users.service.ts:delete` (defensive). `unarchiveUser` NOT wired (verified: sets is_active=1, not 0). PUT-route role-demote wiring on `updateRootUser`/`updateAdmin` deferred — Layer 4 trigger backstop. RootModule exported into UsersModule + DummyUsersModule. 4 paired test suites updated; 105 unit tests green. Lint 0 errors, tsc 0 errors. |
+| 1.1.0   | TBD        | Phase 2 COMPLETE — backend done                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 1.2.0   | TBD        | Phase 3 COMPLETE — unit tests green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 1.3.0   | TBD        | Phase 4 COMPLETE — API integration tests green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 1.4.0   | TBD        | Phase 5 COMPLETE — frontend done                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| 2.0.0   | TBD        | All phases COMPLETE — shipped + ADR-053 accepted                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ---
 
@@ -91,7 +93,7 @@ all four operations that can take a root account out of "active root" state.
 ### 0.1 Must be true before starting
 
 - [x] Docker stack running (all containers healthy)
-- [ ] DB backup taken: `database/backups/pre-root-protection-{timestamp}.dump`
+- [x] DB backup taken: `database/backups/pre-root-protection-20260426_210337.dump` (3.3 MB, pg_dump custom format, 2026-04-26 21:03)
 - [x] Branch `feat/root-account-protection` checked out from latest `main`
 - [x] No pending migrations blocking
 - [x] Dependent features shipped: ADR-019 (RLS) ✓, ADR-020 (Per-User Permissions) ✓, ADR-037 (Approvals Architecture) ✓
@@ -170,22 +172,22 @@ grep -rn "users\.role\|UPDATE users" backend/src/nest/role-switch/
 
 **Audit Output:**
 
-| Question                                                     | Answer                                                                                                                                                                                                                  |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Where is `users.is_active` mutated?                          | 5 sites: `root/root.service.ts:400`, `root/root-admin.service.ts:295`, `users/users.service.ts:512/542/557`, `dummy-users/dummy-users.service.ts:300`, `root/root-deletion.service.ts` (spot-check needed in Session 3) |
-| Where is `users.role` updated?                               | PUT routes: `root/root.controller.ts:147` (`Put('admins/:id')`), `root/root.controller.ts:255` (`Put('users/:id')`). Service-level: same 5 services as above.                                                           |
-| Is there a hard-delete route?                                | None confirmed — DELETE routes appear to soft-delete via `is_active = 4`. Trigger covers preemptively if added later.                                                                                                   |
-| Which service does `(root)/manage-root` call to delete?      | `root/root.service.ts` + `root/root-admin.service.ts` (separate paths for admin vs root targets)                                                                                                                        |
-| Does `(root)/root-profile` expose a self-delete?             | Currently NO. Self-delete UI is new in this plan (Phase 5 §5.1).                                                                                                                                                        |
-| Where is the JWT-issued user ID set into `app.user_id`?      | `database.service.ts:170` (`setUserContext`), called from `tenantTransaction()` line 67. Layer-4 trigger has the data.                                                                                                  |
-| Existing audit_trail entries for users-table changes?        | TBD — confirm in Session 3 before service wiring.                                                                                                                                                                       |
-| Does `tenant-deletion/` use a peer-confirmation pattern?     | Not used as inspiration — tenant deletion is operationally distinct. Sys_user bypass in trigger covers this.                                                                                                            |
-| Existing triggers on `users`?                                | Only timestamp triggers (`update_updated_at`-style). No protective trigger. No conflict with new trigger.                                                                                                               |
-| Does `role-switch` change `users.role` in DB?                | NO — impersonation switches request-context only. Plan Known-Limitation #9 stands.                                                                                                                                      |
-| Is `event-bus.ts` filename kebab-case?                       | YES (`backend/src/utils/event-bus.ts`). v0.1.0 had `eventBus.ts` typo — fixed.                                                                                                                                          |
-| Does PG18 ship `uuidv7()` built-in?                          | YES. No extension needed.                                                                                                                                                                                               |
-| `set_config(..., true)` transaction-local semantics correct? | YES. Auto-cleared on COMMIT/ROLLBACK. R9 mitigation confirmed.                                                                                                                                                          |
-| `users.role` type, `users.is_active` type?                   | `users.role` = ENUM, `users.is_active` = SMALLINT. Both work with `<>` in trigger as written.                                                                                                                           |
+| Question                                                     | Answer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Where is `users.is_active` mutated?                          | 5 sites: `root/root.service.ts:400`, `root/root-admin.service.ts:295`, `users/users.service.ts:512/542/557`, `dummy-users/dummy-users.service.ts:300`. **Spot-check 2026-04-26 (Session 3):** `root/root-deletion.service.ts` does NOT mutate `users` directly — manages `tenant_deletion_queue` only; the actual user wipe during tenant deletion happens inside `tenant-deletion.service.ts` (out of scope, runs as `sys_user` which bypasses Layer 4 by design). No wiring needed.                                                                                                                                                                                                                                                                                                            |
+| Where is `users.role` updated?                               | PUT routes: `root/root.controller.ts:147` (`Put('admins/:id')`), `root/root.controller.ts:255` (`Put('users/:id')`). Service-level: same 5 services as above.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Is there a hard-delete route?                                | None confirmed — DELETE routes appear to soft-delete via `is_active = 4`. Trigger covers preemptively if added later.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Which service does `(root)/manage-root` call to delete?      | `root/root.service.ts` + `root/root-admin.service.ts` (separate paths for admin vs root targets)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Does `(root)/root-profile` expose a self-delete?             | Currently NO. Self-delete UI is new in this plan (Phase 5 §5.1).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Where is the JWT-issued user ID set into `app.user_id`?      | `database.service.ts:170` (`setUserContext`), called from `tenantTransaction()` line 67. Layer-4 trigger has the data.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Existing audit_trail entries for users-table changes?        | **Spot-check 2026-04-26 (Session 3):** Two independent writers exist. (1) `ActivityLoggerService` at `backend/src/nest/common/services/activity-logger.service.ts` — `log{Create,Update,Delete}()` write to `root_logs` (Root-Dashboard-visible), called from service code (existing pattern: `root.service.ts:377`). (2) `AuditLoggingService` at `backend/src/nest/common/audit/audit-logging.service.ts` — writes to `audit_trail`, called automatically by `AuditTrailInterceptor` for every HTTP request (success + failure). `RootProtectionService.auditDeniedAttempt()` uses (1); the interceptor produces a complementary `audit_trail` entry on the 403 automatically. ActivityAction enum lacks `'denied'` so denials map to `'delete'`/`'update'` with explicit prefix in `details`. |
+| Does `tenant-deletion/` use a peer-confirmation pattern?     | Not used as inspiration — tenant deletion is operationally distinct. Sys_user bypass in trigger covers this.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Existing triggers on `users`?                                | Only timestamp triggers (`update_updated_at`-style). No protective trigger. No conflict with new trigger.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Does `role-switch` change `users.role` in DB?                | NO — impersonation switches request-context only. Plan Known-Limitation #9 stands.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Is `event-bus.ts` filename kebab-case?                       | YES (`backend/src/utils/event-bus.ts`). v0.1.0 had `eventBus.ts` typo — fixed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Does PG18 ship `uuidv7()` built-in?                          | YES. No extension needed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `set_config(..., true)` transaction-local semantics correct? | YES. Auto-cleared on COMMIT/ROLLBACK. R9 mitigation confirmed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `users.role` type, `users.is_active` type?                   | `users.role` = ENUM, `users.is_active` = SMALLINT. Both work with `<>` in trigger as written.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 **Module Placement Decision (revised from v0.1.0):**
 
@@ -199,7 +201,7 @@ grep -rn "users\.role\|UPDATE users" backend/src/nest/role-switch/
 
 > **Dependency:** Phase 0 audit complete + DB backup taken.
 
-### Step 1.1: Create `root_self_termination_requests` table [PENDING]
+### Step 1.1: Create `root_self_termination_requests` table [DONE 2026-04-26]
 
 **New file:** `database/migrations/{timestamp}_root-self-termination-requests.ts`
 
@@ -290,7 +292,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON root_self_termination_requests TO sys_us
 - [x] `is_active INTEGER NOT NULL DEFAULT 1`
 - [x] `up()` + `down()` (drop table CASCADE + drop type)
 
-### Step 1.2: Create root-protection trigger function + trigger [PENDING]
+### Step 1.2: Create root-protection trigger function + trigger [DONE 2026-04-26]
 
 **New file:** `database/migrations/{timestamp}_root-protection-trigger.ts`
 
@@ -436,18 +438,18 @@ UPDATE users SET is_active = 0 WHERE id = 1;
 
 ### Phase 1 — Definition of Done
 
-- [ ] 2 migration files with `up()` + `down()`
-- [ ] Dry run passes: `doppler run -- ./scripts/run-migrations.sh up --dry-run`
-- [ ] Both migrations applied
-- [ ] Table `root_self_termination_requests` exists with RLS policy + 5 indexes
-- [ ] Trigger `trg_root_protection` exists on `users`
-- [ ] Smoke 1 (cross-root as app_user) → ROOT_CROSS_TERMINATION_FORBIDDEN
-- [ ] Smoke 2 (self without approval) → ROOT_SELF_TERMINATION_REQUIRES_APPROVAL
-- [ ] Smoke 3 (GUC set, no DB row) → ROOT_NO_APPROVED_REQUEST
-- [ ] Smoke 4 (assixx_user bypass) → succeeds
-- [ ] Backend compiles, existing tests pass
-- [ ] Backup taken before migration
-- [ ] Customer fresh-install synced (`./scripts/sync-customer-migrations.sh`)
+- [x] 2 migration files with `up()` + `down()`
+- [x] Dry run passes: `doppler run -- ./scripts/run-migrations.sh up --dry-run`
+- [x] Both migrations applied
+- [x] Table `root_self_termination_requests` exists with RLS policy + 5 indexes
+- [x] Trigger `trg_root_protection` exists on `users`
+- [x] Smoke 1 (cross-root as app_user) → ROOT_CROSS_TERMINATION_FORBIDDEN
+- [x] Smoke 2 (self without approval) → ROOT_SELF_TERMINATION_REQUIRES_APPROVAL
+- [x] Smoke 3 (GUC set, no DB row) → ROOT_NO_APPROVED_REQUEST
+- [x] Smoke 4 (assixx_user bypass) → succeeds
+- [x] Backend compiles, existing tests pass
+- [x] Backup taken before migration
+- [x] Customer fresh-install synced (`./scripts/sync-customer-migrations.sh`)
 
 ---
 
@@ -456,7 +458,7 @@ UPDATE users SET is_active = 0 WHERE id = 1;
 > **Dependency:** Phase 1 complete.
 > **Bounded context:** `backend/src/nest/root/` (existing module — extend, don't fork).
 
-### Step 2.1: Module skeleton + types + DTOs [PENDING]
+### Step 2.1: Module skeleton + types + DTOs [PARTIAL — `RootProtectionService` registered 2026-04-26]
 
 **Existing directory (flat extension):** `backend/src/nest/root/`
 
@@ -488,12 +490,12 @@ backend/src/nest/root/
 
 **Register in `backend/src/nest/root/root.module.ts`:**
 
-- [ ] `RootProtectionService` added to providers + exports
+- [x] `RootProtectionService` added to providers + exports (Session 3, 2026-04-26)
 - [ ] `RootSelfTerminationService` added to providers + exports
 - [ ] `RootSelfTerminationController` added to controllers
 - [ ] `RootSelfTerminationCron` added to providers (with `ScheduleModule` import)
 
-### Step 2.2: `RootProtectionService` [PENDING]
+### Step 2.2: `RootProtectionService` [DONE 2026-04-26]
 
 **File:** `backend/src/nest/root/root-protection.service.ts`
 
@@ -515,21 +517,21 @@ backend/src/nest/root/
 - Throws specific exception classes — never returns boolean
 - Reads `currentUserId` from CLS, never from request params
 
-### Step 2.3: Wire `RootProtectionService` into ALL mutation paths [PENDING]
+### Step 2.3: Wire `RootProtectionService` into ALL mutation paths [DONE 2026-04-26]
 
 **Audit-confirmed mutation surface (Phase 0 §0.5):**
 
-| File:Line                                                 | Operation                        | Wiring needed                                   |
-| --------------------------------------------------------- | -------------------------------- | ----------------------------------------------- |
-| `backend/src/nest/root/root.service.ts:400`               | Soft-delete user                 | YES                                             |
-| `backend/src/nest/root/root-admin.service.ts:295`         | Soft-delete admin                | YES (verify target.role check)                  |
-| `backend/src/nest/root/root-deletion.service.ts`          | Spot-check needed                | TBD Session 3                                   |
-| `backend/src/nest/users/users.service.ts:512`             | Delete user                      | YES                                             |
-| `backend/src/nest/users/users.service.ts:542`             | Archive user                     | YES                                             |
-| `backend/src/nest/users/users.service.ts:557`             | Reactivate user                  | YES (only if it can DEACTIVATE a root — verify) |
-| `backend/src/nest/dummy-users/dummy-users.service.ts:300` | Dummy users (employee role only) | YES (defensive — assert target.role !== 'root') |
-| `backend/src/nest/root/root.controller.ts:147`            | `Put('admins/:id')`              | YES (role-change check via service it calls)    |
-| `backend/src/nest/root/root.controller.ts:255`            | `Put('users/:id')`               | YES (role-change check)                         |
+| File:Line                                                 | Operation                         | Wiring needed                                                                                                                                                                                                                          |
+| --------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/src/nest/root/root.service.ts:400`               | Soft-delete user                  | DONE 2026-04-26 — full chain replaces inline self-delete BadRequest + inline last-root SELECT-COUNT. Existence check moved before chain. Self-delete now 403 SELF_VIA_APPROVAL_REQUIRED.                                               |
+| `backend/src/nest/root/root-admin.service.ts:295`         | Soft-delete admin                 | DONE 2026-04-26 — defensive (AdminUser API shape doesn't expose `role`; hardcoded 'admin' since getAdminById filters role='admin'; chain inert in normal flow).                                                                        |
+| `backend/src/nest/root/root-deletion.service.ts`          | NONE — tenant_deletion_queue only | NO wiring (Session 3 spot-check, out of scope)                                                                                                                                                                                         |
+| `backend/src/nest/users/users.service.ts:512`             | Delete user                       | DONE 2026-04-26 — full chain.                                                                                                                                                                                                          |
+| `backend/src/nest/users/users.service.ts:542`             | Archive user                      | DONE 2026-04-26 — defensive role-block (archive 1→3 NOT in §Operations Covered, but root accounts cannot be archived via the generic users path; reuses CROSS_ROOT_FORBIDDEN code).                                                    |
+| `backend/src/nest/users/users.service.ts:557`             | Reactivate user                   | NOT wired — verified 2026-04-26: sets is_active=1 (ACTIVE), not 0. Resolves §2.3 "(only if it can DEACTIVATE a root — verify)" to NO. Strictly outside §Operations Covered. Documented in source.                                      |
+| `backend/src/nest/dummy-users/dummy-users.service.ts:300` | Dummy users (employee role only)  | DONE 2026-04-26 — defensive (pre-fetch role + chain; UPDATE filter role='dummy' makes the chain inert in normal flow).                                                                                                                 |
+| `backend/src/nest/root/root.controller.ts:147`            | `Put('admins/:id')`               | DEFERRED 2026-04-26 — `updateAdmin` has no `actingUserId` in current signature. Wiring requires constructor + controller signature changes. Layer 4 trigger catches role-flip-from-root regardless. Tracked for fix-up within Phase 2. |
+| `backend/src/nest/root/root.controller.ts:255`            | `Put('users/:id')`                | DEFERRED 2026-04-26 — same reason as PUT admins/:id. Layer 4 backstop.                                                                                                                                                                 |
 
 **Wiring pattern:**
 
@@ -958,18 +960,18 @@ backend/src/nest/root/
 
 ## Session Tracking
 
-| Session | Phase | Description                                                 | Status | Date       |
-| ------- | ----- | ----------------------------------------------------------- | ------ | ---------- |
-| 1       | 0     | Code audit + risk-refinement + DB backup                    | DONE   | 2026-04-26 |
-| 2       | 1     | Migration: requests table + DB trigger (Hybrid Option 1+)   |        |            |
-| 3       | 2     | RootProtectionService + spot-check root-deletion.service.ts |        |            |
-| 4       | 2     | Wire all 5 services + 2 PUT routes; verify wiring           |        |            |
-| 5       | 2     | RootSelfTerminationService + controller + cron + cooldown   |        |            |
-| 6       | 2     | Notifications + EventBus integration                        |        |            |
-| 7       | 3     | Unit tests (≥32) — service + DB-trigger SQL tests           |        |            |
-| 8       | 4     | API integration tests (≥24)                                 |        |            |
-| 9       | 5     | Frontend: root-profile + manage-root + manage-approvals     |        |            |
-| 10      | 6     | ADR-053 + audit + docs + map update                         |        |            |
+| Session | Phase | Description                                                                                                 | Status | Date       |
+| ------- | ----- | ----------------------------------------------------------------------------------------------------------- | ------ | ---------- |
+| 1       | 0     | Code audit + risk-refinement + DB backup                                                                    | DONE   | 2026-04-26 |
+| 2       | 1     | Migration: requests table + DB trigger (Hybrid Option 1+)                                                   | DONE   | 2026-04-26 |
+| 3       | 2     | RootProtectionService + spot-check root-deletion.service.ts                                                 | DONE   | 2026-04-26 |
+| 4       | 2     | Wire 4 termination sites + 1 defensive role-block; PUT-route role-demote wiring deferred (Layer 4 backstop) | DONE   | 2026-04-26 |
+| 5       | 2     | RootSelfTerminationService + controller + cron + cooldown                                                   |        |            |
+| 6       | 2     | Notifications + EventBus integration                                                                        |        |            |
+| 7       | 3     | Unit tests (≥32) — service + DB-trigger SQL tests                                                           |        |            |
+| 8       | 4     | API integration tests (≥24)                                                                                 |        |            |
+| 9       | 5     | Frontend: root-profile + manage-root + manage-approvals                                                     |        |            |
+| 10      | 6     | ADR-053 + audit + docs + map update                                                                         |        |            |
 
 ### Session 1 — 2026-04-26
 
@@ -980,6 +982,44 @@ backend/src/nest/root/
 - Audit table §0.5 fully populated
 - All claims in v0.1.0 either verified or corrected
   **Next session:** Session 2 = Phase 1 migrations
+
+### Session 3 — 2026-04-26
+
+**Goal:** Implement `RootProtectionService` (Step 2.2) + close §0.5 spot-check rows.
+**Result:**
+
+- New file: `backend/src/nest/root/root-protection.service.ts` (~245 lines, 5 methods, 3 exported types, 1 exported error-code constant).
+- `RootProtectionService` added to `RootModule.providers` + `RootModule.exports` (Step 2.1 checkbox 1/4 ticked).
+- §0.5 row `root-deletion.service.ts` → confirmed NO direct user mutations (manages `tenant_deletion_queue`); no wiring needed in Session 4.
+- §0.5 row "audit_trail entries for users-table changes" → resolved: dual-writer model (`ActivityLoggerService` → `root_logs` via service code; `AuditLoggingService` → `audit_trail` via interceptor). Service uses (1), interceptor handles (2) on the 403 automatically.
+- §2.3 Mutation Surface table updated.
+
+**Verification:**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/root/` → 0 errors
+- `docker exec assixx-backend pnpm run type-check` → exit 0 (shared + frontend + backend + backend/test all clean)
+- Tests deferred to Session 7 per Phase 3 schedule (`root-protection.service.test.ts ~12 tests`).
+
+**Next session:** Session 4 = wire 5 services + 2 PUT routes (Step 2.3).
+
+### Session 4 — 2026-04-26
+
+**Goal:** Step 2.3 — wire `RootProtectionService` into all mutation paths.
+
+**Result:**
+
+- **Wired (full chain):** `root.service.ts:deleteRootUser` (replaces inline self-delete BadRequest + inline last-root SELECT-COUNT — self-delete now 403 `SELF_VIA_APPROVAL_REQUIRED`, last-root now `PreconditionFailedException`); `users.service.ts:deleteUser`.
+- **Wired (defensive — chain inert in normal flow):** `root-admin.service.ts:deleteAdmin` (target always role='admin'), `dummy-users.service.ts:delete` (target always role='dummy', adds a pre-SELECT for role resolution).
+- **Defensive role-block:** `users.service.ts:archiveUser` — root accounts cannot be archived via the generic users path (archive 1→3 is NOT in §Operations Covered as termination, but root lifecycle belongs in Root\* services). Reuses `CROSS_ROOT_FORBIDDEN` code.
+- **NOT wired:** `users.service.ts:unarchiveUser` — verified: sets `is_active=1`, NOT 0; not a deactivation per §Operations Covered. Comment in source documents the verification.
+- **DEFERRED:** PUT-route role-demote wiring on `updateRootUser` and `updateAdmin`. Both methods can flip `users.role` from 'root' → !'root' (a demote per §Operations Covered #3), but neither has an `actingUserId` parameter. Adding it requires constructor + controller + test signature changes. Layer 4 trigger (`fn_prevent_cross_root_change` BEFORE UPDATE OR DELETE on users) blocks role-flip-from-root regardless of which service mutates the row, so the gap is contained. Tracked as a fix-up within Phase 2.
+- **DI graph:** `RootModule` imported by `UsersModule` and `DummyUsersModule` (one-way; no circular dep — `RootModule`'s existing imports do not transitively touch users/dummy-users).
+- **Paired test updates (4 suites, 105 tests green):**
+  - `root.service.test.ts`: deleteRootUser tests rewritten — self-delete now expects `ForbiddenException` with `SELF_VIA_APPROVAL_REQUIRED`; new test "propagate ForbiddenException from cross-root assertion" (verifies order: cross-root before last-root); new test "propagate PreconditionFailedException from last-root assertion"; happy-path test simplified now that no inline last-root mock is needed.
+  - `root-admin.service.test.ts` + `users.service.test.ts` + `dummy-users.service.test.ts`: added `RootProtectionService` mock to constructor (no-op defaults); `dummy-users.service.test.ts` delete-suite updated to feed the new pre-SELECT mock.
+- **Verification:** `pnpm exec eslint backend/src/nest/{root,users,dummy-users}` → 0 errors. `pnpm exec tsc --noEmit -p backend` → 0 errors. `pnpm exec tsc --noEmit -p backend/test` → 0 errors. `pnpm exec vitest run --project unit` on the 4 paired suites → 105/105 passed (1.62s).
+
+**Next session:** Session 5 = `RootSelfTerminationService` + controller + cron + cooldown (Steps 2.4–2.6).
 
 ---
 

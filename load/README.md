@@ -147,7 +147,7 @@ WS=1 pnpm run test:load:baseline
 
 # Full Capacity-Test (benötigt Multi-Tenant-Pool)
 PROFILE=full LOGINS='[
-  {"email":"admin@apitest.de","password":"ApiTest12345!"},
+  {"email":"info@assixx.com","password":"ApiTest12345!"},
   {"email":"admin@tenant2.de","password":"…"},
   {"email":"admin@tenant3.de","password":"…"},
   {"email":"admin@tenant4.de","password":"…"},

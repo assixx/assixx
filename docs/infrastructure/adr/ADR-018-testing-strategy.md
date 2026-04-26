@@ -435,7 +435,7 @@ behaviour.
 | Rate Limiting | Pre-step `test:load:flush` runs `FLUSHDB`; Baseline-Wrapper additionally `--user "$(id -u):$(id -g)"` |
 | Thresholds    | Smoke: `p95 < 500 ms` · Baseline per-tag: `read p95 < 100`, `write p95 < 250`, `error rate < 0.1 %`   |
 | TypeScript    | k6 ≥ 0.54 supports `.ts` natively — no transpile step; `load/tsconfig.json` for IDE                   |
-| Prerequisites | Docker backend healthy, `apitest` tenant seeded, Redis reachable                                      |
+| Prerequisites | Docker backend healthy, `assixx` tenant seeded, Redis reachable                                       |
 
 #### Smoke: 1 file, 10 endpoints
 
@@ -469,7 +469,7 @@ data. Two profiles encode this reality:
 
 | Profile | VU peak | Pool min          | Wall-time | Goal                                   |
 | ------- | ------- | ----------------- | --------- | -------------------------------------- |
-| `light` | 5       | 1 (apitest)       | ~5 min    | Regression detection + p95 drift       |
+| `light` | 5       | 1 (assixx)        | ~5 min    | Regression detection + p95 drift       |
 | `full`  | 500     | 5+ (multi-tenant) | ~8 min    | Pool-saturation knee, capacity ceiling |
 
 `setup()` validates pool size and aborts if `PROFILE=full && pool < 5`.
@@ -805,6 +805,21 @@ Settings → Branches → main:
 
 **Fix:** DB setup: `UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1`
 
+### 4. Persistent Test-Fixture Users (added 2026-04-26)
+
+**Problem:** Three tests (`auth-forgot-password`, `security-settings`, `tenant-domains`) require a stable `perm-test-admin@assixx.com` admin user, and the kvp `/options caps users at 50` test asserts strict equality (`expect(users.length).toBe(50)`) which only holds with ≥51 active users in the tenant.
+
+A fresh DB (e.g. after `apitest → assixx` rename migration of 2026-04-26 that hard-deleted 259 timestamped test-leftovers) starts with only 4 users. Vitest does not guarantee alphabetic file order, so a "create-on-demand" inside `admin-permissions.api.test.ts` cannot be relied on as a fixture for files that run before it.
+
+**Fix:** `00-auth.api.test.ts` (file-name `00-` makes it run first under any discovery order) seeds two persistent fixture sets at the end of its run:
+
+- `perm-test-admin@assixx.com` (admin role) — 1 user.
+- `kvp-fixture-NNN@assixx.com` (employee role) — 50 users for the LIMIT cap.
+
+Idempotent: emails are stable (no timestamp), so re-runs hit `409 Conflict` which the helper treats as success. Cost: ~19s on a fresh DB, <2s on subsequent runs.
+
+These users are explicitly **not** cleaned by `global-teardown.ts` — see the NOTE in that file. They sit in the same accumulating-bucket as the timestamped throwaways (perm-api-test-{ts}, etc.) but with stable emails to stay idempotent.
+
 ---
 
 ## Related Documents
@@ -812,7 +827,7 @@ Settings → Branches → main:
 - [VITEST-UNIT-TEST-PLAN.md](../../VITEST-UNIT-TEST-PLAN.md) — Detailed phase plan (Phase 0-8)
 - [VITEST-API-MIGRATION.md](../../VITEST-API-MIGRATION.md) — Bruno → Vitest migration (103 tests)
 - [HOW-TO-TEST.md](../../how-to/HOW-TO-TEST.md) — User guide for API tests
-- [HOW-TO-CREATE-TEST-USER.md](../../how-to/HOW-TO-CREATE-TEST-USER.md) — Test-Tenant `apitest` erstellen (Voraussetzung für API Integration Tests)
+- [HOW-TO-CREATE-TEST-USER.md](../../how-to/HOW-TO-CREATE-TEST-USER.md) — Test-Tenant `assixx` erstellen (Voraussetzung für API Integration Tests)
 
 ## Related ADRs
 

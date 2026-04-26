@@ -78,7 +78,7 @@ curl -s -X POST http://localhost:3000/api/v2/tpm/cards \
 ## Wichtig
 
 - Token läuft nach **30 Minuten** ab
-- `X-Tenant-ID` ist der Tenant-Slug (z.B. `apitest`, `testfirma`)
+- `X-Tenant-ID` ist der Tenant-Slug (z.B. `assixx`, `testfirma`)
 - JSON-Body immer via `@/tmp/datei.json` senden (kein Inline-JSON wegen `!`-Escaping)
 - SSE-Streams: `-m 5` für Timeout
 
@@ -86,5 +86,5 @@ curl -s -X POST http://localhost:3000/api/v2/tpm/cards \
 
 | Tenant    | Email              | Passwort      |
 | --------- | ------------------ | ------------- |
-| apitest   | admin@apitest.de   | ApiTest12345! |
+| assixx    | info@assixx.com    | ApiTest12345! |
 | testfirma | admin@testfirma.de | ApiTest12345! |

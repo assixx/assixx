@@ -24,6 +24,7 @@ import type { TenantVerificationService } from '../domains/tenant-verification.s
 import type { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { UserPositionService } from '../organigram/user-position.service.js';
+import type { RootProtectionService } from '../root/root-protection.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
@@ -196,6 +197,19 @@ describe('UsersService', () => {
         assertVerified: vi.fn().mockResolvedValue(undefined),
         isVerified: vi.fn().mockResolvedValue(true),
       } as unknown as TenantVerificationService,
+      // Layer-2 root protection (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md
+      // §2.3, Session 4). All methods no-op so existing employee-target
+      // tests for deleteUser / archiveUser / unarchiveUser still flow
+      // through to the SQL writes. A future "root target → 403" test would
+      // `.mockRejectedValueOnce(new ForbiddenException(...))` on
+      // `assertCrossRootTerminationForbidden`.
+      {
+        assertCrossRootTerminationForbidden: vi.fn().mockResolvedValue(undefined),
+        assertNotLastRoot: vi.fn().mockResolvedValue(undefined),
+        countActiveRoots: vi.fn().mockResolvedValue(2),
+        isTerminationOp: vi.fn().mockReturnValue(false),
+        auditDeniedAttempt: vi.fn().mockResolvedValue(undefined),
+      } as unknown as RootProtectionService,
     );
   });
 

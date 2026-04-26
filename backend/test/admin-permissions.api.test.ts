@@ -40,7 +40,7 @@ beforeAll(async () => {
     method: 'POST',
     headers: authHeaders(auth.authToken),
     body: JSON.stringify({
-      email: 'perm-test-admin@apitest.de',
+      email: 'perm-test-admin@assixx.com',
       password: APITEST_PASSWORD,
       firstName: 'PermTest',
       lastName: 'Admin',
@@ -60,7 +60,7 @@ beforeAll(async () => {
     });
     const listBody = (await listRes.json()) as JsonBody;
     const admins = listBody.data as Array<{ id: number; email: string }>;
-    const existing = admins.find((u) => u.email === 'perm-test-admin@apitest.de');
+    const existing = admins.find((u) => u.email === 'perm-test-admin@assixx.com');
     if (!existing) throw new Error('Test admin not found after create attempt');
     testAdminId = existing.id;
   }
@@ -71,7 +71,7 @@ beforeAll(async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: 'employee@apitest.de',
+      email: 'employee@assixx.com',
       password: APITEST_PASSWORD,
     }),
   });

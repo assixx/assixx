@@ -38,26 +38,26 @@ curl -s http://localhost:3000/health | jq .
 # → { "status": "ok", ... }
 ```
 
-### `apitest`-Tenant (Tier 2, 3, 4)
+### `assixx`-Tenant (Tier 2, 3, 4)
 
-Isolierter Test-Tenant (id=1, domain=apitest.de):
+Isolierter Test-Tenant (id=1, domain=assixx.com):
 
 | Rolle    | Email               | Passwort        |
 | -------- | ------------------- | --------------- |
-| Admin    | admin@apitest.de    | `ApiTest12345!` |
-| Employee | employee@apitest.de | `ApiTest12345!` |
+| Admin    | info@assixx.com     | `ApiTest12345!` |
+| Employee | employee@assixx.com | `ApiTest12345!` |
 
 Erstellung: [HOW-TO-CREATE-TEST-USER.md](./HOW-TO-CREATE-TEST-USER.md)
 
 ### Datenbank-Setup (einmalig nach Fresh-Install)
 
 ```sql
--- Alle Addons für apitest aktivieren (sonst KVP-Tests = 403)
+-- Alle Addons für den assixx-Test-Tenant aktivieren (sonst KVP-Tests = 403)
 INSERT INTO tenant_addons (tenant_id, addon_id, status, activated_at)
 SELECT 1, id, 'active', NOW() FROM addons WHERE is_active = 1
 ON CONFLICT (tenant_id, addon_id) DO UPDATE SET status = 'active';
 
--- apitest admin als team-lead (KVP-Create benötigt das)
+-- assixx admin als team-lead (KVP-Create benötigt das)
 UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1;
 ```
 
@@ -167,7 +167,7 @@ pnpm test --project frontend-unit
 ## Tier 2 — API Integration Tests (Real HTTP)
 
 **Was:** 753 Tests in ~33 s gegen den laufenden Docker-Backend (kein Mock).
-Native `fetch()`, eingeloggter `apitest`-Admin, sequentielle Ausführung.
+Native `fetch()`, eingeloggter `assixx`-Admin, sequentielle Ausführung.
 
 ### Quick Start
 
@@ -255,7 +255,7 @@ backend/test/
 | Export                 | Signatur                                         | Zweck                                              |
 | ---------------------- | ------------------------------------------------ | -------------------------------------------------- |
 | `BASE_URL`             | `string`                                         | `http://localhost:3000/api/v2`                     |
-| `APITEST_EMAIL`        | `string`                                         | `admin@apitest.de`                                 |
+| `APITEST_EMAIL`        | `string`                                         | `info@assixx.com`                                  |
 | `APITEST_PASSWORD`     | `string`                                         | `ApiTest12345!`                                    |
 | `loginApitest()`       | `() => Promise<AuthState>`                       | Cached Login — 1 HTTP-Request für komplette Suite  |
 | `authHeaders(token)`   | `(string) => Record<string, string>`             | `Authorization` + `Content-Type: application/json` |
@@ -517,7 +517,7 @@ WS=1 pnpm run test:load:baseline
 
 # Full Capacity (~8 min, benötigt Multi-Tenant-Pool)
 PROFILE=full LOGINS='[
-  {"email":"admin@apitest.de","password":"ApiTest12345!"},
+  {"email":"info@assixx.com","password":"ApiTest12345!"},
   {"email":"admin@tenant2.de","password":"…"},
   {"email":"admin@tenant3.de","password":"…"},
   {"email":"admin@tenant4.de","password":"…"},
@@ -538,7 +538,7 @@ Rate-Limits werden PRO JWT-User-ID getrackt:
 
 | Profil  | VU-Peak | Pool-Mindest | Wall-Time | Ziel                              |
 | ------- | ------- | ------------ | --------- | --------------------------------- |
-| `light` | 5       | 1 (apitest)  | ~5 min    | Regression-Detection + p95-Drift  |
+| `light` | 5       | 1 (assixx)   | ~5 min    | Regression-Detection + p95-Drift  |
 | `full`  | 500     | 5+           | ~8 min    | Pool-Saturation-Bruchpunkt finden |
 
 `setup()` validiert Pool-Größe und bricht ab, wenn `PROFILE=full && pool<5`.
@@ -694,25 +694,27 @@ Komplette Referenz: [Vitest Coverage Docs](https://vitest.dev/guide/coverage)
 
 ## Troubleshooting
 
-| Symptom                               | Tier  | Ursache                             | Lösung                                                                                  |
-| ------------------------------------- | ----- | ----------------------------------- | --------------------------------------------------------------------------------------- |
-| `429 Too Many Requests` on login      | 2     | Rate-Limit (login/export)           | `flushThrottleKeys()` oder `pnpm run test:load:flush`                                   |
-| `401 Unauthorized`                    | 2     | Token missing/expired               | Login-Cache prüfen, Docker neustarten                                                   |
-| `400 Bad Request`                     | 2     | Content-Type bei GET/DELETE         | `authOnly()` statt `authHeaders()` verwenden                                            |
-| `400 Bad Request`                     | 2     | Validation-Error                    | Body-Format gegen Zod-Schema prüfen                                                     |
-| `403 Forbidden` (KVP)                 | 2     | User ist kein Team-Lead             | `UPDATE teams SET team_lead_id = 1 WHERE id = 2` (siehe Prerequisites)                  |
-| `403 Forbidden` (Addon)               | 2     | Addon nicht aktiviert               | `INSERT INTO tenant_addons …` (siehe Prerequisites)                                     |
-| `404 Not Found`                       | 2     | Resource existiert nicht            | Create-`describe` muss VOR Get/Delete kommen                                            |
-| `500 Internal Server Error`           | 2     | Backend-Bug                         | `docker logs assixx-backend --tail 100`                                                 |
-| `ECONNREFUSED`                        | 2/3/4 | Backend down                        | `cd docker && doppler run -- docker-compose up -d`                                      |
-| `ECONNRESET`                          | 2     | Backend gecrashed                   | `doppler run -- docker-compose restart`                                                 |
-| Test-Timeout (30 s)                   | 2     | hookTimeout zu kurz                 | `beforeAll(async () => {...}, 60_000)` als 2. Argument                                  |
-| Double-wrapped Response               | 2     | Controller + ResponseInterceptor    | Controller soll `data` direkt returnen (nicht `{success, data}`)                        |
-| Playwright `webServer.command failed` | 3     | Port :5173 belegt                   | `./scripts/free-port.sh 5173`                                                           |
-| Turnstile-Challenge persistiert       | 3     | Echter Turnstile-Key statt Test-Key | parallel `pnpm run dev:svelte` killen, nur Playwright-managed laufen lassen             |
-| k6 `permission denied` auf summary    | 4     | Docker-User-Mismatch                | Wrapper-Skript benutzt `--user "$(id -u):$(id -g)"` (in `scripts/run-load-baseline.sh`) |
-| k6 `429` storm @ >5 VU single-tenant  | 4     | ADR-001 admin throttle 2000/15min   | `PROFILE=full LOGINS='[…5+ tenants…]'` verwenden                                        |
-| Baseline `failed: refuses to start`   | 4     | `PROFILE=full` + Pool < 5           | Pool auf 5+ Logins erweitern oder `PROFILE=light` lassen                                |
+| Symptom                                | Tier  | Ursache                             | Lösung                                                                                  |
+| -------------------------------------- | ----- | ----------------------------------- | --------------------------------------------------------------------------------------- |
+| `429 Too Many Requests` on login       | 2     | Rate-Limit (login/export)           | `flushThrottleKeys()` oder `pnpm run test:load:flush`                                   |
+| `401 Unauthorized`                     | 2     | Token missing/expired               | Login-Cache prüfen, Docker neustarten                                                   |
+| `400 Bad Request`                      | 2     | Content-Type bei GET/DELETE         | `authOnly()` statt `authHeaders()` verwenden                                            |
+| `400 Bad Request`                      | 2     | Validation-Error                    | Body-Format gegen Zod-Schema prüfen                                                     |
+| `403 Forbidden` (KVP)                  | 2     | User ist kein Team-Lead             | `UPDATE teams SET team_lead_id = 1 WHERE id = 2` (siehe Prerequisites)                  |
+| KVP `users.length === 50` schlägt fehl | 2     | <51 User in DB → Cap nicht testbar  | `00-auth.api.test.ts` einmalig laufen lassen — seedet 50 `kvp-fixture-NNN@assixx.com`   |
+| Login `perm-test-admin@assixx.com` 401 | 2     | Fixture-Setup ist 1× nötig          | Wie oben — `00-auth.api.test.ts` legt den User idempotent an                            |
+| `403 Forbidden` (Addon)                | 2     | Addon nicht aktiviert               | `INSERT INTO tenant_addons …` (siehe Prerequisites)                                     |
+| `404 Not Found`                        | 2     | Resource existiert nicht            | Create-`describe` muss VOR Get/Delete kommen                                            |
+| `500 Internal Server Error`            | 2     | Backend-Bug                         | `docker logs assixx-backend --tail 100`                                                 |
+| `ECONNREFUSED`                         | 2/3/4 | Backend down                        | `cd docker && doppler run -- docker-compose up -d`                                      |
+| `ECONNRESET`                           | 2     | Backend gecrashed                   | `doppler run -- docker-compose restart`                                                 |
+| Test-Timeout (30 s)                    | 2     | hookTimeout zu kurz                 | `beforeAll(async () => {...}, 60_000)` als 2. Argument                                  |
+| Double-wrapped Response                | 2     | Controller + ResponseInterceptor    | Controller soll `data` direkt returnen (nicht `{success, data}`)                        |
+| Playwright `webServer.command failed`  | 3     | Port :5173 belegt                   | `./scripts/free-port.sh 5173`                                                           |
+| Turnstile-Challenge persistiert        | 3     | Echter Turnstile-Key statt Test-Key | parallel `pnpm run dev:svelte` killen, nur Playwright-managed laufen lassen             |
+| k6 `permission denied` auf summary     | 4     | Docker-User-Mismatch                | Wrapper-Skript benutzt `--user "$(id -u):$(id -g)"` (in `scripts/run-load-baseline.sh`) |
+| k6 `429` storm @ >5 VU single-tenant   | 4     | ADR-001 admin throttle 2000/15min   | `PROFILE=full LOGINS='[…5+ tenants…]'` verwenden                                        |
+| Baseline `failed: refuses to start`    | 4     | `PROFILE=full` + Pool < 5           | Pool auf 5+ Logins erweitern oder `PROFILE=light` lassen                                |
 
 ### Debug — Backend-Logs
 
@@ -737,7 +739,7 @@ docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0'
 # Login
 curl -s http://localhost:3000/api/v2/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@apitest.de","password":"ApiTest12345!"}' | jq .
+  -d '{"email":"info@assixx.com","password":"ApiTest12345!"}' | jq .
 
 # GET mit Token
 curl -s http://localhost:3000/api/v2/departments \
@@ -816,7 +818,7 @@ pnpm test                             # Vitest + Playwright + k6 smoke (~3 min)
 - [ADR-018 Testing Strategy](../infrastructure/adr/ADR-018-testing-strategy.md) — Pyramide, Tooling-Decisions, Phase-Plan
 - [ADR-001 Rate Limiting](../infrastructure/adr/ADR-001-rate-limiting.md) — Throttler-Tiers (relevant für Tier-4-Profile)
 - [ADR-048 Distributed Tracing](../infrastructure/adr/ADR-048-distributed-tracing-tempo-otel.md) — Tail-Sampling-Threshold (200 ms) catched Tier-4-Outliers
-- [HOW-TO-CREATE-TEST-USER.md](./HOW-TO-CREATE-TEST-USER.md) — apitest-Tenant Setup
+- [HOW-TO-CREATE-TEST-USER.md](./HOW-TO-CREATE-TEST-USER.md) — assixx-Test-Tenant Setup
 - [HOW-TO-CLOUDFLARE-TURNSTILE.md](./HOW-TO-CLOUDFLARE-TURNSTILE.md) — Tier-3-Turnstile-Test-Keys
 - [load/README.md](../../load/README.md) — Tier-4 Detail-Konfiguration + nächste Schritte
 - [`backend/test/helpers.ts`](../../backend/test/helpers.ts) — Tier-2-Helpers Source-of-Truth
