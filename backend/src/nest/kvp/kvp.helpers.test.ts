@@ -148,26 +148,36 @@ describe('buildVisibilityClause', () => {
     expect(result.clause).toContain('s.is_shared = true');
   });
 
-  it('should use only team_lead/deputy_lead check for unshared KVPs (not user_teams)', () => {
-    const orgInfo = createOrgInfo({ teamIds: [1, 2, 3] });
+  it('should gate unshared visibility through the upstream teamLeadOf array (ADR-039)', () => {
+    const orgInfo = createOrgInfo({ teamIds: [1, 2, 3], teamLeadOf: [7] });
     const result = buildVisibilityClause(orgInfo, 42, 3);
 
-    // Unshared branch uses team_lead_id/team_deputy_lead_id only, NOT user_teams
-    expect(result.clause).toContain('s.is_shared = false');
-    expect(result.clause).toContain('t.team_lead_id =');
-    expect(result.clause).toContain('t.team_deputy_lead_id =');
-    // Extract only the unshared block (between is_shared = false and is_shared = true)
+    // Unshared block is now toggle-aware: it consumes the teamLeadOf placeholder
+    // (resolved by ScopeService with deputy-toggle awareness — ADR-039) instead
+    // of joining teams.team_deputy_lead_id directly. Placeholder at startIdx=3
+    // is teamLeadOf (first slot of buildOrgParams).
     const unsharedBlock = result.clause.split('s.is_shared = true')[0] ?? '';
+    expect(unsharedBlock).toContain('s.is_shared = false');
+    expect(unsharedBlock).toContain("s.org_level = 'team'");
+    expect(unsharedBlock).toContain('s.org_id = ANY($3)');
+
+    // The bypassing SQL subquery on teams.team_deputy_lead_id MUST be gone —
+    // it ignored the per-tenant deputy_has_lead_scope toggle.
+    expect(unsharedBlock).not.toContain('t.team_lead_id');
+    expect(unsharedBlock).not.toContain('t.team_deputy_lead_id');
+    // user_teams membership stays out of unshared (intentional — see KVP-SHARING-VISIBILITY.md L0).
     expect(unsharedBlock).not.toContain('user_teams');
   });
 
-  it('should include team_lead/deputy_lead check for unshared KVPs', () => {
-    const orgInfo = createOrgInfo();
-    const result = buildVisibilityClause(orgInfo, 1, 3);
+  it('should never match unshared KVPs for users without leadTeamIds', () => {
+    // Empty teamLeadOf → buildOrgParams normalises to [0] (sentinel), so
+    // s.org_id = ANY('{0}') is never true on real data. Pure employees and
+    // non-lead admins therefore cannot reach the unshared branch.
+    const orgInfo = createOrgInfo({ teamIds: [5] });
+    const result = buildVisibilityClause(orgInfo, 99, 3);
 
-    // Unshared branch checks team_lead_id and team_deputy_lead_id
-    expect(result.clause).toContain('t.team_lead_id =');
-    expect(result.clause).toContain('t.team_deputy_lead_id =');
+    // First param is the teamLeadOf array.
+    expect(result.params[0]).toEqual([0]);
   });
 
   it('should use scope-based ANY() checks for shared KVPs', () => {
@@ -215,6 +225,18 @@ describe('buildVisibilityClause', () => {
     expect(result.clause).toContain('ANY(ac.scope_area_ids)');
     expect(result.clause).toContain('ANY(ac.scope_department_ids)');
     expect(result.clause).toContain('ANY(ac.scope_team_ids)');
+  });
+
+  it('should hide team-lead-zone statuses from approval master (noise reduction)', () => {
+    // KVP master must not see KVPs that are still in the team-lead's hands
+    // (status='new' or status='restored' — both can be rejected by the team
+    // lead directly per validateApprovalStatusTransition without ever passing
+    // through the master). Visibility resumes once the status leaves that
+    // zone (in_review, approved, rejected-via-master, implemented, archived).
+    const orgInfo = createOrgInfo();
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    expect(result.clause).toContain("s.status NOT IN ('new', 'restored')");
   });
 });
 

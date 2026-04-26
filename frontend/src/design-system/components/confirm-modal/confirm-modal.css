@@ -93,7 +93,7 @@ html.dark .confirm-modal--success {
 
 .confirm-modal__message {
   margin: 0 0 25px;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 
   font-size: 16px;
   line-height: 1.5;
@@ -150,7 +150,7 @@ html.dark .confirm-modal__btn--cancel {
 }
 
 html.dark .confirm-modal__btn--cancel:hover:not(:disabled) {
-  border-color: var(--color-text-secondary);
+  border-color: var(--text-secondary);
 }
 
 /* ========== CONFIRM BUTTON (Default Cyan/Teal) ========== */
@@ -441,7 +441,7 @@ html.dark .confirm-modal--success .confirm-modal__title {
 }
 
 .confirm-modal__input::placeholder {
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 /* ========== DANGER BUTTON (for destructive actions) ========== */

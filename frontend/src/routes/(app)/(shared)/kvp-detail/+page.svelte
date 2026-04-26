@@ -90,6 +90,11 @@
   const approval = $derived(data.approval);
   const hasApprovalConfig = $derived(data.hasApprovalConfig);
   const isApprovalMaster = $derived(data.isApprovalMaster);
+  // Reward-Tier-Katalog für KVP-Approve-Modal (Master vergibt optional Prämie).
+  // Server-loaded in +page.server.ts; gleiche Quelle wie /manage-approvals,
+  // damit beide Approve-Pfade konsistent bleiben (Masterplan v0.1.x deckt diesen
+  // zweiten Caller-Pfad nicht ab — Reward wurde nachträglich eingeführt).
+  const rewardTiers = $derived(data.rewardTiers);
 
   // Derived: Photo attachments (uses IMAGE_FILE_TYPES from constants via util)
   const photoAttachments = $derived(
@@ -439,6 +444,10 @@
   let approvalNote = $state('');
   let approvalRejectNote = $state('');
   let approvalSubmitting = $state(false);
+  // Optionale Prämie beim Genehmigen (mirrors selectedRewardAmount in
+  // /manage-approvals). null = keine Prämie. Toggle-Logik: erneuter Klick
+  // auf gleichen Tier deselektiert.
+  let approvalSelectedReward = $state<number | null>(null);
 
   async function handleOpenWoModal(): Promise<void> {
     try {
@@ -473,6 +482,7 @@
 
   function openApproveApprovalModal(): void {
     approvalNote = '';
+    approvalSelectedReward = null;
     showApproveApprovalModal = true;
   }
 
@@ -488,7 +498,12 @@
       const res = await fetch(`/api/v2/approvals/${approval.uuid}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ decisionNote: approvalNote !== '' ? approvalNote : null }),
+        body: JSON.stringify({
+          decisionNote: approvalNote !== '' ? approvalNote : null,
+          // ApprovalsController.approve() akzeptiert rewardAmount: number | null
+          // (siehe /manage-approvals — gleicher Endpoint, gleicher Body-Shape).
+          rewardAmount: approvalSelectedReward,
+        }),
       });
       if (res.ok) {
         showSuccessAlert('Freigabe genehmigt');
@@ -835,6 +850,31 @@
     {#if approval !== null}
       <p><strong>{suggestion.title}</strong></p>
       <p>Angefragt von: {approval.requestedByName}</p>
+      {#if rewardTiers.length > 0}
+        <!--
+          Optionaler Prämien-Selector — spiegelt /manage-approvals.
+          Klick auf aktiven Tier deselektiert (null = keine Prämie).
+          addonCode-Check entfällt: hier sind alle approvals KVP.
+        -->
+        <div class="reward-select">
+          <p class="reward-select__label">Prämie (optional):</p>
+          <div class="toggle-group">
+            {#each rewardTiers as tier (tier.id)}
+              <button
+                type="button"
+                class="toggle-group__btn"
+                class:active={approvalSelectedReward === tier.amount}
+                onclick={() => {
+                  approvalSelectedReward =
+                    approvalSelectedReward === tier.amount ? null : tier.amount;
+                }}
+              >
+                {tier.amount.toFixed(0)} €
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
       <div class="confirm-modal__input-group">
         <textarea
           id="kvp-approve-note"
@@ -1070,5 +1110,19 @@
     .detail-container {
       grid-template-columns: 1fr;
     }
+  }
+
+  /* ─── Reward-Selector im Approve-Modal ──────── */
+  /* Identisch zu /manage-approvals (line 635–644).
+     Bei zukünftigem dritten Caller: in shared Komponente extrahieren. */
+  .reward-select {
+    margin: var(--spacing-3) 0;
+  }
+
+  .reward-select__label {
+    margin: 0 0 var(--spacing-2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
   }
 </style>

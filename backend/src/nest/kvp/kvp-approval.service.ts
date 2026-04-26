@@ -56,6 +56,27 @@ interface ApprovalRow {
   decision_note: string | null;
 }
 
+/**
+ * Compose a human display name from the (nullable) `first_name` /
+ * `last_name` columns of `users`, falling back through email and finally
+ * a placeholder. Used by `getApprovalMastersForRequester` for the KVP
+ * info banner — keeping the fallback order explicit so the UI never
+ * shows blanks.
+ */
+function buildDisplayName(row: {
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+}): string {
+  const first = row.first_name?.trim() ?? '';
+  const last = row.last_name?.trim() ?? '';
+  if (first !== '' && last !== '') return `${first} ${last}`;
+  if (first !== '') return first;
+  if (last !== '') return last;
+  if (row.email.trim() !== '') return row.email;
+  return 'Unbekannt';
+}
+
 // =============================================================================
 // SERVICE
 // =============================================================================
@@ -172,6 +193,43 @@ export class KvpApprovalService implements OnModuleInit {
   async canRequesterFindApprovalMaster(userId: number): Promise<boolean> {
     const approvers = await this.approvalsConfigService.resolveApprovers('kvp', userId);
     return approvers.length > 0;
+  }
+
+  /**
+   * Resolve the KVP approval masters for the requester and return display
+   * names so the frontend can show an info banner ("Dein KVP-Master: …").
+   *
+   * The display name falls back through `first_name last_name` →
+   * `first_name` → `last_name` → `email` → `'Unbekannt'`, since
+   * `users.first_name` and `users.last_name` are both nullable. RLS on
+   * `users` (ADR-019) restricts to the current tenant — `resolveApprovers`
+   * already pre-filtered to in-tenant IDs, so the JOIN is a no-op for
+   * cross-tenant safety but kept for defense in depth.
+   */
+  async getApprovalMastersForRequester(
+    userId: number,
+  ): Promise<{ id: number; displayName: string }[]> {
+    const approverIds = await this.approvalsConfigService.resolveApprovers('kvp', userId);
+    if (approverIds.length === 0) return [];
+
+    interface MasterRow {
+      id: number;
+      first_name: string | null;
+      last_name: string | null;
+      email: string;
+    }
+    const rows = await this.db.tenantQuery<MasterRow>(
+      `SELECT id, first_name, last_name, email
+         FROM users
+        WHERE id = ANY($1::int[])
+        ORDER BY last_name NULLS LAST, first_name NULLS LAST, email`,
+      [approverIds],
+    );
+
+    return rows.map((r: MasterRow) => ({
+      id: r.id,
+      displayName: buildDisplayName(r),
+    }));
   }
 
   // ==========================================================================

@@ -35,7 +35,7 @@ html.dark {
   --color-icon-primary: oklch(86.46% 0.0729 242.52);
   --color-accent-bg: oklch(86.46% 0.0729 242.52);
 
-  /* Accent background gradient — used for highlighted surfaces (e.g. active sidebar item).
+  /* Accent background gradient — used for highlighted sulinear-gradient(145deg, oklch(50% 0 0 / 30%), oklch(0% 0 0 / 16%));rfaces (e.g. active sidebar item).
    * Two-layer radial + diagonal linear mesh centred on the accent hue for depth.
    * Lightness range tightened around --color-accent-bg (86.46%) so the border
    * colour blends with the top/bottom edges — prevents visible light/dark bands

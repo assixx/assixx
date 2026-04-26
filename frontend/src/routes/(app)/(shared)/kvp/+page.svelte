@@ -59,6 +59,14 @@
   const isAdminOrRoot = $derived(
     ssrCurrentUser?.role === 'admin' || ssrCurrentUser?.role === 'root',
   );
+  // Master display names, pre-resolved server-side (handles nullable
+  // first_name/last_name + email fallback). Joined with comma when multiple
+  // masters cover the user's scope. Empty when no master is reachable —
+  // info banner is mutually exclusive with the warning banner via
+  // canCreateKvp gate. The server-load fallback (+page.server.ts) already
+  // guarantees masters: [] on null fetch, so no runtime nullish guard needed.
+  const masters = $derived(data.approvalConfig.masters);
+  const masterNames = $derived(masters.map((m) => m.displayName).join(', '));
 
   // Sync SSR data to state store (for UI components that depend on it)
   // IMPORTANT: Use untrack to prevent infinite loop - setUser calls updateEffectiveRole
@@ -155,10 +163,10 @@
   <PermissionDenied addonName="das KVP-Modul" />
 {:else}
   <div class="container">
-    <!-- Hard-Gate banner (ADR-037 Amendment 2026-04-26): visible at the top
-         when no KVP master is reachable for the user's org scope. Admins get
-         a direct deep-link to /settings/approvals; everyone else sees the
-         status without a self-service link (they can't fix it). -->
+    <!-- Hard-Gate banner (ADR-037 Amendment 2026-04-26): mutually exclusive.
+         No master in scope → warning + admin deep-link to /settings/approvals.
+         Master(s) present → info banner with display names so the employee
+         knows who their suggestion will be routed to. -->
     {#if !canCreateKvp}
       <div class="alert alert--warning mb-4">
         <i class="fas fa-exclamation-triangle"></i>
@@ -166,6 +174,12 @@
         {#if isAdminOrRoot}
           <a href={resolve('/settings/approvals')}>Jetzt einrichten →</a>
         {/if}
+      </div>
+    {:else if masters.length > 0}
+      <div class="alert alert--info mb-4">
+        <i class="fas fa-info-circle"></i>
+        {masters.length === 1 ? 'Dein KVP-Master:' : 'Deine KVP-Master:'}
+        {masterNames}
       </div>
     {/if}
 

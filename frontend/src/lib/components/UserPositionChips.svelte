@@ -48,6 +48,13 @@
       .filter((p: PositionOption | undefined): p is PositionOption => p !== undefined),
   );
 
+  // 2-Layer Lead Setup Reminder (ADR-010 §3.3, ADR-045 isAnyLead branch).
+  // Drives the warning alert below — see the inline comment there for the
+  // background incident that motivated this hint.
+  const hasLeadPositionSelected = $derived(
+    selected.some((p: PositionOption) => isLeadPosition(p.name)),
+  );
+
   /** Show grouped dropdown when multiple role categories present */
   const grouped = $derived(
     available.length > 0 &&
@@ -175,6 +182,38 @@
 
   {#if selected.length === 0 && available.length === 0}
     <span class="pos-chips__empty">Keine Positionen verfügbar</span>
+  {/if}
+
+  <!--
+    2-Layer Lead Setup Reminder.
+    WHY: `users.position` is only the UI label / role-category routing
+    (ADR-038). For the user to actually be treated as a lead, the
+    Management Gate (ADR-045 Layer 1) requires `isAnyLead = true`, which
+    is resolved from `areas.area_lead_id` / `departments.department_lead_id` /
+    `teams.team_lead_id` (or the matching `*_deputy_lead_id` columns,
+    ADR-035). Position alone never sets those.
+    Real-world incident 2026-04-26: admin Adler had position
+    'department_lead' but no `departments.department_lead_id` row →
+    Layer 1 failed → KVP /permission-denied loop.
+    Hierarchy-label aware (ADR-034) so custom tenants (e.g. "Hallen"
+    instead of "Bereiche") get the right wording automatically.
+  -->
+  {#if hasLeadPositionSelected}
+    <div
+      class="alert alert--warning mt-2"
+      role="status"
+    >
+      <i class="fas fa-exclamation-triangle"></i>
+      <div>
+        <strong>Hinweis:</strong> Position allein reicht nicht — Benutzer zusätzlich in der
+        jeweiligen Verwaltung als Leiter eintragen:
+        <ul class="mt-1">
+          <li>{hl.areaLeadPrefix}leiter → unter <em>{hl.area} verwalten</em></li>
+          <li>{hl.departmentLeadPrefix}leiter → unter <em>{hl.department} verwalten</em></li>
+          <li>{hl.teamLeadPrefix}leiter → unter <em>{hl.team} verwalten</em></li>
+        </ul>
+      </div>
+    </div>
   {/if}
 </div>
 

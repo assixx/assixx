@@ -68,11 +68,18 @@ function mapParentUserToCurrentUser(parentUser: ParentUser | null) {
  * the scope-aware flag that drives the "+ Neuer KVP" button — when false,
  * the backend will refuse the POST anyway (Hard-Gate, ADR-037 Amendment
  * 2026-04-26 + Masterplan §3.4 v0.6.0). `hasConfig` is kept for tenant-level
- * UI hints. Endpoint defaults are conservative — both false on fetch errors.
+ * UI hints. `masters` powers the info banner ("Dein KVP-Master: …") so the
+ * employee knows who their suggestion will be routed to. Endpoint defaults
+ * are conservative — empty + both flags false on fetch errors.
  */
+interface ApprovalMaster {
+  id: number;
+  displayName: string;
+}
 interface ApprovalConfigStatus {
   hasConfig: boolean;
   hasConfigForUser: boolean;
+  masters: ApprovalMaster[];
 }
 
 /**
@@ -95,6 +102,7 @@ async function fetchKvpData(token: string, fetchFn: typeof fetch, isAdmin: boole
   const approval: ApprovalConfigStatus = approvalStatus ?? {
     hasConfig: false,
     hasConfigForUser: false,
+    masters: [],
   };
 
   if (kvpResult.permissionDenied) {

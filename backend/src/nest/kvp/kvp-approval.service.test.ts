@@ -291,6 +291,62 @@ describe('KvpApprovalService', () => {
   });
 
   // -----------------------------------------------------------
+  // getApprovalMastersForRequester — feeds the info-banner
+  // ("Dein KVP-Master: …") on /kvp. Display-name fallback
+  // covers nullable first_name/last_name + email last-resort
+  // (ADR-037 Amendment 2026-04-26).
+  // -----------------------------------------------------------
+
+  describe('getApprovalMastersForRequester()', () => {
+    it('returns empty array when no approver is reachable for the user', async () => {
+      mockConfig.resolveApprovers.mockResolvedValueOnce([]);
+
+      const result = await service.getApprovalMastersForRequester(7);
+
+      expect(result).toEqual([]);
+      // No DB lookup when the approver list is empty — saves an unnecessary query
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('joins first_name + last_name when both are present', async () => {
+      mockConfig.resolveApprovers.mockResolvedValueOnce([42]);
+      mockDb.query.mockResolvedValueOnce([
+        { id: 42, first_name: 'Jürgen', last_name: 'Schmitz', email: 'j.s@x.de' },
+      ]);
+
+      const result = await service.getApprovalMastersForRequester(7);
+
+      expect(result).toEqual([{ id: 42, displayName: 'Jürgen Schmitz' }]);
+    });
+
+    it('falls back to email when both names are null', async () => {
+      mockConfig.resolveApprovers.mockResolvedValueOnce([42]);
+      mockDb.query.mockResolvedValueOnce([
+        { id: 42, first_name: null, last_name: null, email: 'fallback@x.de' },
+      ]);
+
+      const result = await service.getApprovalMastersForRequester(7);
+
+      expect(result).toEqual([{ id: 42, displayName: 'fallback@x.de' }]);
+    });
+
+    it('returns multiple masters in the order returned by the DB', async () => {
+      mockConfig.resolveApprovers.mockResolvedValueOnce([42, 7]);
+      mockDb.query.mockResolvedValueOnce([
+        { id: 7, first_name: 'Anna', last_name: 'Müller', email: 'a@x.de' },
+        { id: 42, first_name: 'Jürgen', last_name: null, email: 'j@x.de' },
+      ]);
+
+      const result = await service.getApprovalMastersForRequester(7);
+
+      expect(result).toEqual([
+        { id: 7, displayName: 'Anna Müller' },
+        { id: 42, displayName: 'Jürgen' },
+      ]);
+    });
+  });
+
+  // -----------------------------------------------------------
   // handleApprovalDecision (via EventBus)
   // -----------------------------------------------------------
 

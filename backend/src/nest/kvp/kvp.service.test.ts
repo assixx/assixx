@@ -205,9 +205,13 @@ function createService(): ServiceMocks {
   // is satisfied by default — individual tests can override per-call to verify
   // the block path. `hasApprovalConfig` stays for compatibility with existing
   // test setups that pre-date the scope-aware helper.
+  // `getApprovalMastersForRequester` is unused by the service under test
+  // (only consumed by the controller endpoint) but mocked here for type
+  // completeness — KvpService never calls it.
   const mockKvpApproval = {
     hasApprovalConfig: vi.fn().mockResolvedValue(false),
     canRequesterFindApprovalMaster: vi.fn().mockResolvedValue(true),
+    getApprovalMastersForRequester: vi.fn().mockResolvedValue([]),
   };
   const mockLifecycle = createMockLifecycle();
   const mockParticipants = createMockParticipants();
