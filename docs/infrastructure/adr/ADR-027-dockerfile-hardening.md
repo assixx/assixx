@@ -186,7 +186,7 @@ RUN apk add --no-cache curl jq
 | No workspace resolution needed in production | CMD path would change                                        |
 | Cleaner production image                     | Larger architectural change                                  |
 
-**Decision**: Deferred. The frontend already uses `pnpm deploy --prod /deploy`. The backend could adopt the same pattern, but it requires validating that all runtime imports resolve correctly without workspace context. Tracked as future improvement.
+**Decision**: ~~Deferred.~~ **Implemented 2026-04-27** (Amendment). The frontend pattern (`pnpm deploy --filter=assixx-frontend --prod /deploy`) is now mirrored 1:1 for the backend (`pnpm deploy --filter=assixx-backend --prod /deploy`). Note: `--filter` matches the `name` field in package.json, not the directory name — backend's name is `assixx-backend` (no `@scope`); only `@assixx/shared` uses the scoped form. A mismatched filter silently exits 0 with an empty `/deploy`, so the package-name spelling is load-bearing. All runtime imports of `@assixx/shared/dist/*` resolve correctly because the builder syncs `shared/dist` into every injected workspace copy via `find /app/node_modules -path '*/@assixx/shared' -type d -exec cp -r /app/shared/dist {} \;` (same dance as `Dockerfile.frontend:50-53`) before invoking `pnpm deploy`. The production stage no longer runs `pnpm install --prod` at all — it only copies `/deploy/{node_modules,package.json}` plus `backend/dist`. The deletion-worker (which reuses `assixx-backend:dev`) is unaffected because it only consumes the dev image. Side benefit: pnpm itself is no longer installed in the production stage (was line 86 of the original prod stage), shaving ≈30 MB.
 
 ### 4. Image Digest Pinning
 

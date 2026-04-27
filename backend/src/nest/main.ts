@@ -234,10 +234,18 @@ async function setupSecurity(app: NestFastifyApplication): Promise<void> {
  */
 const PROD_APEX_ORIGIN_REGEX = /^https:\/\/(?:www\.)?assixx\.com$/;
 const PROD_SUBDOMAIN_ORIGIN_REGEX = /^https:\/\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.assixx\.com$/;
-// Accepts both ports 5173 (normal `pnpm run dev:svelte`) and 5174 (Playwright
-// E2E parallel Vite instance, see `playwright.config.ts::webServer`). Without
-// 5174 the E2E login fails with `CORS origin not allowed: http://assixx.localhost:5174`.
-const DEV_ORIGIN_REGEX = /^http:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)?localhost:517[34]$/;
+// Accepts:
+//   - port 5173 (normal `pnpm run dev:svelte`)
+//   - port 5174 (Playwright E2E parallel Vite instance, see `playwright.config.ts::webServer`)
+//   - no port = port 80 (production-profile local testing via Nginx, per
+//     docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md). SvelteKit SSR forwards the
+//     browser's `Origin: http://localhost` header on its server-to-server
+//     fetch to the backend; without this branch every auth POST 500s with
+//     "CORS origin not allowed: http://localhost".
+// Security: localhost host literal stays mandatory — no third-party origin
+// can match. Subdomain prefix optional (matches `assixx.localhost`, etc.).
+const DEV_ORIGIN_REGEX =
+  /^http:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)?localhost(?::517[34])?$/;
 
 function isAllowedCorsOrigin(origin: string): boolean {
   return (

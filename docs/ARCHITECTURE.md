@@ -1,6 +1,6 @@
 # Assixx System Architecture
 
-**Version:** 4.1.0 · **Updated:** 2026-04-25 · **Status:** living document
+**Version:** 4.1.1 · **Updated:** 2026-04-27 · **Status:** living document
 
 > Single navigation map into the Assixx codebase. **Read this first** when joining a session or touching an unfamiliar area. Auto-loaded into every Claude Code session via [CLAUDE.md](../CLAUDE.md) mandatory checklist.
 
@@ -112,7 +112,7 @@ Most questions about "where is X implemented?" are answered by the tables below.
 
 | Concept                    | Entry Point                                                                                                         | Why                                                                                                                |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Docker Compose             | `docker/docker-compose.yml` · `docker/Dockerfile.dev` · `docker/Dockerfile.prod`                                    | Dev + prod profiles · [ADR-027](./infrastructure/adr/ADR-027-dockerfile-hardening.md)                              |
+| Docker Compose             | `docker/docker-compose.yml` · `docker/Dockerfile.dev` · `docker/Dockerfile` · `docker/Dockerfile.frontend`           | Dev + prod profiles · [ADR-027](./infrastructure/adr/ADR-027-dockerfile-hardening.md)                              |
 | Nginx reverse proxy (prod) | `docker/nginx/`                                                                                                     | Port 80 → SvelteKit:3001 + Backend:3000                                                                            |
 | Environment secrets        | Doppler (`doppler run -- ...`)                                                                                      | No committed `.env` · [HOW-TO-DOPPLER-GUIDE.md](./how-to/HOW-TO-DOPPLER-GUIDE.md)                                  |
 | CI/CD                      | `.github/workflows/` · [ADR-013](./infrastructure/adr/ADR-013-ci-cd-pipeline-hardening.md)                          | Build/test/deploy gates                                                                                            |
@@ -337,7 +337,7 @@ Assixx/
 │   └── README.md
 ├── docker/
 │   ├── docker-compose.yml                 # dev + production profile
-│   ├── Dockerfile.dev / Dockerfile.prod
+│   ├── Dockerfile.dev / Dockerfile / Dockerfile.frontend
 │   └── nginx/                             # prod reverse-proxy config
 ├── docs/
 │   ├── ARCHITECTURE.md                    # this file

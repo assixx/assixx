@@ -271,8 +271,14 @@ entire isolation model.
 Today's backend has no explicit CORS block (Fastify default = same-origin
 only). Multi-subdomain future requires explicit Fastify CORS plugin with an
 origin-callback that allows: apex (`assixx.com`, `www.assixx.com`), any
-subdomain (`<slug>.assixx.com`), and `localhost:5173` for dev. Static
-regex, not DB-driven — the regex shape IS the contract.
+subdomain (`<slug>.assixx.com`), `localhost:5173|5174` for Vite dev / E2E,
+and bare `http://localhost` (no port = port 80) for production-profile
+local testing per [PRODUCTION-AND-DEVELOPMENT-TESTING.md](../../PRODUCTION-AND-DEVELOPMENT-TESTING.md).
+Static regex, not DB-driven — the regex shape IS the contract. The bare
+`localhost` branch is required because SvelteKit SSR forwards the browser's
+`Origin: http://localhost` header on its server-to-server fetch to the
+backend; without it every auth POST 500s with `CORS origin not allowed:
+http://localhost` in production-profile local mode.
 
 ### OAuth (ADR-046): Centralized Callback, Post-Callback Handoff
 

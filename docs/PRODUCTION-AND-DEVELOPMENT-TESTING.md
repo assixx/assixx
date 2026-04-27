@@ -390,6 +390,7 @@ echo "API:      http://localhost/api/v2/"
 | File                                    | Purpose                                        |
 | --------------------------------------- | ---------------------------------------------- |
 | `docker/docker-compose.yml`             | Docker Compose configuration                   |
+| `docker/Dockerfile`                     | Backend production build (uses pnpm deploy)    |
 | `docker/Dockerfile.frontend`            | SvelteKit production build (uses pnpm deploy)  |
 | `docker/Dockerfile.dev`                 | Backend development build                      |
 | `docker/nginx/nginx.conf`               | Nginx reverse proxy config                     |
