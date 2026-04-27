@@ -278,11 +278,11 @@ returns `null`, and every authenticated handoff 403s with
 
 **Required wiring (all three must hold):**
 
-| Hop | Configuration | File |
-| --- | --- | --- |
-| Nginx → SvelteKit / Backend | `proxy_set_header X-Forwarded-Host $host;` on every `proxy_pass` block (SSE, `/api/`, `/uploads/`, `/chat-ws`, `/`) | `docker/nginx/nginx.conf` |
-| SvelteKit adapter-node | `PROTOCOL_HEADER=x-forwarded-proto` + `HOST_HEADER=x-forwarded-host` (kit docs §"environment-variables") — populates `event.url` per request from the proxy's headers | `docker/docker-compose.yml` frontend env, `docker/Dockerfile.frontend` ENV defaults |
-| SvelteKit → Backend (SSR fetch) | `'X-Forwarded-Host': new URL(request.url).hostname` — only correct because adapter-node is configured per the previous row | `frontend/src/routes/(public)/signup/oauth-complete/+page.server.ts::handleHandoff` |
+| Hop                             | Configuration                                                                                                                                                         | File                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Nginx → SvelteKit / Backend     | `proxy_set_header X-Forwarded-Host $host;` on every `proxy_pass` block (SSE, `/api/`, `/uploads/`, `/chat-ws`, `/`)                                                   | `docker/nginx/nginx.conf`                                                           |
+| SvelteKit adapter-node          | `PROTOCOL_HEADER=x-forwarded-proto` + `HOST_HEADER=x-forwarded-host` (kit docs §"environment-variables") — populates `event.url` per request from the proxy's headers | `docker/docker-compose.yml` frontend env, `docker/Dockerfile.frontend` ENV defaults |
+| SvelteKit → Backend (SSR fetch) | `'X-Forwarded-Host': new URL(request.url).hostname` — only correct because adapter-node is configured per the previous row                                            | `frontend/src/routes/(public)/signup/oauth-complete/+page.server.ts::handleHandoff` |
 
 **Anti-pattern (pre-2026-04-27):** static `ORIGIN=http://localhost` env on
 adapter-node forced `event.url.origin` to a single host regardless of the

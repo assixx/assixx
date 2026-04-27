@@ -957,13 +957,13 @@ Dockerfile that bootstraps npm globally, supply the value via compose
 `build.args`, and store the canonical version in `docker/.env` (the
 existing Single Source of Truth for build-time versions).
 
-| File                         | Change                                                                                |
-| ---------------------------- | ------------------------------------------------------------------------------------- |
-| `docker/.env`                | `+ NPM_VERSION=11.13.0`                                                               |
+| File                         | Change                                                                                    |
+| ---------------------------- | ----------------------------------------------------------------------------------------- |
+| `docker/.env`                | `+ NPM_VERSION=11.13.0`                                                                   |
 | `docker/docker-compose.yml`  | `+ NPM_VERSION: ${NPM_VERSION:-11.13.0}` in both `build.args` blocks (backend + frontend) |
-| `docker/Dockerfile.dev`      | `+ ARG NPM_VERSION=11.13.0`; RUN uses `npm@${NPM_VERSION}`                             |
-| `docker/Dockerfile`          | `+ ARG NPM_VERSION=11.13.0` in builder + production stages; both RUNs parameterised    |
-| `docker/Dockerfile.frontend` | `+ ARG NPM_VERSION=11.13.0` in builder + production stages; both RUNs parameterised    |
+| `docker/Dockerfile.dev`      | `+ ARG NPM_VERSION=11.13.0`; RUN uses `npm@${NPM_VERSION}`                                |
+| `docker/Dockerfile`          | `+ ARG NPM_VERSION=11.13.0` in builder + production stages; both RUNs parameterised       |
+| `docker/Dockerfile.frontend` | `+ ARG NPM_VERSION=11.13.0` in builder + production stages; both RUNs parameterised       |
 
 ### Rationale
 
@@ -1032,9 +1032,9 @@ docker exec assixx-backend npm --version
 The §"Maintenance Workflow" cadence table from Amendment 2026-04-07 is
 extended:
 
-| Component                | Cadence                  | Rationale                                                |
-| ------------------------ | ------------------------ | -------------------------------------------------------- |
-| **npm bootstrap**        | **Quarterly + on CVE**   | Patch-only releases; review npm release notes for `glob`/`tar`/`cacache` advisories |
+| Component         | Cadence                | Rationale                                                                           |
+| ----------------- | ---------------------- | ----------------------------------------------------------------------------------- |
+| **npm bootstrap** | **Quarterly + on CVE** | Patch-only releases; review npm release notes for `glob`/`tar`/`cacache` advisories |
 
 ### File Change Summary
 

@@ -123,16 +123,16 @@ Wenn das NICHT passiert: siehe §Troubleshooting.
 
 ## Was automatisch funktioniert (kein Handeln nötig)
 
-| Thema                            | Warum läuft es                                                                           |
-| -------------------------------- | ---------------------------------------------------------------------------------------- |
-| **Vite `allowedHosts`**          | `vite.config.ts` setzt `allowedHosts: ['.localhost']` (Session 12c) → jeder Subdomain ok                                                          |
-| **Backend CORS**                 | `DEV_ORIGIN_REGEX` in `main.ts` erlaubt `http://*.localhost:5173\|5174` UND bare `http://*.localhost` (Production-Profile, Port 80)               |
-| **`extractSlug('*.localhost')`** | Resolved Slug → DB-Lookup → `hostTenantId` → R14/R15 Cross-Check aktiv (Session 12c-fix)                                                          |
-| **Branding endpoint**            | `GET /api/v2/tenants/branding/:slug` liefert Tenant-Namen für Login-Page-Titel                                                                    |
-| **OAuth Handoff**                | Redis-Keyspace `oauth:handoff:{token}` wird korrekt gegen Subdomain cross-checked (R15)                                                           |
-| **Cloudflare Turnstile**         | Test-Keys oder `localhost`-Allowed-Domain-Match funktionieren auf allen `*.localhost`                                                             |
-| **Production-Profile (`:80`)**   | Nginx `server_name localhost *.localhost;` matcht Wildcard, alle 5 `proxy_pass` Blöcke setzen `X-Forwarded-Host $host;` (ADR-050 Amendment 2026-04-27) |
-| **adapter-node SSR Subdomain**   | `PROTOCOL_HEADER=x-forwarded-proto` + `HOST_HEADER=x-forwarded-host` ENV-Vars (statt statisch `ORIGIN`) → `event.url` per-request korrekt          |
+| Thema                            | Warum läuft es                                                                                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Vite `allowedHosts`**          | `vite.config.ts` setzt `allowedHosts: ['.localhost']` (Session 12c) → jeder Subdomain ok                                                                |
+| **Backend CORS**                 | `DEV_ORIGIN_REGEX` in `main.ts` erlaubt `http://*.localhost:5173\|5174` UND bare `http://*.localhost` (Production-Profile, Port 80)                     |
+| **`extractSlug('*.localhost')`** | Resolved Slug → DB-Lookup → `hostTenantId` → R14/R15 Cross-Check aktiv (Session 12c-fix)                                                                |
+| **Branding endpoint**            | `GET /api/v2/tenants/branding/:slug` liefert Tenant-Namen für Login-Page-Titel                                                                          |
+| **OAuth Handoff**                | Redis-Keyspace `oauth:handoff:{token}` wird korrekt gegen Subdomain cross-checked (R15)                                                                 |
+| **Cloudflare Turnstile**         | Test-Keys oder `localhost`-Allowed-Domain-Match funktionieren auf allen `*.localhost`                                                                   |
+| **Production-Profile (`:80`)**   | Nginx `server_name localhost *.localhost;` matcht Wildcard, alle 5 `proxy_pass` Blöcke setzen `X-Forwarded-Host $host;` (ADR-050 Amendment 2026-04-27)  |
+| **adapter-node SSR Subdomain**   | `PROTOCOL_HEADER=x-forwarded-proto` + `HOST_HEADER=x-forwarded-host` ENV-Vars (statt statisch `ORIGIN`) → `event.url` per-request korrekt               |
 | **Cookie `Secure` Flag**         | `frontend/src/lib/server/auth-cookies.ts` leitet `secure` aus `url.protocol` ab — HTTP-local-prod-test droppt keine Cookies mehr (RFC 6265bis §4.1.2.5) |
 
 ---

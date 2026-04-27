@@ -10,4 +10,4 @@ contact_links:
     about: Architektur, Architectural Decision Records, HOW-TO-Guides. Viele Fragen sind hier bereits beantwortet.
   - name: Navigation Map (Konzept zu Datei)
     url: https://github.com/assixx/assixx/blob/main/docs/ARCHITECTURE.md
-    about: "Wo lebt Konzept X im Code?" — kuratierte Concept-zu-file:line-Map mit ADR-Verweisen.
+    about: Wo lebt Konzept X im Code? — kuratierte Concept-zu-file:line-Map mit ADR-Verweisen.

@@ -124,6 +124,9 @@ importers:
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
+      prettier-plugin-css-order:
+        specifier: ^2.2.0
+        version: 2.2.0(postcss@8.5.12)(prettier@3.8.3)
       tsx:
         specifier: ^4.21.0
         version: 4.21.0

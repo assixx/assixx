@@ -244,8 +244,7 @@ const PROD_SUBDOMAIN_ORIGIN_REGEX = /^https:\/\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\
 //     "CORS origin not allowed: http://localhost".
 // Security: localhost host literal stays mandatory — no third-party origin
 // can match. Subdomain prefix optional (matches `assixx.localhost`, etc.).
-const DEV_ORIGIN_REGEX =
-  /^http:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)?localhost(?::517[34])?$/;
+const DEV_ORIGIN_REGEX = /^http:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)?localhost(?::517[34])?$/;
 
 function isAllowedCorsOrigin(origin: string): boolean {
   return (
