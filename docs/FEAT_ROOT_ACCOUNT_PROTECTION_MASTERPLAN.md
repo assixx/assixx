@@ -81,6 +81,7 @@ all four operations that can take a root account out of "active root" state.
 | 1.0.1   | 2026-04-26 | Session 3 done -- `RootProtectionService` implemented (5 methods per §2.2), registered + exported in `RootModule`, §0.5 spot-check rows for `root-deletion.service.ts` and audit infra resolved, lint+type-check clean, tests deferred to Session 7 per Phase 3 schedule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | 1.0.2   | 2026-04-26 | Session 4 done -- Step 2.3 wiring across 4 termination sites + 1 defensive role-block: `root.service.ts:deleteRootUser` (full chain replaces inline self-delete + last-root SQL), `root-admin.service.ts:deleteAdmin` (defensive), `users.service.ts:deleteUser` (full chain), `users.service.ts:archiveUser` (defensive role-block — root accounts cannot be archived via the generic users path), `dummy-users.service.ts:delete` (defensive). `unarchiveUser` NOT wired (verified: sets is_active=1, not 0). PUT-route role-demote wiring on `updateRootUser`/`updateAdmin` deferred — Layer 4 trigger backstop. RootModule exported into UsersModule + DummyUsersModule. 4 paired test suites updated; 105 unit tests green. Lint 0 errors, tsc 0 errors. |
 | 1.0.3   | 2026-04-26 | Session 5 partial -- Step 2.4 `RootSelfTerminationService` implemented (~530 LOC, 8 methods per §2.4 + 5 private helpers, error-code constants, plain-string EventBus emits pending Step 2.7 typed handlers). Approve TX ordering follows §2.4 verbatim (FOR UPDATE → recount → flip status → set GUC → UPDATE users). 24h cooldown + last-root protection + self-decision guard + cross-tenant isolation via RLS. Service registered in `RootModule.providers + exports` (Step 2.1 checkbox 2/4). Tests deferred to Session 7 per Phase 3 schedule (`root-self-termination.service.test.ts ~24 tests`). Lint 0 errors, type-check 0 errors. Steps 2.5 (controller) / 2.6 (cron) / 2.7 (notifications) remain pending.                                        |
+| 1.0.4   | 2026-04-27 | Session 5b done -- Step 2.5 `RootSelfTerminationController` (~135 LOC, 6 endpoints) + 3 Zod DTOs (`request-/approve-/reject-self-termination.dto.ts`). Endpoints mounted under `/api/v2/users/...`: `POST/GET/DELETE /users/me/self-termination-request`, `GET /users/self-termination-requests/pending`, `POST /users/self-termination-requests/:id/{approve,reject}`. Class-level `@Roles('root')`; `UuidIdParamDto` from `common/dto` for `:id` (Phase 1 schema is UUID; masterplan §2.5 named `idField` — recorded as Spec Deviation D5). Status codes per §4: cancel→204, approve/reject→200 (`@HttpCode(OK)`), request→201 (POST default). Path-collision audit vs `UsersController` verified safe. RootModule registers the new controller (§2.1 checkbox 3/4). DTO + controller exempt from paired tests per Phase 3+4 split (DTOs are pure Zod glue; controller is thin glue — both verified end-to-end by Phase 4 API tests). Lint 0 errors, type-check 0 errors. Steps 2.6 (cron) + 2.7 (notifications) remain pending.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | 1.1.0   | TBD        | Phase 2 COMPLETE — backend done                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 1.2.0   | TBD        | Phase 3 COMPLETE — unit tests green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | 1.3.0   | TBD        | Phase 4 COMPLETE — API integration tests green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -493,7 +494,7 @@ backend/src/nest/root/
 
 - [x] `RootProtectionService` added to providers + exports (Session 3, 2026-04-26)
 - [x] `RootSelfTerminationService` added to providers + exports (Session 5, 2026-04-26)
-- [ ] `RootSelfTerminationController` added to controllers
+- [x] `RootSelfTerminationController` added to controllers (Session 5b, 2026-04-27)
 - [ ] `RootSelfTerminationCron` added to providers (with `ScheduleModule` import)
 
 ### Step 2.2: `RootProtectionService` [DONE 2026-04-26]
@@ -636,7 +637,7 @@ async approveSelfTermination(actor, requestId, comment?) {
 }
 ```
 
-### Step 2.5: Controller [PENDING]
+### Step 2.5: Controller [DONE 2026-04-27]
 
 **File:** `backend/src/nest/root/root-self-termination.controller.ts`
 
@@ -968,7 +969,8 @@ backend/src/nest/root/
 | 3       | 2     | RootProtectionService + spot-check root-deletion.service.ts                                                 | DONE   | 2026-04-26 |
 | 4       | 2     | Wire 4 termination sites + 1 defensive role-block; PUT-route role-demote wiring deferred (Layer 4 backstop) | DONE   | 2026-04-26 |
 | 5       | 2     | RootSelfTerminationService (Step 2.4 only — controller/cron/notifications split out)                        | DONE   | 2026-04-26 |
-| 5b      | 2     | Controller (2.5) + cron (2.6)                                                                               |        |            |
+| 5b      | 2     | Controller + 3 DTOs (2.5)                                                                                   | DONE   | 2026-04-27 |
+| 5c      | 2     | Cron (2.6)                                                                                                  |        |            |
 | 6       | 2     | Notifications + EventBus integration (2.7)                                                                  |        |            |
 | 7       | 3     | Unit tests (≥32) — service + DB-trigger SQL tests                                                           |        |            |
 | 8       | 4     | API integration tests (≥24)                                                                                 |        |            |
@@ -1052,6 +1054,41 @@ backend/src/nest/root/
 
 **Next session:** Session 5b = Step 2.5 (controller, 6 endpoints) + Step 2.6 (cron) — both depend on this service.
 
+### Session 5b — 2026-04-27
+
+**Goal:** Implement Step 2.5 — `RootSelfTerminationController` + 3 DTOs only. Cron (Step 2.6) split out to Session 5c per /continue's one-step-per-session discipline.
+
+**Result:**
+
+- **New file:** `backend/src/nest/root/root-self-termination.controller.ts` (~135 LOC including doc-headers).
+  - **6 endpoints** mounted under `/api/v2/users/...` per §2.5 endpoint table — verbatim routes, verbs, and per-endpoint `@HttpCode` overrides.
+  - **Class-level `@Roles('root')`** + `@Controller('users')`. Mirrors the existing `RootController` pattern (line 89). The global `RolesGuard` reads metadata from class-level via `Reflector.getAllAndOverride([key, [handler, class]])`.
+  - **Path-collision audit** vs `UsersController` (also `@Controller('users')`): verified safe — none of the new literal segments (`/me/self-termination-request`, `/self-termination-requests/...`) collide with UsersController routes; NestJS+Fastify radix routing prefers literal over parametric so `/users/self-termination-requests/...` does not hit `/users/:id/...` either. Documented inline in the controller header.
+  - **Actor mapping:** `@CurrentUser() user: JwtPayload` matches the existing `RootController` pattern (vs. `UsersController` which uses `NestAuthUser`). A private `toActor()` helper extracts only `{id, tenantId, role}` so the JWT-only fields (sub/iat/exp/type) don't leak into the service-layer audit paths.
+  - **Status codes** per §4 Phase 4 API-test expectations: POST request → 201 (NestJS default), DELETE cancel → 204 (`@HttpCode(NO_CONTENT)`), POST approve/reject → 200 (`@HttpCode(OK)` overrides POST default 201).
+  - **Body-mapping notes:** `dto.reason ?? null` converts the optional Zod field to the service signature's `string | null`. `dto.comment` passes through directly (both sides typed `string | undefined`). `dto.rejectionReason` is required by the schema (`min(1)` after trim) so passes as `string`.
+- **3 new Zod DTOs** (per ADR-030 §7.5 + masterplan §2.5):
+  - `request-self-termination.dto.ts` — `reason` optional, trim, max 1000.
+  - `approve-self-termination.dto.ts` — `comment` optional, trim, max 1000.
+  - `reject-self-termination.dto.ts` — `rejectionReason` REQUIRED non-empty trim, max 1000. The DTO is the first defense (400 BadRequest at the global ZodValidationPipe); the service re-asserts via `ConflictException(REJECTION_REASON_REQUIRED)` for direct callers (defense-in-depth, matches §3 unit-test "Reject without reason → ValidationException" + §4 "POST reject (without reason) → 400").
+- **`backend/src/nest/root/dto/index.ts` barrel** updated with the 3 new exports.
+- **`RootModule.controllers`** now includes `RootSelfTerminationController` (§2.1 checkbox 3/4 ticked).
+- **Spec Deviation D5** recorded: masterplan §2.5 mandate names `idField` factory for the `:id` param, but Phase 1 schema declares `root_self_termination_requests.id UUID PRIMARY KEY DEFAULT uuidv7()` — the correct factory export is `UuidIdParamDto` (UUID-typed pre-built DTO from the same `param.factory.ts` file, alongside the numeric `IdParamDto`). This is a literal-text discrepancy, not a violation of the factory pattern (ADR-030 §7.5 mandates "use the centralized factory", which is satisfied by either pre-built export).
+- **Test deferral rationale:**
+  - DTOs are exempt — they are pure declarative Zod schemas with no business logic. The codebase pattern (13 existing DTOs in `root/dto/`, 0 paired test files; ZOD-INTEGRATION-GUIDE.md "Current Status" § documents 176 DTOs total with no DTO unit tests) treats them as exempt per the `Stop` hook's option 2. Behaviour is covered end-to-end by Phase 4 §4 API tests.
+  - Controller unit tests are not in §3 Phase 3 scope (which lists only `root-protection.service.test.ts` and `root-self-termination.service.test.ts`). Controller behaviour is covered by Phase 4 §4 API integration tests (Session 8).
+- **Out-of-scope (deferred to subsequent sessions):**
+  - Cron job (`root-self-termination.cron.ts`) → Step 2.6 (Session 5c).
+  - Typed EventBus methods + notification fan-out handlers → Step 2.7 (Session 6).
+
+**Verification:**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/root/` → 0 errors
+- `docker exec assixx-backend pnpm run type-check` → exit 0 (shared + frontend + backend + backend/test all clean)
+- Containers re-started mid-session (`docker-compose up -d`) — they had been stopped between Session 5 and 5b; healthy after restart.
+
+**Next session:** Session 5c = Step 2.6 (`RootSelfTerminationCron` — daily expiry job, `expireOldRequests()` consumer).
+
 ---
 
 ## Quick Reference: File Paths
@@ -1122,6 +1159,7 @@ backend/src/nest/root/
 | D2  | Filename `eventBus.ts`                    | Actual: `event-bus.ts` (kebab-case)                         | v0.2.0: corrected                                                    |
 | D3  | Wire only `users.service.ts`              | 5 services + 2 PUT routes mutate users.is_active/role       | v0.2.0: expanded wiring                                              |
 | D4  | Trigger checks cross-root before approval | Approve flow has actor != target by design — blocked itself | v0.2.0: Hybrid Option 1+ — approval-flag check + DB-row exists first |
+| D5  | §2.5 mandates `idField` factory for `:id` param | `root_self_termination_requests.id` is UUID (Phase 1 schema), not numeric | v1.0.4 (Session 5b): used `UuidIdParamDto` from same factory (`common/dto/param.factory.ts`) — UUID-typed pre-built DTO matches the data type; ADR-030 §7.5 "use centralized factory" mandate satisfied either way |
 
 ---
 

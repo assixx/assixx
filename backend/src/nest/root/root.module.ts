@@ -9,6 +9,7 @@ import { TenantDeletionModule } from '../tenant-deletion/tenant-deletion.module.
 import { RootAdminService } from './root-admin.service.js';
 import { RootDeletionService } from './root-deletion.service.js';
 import { RootProtectionService } from './root-protection.service.js';
+import { RootSelfTerminationController } from './root-self-termination.controller.js';
 import { RootSelfTerminationService } from './root-self-termination.service.js';
 import { RootTenantService } from './root-tenant.service.js';
 import { RootController } from './root.controller.js';
@@ -19,7 +20,11 @@ import { RootService } from './root.service.js';
   // `RootService.insertRootUserRecord` and `RootAdminService.insertAdminRecord`
   // per §2.9 KISS gate (§0.2.5 #1 + D33).
   imports: [OrganigramModule, TenantDeletionModule, DomainsModule],
-  controllers: [RootController],
+  // RootSelfTerminationController — Step 2.5 of FEAT_ROOT_ACCOUNT_PROTECTION.
+  // Mounts 6 endpoints under `/api/v2/users/...` for the peer-approval
+  // lifecycle (request, list pending, approve, reject, cancel). Path-collision
+  // audit vs UsersController verified safe — see controller header.
+  controllers: [RootController, RootSelfTerminationController],
   providers: [
     RootService,
     RootAdminService,
