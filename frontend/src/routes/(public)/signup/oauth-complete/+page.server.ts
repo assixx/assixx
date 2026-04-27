@@ -29,7 +29,8 @@
  */
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 
-import { extractJwtExp, extractJwtRole } from '$lib/server/jwt-exp';
+import { setAuthCookies } from '$lib/server/auth-cookies';
+import { extractJwtRole } from '$lib/server/jwt-exp';
 import { createLogger } from '$lib/utils/logger';
 
 import type { Actions, PageServerLoad } from './$types';
@@ -39,28 +40,6 @@ const log = createLogger('OAuthCompleteSignup');
 
 /** API base URL for server-side fetching — matches login/+page.server.ts. */
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-/** Cookie options for the short-lived access token (see login action). */
-const ACCESS_COOKIE_OPTIONS = {
-  path: '/',
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-};
-
-/**
- * Cookie options for the long-lived refresh token — stricter than access
- * token: sameSite:'strict' + path scoped to /api/v2/auth (CSRF defence).
- */
-const REFRESH_COOKIE_OPTIONS = {
-  path: '/api/v2/auth',
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-};
-
-const ACCESS_TOKEN_MAX_AGE = 30 * 60; // 30 min
-const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
 /**
  * Role → dashboard path map. MUST mirror
@@ -199,7 +178,14 @@ export const load: PageServerLoad = async ({ url, fetch, cookies, request }) => 
     // We preserve it verbatim into the final dashboard redirect so the
     // (app) layout can consume it via e2e.bootstrapFromUnlockTicket before
     // running initialize().
-    return await handleHandoff(handoffToken, fetch, cookies, request, readQuery(url, 'unlock'));
+    return await handleHandoff(
+      handoffToken,
+      fetch,
+      cookies,
+      url,
+      request,
+      readQuery(url, 'unlock'),
+    );
   }
 
   const ticket = readQuery(url, 'ticket');
@@ -235,6 +221,7 @@ async function handleHandoff(
   token: string,
   fetchFn: typeof fetch,
   cookies: Cookies,
+  url: URL,
   request: Request,
   unlockTicket: string | null,
 ): Promise<never> {
@@ -303,7 +290,7 @@ async function handleHandoff(
     error(500, 'Sitzung konnte nicht übernommen werden.');
   }
 
-  setAuthCookies(cookies, accessToken, refreshToken, role);
+  setAuthCookies(cookies, url, accessToken, refreshToken, role);
   // ADR-050 × ADR-022: forward the unlock ticket to the dashboard so the
   // (app) layout can consume it client-side. We append it as a query param
   // rather than e.g. a cookie because cookies are subdomain-scoped here and
@@ -366,44 +353,8 @@ function buildCompleteSignupPayload(formData: FormData): {
   };
 }
 
-/**
- * Set the 4-cookie auth-session state. MUST stay in shape-parity with
- * `login/+page.server.ts::setAuthCookies` and `clearAuthCookies` (3-cookie
- * invariant extended to 4 per ADR-046 §"3-cookie invariant" + userRole).
- *
- * `role` is passed explicitly rather than hardcoded: the OAuth-signup caller
- * always supplies `'root'` (the flow creates a new tenant's root admin); the
- * OAuth-login-handoff caller supplies the role extracted from the handed-off
- * JWT (can be any `UserRole`).
- */
-function setAuthCookies(cookies: Cookies, access: string, refresh: string, role: UserRole): void {
-  cookies.set('accessToken', access, {
-    ...ACCESS_COOKIE_OPTIONS,
-    maxAge: ACCESS_TOKEN_MAX_AGE,
-  });
-  cookies.set('refreshToken', refresh, {
-    ...REFRESH_COOKIE_OPTIONS,
-    maxAge: REFRESH_TOKEN_MAX_AGE,
-  });
-  // userRole is readable by client JS (not httpOnly) — the router uses it
-  // to pick the correct dashboard layout.
-  cookies.set('userRole', role, {
-    ...ACCESS_COOKIE_OPTIONS,
-    httpOnly: false,
-    maxAge: ACCESS_TOKEN_MAX_AGE,
-  });
-  // accessTokenExp — see login/+page.server.ts for full rationale.
-  // SvelteKit server-side fetch strips backend Set-Cookie → re-emit here or
-  // TokenManager's timer reads stale/absent cookie after OAuth signup.
-  cookies.set('accessTokenExp', String(extractJwtExp(access)), {
-    ...ACCESS_COOKIE_OPTIONS,
-    httpOnly: false,
-    maxAge: ACCESS_TOKEN_MAX_AGE,
-  });
-}
-
 export const actions: Actions = {
-  default: async ({ request, fetch, cookies }) => {
+  default: async ({ request, fetch, cookies, url }) => {
     const formData = await request.formData();
     const payload = buildCompleteSignupPayload(formData);
     if (payload === null) {
@@ -440,7 +391,7 @@ export const actions: Actions = {
       // OAuth signup always creates a tenant's first root admin — the role
       // was previously hardcoded inside setAuthCookies; now passed explicitly
       // so the function can also serve the login-handoff branch (ADR-050).
-      setAuthCookies(cookies, body.data.accessToken, body.data.refreshToken, 'root');
+      setAuthCookies(cookies, url, body.data.accessToken, body.data.refreshToken, 'root');
 
       return {
         success: true,

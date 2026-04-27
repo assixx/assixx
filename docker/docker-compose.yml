@@ -403,7 +403,15 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      ORIGIN: ${ORIGIN:-http://localhost}
+      # SvelteKit adapter-node URL construction (kit docs §"environment-variables").
+      # PROTOCOL_HEADER + HOST_HEADER → event.url is built from X-Forwarded-Proto +
+      # X-Forwarded-Host (set by Nginx). Required for ADR-050 multi-tenant subdomain
+      # SSR — `assixx.localhost`, `<slug>.assixx.com` must propagate into event.url,
+      # otherwise extractSlug() collapses to null and R15 cross-check 403s every
+      # authenticated handoff. Static ORIGIN was previously forcing all event.url
+      # values to one host, silently defeating subdomain awareness.
+      PROTOCOL_HEADER: x-forwarded-proto
+      HOST_HEADER: x-forwarded-host
       BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-10M}
       # API URL for SSR server-side fetches (inside Docker network)
       API_URL: http://backend:3000/api/v2

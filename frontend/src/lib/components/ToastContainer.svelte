@@ -103,6 +103,7 @@
     max-width: 600px;
     margin-bottom: 10px;
     animation: slide-in-right 0.3s ease-out;
+
     /*
      * Override design-system .toast { align-items: flex-start } — sonst klebt der
      * Action-Button (Rückgängig / Weiter →) oben am Container, während der Text

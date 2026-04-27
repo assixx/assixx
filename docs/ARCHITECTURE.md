@@ -1,6 +1,6 @@
 # Assixx System Architecture
 
-**Version:** 4.1.1 · **Updated:** 2026-04-27 · **Status:** living document
+**Version:** 4.2.0 · **Updated:** 2026-04-27 · **Status:** living document
 
 > Single navigation map into the Assixx codebase. **Read this first** when joining a session or touching an unfamiliar area. Auto-loaded into every Claude Code session via [CLAUDE.md](../CLAUDE.md) mandatory checklist.
 
@@ -35,6 +35,7 @@ Most questions about "where is X implemented?" are answered by the tables below.
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | JWT authentication               | `backend/src/nest/common/guards/jwt-auth.guard.ts:46`                                                                 | `JwtAuthGuard.canActivate()` — fresh DB lookup per request, populates CLS · [ADR-005](./infrastructure/adr/ADR-005-authentication-strategy.md)                                 |
 | Login/refresh/logout             | `backend/src/nest/auth/auth.service.ts` · `backend/src/nest/auth/auth.controller.ts`                                  | Token issuing + connection-ticket flow                                                                                                                                         |
+| SSR auth-cookie state            | `frontend/src/lib/server/auth-cookies.ts`                                                                             | `setAuthCookies` / `clearAuthCookies` — single source of the 4-cookie invariant (access/refresh/role/exp); `secure` derived from `url.protocol`, NOT `NODE_ENV` · ADR-046 · [ADR-050](./infrastructure/adr/ADR-050-tenant-subdomain-routing.md) |
 | OAuth sign-in (MS/Google)        | `backend/src/nest/auth/oauth/`                                                                                        | Azure AD + Google OIDC · [ADR-046](./infrastructure/adr/ADR-046-oauth-sign-in.md)                                                                                              |
 | **Layer 0** — Addon subscription | `backend/src/nest/common/guards/tenant-addon.guard.ts`                                                                | "Has the tenant booked this addon?" — checks `tenant_addons`. Fail → `/addon-unavailable` · [ADR-033](./infrastructure/adr/ADR-033-addon-based-saas-model.md)                  |
 | **Layer 1** — Management gate    | `backend/src/nest/common/guards/permission.guard.ts:35` (via `@RequirePermission(ADDON, MODULE)`)                     | "Can this user manage this module at all?" — combines role + `has_full_access` + Lead-scope + Deputy-toggle. Replaces `isAdmin` shortcuts. Fail → `/permission-denied` or 403  |

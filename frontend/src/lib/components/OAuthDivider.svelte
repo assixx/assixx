@@ -34,6 +34,7 @@
     display: flex;
     align-items: center;
     margin: 20px 0;
+
     /* Secondary text token is already used by .login-footer a — proven to
        follow the active theme in both light and dark modes. */
     color: var(--color-text-secondary);
@@ -53,7 +54,7 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: currentColor;
+    background: currentcolor;
     opacity: 25%;
   }
 

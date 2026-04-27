@@ -325,7 +325,7 @@
   }
 
   .dropdown__trigger:disabled {
-    opacity: 0.5;
+    opacity: 50%;
     cursor: not-allowed;
   }
 </style>
