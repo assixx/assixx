@@ -2,13 +2,13 @@
 
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
-> **Version:** 1.0.1 (Phase 2 in progress — Session 3 done)
-> **Status:** Phase 1 COMPLETE 2026-04-26 — Phase 2 Session 3/4 done, Sessions 4-6 pending
+> **Version:** 1.0.3 (Phase 2 in progress — Session 5 RootSelfTerminationService done)
+> **Status:** Phase 1 COMPLETE 2026-04-26 — Phase 2 Sessions 3-5 done, Sessions 6 pending (controller / cron / notifications)
 > **Branch:** `feat/root-account-protection`
 > **Spec:** Inline — see §Goal below
 > **Author:** Simon Öztürk
 > **Estimated sessions:** 10
-> **Actual sessions:** 3 / 10 (Phase 0 audit + Phase 1 migrations + Phase 2 RootProtectionService done)
+> **Actual sessions:** 5 / 10 (Phase 0 audit + Phase 1 migrations + Phase 2 RootProtectionService + wiring + RootSelfTerminationService done)
 
 ---
 
@@ -80,6 +80,7 @@ all four operations that can take a root account out of "active root" state.
 | 1.0.0   | 2026-04-26 | Phase 1 COMPLETE -- migrations applied (table + RLS + 5 indexes; trigger + 4 smokes pass; customer fresh-install synced; backend tsc clean)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | 1.0.1   | 2026-04-26 | Session 3 done -- `RootProtectionService` implemented (5 methods per §2.2), registered + exported in `RootModule`, §0.5 spot-check rows for `root-deletion.service.ts` and audit infra resolved, lint+type-check clean, tests deferred to Session 7 per Phase 3 schedule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | 1.0.2   | 2026-04-26 | Session 4 done -- Step 2.3 wiring across 4 termination sites + 1 defensive role-block: `root.service.ts:deleteRootUser` (full chain replaces inline self-delete + last-root SQL), `root-admin.service.ts:deleteAdmin` (defensive), `users.service.ts:deleteUser` (full chain), `users.service.ts:archiveUser` (defensive role-block — root accounts cannot be archived via the generic users path), `dummy-users.service.ts:delete` (defensive). `unarchiveUser` NOT wired (verified: sets is_active=1, not 0). PUT-route role-demote wiring on `updateRootUser`/`updateAdmin` deferred — Layer 4 trigger backstop. RootModule exported into UsersModule + DummyUsersModule. 4 paired test suites updated; 105 unit tests green. Lint 0 errors, tsc 0 errors. |
+| 1.0.3   | 2026-04-26 | Session 5 partial -- Step 2.4 `RootSelfTerminationService` implemented (~530 LOC, 8 methods per §2.4 + 5 private helpers, error-code constants, plain-string EventBus emits pending Step 2.7 typed handlers). Approve TX ordering follows §2.4 verbatim (FOR UPDATE → recount → flip status → set GUC → UPDATE users). 24h cooldown + last-root protection + self-decision guard + cross-tenant isolation via RLS. Service registered in `RootModule.providers + exports` (Step 2.1 checkbox 2/4). Tests deferred to Session 7 per Phase 3 schedule (`root-self-termination.service.test.ts ~24 tests`). Lint 0 errors, type-check 0 errors. Steps 2.5 (controller) / 2.6 (cron) / 2.7 (notifications) remain pending.                                  |
 | 1.1.0   | TBD        | Phase 2 COMPLETE — backend done                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | 1.2.0   | TBD        | Phase 3 COMPLETE — unit tests green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | 1.3.0   | TBD        | Phase 4 COMPLETE — API integration tests green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -458,7 +459,7 @@ UPDATE users SET is_active = 0 WHERE id = 1;
 > **Dependency:** Phase 1 complete.
 > **Bounded context:** `backend/src/nest/root/` (existing module — extend, don't fork).
 
-### Step 2.1: Module skeleton + types + DTOs [PARTIAL — `RootProtectionService` registered 2026-04-26]
+### Step 2.1: Module skeleton + types + DTOs [PARTIAL — `RootProtectionService` + `RootSelfTerminationService` registered 2026-04-26]
 
 **Existing directory (flat extension):** `backend/src/nest/root/`
 
@@ -491,7 +492,7 @@ backend/src/nest/root/
 **Register in `backend/src/nest/root/root.module.ts`:**
 
 - [x] `RootProtectionService` added to providers + exports (Session 3, 2026-04-26)
-- [ ] `RootSelfTerminationService` added to providers + exports
+- [x] `RootSelfTerminationService` added to providers + exports (Session 5, 2026-04-26)
 - [ ] `RootSelfTerminationController` added to controllers
 - [ ] `RootSelfTerminationCron` added to providers (with `ScheduleModule` import)
 
@@ -555,7 +556,7 @@ await this.rootProtection.assertNotLastRoot(target.tenantId, target.id);
 
 **Self-termination via direct mutation = forbidden.** The only legal path is `RootSelfTerminationService.approveSelfTermination()`, which sets the GUC + executes a private termination method.
 
-### Step 2.4: `RootSelfTerminationService` [PENDING]
+### Step 2.4: `RootSelfTerminationService` [DONE 2026-04-26]
 
 **File:** `backend/src/nest/root/root-self-termination.service.ts`
 
@@ -966,8 +967,9 @@ backend/src/nest/root/
 | 2       | 1     | Migration: requests table + DB trigger (Hybrid Option 1+)                                                   | DONE   | 2026-04-26 |
 | 3       | 2     | RootProtectionService + spot-check root-deletion.service.ts                                                 | DONE   | 2026-04-26 |
 | 4       | 2     | Wire 4 termination sites + 1 defensive role-block; PUT-route role-demote wiring deferred (Layer 4 backstop) | DONE   | 2026-04-26 |
-| 5       | 2     | RootSelfTerminationService + controller + cron + cooldown                                                   |        |            |
-| 6       | 2     | Notifications + EventBus integration                                                                        |        |            |
+| 5       | 2     | RootSelfTerminationService (Step 2.4 only — controller/cron/notifications split out)                        | DONE   | 2026-04-26 |
+| 5b      | 2     | Controller (2.5) + cron (2.6)                                                                               |        |            |
+| 6       | 2     | Notifications + EventBus integration (2.7)                                                                  |        |            |
 | 7       | 3     | Unit tests (≥32) — service + DB-trigger SQL tests                                                           |        |            |
 | 8       | 4     | API integration tests (≥24)                                                                                 |        |            |
 | 9       | 5     | Frontend: root-profile + manage-root + manage-approvals                                                     |        |            |
@@ -1020,6 +1022,35 @@ backend/src/nest/root/
 - **Verification:** `pnpm exec eslint backend/src/nest/{root,users,dummy-users}` → 0 errors. `pnpm exec tsc --noEmit -p backend` → 0 errors. `pnpm exec tsc --noEmit -p backend/test` → 0 errors. `pnpm exec vitest run --project unit` on the 4 paired suites → 105/105 passed (1.62s).
 
 **Next session:** Session 5 = `RootSelfTerminationService` + controller + cron + cooldown (Steps 2.4–2.6).
+
+### Session 5 — 2026-04-26
+
+**Goal:** Implement Step 2.4 — `RootSelfTerminationService` only (split out from the original Session 5 scope to keep one masterplan step per session per /continue rules; controller / cron / notifications now Sessions 5b + 6).
+
+**Result:**
+
+- **New file:** `backend/src/nest/root/root-self-termination.service.ts` (~530 LOC including doc-headers).
+  - **8 methods per §2.4 methods table:** `requestSelfTermination`, `getMyPendingRequest`, `getMostRecentRejection`, `cancelOwnRequest`, `getPendingRequestsForApproval`, `approveSelfTermination`, `rejectSelfTermination`, `expireOldRequests`.
+  - **5 private helpers:** `assertActorIsRoot`, `assertCooldownPassed`, `assertNoPendingRequest`, `lockRequestForDecision`, `assertCanDecide`, `emitAndAuditApproval`. Helpers exist to keep the public methods under the 60-line ESLint cap and to make the cooldown / no-pending / decide-precondition logic individually testable in Session 7.
+  - **Error codes** exported as `ROOT_SELF_TERMINATION_CODES` (8 codes — COOLDOWN_ACTIVE, ALREADY_PENDING, NOT_FOUND, NOT_PENDING, EXPIRED, SELF_DECISION_FORBIDDEN, REJECTION_REASON_REQUIRED, ROLE_FORBIDDEN). Frontend (Phase 5) and API tests (Phase 4) will consume these.
+  - **Approve TX ordering verbatim per §2.4:** lock request row (FOR UPDATE) → validate (`assertCanDecide` + expiry check) → lock all root rows in tenant (FOR UPDATE) → recount via `RootProtectionService.assertNotLastRoot(tenantId, requesterId, client)` → flip status='approved' (Layer 4 verifies this row exists) → `set_config('app.root_self_termination_approved', 'true', true)` → UPDATE users SET is_active=4 → emit + audit.
+  - **24h cooldown** implemented inside `requestSelfTermination` via `assertCooldownPassed` (R3/R7 mitigation): reads most-recent rejection inside the same TX, throws `ConflictException(COOLDOWN_ACTIVE)` with `cooldownEndsAt` ISO field.
+  - **EventBus emits:** `root.self-termination.requested|approved|rejected|expired` — plain string-keyed `eventBus.emit(...)` calls. Step 2.7 will replace with typed methods on the `NotificationEventBus` singleton + register listener handlers in `NotificationsService`. Until then the events have no listeners — calls are no-ops by design.
+  - **Audit:** every state transition writes a `root_logs` entry via `ActivityLoggerService` (matches Phase 0 §0.5 dual-writer finding). `audit_trail` rows for the HTTP requests will be added automatically by `AuditTrailInterceptor` once Step 2.5 (controller) is in.
+- **`RootModule` registration:** `RootSelfTerminationService` added to providers + exports (Step 2.1 checkbox 2/4 ticked). Importable by Step 2.5 controller and Step 2.6 cron without circular DI risk (RootModule's existing imports don't transitively touch users/dummy-users for this branch).
+- **Out-of-scope (deferred to subsequent sessions):**
+  - DTOs (`request-self-termination.dto.ts`, `approve-self-termination.dto.ts`, `reject-self-termination.dto.ts`) → Step 2.5 (Session 5b)
+  - Controller (6 endpoints) → Step 2.5 (Session 5b)
+  - Cron (`root-self-termination.cron.ts`) → Step 2.6 (Session 5b)
+  - Typed EventBus methods + notification fan-out handlers → Step 2.7 (Session 6)
+  - Tests (`root-self-termination.service.test.ts ~24 tests`) → Phase 3 / Session 7 (same deferral pattern as Session 3 used for `root-protection.service.test.ts`)
+
+**Verification:**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/root/` → 0 errors (initial run found 8 issues; all fixed: 4× `client: PoolClient` annotations per `@typescript-eslint/typedef`, 3× dropped `<void>` generic on `tenantTransaction` per `@typescript-eslint/no-invalid-void-type` — replaced with inferred T + `Promise<void>` callback return annotation, 1× split `if (last === undefined || last.rejected_at === null)` into two separate early-returns per `@typescript-eslint/prefer-optional-chain`).
+- `docker exec assixx-backend pnpm run type-check` → exit 0 (shared + frontend + backend + backend/test all clean).
+
+**Next session:** Session 5b = Step 2.5 (controller, 6 endpoints) + Step 2.6 (cron) — both depend on this service.
 
 ---
 
