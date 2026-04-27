@@ -126,7 +126,7 @@
 
   /* Glass Backgrounds (dark overlays on light surfaces) */
   --glass-bg: oklch(0% 0 0 / 2%);
-  --glass-bg-hover: oklch(0% 0 0 / 5%);
+  --glass-bg-hover: oklch(0% 0 0 / 2%);
   --glass-bg-active: oklch(0% 0 0 / 6%);
   --glass-border: 1px solid oklch(0% 0 0 / 20%);
   --glass-border-sidebar-tree: 1px solid oklch(0% 0 0 / 35%);

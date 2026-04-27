@@ -50,6 +50,7 @@ import { eventBus } from '../../utils/event-bus.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { RootProtectionService } from './root-protection.service.js';
+import { RootSelfTerminationNotificationService } from './root-self-termination-notification.service.js';
 
 /**
  * 24h cooldown after a rejection before the requester may submit a new
@@ -159,6 +160,11 @@ export class RootSelfTerminationService {
     private readonly db: DatabaseService,
     private readonly rootProtection: RootProtectionService,
     private readonly activityLogger: ActivityLoggerService,
+    // Step 2.7 — notification fan-out (typed EventBus emits + persistent
+    // INSERT rows). Called AFTER the producer's `tenantTransaction` commits
+    // so notification failures cannot roll back business operations
+    // (mirrors the vacation-notification.service.ts pattern).
+    private readonly notification: RootSelfTerminationNotificationService,
   ) {}
 
   /**
@@ -181,7 +187,7 @@ export class RootSelfTerminationService {
   ): Promise<RootSelfTerminationRequest> {
     this.assertActorIsRoot(actor);
 
-    return await this.db.tenantTransaction<RootSelfTerminationRequest>(
+    const created = await this.db.tenantTransaction<RootSelfTerminationRequest>(
       async (client: PoolClient) => {
         await this.assertCooldownPassed(client, actor.id);
         await this.assertNoPendingRequest(client, actor.id);
@@ -202,14 +208,6 @@ export class RootSelfTerminationService {
           throw new Error('INSERT returned no row');
         }
 
-        eventBus.emit('root.self-termination.requested', {
-          tenantId: actor.tenantId,
-          requestId: row.id,
-          requesterId: actor.id,
-          expiresAt: row.expires_at.toISOString(),
-          reason,
-        });
-
         await this.activityLogger.log({
           tenantId: actor.tenantId,
           userId: actor.id,
@@ -228,6 +226,19 @@ export class RootSelfTerminationService {
         return rowToDomain(row);
       },
     );
+
+    // Step 2.7 — Notification fan-out happens AFTER the producer's TX
+    // commits. The notification service has its own internal try/catch,
+    // so a fan-out failure logs but does NOT propagate or roll back the
+    // already-committed business state (mirrors vacation pattern).
+    await this.notification.notifyRequested({
+      tenantId: created.tenantId,
+      requesterId: created.requesterId,
+      requestId: created.id,
+      expiresAt: created.expiresAt.toISOString(),
+    });
+
+    return created;
   }
 
   /**
@@ -336,7 +347,7 @@ export class RootSelfTerminationService {
     comment?: string,
   ): Promise<void> {
     this.assertActorIsRoot(actor);
-    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+    const approved = await this.db.tenantTransaction<RequestRow>(async (client: PoolClient) => {
       const request = await this.lockRequestForDecision(client, requestId);
       this.assertCanDecide(request, actor);
       if (request.expires_at.getTime() <= Date.now()) {
@@ -348,8 +359,8 @@ export class RootSelfTerminationService {
       // Lock all active roots in the tenant before the recount (R1).
       await client.query(
         `SELECT id FROM users
-         WHERE tenant_id = $1 AND role = 'root' AND is_active = ${IS_ACTIVE.ACTIVE}
-         FOR UPDATE`,
+           WHERE tenant_id = $1 AND role = 'root' AND is_active = ${IS_ACTIVE.ACTIVE}
+           FOR UPDATE`,
         [actor.tenantId],
       );
       await this.rootProtection.assertNotLastRoot(actor.tenantId, request.requester_id, client);
@@ -357,8 +368,8 @@ export class RootSelfTerminationService {
       // 5-min approval window.
       await client.query(
         `UPDATE root_self_termination_requests
-         SET status = 'approved', approved_by = $1, approved_at = NOW(), updated_at = NOW()
-         WHERE id = $2`,
+           SET status = 'approved', approved_by = $1, approved_at = NOW(), updated_at = NOW()
+           WHERE id = $2`,
         [actor.id, request.id],
       );
       // Step (5) — set the trigger-bypass GUC AFTER the row exists.
@@ -367,10 +378,21 @@ export class RootSelfTerminationService {
       // GUC, allows. Last-root protection in trigger still enforced.
       await client.query(
         `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
-         WHERE id = $1 AND tenant_id = $2`,
+           WHERE id = $1 AND tenant_id = $2`,
         [request.requester_id, actor.tenantId],
       );
-      await this.emitAndAuditApproval(actor, request, comment ?? null);
+      await this.auditApproval(actor, request, comment ?? null);
+      return request;
+    });
+
+    // Step 2.7 — post-commit notification fan-out (see requestSelfTermination
+    // for the rationale on out-of-TX placement).
+    await this.notification.notifyApproved({
+      tenantId: actor.tenantId,
+      requesterId: approved.requester_id,
+      requestId: approved.id,
+      approverId: actor.id,
+      comment: comment ?? null,
     });
   }
 
@@ -392,28 +414,26 @@ export class RootSelfTerminationService {
       });
     }
 
-    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+    // Capture the TS-side rejection timestamp so the SQL row + the
+    // notification cooldown computation use exactly the same value.
+    // Avoids a milliseconds-scale drift between DB `NOW()` and the
+    // Date object passed to `notifyRejected`.
+    const rejectedAt = new Date();
+
+    const rejected = await this.db.tenantTransaction<RequestRow>(async (client: PoolClient) => {
       const request = await this.lockRequestForDecision(client, requestId);
       this.assertCanDecide(request, actor);
 
       await client.query(
         `UPDATE root_self_termination_requests
-         SET status = 'rejected',
-             rejected_by = $1,
-             rejected_at = NOW(),
-             rejection_reason = $2,
-             updated_at = NOW()
-         WHERE id = $3`,
-        [actor.id, rejectionReason, request.id],
+           SET status = 'rejected',
+               rejected_by = $1,
+               rejected_at = $2,
+               rejection_reason = $3,
+               updated_at = NOW()
+           WHERE id = $4`,
+        [actor.id, rejectedAt, rejectionReason, request.id],
       );
-
-      eventBus.emit('root.self-termination.rejected', {
-        tenantId: actor.tenantId,
-        requestId: request.id,
-        requesterId: request.requester_id,
-        rejectorId: actor.id,
-        rejectionReason,
-      });
 
       await this.activityLogger.log({
         tenantId: actor.tenantId,
@@ -429,6 +449,17 @@ export class RootSelfTerminationService {
       this.logger.log(
         `Self-termination rejected: rejector=${actor.id} requester=${request.requester_id} request=${request.id}`,
       );
+      return request;
+    });
+
+    // Step 2.7 — post-commit notification fan-out.
+    await this.notification.notifyRejected({
+      tenantId: actor.tenantId,
+      requesterId: rejected.requester_id,
+      requestId: rejected.id,
+      approverId: actor.id,
+      rejectionReason,
+      rejectedAt,
     });
   }
 
@@ -577,22 +608,17 @@ export class RootSelfTerminationService {
   }
 
   /**
-   * Emit + audit-log for the approve flow. Extracted to keep
-   * `approveSelfTermination` under the 60-line cap.
+   * Audit-log + console-log for the approve flow. Extracted to keep
+   * `approveSelfTermination` under the 60-line cap. Step 2.7 moved the
+   * EventBus emit out — it now happens in `RootSelfTerminationNotificationService`
+   * AFTER the producer's TX commits, so this helper retains only the
+   * audit responsibilities.
    */
-  private async emitAndAuditApproval(
+  private async auditApproval(
     actor: SelfTerminationActor,
     request: RequestRow,
     comment: string | null,
   ): Promise<void> {
-    eventBus.emit('root.self-termination.approved', {
-      tenantId: actor.tenantId,
-      requestId: request.id,
-      requesterId: request.requester_id,
-      approverId: actor.id,
-      comment,
-    });
-
     await this.activityLogger.log({
       tenantId: actor.tenantId,
       userId: actor.id,

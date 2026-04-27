@@ -521,12 +521,12 @@
           >
         </div>
       {:else if entries.length === 0}
-        <div class="flex flex-col items-center justify-center py-16 text-center">
-          <i class="fas fa-clipboard-list mb-6 text-7xl text-(--color-text-secondary) opacity-40"
-          ></i>
-          <p class="text-xl text-(--color-text-secondary)">
-            {MESSAGES.NO_ENTRIES}
-          </p>
+        <!-- Use shared empty-state primitive for consistency with table pages (manage-admins, etc.) -->
+        <div class="empty-state">
+          <div class="empty-state__icon">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <h3 class="empty-state__title">{MESSAGES.NO_ENTRIES}</h3>
         </div>
       {:else}
         <div
