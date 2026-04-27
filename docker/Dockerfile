@@ -29,9 +29,11 @@ FROM node:${NODE_VERSION} AS builder
 LABEL org.opencontainers.image.authors="Assixx"
 
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-# pnpm version configurable for consistency across environments
+# pnpm AND npm parameterised — versions configurable via docker-compose
+# build args / docker/.env. See ADR-027 §"Amendment 2026-04-27".
 ARG PNPM_VERSION=10.33.2
-RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
+ARG NPM_VERSION=11.13.0
+RUN npm install -g "npm@${NPM_VERSION}" "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app
 
@@ -77,10 +79,11 @@ LABEL org.opencontainers.image.authors="Assixx"
 # Non-root user created with `useradd -r` (system user, no home) —
 # Debian equivalent of BusyBox `adduser -S` from the prior Alpine image.
 ARG PNPM_VERSION=10.33.2
+ARG NPM_VERSION=11.13.0
 RUN apt-get update \
     && apt-get install -y --no-install-recommends dumb-init \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}" \
+    && npm install -g "npm@${NPM_VERSION}" "pnpm@${PNPM_VERSION}" \
     && groupadd -r -g 1001 nodejs \
     && useradd -r -u 1001 -g nodejs --no-log-init nodejs
 

@@ -3,7 +3,7 @@
 | Metadata                | Value                                                                                            |
 | ----------------------- | ------------------------------------------------------------------------------------------------ |
 | **Status**              | Amended                                                                                          |
-| **Date**                | 2026-02-28 (amended 2026-04-07, 2026-04-08, 2026-04-16)                                          |
+| **Date**                | 2026-02-28 (amended 2026-04-07, 2026-04-08, 2026-04-16, 2026-04-27)                              |
 | **Decision Makers**     | SCS Technik                                                                                      |
 | **Affected Components** | `docker/Dockerfile`, `docker/Dockerfile.dev`, `docker/Dockerfile.frontend`, `docker-compose.yml` |
 
@@ -928,6 +928,123 @@ docker exec assixx-backend node -e \
 
 All three probes pass. The OAuth happy path (Microsoft token exchange +
 `jose` JWKS verification) now completes without any runtime workaround.
+
+---
+
+## Amendment 2026-04-27: npm Parameterisation (Stage 1 Pinning Extended)
+
+### Context
+
+The 2026-02-28 Decision §7 "Version Standardization" parameterised pnpm via
+`ARG PNPM_VERSION` in all three Dockerfiles, but kept npm hardcoded as
+`npm@11.9.0` across **5 occurrences** in 3 files (`Dockerfile.dev:42`,
+`Dockerfile:34, 83`, `Dockerfile.frontend:25, 101`).
+
+A routine version audit (2026-04-27) showed `npm view npm version` →
+`11.13.0` while images still pinned `11.9.0` — 4 patch versions of drift.
+Patch releases of npm routinely contain security fixes in the bundled
+dep tree (`glob`, `tar`, `cacache`, `node-gyp`); CVE-2025-64756 — the
+original reason this ADR pinned npm at all — was exactly that class.
+Hardcoded-but-unparameterised npm therefore violates the same Stage 1
+reproducibility discipline that Amendment 2026-04-07 formalised for
+image tags: a value pinned in 5 scattered RUN lines is auditable but
+not maintainable, and Dependabot can't see it.
+
+### Decision
+
+Mirror the `PNPM_VERSION` pattern: introduce `ARG NPM_VERSION` in every
+Dockerfile that bootstraps npm globally, supply the value via compose
+`build.args`, and store the canonical version in `docker/.env` (the
+existing Single Source of Truth for build-time versions).
+
+| File                         | Change                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------- |
+| `docker/.env`                | `+ NPM_VERSION=11.13.0`                                                               |
+| `docker/docker-compose.yml`  | `+ NPM_VERSION: ${NPM_VERSION:-11.13.0}` in both `build.args` blocks (backend + frontend) |
+| `docker/Dockerfile.dev`      | `+ ARG NPM_VERSION=11.13.0`; RUN uses `npm@${NPM_VERSION}`                             |
+| `docker/Dockerfile`          | `+ ARG NPM_VERSION=11.13.0` in builder + production stages; both RUNs parameterised    |
+| `docker/Dockerfile.frontend` | `+ ARG NPM_VERSION=11.13.0` in builder + production stages; both RUNs parameterised    |
+
+### Rationale
+
+1. **Consistency with pnpm.** §7 of the 2026-02-28 decision parameterised
+   pnpm; leaving npm hardcoded was an oversight rooted in treating npm as
+   "just the pnpm bootstrap" rather than a tracked build dependency.
+2. **CVE tracking surface.** The `npm install -g pnpm` step runs as root.
+   Any CVE in npm's bundled deps (e.g., CVE-2025-64756 on `glob`) is in
+   scope at image build. Centralising the version in `docker/.env` makes
+   bumps a one-line review instead of a 5-line search.
+3. **Dependabot reach.** The `docker-compose` ecosystem (Amendment
+   2026-04-08 §2) tracks `image:` tags AND `build.args`. Moving npm to a
+   build-arg makes it visible to the same scanner that already PRs Node
+   and pnpm bumps. Hardcoded `npm@X.Y.Z` inside a Dockerfile RUN line is
+   opaque to it.
+4. **No CI guard breakage.** The Stage 1 pin-guard regex (Amendment
+   2026-04-08 §1) inspects only `image:` and `FROM` lines — ARG/RUN are
+   out of scope. Verified: pin-guard passes unchanged.
+
+### Scope: NOT Closed by This Amendment
+
+- **Custom-named Dockerfiles still untracked by Dependabot's `docker`
+  ecosystem** (Amendment 2026-04-08 §"Known Gaps" #1). Mitigation is
+  unchanged: the canonical `NPM_VERSION` lives in `docker/.env` and
+  `docker-compose.yml` `build.args`, both of which the `docker-compose`
+  ecosystem tracks. The `ARG NPM_VERSION=11.13.0` default inside each
+  Dockerfile is the fallback for standalone `docker build` invocations
+  (e.g., CI's `docker-build-verification` job which builds the production
+  `docker/Dockerfile` without compose). Defaults must be bumped manually
+  alongside `docker/.env` until Renovate is adopted.
+- **npm itself remains required at runtime in production images.**
+  ADR-027 §"Negative Consequences" #2 still holds — corepack stabilisation
+  or `pnpm deploy` adoption for the backend is the path to remove npm
+  entirely. Out of scope here.
+
+### Verification
+
+```bash
+# 1. No hardcoded npm@11.9.0 references remain
+grep -n "npm@11" docker/Dockerfile*
+  # → no output (PASS)
+
+# 2. Parameterisation present everywhere expected
+grep -nc "NPM_VERSION" docker/Dockerfile* docker/.env docker/docker-compose.yml
+  # docker/Dockerfile:5  (2× ARG, 2× RUN, 1× comment)
+  # docker/Dockerfile.dev:3
+  # docker/Dockerfile.frontend:5
+  # docker/.env:1
+  # docker/docker-compose.yml:2
+
+# 3. CI pin-guard still passes (Amendment 2026-04-08 §1)
+grep -E '^\s*(image:\s*\S+|FROM\s+\S+)' docker/docker-compose*.yml docker/Dockerfile* \
+  | grep -vE 'assixx-(backend|frontend|postgres):' \
+  | grep -vE ':[^[:space:]]*[0-9]+\.[0-9]+|@sha256:|node:\$\{NODE_VERSION'
+  # → no output (PASS)
+
+# 4. End-to-end build (developer must run before merging)
+cd /home/scs/projects/Assixx/docker
+doppler run -- docker-compose --profile production build --no-cache
+docker exec assixx-backend npm --version
+  # → 11.13.0
+```
+
+### Maintenance Workflow Update
+
+The §"Maintenance Workflow" cadence table from Amendment 2026-04-07 is
+extended:
+
+| Component                | Cadence                  | Rationale                                                |
+| ------------------------ | ------------------------ | -------------------------------------------------------- |
+| **npm bootstrap**        | **Quarterly + on CVE**   | Patch-only releases; review npm release notes for `glob`/`tar`/`cacache` advisories |
+
+### File Change Summary
+
+```
+docker/.env                — +4 lines (NPM_VERSION + 3 lines comment)
+docker/docker-compose.yml  — +6 lines (NPM_VERSION build.args, both blocks)
+docker/Dockerfile.dev      — 1 RUN parameterised, ARG added, comment updated
+docker/Dockerfile          — 2 RUNs parameterised, ARG added per stage
+docker/Dockerfile.frontend — 2 RUNs parameterised, ARG added per stage
+```
 
 ---
 
