@@ -6,8 +6,11 @@
    * Level 3 SSR: Stats cards, filter bar, data table, approve/reject modals.
    * Connected to real backend API.
    */
+  import { onMount } from 'svelte';
+
   import { invalidateAll } from '$app/navigation';
 
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
@@ -15,6 +18,14 @@
   import RootSelfTerminationCard from './RootSelfTerminationCard.svelte';
 
   import type { PageData } from './$types';
+
+  // Sidebar badge clears the moment the user lands on /manage-approvals —
+  // both pending self-terminations and addon approvals are visible from
+  // here, so the consolidated `approvals` counter resets on entry.
+  // FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN Phase 7 / sidebar badge wiring.
+  onMount(() => {
+    notificationStore.resetCount('approvals');
+  });
 
   // =============================================================================
   // SSR DATA

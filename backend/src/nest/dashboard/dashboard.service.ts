@@ -54,6 +54,7 @@ type AllCounts = [
   CountItem,
   CountItem,
   CountItem,
+  CountItem,
 ];
 
 @Injectable()
@@ -99,6 +100,7 @@ export class DashboardService {
       tpm,
       workOrders,
       shiftSwap,
+      approvals,
     ] = await this.fetchAllCounts(user, tenantId, canAccess);
 
     return {
@@ -113,6 +115,7 @@ export class DashboardService {
       tpm,
       workOrders,
       shiftSwap,
+      approvals,
       fetchedAt: new Date().toISOString(),
     };
   }
@@ -158,6 +161,9 @@ export class DashboardService {
       g('tpm', () => this.fetchTpmCount(uid, tenantId), EMPTY_COUNT),
       g('work_orders', () => this.fetchWorkOrdersCount(uid, tenantId), EMPTY_COUNT),
       g('shift_planning', () => this.fetchShiftSwapCount(uid, tenantId), EMPTY_COUNT),
+      // Approvals — Core gate, no addon check (root-only feature today).
+      // FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN Phase 7 / sidebar badge.
+      g(null, () => this.fetchApprovalsCount(user, tenantId), EMPTY_COUNT),
     ]);
   }
 
@@ -326,6 +332,41 @@ export class DashboardService {
          AND n.recipient_id = $2
          AND nrs.id IS NULL`,
       [tenantId, userId],
+    );
+    return { count: Number.parseInt(rows[0]?.count ?? '0', 10) };
+  }
+
+  /**
+   * Fetch pending approvals count for the current user.
+   *
+   * Today: counts root_self_termination_requests where status='pending',
+   * requester_id != current user, expires_at > NOW(), in the same tenant.
+   * Non-root users always get 0 (the only producer of approval rows here is
+   * root self-termination — Phase 7 of FEAT_ROOT_ACCOUNT_PROTECTION).
+   *
+   * Drives the sidebar badge for `/manage-approvals` (badgeType=approvals)
+   * AND seeds the initial counter on SSR before SSE events take over
+   * (ADR-003 + ADR-004 amendment "System 1 — Sidebar Badge Counts").
+   *
+   * Future: extend with addon-level approval workflows (per ADR-037) and
+   * tenant-deletion approvals; both would feed into the same counter so
+   * the sidebar badge stays a single source of truth.
+   */
+  private async fetchApprovalsCount(
+    user: NestAuthUser,
+    tenantId: number,
+  ): Promise<{ count: number }> {
+    if (user.activeRole !== 'root') {
+      return { count: 0 };
+    }
+    const rows = await this.db.tenantQuery<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM root_self_termination_requests
+       WHERE tenant_id = $1
+         AND status = 'pending'
+         AND requester_id <> $2
+         AND expires_at > NOW()`,
+      [tenantId, user.id],
     );
     return { count: Number.parseInt(rows[0]?.count ?? '0', 10) };
   }

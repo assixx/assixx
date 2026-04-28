@@ -59,6 +59,18 @@ export const DashboardCountsSchema = z.object({
   workOrders: CountItemSchema,
   /** Pending shift swap consents (requests where user is target + pending_partner) */
   shiftSwap: CountItemSchema,
+  /**
+   * Pending approvals count for the current user.
+   *
+   * Currently aggregates **root-only** peer-approval requests from
+   * `root_self_termination_requests` (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN
+   * Phase 7 / Sidebar-Badge wiring): rows with status='pending', requester_id
+   * != $userId, expires_at > NOW(). Drives the red sidebar badge for
+   * `/manage-approvals` (badgeType=approvals).
+   *
+   * Future extension: tenant_deletion_pending_approvals + addon-approvals.
+   */
+  approvals: CountItemSchema,
   /** Timestamp when counts were fetched */
   fetchedAt: z.string(),
 });
