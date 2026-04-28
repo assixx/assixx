@@ -31,19 +31,43 @@ Bare Befehle wie `vitest` oder `eslint` können die falsche (globale) Version er
 ```bash
 # Working Directory: /home/scs/projects/Assixx/docker
 
-doppler run -- docker-compose up -d                          # Dev-Container starten (Backend, Postgres, Redis, Deletion-Worker, Grafana, Loki, Prometheus)
-doppler run -- docker-compose ps                             # Status aller Container anzeigen
-doppler run -- docker-compose down                           # Alle Container stoppen und entfernen
-doppler run -- docker-compose restart backend                # Nur Backend neustarten (nach Code-Änderungen)
-doppler run -- docker-compose restart backend deletion-worker # Backend + Deletion-Worker neustarten
-doppler run -- docker-compose logs -f backend                # Backend-Logs live streamen
-doppler run -- docker-compose logs backend --tail 50         # Letzte 50 Zeilen Backend-Logs
-doppler run -- docker-compose --profile production up -d     # Production-Mode starten (inkl. Frontend + Nginx)
-doppler run -- docker-compose --profile production ps        # Production-Container-Status anzeigen
-doppler run -- docker-compose --profile production down      # Production komplett stoppen
-doppler run -- docker-compose --profile production build frontend          # Frontend-Image neu bauen
-doppler run -- docker-compose --profile production up -d --build frontend  # Frontend bauen + starten
-doppler run -- docker-compose --profile production build --no-cache        # Alles von Grund auf neu bauen
+# ---------------------------------------------------------------------------
+# Profile-System (ADR-027 Amendment 2026-04-28)
+# ---------------------------------------------------------------------------
+# Dev-Backend (Dockerfile.dev, live-reload) → Profile `dev`
+# Prod-Backend (Dockerfile, multi-stage)    → Profile `production`
+# Beide teilen container_name=assixx-backend → können nicht gleichzeitig laufen
+# Default-Profile via docker/.env: COMPOSE_PROFILES=dev,observability
+# ---------------------------------------------------------------------------
+
+# === DEVELOPMENT ===
+doppler run -- docker-compose up -d                                          # Liest .env (Default: dev,observability) — Backend (dev), Postgres, Redis, Worker, Loki, Prometheus, Grafana, Tempo
+doppler run -- docker-compose --profile dev up -d                            # Explizit nur dev (ohne observability)
+doppler run -- docker-compose --profile dev --profile observability up -d    # Explizit dev + observability
+doppler run -- docker-compose ps                                             # Status aller Container anzeigen
+doppler run -- docker-compose --profile dev down                             # Dev-Container stoppen + entfernen
+doppler run -- docker-compose --profile dev restart backend                  # Nur Dev-Backend neustarten (NUR für env/compose-Änderungen — Code-Edits hot-reloaden auto via tsc-watch+nodemon, ADR-027 §Amendment 2026-04-28 (b))
+doppler run -- docker-compose --profile dev restart backend deletion-worker  # Backend + Worker neustarten
+doppler run -- docker-compose logs -f backend                                # Backend-Logs live streamen
+doppler run -- docker-compose logs backend --tail 50                         # Letzte 50 Zeilen Backend-Logs
+
+# === PRODUCTION (CI-Parität: backend-prod aus docker/Dockerfile) ===
+# WICHTIG: Vorher Dev-Backend stoppen (container-name-Konflikt)
+doppler run -- docker-compose --profile dev stop backend deletion-worker
+doppler run -- docker-compose --profile dev rm -f backend deletion-worker
+
+doppler run -- docker-compose --profile production build                     # Backend-prod + Frontend bauen (mit cache schnell)
+doppler run -- docker-compose --profile production build backend-prod        # Nur Backend-Prod-Image bauen
+doppler run -- docker-compose --profile production up -d                     # Production-Stack starten (backend-prod + frontend + nginx + observability)
+doppler run -- docker-compose --profile production ps                        # Production-Container-Status
+doppler run -- docker-compose --profile production down                      # Production komplett stoppen
+doppler run -- docker-compose --profile production build --no-cache          # Alles von Grund auf neu bauen (~2-3 min mit fast network)
+
+# === SWITCH zwischen Modi ===
+# Prod → Dev:
+doppler run -- docker-compose --profile production stop backend-prod deletion-worker-prod frontend nginx
+doppler run -- docker-compose --profile production rm -f backend-prod deletion-worker-prod frontend nginx
+doppler run -- docker-compose --profile dev up -d
 ```
 
 ---

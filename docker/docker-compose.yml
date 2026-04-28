@@ -85,7 +85,11 @@ services:
       start_period: 30s
 
   # Assixx Backend (Development Mode with Live Reload)
+  # Profile `dev`: live-reload via volume-mounts, builds TS at container startup.
+  # For Production-Parität (compiled image, fast cold-start) → `backend-prod`.
+  # Default profile is set via docker/.env (COMPOSE_PROFILES=dev) — see ADR-027.
   backend:
+    profiles: [dev]
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev
@@ -220,19 +224,44 @@ services:
       # start_interval polls every 5s during startup for fast detection
       start_period: 120s
       start_interval: 5s
-    # Development command - build shared + NestJS, then run
-    # 1. Build @assixx/shared (TS → JS for Node runtime resolution)
-    # 2. Build backend (tsc for decorator metadata - tsx can't emit it)
-    # 3. Run compiled JS with Node
+    # Development command — incremental rebuild + hot-reload (2026-04-28).
     #
-    # NOTE: A previous attempt (ADR-027 amendment 2026-04-08, ROLLED BACK)
-    # added `pnpm install --frozen-lockfile` to this entrypoint to mitigate
-    # the anonymous volume drift footgun. It failed at runtime with EACCES
-    # because the image's /app/node_modules is root-owned (Dockerfile.dev L46
-    # chowns only the /app entry, not contents) while the container runs as
-    # UID 1000 — pnpm could not mutate the volume. Reverted until a proper
-    # fix lands (build-as-UID-1000 in Dockerfile.dev, requires careful test).
-    command: sh -c "pnpm --filter @assixx/shared run build && cd backend && pnpm run build && node dist/nest/main.js"
+    # WHY: Previous chain `tsc && node dist/nest/main.js` paid the full
+    #      tsc cold-start (≈60s) on every `docker-compose restart backend`,
+    #      even though `tsconfig.json` has `incremental: true`. Source-edit
+    #      iteration required restarting the whole container.
+    #
+    # WHY tsc, not tsx: empirically validated 2026-04-28 — tsx 4.21 (esbuild
+    #      0.27 backend) emits decorator-metadata unevenly for cross-module
+    #      type references. NestJS DI breaks reproducibly at
+    #      ShiftHandoverEntriesService (`db` param at index [0] resolved to
+    #      undefined despite correct `import { DatabaseService }`). tsc is
+    #      the only decorator-metadata-complete compiler for this stack.
+    #
+    # FLOW:
+    #   1. Build @assixx/shared (one-shot, prerequisite for backend tsc).
+    #   2. `pnpm exec tsc` — initial blocking build, fully populates dist/
+    #      BEFORE nodemon starts (no race with empty dist/).
+    #   3. `pnpm exec tsc -w &` — incremental watcher in background; only
+    #      changed files re-emit (~1–2 s on save).
+    #   4. `exec pnpm exec nodemon --watch dist --delay 1500ms` — nodemon
+    #      becomes PID 1 (clean SIGTERM), watches dist/, debounces 1.5 s
+    #      to let tsc finish multi-file emits before restart.
+    #
+    # ADR-027 §3 anonymous-volume-EACCES NOT triggered: this command writes
+    # only to /app/backend/dist (host-mounted volume), never to
+    # /app/node_modules. Read of nodemon binary from root-owned
+    # node_modules works (executable bit set for `o`).
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        pnpm --filter @assixx/shared run build
+        cd backend
+        pnpm exec tsc
+        pnpm exec tsc -w --preserveWatchOutput &
+        exec pnpm exec nodemon --watch dist --delay 1500ms dist/nest/main.js
 
   # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
   redis:
@@ -264,7 +293,10 @@ services:
 
   # Tenant Deletion Worker
   # Uses Redis via tenantDeletionService.clearRedisCache() during tenant deletion
+  # Profile `dev`: shares assixx-backend:dev image; runs pre-built dist via volume.
+  # Production-Pendant siehe `deletion-worker-prod:` Service unten.
   deletion-worker:
+    profiles: [dev]
     image: assixx-backend:dev
     container_name: assixx-deletion-worker
     restart: unless-stopped
@@ -371,6 +403,196 @@ services:
     command: ["node", "backend/dist/workers/deletion-worker.js"]
 
   # ===========================================================================
+  # Backend (Production) — multi-stage Dockerfile mit pnpm deploy
+  # ===========================================================================
+  # Implementiert das ADR-027 §"Decision 3 — pnpm deploy for Backend" (2026-04-27).
+  # CI baut dieselbe Datei (`docker/Dockerfile`) für ghcr.io-Push (siehe
+  # .github/workflows/docker-image-build.yml). Lokales --profile production
+  # ist jetzt 1:1 äquivalent zur CI-Production-Pipeline.
+  #
+  # Unterschiede zu `backend:` (dev):
+  #  - Dockerfile (multi-stage) statt Dockerfile.dev (single-stage)
+  #  - User aus Dockerfile (nodejs:1001) — KEIN host-UID-Override
+  #  - KEINE source-mounts (image ist self-contained, dist/ vorgebaut)
+  #  - CMD aus Dockerfile (`dumb-init node backend/dist/nest/main.js`)
+  #  - start_period 15s (statt 120s) — kein TS-Compile bei Container-Start
+  # ===========================================================================
+  backend-prod:
+    profiles: [production]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        # Versionen identisch zur dev-Variante (Single Source of Truth via .env)
+        NODE_VERSION: ${NODE_VERSION_PROD:-24.15.0-bookworm-slim}
+        PNPM_VERSION: ${PNPM_VERSION:-10.33.2}
+        NPM_VERSION: ${NPM_VERSION:-11.13.0}
+    image: assixx-backend:prod
+    container_name: assixx-backend
+    restart: unless-stopped
+    # User aus Dockerfile (USER nodejs → 1001:1001) — NICHT überschreiben.
+    deploy:
+      resources:
+        limits:
+          # Reduziertes Memory-Limit gegenüber dev — kein TS-Compile zur Laufzeit
+          cpus: "4.0"
+          memory: 2G
+        reservations:
+          cpus: "1.0"
+          memory: 512M
+    environment:
+      # Identische Env-Var-Liste wie `backend:` (dev) — einzige Abweichung NODE_ENV.
+      NODE_ENV: production
+      PORT: 3000
+      CI: "true"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set - use doppler run}
+      DB_NAME: ${POSTGRES_DB}
+      DB_SYSTEM_USER: ${DB_SYSTEM_USER:-system_user}
+      DB_SYSTEM_PASSWORD: ${DB_SYSTEM_PASSWORD:?DB_SYSTEM_PASSWORD must be set - use doppler run}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:?PUBLIC_APP_URL must be set - use doppler run}
+      MICROSOFT_OAUTH_CLIENT_ID: ${MICROSOFT_OAUTH_CLIENT_ID:?MICROSOFT_OAUTH_CLIENT_ID must be set - use doppler run}
+      MICROSOFT_OAUTH_CLIENT_SECRET: ${MICROSOFT_OAUTH_CLIENT_SECRET:?MICROSOFT_OAUTH_CLIENT_SECRET must be set - use doppler run}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SCARF_ANALYTICS: false
+      DO_NOT_TRACK: 1
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      OTEL_TEMPO_ENABLED: ${OTEL_TEMPO_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318/v1/traces}
+      PROMETHEUS_EXEMPLARS_ENABLED: ${PROMETHEUS_EXEMPLARS_ENABLED:-false}
+      LOKI_URL: ${LOKI_URL:-}
+      LOKI_LOCAL_URL: ${LOKI_LOCAL_URL:-http://loki:3100}
+      GRAFANA_CLOUD_USER: ${GRAFANA_CLOUD_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
+    ports:
+      - "3000:3000"
+    volumes:
+      # Nur Daten-Volumes — KEINE source-mounts (image ist self-contained).
+      # nodejs-User (1001) braucht write-access auf logs/uploads/exports/backups.
+      # Anonymous /app/node_modules wird HIER absichtlich NICHT gemountet —
+      # Production-Image hat bereits /app/node_modules aus `pnpm deploy`.
+      - ../uploads:/app/uploads
+      - ../backend/logs:/app/backend/logs
+      - ../exports:/exports
+      - ../backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      assixx-network:
+        # Network-Alias `backend` damit frontend's API_URL=http://backend:3000
+        # und nginx's `proxy_pass http://backend:3000` ohne Änderung funktionieren.
+        # Service-Name `backend-prod` ist intern, aber Konsumenten sehen `backend`.
+        aliases:
+          - backend
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      # Image hat dist/ bereits gebaut → schneller Boot (gemessen ~6s in CI integration-test)
+      start_period: 15s
+      start_interval: 5s
+    # CMD aus Dockerfile: ["dumb-init", "node", "backend/dist/nest/main.js"]
+
+  # ===========================================================================
+  # Tenant Deletion Worker (Production) — reuses assixx-backend:prod
+  # ===========================================================================
+  deletion-worker-prod:
+    profiles: [production]
+    image: assixx-backend:prod
+    container_name: assixx-deletion-worker
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    environment:
+      NODE_ENV: production
+      CI: "true"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set - use doppler run}
+      DB_NAME: ${POSTGRES_DB}
+      DB_SYSTEM_USER: ${DB_SYSTEM_USER:-system_user}
+      DB_SYSTEM_PASSWORD: ${DB_SYSTEM_PASSWORD:?DB_SYSTEM_PASSWORD must be set - use doppler run}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
+      DELETION_WORKER_HEALTH_PORT: 3002
+      TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      OTEL_TEMPO_ENABLED: ${OTEL_TEMPO_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318/v1/traces}
+      PROMETHEUS_EXEMPLARS_ENABLED: ${PROMETHEUS_EXEMPLARS_ENABLED:-false}
+      LOKI_URL: ${LOKI_URL:-}
+      LOKI_LOCAL_URL: ${LOKI_LOCAL_URL:-http://loki:3100}
+      GRAFANA_CLOUD_USER: ${GRAFANA_CLOUD_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+    ports:
+      - "3002:3002"
+    volumes:
+      - ../exports:/exports
+      - ../backups:/backups
+      - ../backend/logs/deletion-worker:/app/backend/logs/deletion-worker
+    depends_on:
+      backend-prod:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - assixx-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3002/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+      start_interval: 5s
+    # Worker-Entrypoint überschreibt Dockerfile-CMD (welches main.js startet)
+    command: ["dumb-init", "node", "backend/dist/workers/deletion-worker.js"]
+
+  # ===========================================================================
   # SvelteKit Frontend (Production)
   # ===========================================================================
   frontend:
@@ -425,7 +647,7 @@ services:
     ports:
       - "3001:3001" # Direct access for debugging
     depends_on:
-      backend:
+      backend-prod:
         condition: service_healthy
     networks:
       - assixx-network
@@ -469,7 +691,7 @@ services:
       # - ./nginx/ssl:/etc/nginx/ssl:ro  # Uncomment for HTTPS
     depends_on:
       - frontend
-      - backend
+      - backend-prod
     networks:
       - assixx-network
     healthcheck:
@@ -828,7 +1050,6 @@ volumes:
   redis_data:
     name: assixx_redis_data
     external: true
-  pnpm-store:
   # PLG Stack volumes (not external - created automatically)
   loki_data:
     name: assixx_loki_data

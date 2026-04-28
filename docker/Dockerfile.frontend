@@ -98,12 +98,28 @@ LABEL org.opencontainers.image.authors="Assixx"
 # header (musl's getaddrinfo + Docker embedded DNS quirk on AAAA-only).
 # See moby#41651, bell-sw "Alpine DNS issues", ADR-027.
 ARG NPM_VERSION=11.13.0
-RUN apt-get update \
+# Non-root user — UID 1001 lies OUTSIDE Debian's system-user range
+# (SYS_UID_MAX=999). `-r`/`--system` was dropped to silence the
+# `sveltekit's uid 1001 > SYS_UID_MAX 999` warning that useradd emits.
+# Hardening previously implied by `-r` is preserved explicitly:
+#   -M                     → no home directory
+#   -s /usr/sbin/nologin   → interactive login disabled
+#   --no-log-init          → skip lastlog/faillog allocation
+# UID 1001 unchanged to preserve volume ownership and the
+# COPY --chown=1001:1001 invariant. See ADR-027.
+# BuildKit cache-mounts für apt: ~30-60s schneller pro lokalem Rebuild ohne
+# Layer-Cache. Mount-Inhalt landet NICHT im Image-Layer (BuildKit-Eigenschaft),
+# daher kein Bloat. `rm -f docker-clean` ist Pflicht (sonst purgt apt eigene
+# Downloads), `rm -rf /var/lib/apt/lists/*` MUSS raus (würde den Cache killen).
+# Siehe docs.docker.com/build/cache/optimize/#use-cache-mounts und ADR-027.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean \
+    && apt-get update \
     && apt-get install -y --no-install-recommends dumb-init \
-    && rm -rf /var/lib/apt/lists/* \
     && npm install -g "npm@${NPM_VERSION}" \
-    && groupadd -r -g 1001 nodejs \
-    && useradd -r -u 1001 -g nodejs --no-log-init sveltekit
+    && groupadd -g 1001 nodejs \
+    && useradd -u 1001 -g nodejs -M -s /usr/sbin/nologin --no-log-init sveltekit
 
 WORKDIR /app
 

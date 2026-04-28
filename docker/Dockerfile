@@ -107,18 +107,34 @@ LABEL org.opencontainers.image.authors="Assixx"
 #   transitive runtime dep shells out to npm; matches Dockerfile.frontend:104).
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json,
 # applied transitively through pnpm deploy.
-# Non-root user created with `useradd -r` (system user, no home) —
-# Debian equivalent of BusyBox `adduser -S` from the prior Alpine image.
+# Non-root user — UID 1001 is OUTSIDE the Debian system-user range
+# (SYS_UID_MAX=999), so `-r`/`--system` was dropped to silence the
+# `nodejs's uid 1001 > SYS_UID_MAX 999` warning emitted by useradd.
+# Hardening that `-r` previously implied is preserved explicitly:
+#   -M                     → no home directory (was implicit via -r)
+#   -s /usr/sbin/nologin   → interactive login disabled
+#   --no-log-init          → skip lastlog/faillog allocation
+# UID 1001 stays unchanged to avoid breaking existing volume ownership
+# (uploads/, observability data) and the COPY --chown=1001:1001 lines
+# below. See ADR-027.
 # pnpm is intentionally NOT installed in the production stage: the
 # /deploy output already has all workspace symlinks resolved into hard
 # copies, so node can resolve every import without a package manager.
 ARG NPM_VERSION=11.13.0
-RUN apt-get update \
+# BuildKit cache-mounts für apt: ~30-120s schneller pro lokalem Rebuild ohne
+# Layer-Cache. Mount-Inhalt landet NICHT im Image-Layer (BuildKit-Eigenschaft),
+# daher kein Bloat — und genau deswegen ist das `rm -f docker-clean` Pflicht
+# (sonst löscht apt selbst die Cache-Inhalte nach Install) und `rm -rf
+# /var/lib/apt/lists/*` MUSS raus (würde den Cache leeren). Siehe
+# docs.docker.com/build/cache/optimize/#use-cache-mounts und ADR-027.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean \
+    && apt-get update \
     && apt-get install -y --no-install-recommends dumb-init \
-    && rm -rf /var/lib/apt/lists/* \
     && npm install -g "npm@${NPM_VERSION}" \
-    && groupadd -r -g 1001 nodejs \
-    && useradd -r -u 1001 -g nodejs --no-log-init nodejs
+    && groupadd -g 1001 nodejs \
+    && useradd -u 1001 -g nodejs -M -s /usr/sbin/nologin --no-log-init nodejs
 
 WORKDIR /app
 

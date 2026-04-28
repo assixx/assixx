@@ -174,40 +174,44 @@ grep -A 2 "docker-dev:" /home/scs/projects/Assixx/.locklock
 
 ### Basis-Befehle
 
+> **Profile-System** (ADR-027 Amendment 2026-04-28): `backend`/`deletion-worker` leben im `dev` Profile, `backend-prod`/`deletion-worker-prod` im `production` Profile. Default via `docker/.env`: `COMPOSE_PROFILES=dev,observability`.
+
 ```bash
 cd /home/scs/projects/Assixx/docker
 
-# Basis (Backend + PostgreSQL + Redis)
+# Basis (liest .env Default: dev,observability) — Backend (dev) + PG + Redis + Observability
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose up -d
 
-# Mit Observability (+ Prometheus, Loki, Grafana)
-DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile observability up -d
+# Explizit nur dev (ohne observability)
+DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile dev up -d
 
-# Mit Production Frontend (+ Nginx, SvelteKit SSR)
+# Explizit dev + observability
+DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile dev --profile observability up -d
+
+# Production (CI-Parität: backend-prod aus docker/Dockerfile + Frontend + Nginx + Observability)
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile production up -d
-
-# Alles zusammen (Observability + Production)
-DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile observability --profile production up -d
 ```
 
 ### Stoppen
 
 ```bash
-# Basis stoppen
-doppler run -- docker-compose down
+# Dev-Stack stoppen
+doppler run -- docker-compose --profile dev down
 
-# Mit Profilen stoppen
-doppler run -- docker-compose --profile observability down
+# Mit Observability
+doppler run -- docker-compose --profile dev --profile observability down
+
+# Production stoppen
 doppler run -- docker-compose --profile production down
 ```
 
 ### Neubauen (nach Dependency-Änderung)
 
 ```bash
-# DEV Backend neu bauen
-DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose build --no-cache backend
+# DEV Backend neu bauen (profile dev erforderlich — sonst "service not found")
+DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile dev build --no-cache backend
 
-# PROD komplett neu bauen
+# PROD komplett neu bauen (backend-prod + frontend)
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile production build --no-cache
 ```
 
@@ -218,9 +222,11 @@ DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile production
 ### DEV Starten (Standard)
 
 ```bash
-# Terminal 1: Docker Services
+# Terminal 1: Docker Services (.env Default: COMPOSE_PROFILES=dev,observability)
 cd /home/scs/projects/Assixx/docker
-DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile observability up -d
+DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose up -d
+# ODER explizit:
+# DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile dev --profile observability up -d
 
 # Terminal 2: Frontend Dev Server (HMR)
 cd /home/scs/projects/Assixx
@@ -281,7 +287,7 @@ DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile production
 
 | Änderung      | Befehl                                                       |
 | ------------- | ------------------------------------------------------------ |
-| Backend Code  | `docker-compose restart backend`                             |
+| Backend Code  | `docker-compose --profile production restart backend-prod`   |
 | Frontend Code | `docker-compose --profile production up -d --build frontend` |
 
 ### PROD Zusammenfassung

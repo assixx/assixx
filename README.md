@@ -49,6 +49,8 @@ cd .. && pnpm run dev:svelte
 
 Development: `http://localhost:5173` | Production: `http://localhost`
 
+> **Profiles** (ADR-027 Amendment 2026-04-28): `docker/.env` setzt `COMPOSE_PROFILES=dev,observability` als Default. Production-Mode (`backend-prod` aus `docker/Dockerfile`, CI-Parität) via `docker-compose --profile production up -d`. Siehe [docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md).
+
 > **Full setup guide:** [docs/DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)
 >
 > **Microsoft OAuth sign-in** (optional — enables one-click root-user signup via Azure AD): requires a one-time Azure AD app registration + three Doppler secrets (`MICROSOFT_OAUTH_CLIENT_ID`, `MICROSOFT_OAUTH_CLIENT_SECRET`, `PUBLIC_APP_URL`). See [docs/how-to/HOW-TO-AZURE-AD-SETUP.md](./docs/how-to/HOW-TO-AZURE-AD-SETUP.md). Password signup works without it.
