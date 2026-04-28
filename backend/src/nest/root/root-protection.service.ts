@@ -172,27 +172,40 @@ export class RootProtectionService {
     client?: PoolClient,
   ): Promise<number> {
     const includeExclusion = excludingUserId !== undefined;
-    const lockSuffix = client !== undefined ? 'FOR UPDATE' : '';
-
-    const sql =
-      includeExclusion ?
-        `SELECT COUNT(*) AS count FROM users
-         WHERE tenant_id = $1 AND role = 'root'
-           AND is_active = ${IS_ACTIVE.ACTIVE} AND id <> $2
-         ${lockSuffix}`
-      : `SELECT COUNT(*) AS count FROM users
-         WHERE tenant_id = $1 AND role = 'root'
-           AND is_active = ${IS_ACTIVE.ACTIVE}
-         ${lockSuffix}`;
-
     const params = includeExclusion ? [tenantId, excludingUserId] : [tenantId];
 
     if (client !== undefined) {
-      const result = await client.query<CountRow>(sql, params);
-      return Number(result.rows[0]?.count ?? '0');
+      // Phase 4 / Session 8 — discovered live: PostgreSQL forbids
+      // `SELECT COUNT(*) ... FOR UPDATE` ("FOR UPDATE is not allowed with
+      // aggregate functions"). The R1 mitigation requires locking the
+      // matching rows so concurrent demotes block on commit; we project
+      // `id` per row instead and use `result.rows.length` as the count.
+      // Functionally equivalent to the masterplan §2.4 approve-TX shape
+      // (`SELECT id ... FOR UPDATE` then recount).
+      const lockSql =
+        includeExclusion ?
+          `SELECT id FROM users
+           WHERE tenant_id = $1 AND role = 'root'
+             AND is_active = ${IS_ACTIVE.ACTIVE} AND id <> $2
+           FOR UPDATE`
+        : `SELECT id FROM users
+           WHERE tenant_id = $1 AND role = 'root'
+             AND is_active = ${IS_ACTIVE.ACTIVE}
+           FOR UPDATE`;
+      const result = await client.query<{ id: number }>(lockSql, params);
+      return result.rows.length;
     }
 
-    const rows = await this.db.systemQuery<CountRow>(sql, params);
+    // No-client path: BYPASSRLS system pool, COUNT(*) is fine — no lock needed.
+    const countSql =
+      includeExclusion ?
+        `SELECT COUNT(*) AS count FROM users
+         WHERE tenant_id = $1 AND role = 'root'
+           AND is_active = ${IS_ACTIVE.ACTIVE} AND id <> $2`
+      : `SELECT COUNT(*) AS count FROM users
+         WHERE tenant_id = $1 AND role = 'root'
+           AND is_active = ${IS_ACTIVE.ACTIVE}`;
+    const rows = await this.db.systemQuery<CountRow>(countSql, params);
     return Number(rows[0]?.count ?? '0');
   }
 
