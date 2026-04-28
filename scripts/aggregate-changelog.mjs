@@ -32,7 +32,7 @@
  */
 import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { stdout } from 'node:process';
+import { argv, stdout } from 'node:process';
 
 const SOURCES = ['backend/CHANGELOG.md', 'frontend/CHANGELOG.md', 'shared/CHANGELOG.md'];
 const DEFAULT_OUTPUT = 'CHANGELOG.md';
@@ -59,7 +59,7 @@ const SECTION_TAG_RE = /^- \[(Breaking|Added|Changed|Fixed|Performance|Docs|Main
 // CLI: `--dry-run [path]` writes to a different path (defaults to /tmp)
 // without touching CHANGELOG.md. Used to preview output before committing
 // the regenerated root CHANGELOG. See HOW-TO-USE-CHANGESETS.md.
-const args = process.argv.slice(2);
+const args = argv.slice(2);
 const dryRunIdx = args.indexOf('--dry-run');
 const isDryRun = dryRunIdx !== -1;
 const OUTPUT = isDryRun ? (args[dryRunIdx + 1] ?? '/tmp/CHANGELOG-preview.md') : DEFAULT_OUTPUT;

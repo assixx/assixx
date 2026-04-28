@@ -1,5 +1,5 @@
-# Changeset Lint
-#
+name: Changeset Lint
+
 # Validates `.changeset/*.md` quality on every PR/push that touches them.
 # Single-purpose workflow — `code-quality-checks.yml` ignores `.changeset/**`
 # (paths-ignore), so changeset-only PRs would otherwise bypass all CI.
@@ -10,7 +10,6 @@
 #
 # @see scripts/lint-changesets.mjs — rules + rationale
 # @see docs/how-to/HOW-TO-USE-CHANGESETS.md — contributor guide
-name: Changeset Lint
 
 on:
   pull_request:
