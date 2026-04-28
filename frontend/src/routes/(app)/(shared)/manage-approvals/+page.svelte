@@ -12,6 +12,8 @@
 
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
+  import RootSelfTerminationCard from './RootSelfTerminationCard.svelte';
+
   import type { PageData } from './$types';
 
   // =============================================================================
@@ -238,6 +240,22 @@
 </svelte:head>
 
 <div class="container">
+  <!--
+    Step 5.3 — Root self-termination peer-approval card.
+    Visible only to root users (data.user.role === 'root'). Renders BEFORE
+    the generic approvals list because it is the highest-stakes decision
+    type (account termination) and must catch the actor's eye first.
+    Backend SSR returned an empty array for non-root → the {#if} below
+    keeps the DOM tree small for admins/leads.
+    @see docs/FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §5.3
+  -->
+  {#if data.user?.role === 'root'}
+    <RootSelfTerminationCard
+      requests={data.rootSelfTerminationRequests}
+      peerRoots={data.rootUsers}
+    />
+  {/if}
+
   <!-- Header -->
   <div class="card mb-6">
     <div class="card__header">

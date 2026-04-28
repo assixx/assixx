@@ -1048,145 +1048,145 @@ docker/Dockerfile.frontend — 2 RUNs parameterised, ARG added per stage
 
 ---
 
-## Amendment 2026-04-28: Compose-Wiring für Production-`Dockerfile` (Profile-Trennung)
+## Amendment 2026-04-28: Compose wiring for the production `Dockerfile` (profile split)
 
 ### Context
 
-Amendment 2026-04-27 implementierte `pnpm deploy --filter=assixx-backend --prod /deploy` im Production-`Dockerfile`. Der Dockerfile war damit gebaut, **aber nicht in `docker-compose.yml` verdrahtet**: das `backend:` Service zeigte weiterhin auf `Dockerfile.dev` für jedes Profile inkl. `--profile production`. Folgen:
+Amendment 2026-04-27 implemented `pnpm deploy --filter=assixx-backend --prod /deploy` in the production `Dockerfile`. The Dockerfile was built that way, **but it was not wired into `docker-compose.yml`**: the `backend:` service still pointed at `Dockerfile.dev` for every profile, including `--profile production`. Consequences:
 
-| Konsequenz                                          | Auswirkung                                                                             |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Lokales `--profile production` ≠ CI                 | CI baut `Dockerfile`, lokal baut `Dockerfile.dev` → keine echte Production-Parität     |
-| Backend-Container compiliert TS bei Container-Start | `start_period: 120s` healthcheck-Grace, ~60-120 s Cold-Start                           |
-| Image-Größe                                         | `assixx-backend:dev` ≈ 1.27 GB (volle devDependencies, ripgrep/curl/jq, source mounts) |
-| Production-Smoke unmöglich                          | Memory-Footprint, signal-handling, dumb-init etc. nur in CI verifizierbar              |
+| Consequence                                      | Impact                                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Local `--profile production` ≠ CI                | CI builds `Dockerfile`, locally `Dockerfile.dev` is built → no real production parity |
+| Backend container compiles TS at container start | `start_period: 120s` healthcheck grace, ~60–120 s cold start                          |
+| Image size                                       | `assixx-backend:dev` ≈ 1.27 GB (full devDependencies, ripgrep/curl/jq, source mounts) |
+| Production smoke impossible                      | Memory footprint, signal handling, dumb-init etc. only verifiable in CI               |
 
-Die Verification der ursprünglichen ADR-Tabelle (2026-02-28) listete bereits `assixx-backend:dev` als production-image — bekannte Lücke, war aber als Karteileiche markiert. Mit dem 2026-04-27 `pnpm deploy`-Refactor war der Production-Dockerfile fertig — es fehlte nur noch das compose-wiring.
+The verification table of the original ADR (2026-02-28) already listed `assixx-backend:dev` as the production image — known gap, but flagged as a stale entry. With the 2026-04-27 `pnpm deploy` refactor the production Dockerfile was finished — only the compose wiring was missing.
 
 ### Decision
 
-Das `backend:` Service in `docker/docker-compose.yml` wird in **zwei** Service-Definitionen aufgeteilt, getrennt durch Profiles:
+The `backend:` service in `docker/docker-compose.yml` is split into **two** service definitions, separated by profiles:
 
-| Service                | Dockerfile                     | Image                 | Profile        | Use-Case                                  |
+| Service                | Dockerfile                     | Image                 | Profile        | Use case                                  |
 | ---------------------- | ------------------------------ | --------------------- | -------------- | ----------------------------------------- |
-| `backend`              | `docker/Dockerfile.dev`        | `assixx-backend:dev`  | `[dev]`        | Live-Reload, Volume-Mounts, TS-at-startup |
-| `backend-prod`         | `docker/Dockerfile`            | `assixx-backend:prod` | `[production]` | Multi-stage, `pnpm deploy`, dist-im-Image |
-| `deletion-worker`      | (reuses `assixx-backend:dev`)  | dito                  | `[dev]`        | Wie bisher                                |
-| `deletion-worker-prod` | (reuses `assixx-backend:prod`) | dito                  | `[production]` | Production-Worker mit prod-Image          |
+| `backend`              | `docker/Dockerfile.dev`        | `assixx-backend:dev`  | `[dev]`        | Live reload, volume mounts, TS at startup |
+| `backend-prod`         | `docker/Dockerfile`            | `assixx-backend:prod` | `[production]` | Multi-stage, `pnpm deploy`, dist in image |
+| `deletion-worker`      | (reuses `assixx-backend:dev`)  | ditto                 | `[dev]`        | As before                                 |
+| `deletion-worker-prod` | (reuses `assixx-backend:prod`) | ditto                 | `[production]` | Production worker with prod image         |
 
-**Network-Alias `backend` auf `backend-prod`**: damit `frontend.API_URL=http://backend:3000/api/v2` und `nginx.proxy_pass http://backend:3000` ohne Hostname-Renaming funktionieren. Der Service-Name `backend-prod` ist intern, Konsumenten sehen weiterhin `backend`.
+**Network alias `backend` on `backend-prod`**: so that `frontend.API_URL=http://backend:3000/api/v2` and `nginx.proxy_pass http://backend:3000` work without hostname renaming. The service name `backend-prod` is internal, consumers still see `backend`.
 
-`frontend.depends_on` und `nginx.depends_on` zeigen auf `backend-prod` (nicht `backend`), damit Compose-Profile-Resolution für `--profile production` einen vollständigen Service-Graph hat.
+`frontend.depends_on` and `nginx.depends_on` point to `backend-prod` (not `backend`), so that compose profile resolution for `--profile production` has a complete service graph.
 
-### Default-Profile via `COMPOSE_PROFILES`
+### Default profile via `COMPOSE_PROFILES`
 
-`docker/.env.example` setzt `COMPOSE_PROFILES=dev` als Default. Damit funktioniert `docker-compose up -d` ohne expliziten `--profile`-Flag wie bisher (Backend = dev-Modus). Production wird via `docker-compose --profile production up -d` aktiviert (überschreibt env).
+`docker/.env.example` sets `COMPOSE_PROFILES=dev` as the default. With this `docker-compose up -d` works without an explicit `--profile` flag as before (backend = dev mode). Production is activated via `docker-compose --profile production up -d` (overrides env).
 
 ### Verification (2026-04-28)
 
-Smoke-Test nach `--no-cache` Build + `--profile production up -d`:
+Smoke test after `--no-cache` build + `--profile production up -d`:
 
-| Probe                                   | Vorher (`Dockerfile.dev` für prod)         | Nachher (`Dockerfile` für prod)                       |
-| --------------------------------------- | ------------------------------------------ | ----------------------------------------------------- |
-| `docker inspect assixx-backend → Image` | `assixx-backend:dev`                       | `assixx-backend:prod` ✅                              |
-| `curl /health → environment`            | `development`                              | `production` ✅                                       |
-| Backend Container-User                  | `${UID:-1000}:${GID:-1000}` (host-mapping) | UID/GID 1001 (`nodejs` aus Dockerfile) ✅             |
-| Cold-Start `/health`                    | ~60-120 s (TS-Compile bei Start)           | ~11 s (dist im Image) ✅                              |
-| Image-Size                              | 1.27 GB                                    | **615 MB (52% kleiner)** ✅                           |
-| ADR-027 Pin-Guard CI-Check              | PASS                                       | PASS (neue tags `assixx-backend:prod` whitelisted) ✅ |
-| `pnpm deploy /deploy/node_modules`      | not built                                  | 382 packages, hard-copied ✅                          |
+| Probe                                   | Before (`Dockerfile.dev` for prod)         | After (`Dockerfile` for prod)                        |
+| --------------------------------------- | ------------------------------------------ | ---------------------------------------------------- |
+| `docker inspect assixx-backend → Image` | `assixx-backend:dev`                       | `assixx-backend:prod` ✅                             |
+| `curl /health → environment`            | `development`                              | `production` ✅                                      |
+| Backend container user                  | `${UID:-1000}:${GID:-1000}` (host mapping) | UID/GID 1001 (`nodejs` from the Dockerfile) ✅       |
+| Cold-start `/health`                    | ~60–120 s (TS compile at start)            | ~11 s (dist in the image) ✅                         |
+| Image size                              | 1.27 GB                                    | **615 MB (52% smaller)** ✅                          |
+| ADR-027 pin-guard CI check              | PASS                                       | PASS (new tags `assixx-backend:prod` whitelisted) ✅ |
+| `pnpm deploy /deploy/node_modules`      | not built                                  | 382 packages, hard-copied ✅                         |
 
-### Network-Alias-Pattern
+### Network alias pattern
 
 ```yaml
 backend-prod:
   networks:
     assixx-network:
       aliases:
-        - backend # damit frontend's API_URL=http://backend:3000 unverändert bleibt
+        - backend # so frontend's API_URL=http://backend:3000 stays unchanged
 ```
 
-Dieses Pattern hat zwei Vorteile gegenüber Hostname-Renaming aller Konsumenten:
+This pattern has two advantages over renaming the hostname for all consumers:
 
-1. **`nginx.conf` bleibt unverändert** — `proxy_pass http://backend:3000` funktioniert weiterhin
-2. **`frontend.environment.API_URL`** muss nicht conditional sein (würde `--profile`-spezifische env-Werte erfordern)
+1. **`nginx.conf` stays unchanged** — `proxy_pass http://backend:3000` keeps working
+2. **`frontend.environment.API_URL`** does not need to be conditional (would require `--profile`-specific env values)
 
-Trade-off: Service-Name `backend-prod` und Network-Alias `backend` divergieren leicht. Akzeptabel weil dokumentiert und nur intern.
+Trade-off: service name `backend-prod` and network alias `backend` diverge slightly. Acceptable because documented and internal only.
 
-### Breaking Change & Mitigation
+### Breaking change & mitigation
 
-`docker-compose up -d` ohne `--profile` und ohne `COMPOSE_PROFILES` env startet jetzt nur Services ohne Profile (`postgres`, `redis`). Backend braucht explizit `--profile dev` oder env-Setting.
+`docker-compose up -d` without `--profile` and without `COMPOSE_PROFILES` env now only starts services without a profile (`postgres`, `redis`). Backend needs `--profile dev` explicitly or an env setting.
 
-**Mitigation:** `docker/.env.example` setzt `COMPOSE_PROFILES=dev` als Default. Bestehende User mit eigenem `docker/.env` müssen einmalig migrieren:
+**Mitigation:** `docker/.env.example` sets `COMPOSE_PROFILES=dev` as the default. Existing users with their own `docker/.env` must migrate once:
 
 ```bash
 echo "COMPOSE_PROFILES=dev" >> docker/.env
-# Optional mit observability:
+# Optionally with observability:
 echo "COMPOSE_PROFILES=dev,observability" >> docker/.env
 ```
 
-Ohne diesen Schritt würde `docker-compose up -d` nur postgres+redis starten — gut sichtbar, kein Silent-Fail.
+Without that step `docker-compose up -d` would only start postgres+redis — clearly visible, no silent failure.
 
-### Switch zwischen dev und production
+### Switching between dev and production
 
-Da beide Backends denselben `container_name: assixx-backend` und Port `3000:3000` belegen (XOR via Profile), müssen sie nicht gleichzeitig laufen können. Wechsel:
+Since both backends use the same `container_name: assixx-backend` and port `3000:3000` (XOR via profile), they cannot run at the same time. Switch:
 
 ```bash
-# Dev → Prod
+# Dev → prod
 docker-compose --profile dev stop backend deletion-worker
 docker-compose --profile dev rm -f backend deletion-worker
 docker-compose --profile production up -d
 
-# Prod → Dev
+# Prod → dev
 docker-compose --profile production stop backend-prod deletion-worker-prod frontend nginx
 docker-compose --profile production rm -f backend-prod deletion-worker-prod frontend nginx
 docker-compose --profile dev up -d
 ```
 
-Nicht-Backend-Services (postgres, redis, observability) bleiben durch Profile-Sharing (`profiles: [observability, production]`) erhalten und müssen nicht restartet werden.
+Non-backend services (postgres, redis, observability) are kept across switches by profile sharing (`profiles: [observability, production]`) and do not need to be restarted.
 
-### Anonymous-Volume-Drift
+### Anonymous volume drift
 
-§Troubleshooting (Amendment 2026-04-08) gilt unverändert: nach Switch von dev zu prod und zurück kann das anonymous `/app/node_modules`-Volume des dev-Backends ABI-Mismatch zur aktuellen `pnpm-lock.yaml` enthalten. Recovery (siehe ADR-027 §Troubleshooting):
+§Troubleshooting (Amendment 2026-04-08) still applies: after a switch from dev to prod and back, the dev backend's anonymous `/app/node_modules` volume can be ABI-incompatible with the current `pnpm-lock.yaml`. Recovery (see ADR-027 §Troubleshooting):
 
 ```bash
 docker-compose --profile dev stop backend deletion-worker
-docker-compose --profile dev rm -fv backend deletion-worker  # -v entfernt anonymous volumes
+docker-compose --profile dev rm -fv backend deletion-worker  # -v removes anonymous volumes
 docker-compose --profile dev up -d
 ```
 
-`-fv` ist hier sicher: removed nur die Container der genannten Services und deren anonymous volumes. Named external volumes (`assixx_postgres_data`, `assixx_redis_data`) sind unbetroffen.
+`-fv` is safe here: it only removes the containers of the listed services and their anonymous volumes. Named external volumes (`assixx_postgres_data`, `assixx_redis_data`) are untouched.
 
 ### Alternatives Considered
 
-**1. Override-File (`docker-compose.prod.yml`).** Compose-natives Override-Pattern: `docker-compose -f base.yml -f prod.yml up -d`. Verworfen weil das Repo bereits `--profile production` als Konvention etabliert hat (für Frontend+Nginx-Stack); zwei parallele Override-Mechanismen wären inkonsistent.
+**1. Override file (`docker-compose.prod.yml`).** Compose-native override pattern: `docker-compose -f base.yml -f prod.yml up -d`. Rejected because the repo already established `--profile production` as the convention (for the frontend + nginx stack); two parallel override mechanisms would be inconsistent.
 
-**2. `target: ${BACKEND_TARGET:-dev}` in Single-Stage Service.** Hätte erfordert, `Dockerfile.dev` und `Dockerfile` zu einem multi-target File zu mergen. Verworfen wegen Architektur-Bruch (zwei Dockerfiles haben unterschiedliche Build-Pipelines, Mergen würde Komplexität erhöhen).
+**2. `target: ${BACKEND_TARGET:-dev}` in a single-stage service.** Would have required merging `Dockerfile.dev` and `Dockerfile` into a multi-target file. Rejected because of the architectural break (the two Dockerfiles have different build pipelines, merging would increase complexity).
 
-**3. Dev-Backend ohne Profile lassen, Prod-Backend auf Port 3010.** Hätte beide Backends gleichzeitig erlaubt. Verworfen weil Nginx-Reverse-Proxy auf `backend:3000` (Service-DNS) routet — Production-Parität wäre nur via separate nginx-config möglich. Profile-Trennung ist sauberer.
+**3. Leave the dev backend without a profile, run the prod backend on port 3010.** Would have allowed both backends at the same time. Rejected because the nginx reverse proxy routes to `backend:3000` (service DNS) — production parity would only be possible with a separate nginx config. The profile split is cleaner.
 
 ### Consequences
 
 **Positive:**
 
-- Lokales `--profile production` ist 1:1 äquivalent zur CI-Production-Pipeline (`integration-test-docker-compose` Job in `.github/workflows/docker-image-build.yml`)
-- 52% kleineres Image in Production (615 MB statt 1.27 GB) — fewer CVEs in Trivy-Scan, schnellere Container-Pulls
-- ~60-110 s schnellerer Cold-Start (kein TS-Compile mehr bei Container-Start)
-- Production-Smoke-Test (Memory, Signal-Handling, dumb-init, non-root nodejs:1001 user) lokal verifizierbar
-- ADR-027-konform (Pin-Guard PASS, alle Strict-Anforderungen erfüllt)
+- Local `--profile production` is 1:1 equivalent to the CI production pipeline (`integration-test-docker-compose` job in `.github/workflows/docker-image-build.yml`)
+- 52% smaller image in production (615 MB instead of 1.27 GB) — fewer CVEs in Trivy scan, faster container pulls
+- ~60–110 s faster cold start (no TS compile at container start)
+- Production smoke test (memory, signal handling, dumb-init, non-root nodejs:1001 user) verifiable locally
+- ADR-027 compliant (pin-guard PASS, all strict requirements met)
 
 **Negative:**
 
-- Breaking Change: `docker-compose up -d` ohne Profile startet keinen Backend mehr. Mitigation via `.env.example`-Default `COMPOSE_PROFILES=dev`, aber bestehende User mit eigenem `.env` müssen einmalig migrieren.
-- Wechsel zwischen dev und prod erfordert `stop` + `rm` der nicht-aktuellen Backend-Variante (sonst container_name-Konflikt).
-- Compose-File ist jetzt ~150 Zeilen länger (zwei zusätzliche Service-Definitionen mit kompletter env-Liste).
+- Breaking change: `docker-compose up -d` without a profile no longer starts a backend. Mitigated via the `.env.example` default `COMPOSE_PROFILES=dev`, but existing users with their own `.env` must migrate once.
+- Switching between dev and prod requires `stop` + `rm` of the inactive backend variant (otherwise container_name conflict).
+- The compose file is now ~150 lines longer (two additional service definitions with the full env list).
 
 **Neutral:**
 
-- ADR-027 §"Verification (2026-02-28)" Tabelle bleibt korrekt für `--profile dev`-Default; Production-Mode hat jetzt eigene Verification-Tabelle (siehe oben).
-- ADR-027 §"Stage 2 trigger conditions" bleibt unverändert (Digest-Pinning bleibt deferred).
+- ADR-027 §"Verification (2026-02-28)" table stays correct for the `--profile dev` default; production mode now has its own verification table (see above).
+- ADR-027 §"Stage 2 trigger conditions" stays unchanged (digest pinning remains deferred).
 
-### File Change Summary
+### File change summary
 
 ```
 docker/docker-compose.yml  — +156 lines (backend-prod + deletion-worker-prod)
@@ -1194,53 +1194,53 @@ docker/docker-compose.yml  — +156 lines (backend-prod + deletion-worker-prod)
 docker/.env.example        — +12 lines (COMPOSE_PROFILES=dev block + comment)
 ```
 
-### Maintenance Workflow Update
+### Maintenance workflow update
 
-`§"Maintenance Workflow"` Cadence-Tabelle erweitert um:
+The `§"Maintenance Workflow"` cadence table is extended by:
 
-| Component                 | Cadence              | Rationale                                                                                   |
-| ------------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
-| **Profile-Verifizierung** | **Pro Compose-Edit** | Beim Hinzufügen neuer Services: Profile setzen + depends_on-Graph in beiden Profilen prüfen |
+| Component                | Cadence              | Rationale                                                                           |
+| ------------------------ | -------------------- | ----------------------------------------------------------------------------------- |
+| **Profile verification** | **Per compose edit** | When adding new services: set profile + check the depends_on graph in both profiles |
 
 ---
 
-## Amendment 2026-04-28 (b): Dev-Backend Hot-Reload Pipeline (incremental tsc + nodemon)
+## Amendment 2026-04-28 (b): Dev-backend hot-reload pipeline (incremental tsc + nodemon)
 
 ### Context
 
-Mit dem 2026-04-28 (a) Profile-Split wurde der Dev-Backend (`assixx-backend:dev`, Profile `[dev]`) als der einzige Container mit Source-Mounts (`../backend:/app/backend:delegated`) etabliert. **Aber:** der `command:`-Chain `pnpm exec tsc && node dist/nest/main.js` war ein One-Shot-Build — jede Source-Edit erforderte `docker-compose --profile dev restart backend` (60–90 s Cold-Tsc + Boot). Die `DOCKER-SETUP.md`-Aussage "mit Live-Reload" war damit faktisch falsch.
+With the 2026-04-28 (a) profile split, the dev backend (`assixx-backend:dev`, profile `[dev]`) became the only container with source mounts (`../backend:/app/backend:delegated`). **However:** the `command:` chain `pnpm exec tsc && node dist/nest/main.js` was a one-shot build — every source edit required `docker-compose --profile dev restart backend` (60–90 s cold tsc + boot). The `DOCKER-SETUP.md` claim "with live reload" was therefore factually wrong.
 
-Die naheliegende "Quick-Fix"-Hypothese lautet: nodemon + tsx (entwickelt für genau diesen Use-Case, beide schon in `backend/package.json` devDeps). **Empirisch verifiziert 2026-04-28, dass dies mit NestJS NICHT funktioniert.**
+The obvious "quick fix" hypothesis: nodemon + tsx (developed for exactly this use case, both already in `backend/package.json` devDeps). **Empirically verified 2026-04-28 that this does NOT work with NestJS.**
 
-### Empirische Validierung tsx + NestJS-DI
+### Empirical validation tsx + NestJS DI
 
-Direkt-Boot mit `pnpm exec tsx src/nest/main.ts` (Node 24.15, tsx 4.21 mit gebundeltem esbuild 0.27.7) bricht reproduzierbar:
+Direct boot with `pnpm exec tsx src/nest/main.ts` (Node 24.15, tsx 4.21 with bundled esbuild 0.27.7) breaks reproducibly:
 
 ```
 Nest can't resolve dependencies of the ShiftHandoverEntriesService (?, Symbol(SHIFT_HANDOVER_CLOCK)).
 - The dependency at index [0] appears to be undefined at runtime
 ```
 
-Index [0] ist `DatabaseService`, importiert als `import { DatabaseService } from '../database/database.service.js'` (kein `import type`). `tsconfig.emitDecoratorMetadata: true` und `experimentalDecorators: true` sind beide gesetzt. Trotzdem sieht NestJS undefined als Constructor-Param-Type.
+Index [0] is `DatabaseService`, imported as `import { DatabaseService } from '../database/database.service.js'` (no `import type`). `tsconfig.emitDecoratorMetadata: true` and `experimentalDecorators: true` are both set. Even so, NestJS sees undefined as the constructor param type.
 
-**Root-Cause-Theorie:** esbuild 0.21+ unterstützt `emitDecoratorMetadata` grundsätzlich, hat aber dokumentierte Lücken bei cross-package- und cross-module-Type-References. Für simple Klassen funktioniert es; für komplexe Service-Constructor-Chains in einer großen NestJS-Codebase (multiple Module, Inject-Tokens, Service-Service-Deps) schlägt die Metadata-Emission stellenweise fehl. NestJS' DI-Container sieht dann `undefined` für die fehlende Param-Type-Metadata und kann nicht resolven.
+**Root-cause theory:** esbuild 0.21+ supports `emitDecoratorMetadata` in principle but has documented gaps for cross-package and cross-module type references. For simple classes it works; for complex service constructor chains in a large NestJS codebase (multiple modules, Inject tokens, service-service deps) the metadata emission fails in places. The NestJS DI container then sees `undefined` for the missing param-type metadata and cannot resolve.
 
-**Verdikt:** Der Team-Veto-Kommentar in `docker-compose.yml` Pre-Refactor (_"tsc for decorator metadata - tsx can't emit it"_) ist substanziell korrekt — auch wenn der Wortlaut "can't emit it" technisch veraltet ist. Empirisches Ergebnis trumpft Theorie.
+**Verdict:** the team-veto comment in the pre-refactor `docker-compose.yml` (_"tsc for decorator metadata - tsx can't emit it"_) is substantially correct — even if the wording "can't emit it" is technically dated. Empirical evidence trumps theory.
 
-### Naive Option-B-Falle
+### Naive option-B trap
 
-Erste Refinement-Idee:
+First refinement idea:
 
 ```yaml
 command: sh -c "tsc && tsc -w & sleep 30 && exec node --watch dist/nest/main.js"
 ```
 
-Vier Probleme:
+Four problems:
 
-1. `sleep 30` ist blind — Cold-Tsc kann >30s dauern → node startet mit leerem dist/ → Crash
-2. `node --watch` reagiert pro File-Change → tsc emittiert Files single-by-single → mid-emit-Restart → import-error
-3. `& sleep && exec` orphans `tsc -w` nach `exec` (kein trap, kein `wait`)
-4. Kein `set -e` — ein gefailter Step bricht nicht ab
+1. `sleep 30` is blind — cold tsc can take >30s → node starts with an empty dist/ → crash
+2. `node --watch` reacts per file change → tsc emits files one by one → mid-emit restart → import error
+3. `& sleep && exec` orphans `tsc -w` after `exec` (no trap, no `wait`)
+4. No `set -e` — a failed step does not abort
 
 ### Decision
 
@@ -1253,117 +1253,117 @@ command:
     set -e
     pnpm --filter @assixx/shared run build
     cd backend
-    pnpm exec tsc                                    # Initial blocking build
-    pnpm exec tsc -w --preserveWatchOutput &         # Background incremental
+    pnpm exec tsc                                    # initial blocking build
+    pnpm exec tsc -w --preserveWatchOutput &         # background incremental
     exec pnpm exec nodemon --watch dist --delay 1500ms dist/nest/main.js
 ```
 
-Schlüssel-Eigenschaften:
+Key properties:
 
-- **`set -e`** stoppt die Chain bei jedem failed Step
-- **Initialer blockierender `tsc`** garantiert vollständig populiertes `dist/` vor nodemon-Start (kein Race)
-- **`tsc -w`** läuft danach im Background, emittiert nur geänderte Files (~1 s)
-- **`nodemon --watch dist --delay 1500ms`** wartet 1.5 s nach dem letzten dist-Change, bevor Restart — gibt tsc Zeit, multi-file Emits zu vollenden
-- **`exec nodemon`** macht nodemon zu PID 1 → korrekte SIGTERM-Behandlung bei `docker stop`
-- **Beide Tools schon installiert:** tsc bereits aktiv (Pre-Refactor), nodemon in `backend/package.json` devDeps für `pnpm run dev` — keine neue Dependency
+- **`set -e`** stops the chain on any failed step
+- **Initial blocking `tsc`** guarantees a fully populated `dist/` before nodemon starts (no race)
+- **`tsc -w`** then runs in the background and only emits changed files (~1 s)
+- **`nodemon --watch dist --delay 1500ms`** waits 1.5 s after the last dist change before restarting — gives tsc time to finish multi-file emits
+- **`exec nodemon`** makes nodemon PID 1 → correct SIGTERM handling on `docker stop`
+- **Both tools already installed:** tsc was active before, nodemon is in `backend/package.json` devDeps for `pnpm run dev` — no new dependency
 
-### ADR-027 §3 Anonymous-Volume — Nicht Getriggert
+### ADR-027 §3 anonymous volume — not triggered
 
-Die 2026-04-08 Anonymous-Volume-EACCES-Falle (siehe §"Amendment 2026-04-08") tritt auf, wenn der Container zur Laufzeit `/app/node_modules` mutiert (root-owned by Image, Runtime-User UID 1000). Dieser Pfad **schreibt nur in `/app/backend/dist`** (host-mounted, beschreibbar durch UID 1000). Read von nodemon-Binary aus `node_modules/.bin/` funktioniert mit dem `o+x`-Bit. Anonymous-Volume bleibt unangetastet. ✓
+The 2026-04-08 anonymous-volume EACCES trap (see §"Amendment 2026-04-08") triggers when the container mutates `/app/node_modules` at runtime (root-owned by image, runtime user UID 1000). This path **only writes to `/app/backend/dist`** (host-mounted, writable by UID 1000). Reading the nodemon binary from `node_modules/.bin/` works with the `o+x` bit. Anonymous volume stays untouched. ✓
 
 ### Verification (2026-04-28)
 
-| Probe                                                 | Vorher               | Nachher            |
-| ----------------------------------------------------- | -------------------- | ------------------ |
-| Cold-Boot bis `/health` 200                           | ~60–90 s             | ~13 s ✅           |
-| Source-Edit → Backend ready (`uptime` reset)          | ~60–90 s (`restart`) | **~4.5 s** auto ✅ |
-| Incremental tsc-Rebuild bei 1-File-Change             | full ~60 s           | ~1 s ✅            |
-| NestJS DI-Graph Bootstrap                             | ✓ (tsc)              | ✓ (tsc)            |
-| Anonymous-Volume `/app/node_modules` gemutiert?       | nein                 | **nein** ✅        |
-| `nodemon` debounce (1500 ms) absorbiert mid-emit-Race | n/a                  | ✓                  |
+| Probe                                              | Before               | After              |
+| -------------------------------------------------- | -------------------- | ------------------ |
+| Cold boot to `/health` 200                         | ~60–90 s             | ~13 s ✅           |
+| Source edit → backend ready (`uptime` reset)       | ~60–90 s (`restart`) | **~4.5 s** auto ✅ |
+| Incremental tsc rebuild on a 1-file change         | full ~60 s           | ~1 s ✅            |
+| NestJS DI graph bootstrap                          | ✓ (tsc)              | ✓ (tsc)            |
+| Anonymous volume `/app/node_modules` mutated?      | no                   | **no** ✅          |
+| `nodemon` debounce (1500 ms) absorbs mid-emit race | n/a                  | ✓                  |
 
-Empirische Schritte: `docker-compose --profile dev up -d backend` → `curl /health` → `echo "// probe" >> backend/src/nest/main.ts` → `docker logs -f assixx-backend` zeigt "File change detected" + "Found 0 errors" + NestJS-Re-Bootstrap → `curl /health` zeigt frische `uptime` (~2.6 s, nicht ~70 s der alten Instanz).
+Empirical steps: `docker-compose --profile dev up -d backend` → `curl /health` → `echo "// probe" >> backend/src/nest/main.ts` → `docker logs -f assixx-backend` shows "File change detected" + "Found 0 errors" + NestJS re-bootstrap → `curl /health` shows fresh `uptime` (~2.6 s, not ~70 s of the old instance).
 
 ### Trade-offs
 
 **Positive:**
 
-- Hot-Reload-Promise von `DOCKER-SETUP.md` ist jetzt wahr
-- Dev-Iteration ~15× schneller (4.5 s statt 60–90 s)
-- Keine neue Dependency (tsc + nodemon bereits installiert)
-- Strict-tsc bleibt der Compiler — null DI-Risiko (NestJS-Metadata vollständig)
-- ADR-027 §3 (Anonymous-Volume) NICHT getriggert
-- ADR-041 Strict-Everywhere-Policy nicht berührt (gleicher tsc, gleiche tsconfig)
+- The hot-reload promise of `DOCKER-SETUP.md` is now true
+- Dev iteration ~15× faster (4.5 s instead of 60–90 s)
+- No new dependency (tsc + nodemon already installed)
+- Strict tsc remains the compiler — zero DI risk (NestJS metadata complete)
+- ADR-027 §3 (anonymous volume) NOT triggered
+- ADR-041 strict-everywhere policy untouched (same tsc, same tsconfig)
 
 **Negative:**
 
-- `tsc -w` belegt ~200 MB RAM im Background (zusätzlich zum NestJS-Prozess)
-- Nodemon-Restart führt einen vollen NestJS-Bootstrap durch (~2 s) — schneller als `docker restart`, aber nicht so schnell wie SvelteKit-HMR (das State preserved)
-- `tsc -w` als Background-Child von nodemon bekommt bei `docker stop` zwar SIGTERM, Cleanup ist aber nicht trap-explizit. Innerhalb der `docker stop`-Grace-Period (default 10 s) finishen aber beide Prozesse sauber.
+- `tsc -w` consumes ~200 MB RAM in the background (in addition to the NestJS process)
+- A nodemon restart performs a full NestJS bootstrap (~2 s) — faster than `docker restart`, but not as fast as SvelteKit HMR (which preserves state)
+- `tsc -w` as a background child of nodemon does receive SIGTERM on `docker stop`, but cleanup is not trap-explicit. Within the `docker stop` grace period (default 10 s) both processes finish cleanly.
 
 **Neutral:**
 
-- `start_period: 120s` Healthcheck-Grace bleibt — first-cold-build ohne `dist/` braucht trotzdem die Karenz
-- `DOCKER-SETUP.md` L89 Aussage "mit Live-Reload" ist jetzt akkurat (war vorher faktisch falsch)
+- `start_period: 120s` healthcheck grace stays — the first cold build without `dist/` still needs the grace
+- `DOCKER-SETUP.md` L89 "with live reload" is now accurate (was factually wrong before)
 
-### File Change Summary
+### File change summary
 
 ```
 docker/docker-compose.yml — backend.command (one-shot tsc + node) → tsc + tsc-watch + nodemon
-                            ~30 Zeilen Block-Kommentar mit Begründung + Cross-Refs
+                            ~30 lines block comment with rationale + cross-refs
 ```
 
-### Verbleibende Followups (aus dieser Untersuchung)
+### Remaining follow-ups (from this investigation)
 
-1. **`docker-compose.yml:198`** mountet `../nodemon.json` als Verzeichnis (Host-Pfad ist leeres root-owned Dir, Apr 6). Toter Mount, nicht von diesem Amendment behandelt. Eigenes Cleanup-Ticket: entweder Mount-Zeile entfernen oder echtes nodemon-Config-File anlegen.
-2. **`Dockerfile.dev` L46 chown -R für `/app/node_modules`** (ADR-027 §3a Future Work) bleibt offen, ist aber NICHT mehr Hot-Reload-blockierend — niedrigere Priorität.
+1. **`docker-compose.yml:198`** mounts `../nodemon.json` as a directory (host path is an empty root-owned dir, Apr 6). Dead mount, not handled by this amendment. Separate cleanup ticket: either remove the mount line or create a real nodemon config file.
+2. **`Dockerfile.dev` L46 chown -R for `/app/node_modules`** (ADR-027 §3a future work) remains open, but is no longer hot-reload-blocking — lower priority.
 
 ---
 
-## Amendment 2026-04-28 (c): UID System-Range Warning + apt cache-mounts
+## Amendment 2026-04-28 (c): UID system-range warning + apt cache mounts
 
-Zwei lokale Hardening-/Speed-Verbesserungen aus derselben Session.
+Two local hardening / speed improvements from the same session.
 
-### 1. `useradd --system` entfernt — `SYS_UID_MAX 999` Warnung weg
+### 1. `useradd --system` removed — `SYS_UID_MAX 999` warning gone
 
-**Befund.** `useradd -r -u 1001 ...` (Backend prod, Frontend prod) markierte den
-App-User als System-User UND vergab UID 1001 > Debian's `SYS_UID_MAX=999`.
-useradd protokollierte bei jedem Build:
+**Finding.** `useradd -r -u 1001 ...` (backend prod, frontend prod) marked the
+app user as a system user AND assigned UID 1001 > Debian's `SYS_UID_MAX=999`.
+useradd logged on every build:
 
 ```
 nodejs's uid 1001 outside of the SYS_UID_MIN 100 and SYS_UID_MAX 999 range.
 ```
 
-Die Bedingung für die Warnung ist die Kombination `is_system_user AND uid > SYS_UID_MAX` — nur eine der beiden muss kippen, damit sie verschwindet.
+The condition for the warning is the combination `is_system_user AND uid > SYS_UID_MAX` — only one of the two needs to flip for the warning to disappear.
 
-**Fix.** `-r` raus, UID 1001 bleibt (Volume-Kompatibilität intakt, alle
-`COPY --link --chown=1001:1001`-Statements unverändert). Hardening, das `-r`
-implizit lieferte, explizit gesetzt:
+**Fix.** Drop `-r`, keep UID 1001 (volume compatibility intact, all
+`COPY --link --chown=1001:1001` statements unchanged). The hardening that `-r`
+implicitly provided is set explicitly:
 
 ```dockerfile
 groupadd -g 1001 nodejs
 useradd  -u 1001 -g nodejs -M -s /usr/sbin/nologin --no-log-init nodejs
 ```
 
-| Flag                   | Ersetzt was an `-r`                     |
-| ---------------------- | --------------------------------------- |
-| `-M`                   | implizites "no home directory"          |
-| `-s /usr/sbin/nologin` | interaktiver Login disabled             |
-| `--no-log-init`        | bleibt — verhindert lastlog-sparse-File |
+| Flag                   | Replaces what `-r` provided              |
+| ---------------------- | ---------------------------------------- |
+| `-M`                   | implicit "no home directory"             |
+| `-s /usr/sbin/nologin` | interactive login disabled               |
+| `--no-log-init`        | stays — prevents the lastlog sparse file |
 
-**Verworfene Alternative.** UID auf ≤ 999 senken + `-r` behalten: hätte alle
-`--chown=1001:1001`-Statements + bestehende Volume-Eigentumsverhältnisse
-gebrochen. Zu teuer für eine reine Log-Cleanup-Verbesserung.
+**Rejected alternative.** Lower the UID to ≤ 999 + keep `-r`: would have broken
+all `--chown=1001:1001` statements + existing volume ownership. Too expensive
+for a pure log-cleanup improvement.
 
 **Files:** `docker/Dockerfile`, `docker/Dockerfile.frontend`. `Dockerfile.dev`
-nicht betroffen (kein useradd; läuft als root für Source-Mounts, OK in Dev).
+not affected (no useradd; runs as root for source mounts, OK in dev).
 
-### 2. BuildKit cache-mounts für `apt` in allen 3 Dockerfiles
+### 2. BuildKit cache mounts for `apt` in all 3 Dockerfiles
 
-**Befund.** `apt-get update + install` brauchte 45–129 s pro Stage —
-Mirror-Latenz, jeder Build lädt Indexe + `.deb`-Files neu.
+**Finding.** `apt-get update + install` took 45–129 s per stage —
+mirror latency, every build re-downloads indexes + `.deb` files.
 
-**Fix.** Pattern aus
+**Fix.** Pattern from
 [docs.docker.com/build/cache/optimize](https://docs.docker.com/build/cache/optimize/#use-cache-mounts):
 
 ```dockerfile
@@ -1374,54 +1374,53 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && apt-get install -y --no-install-recommends <pkgs>
 ```
 
-Zwei nicht-offensichtliche Pflicht-Schritte:
+Two non-obvious mandatory steps:
 
-- **`rm -f /etc/apt/apt.conf.d/docker-clean` rein** — Debian-base purgt sonst
-  via `DPkg::Post-Invoke` seine eigenen `.deb`-Downloads, der Cache bliebe leer.
-- **`rm -rf /var/lib/apt/lists/*` raus** — würde den Cache leeren.
-  Counter-intuitiv, aber zwingend: cache-mount-Inhalte landen NICHT im
-  Image-Layer (BuildKit-Eigenschaft, `type=cachemount` ≠ Layer-Storage),
-  daher kein Bloat ohne expliziten `rm`.
+- **Add `rm -f /etc/apt/apt.conf.d/docker-clean`** — otherwise the Debian base
+  purges its own `.deb` downloads via `DPkg::Post-Invoke`, the cache stays empty.
+- **Remove `rm -rf /var/lib/apt/lists/*`** — it would empty the cache.
+  Counter-intuitive but mandatory: cache-mount contents do NOT land in the
+  image layer (BuildKit property, `type=cachemount` ≠ layer storage),
+  therefore no bloat without an explicit `rm`.
 
-**Win-Profil:**
+**Win profile:**
 
-| Szenario                                | Win                               |
-| --------------------------------------- | --------------------------------- |
-| Layer-Cache-Hit (RUN-Zeile unverändert) | 0 s (normaler Layer-Cache greift) |
-| `--no-cache` lokal                      | 45–129 s → 3–10 s pro apt-Stage   |
-| RUN-Zeile geändert (neues Paket)        | ~30–60 s gespart                  |
-| GitHub Actions / fresh CI runner        | 0 s ohne `cache-to/from` Setup    |
+| Scenario                             | Win                               |
+| ------------------------------------ | --------------------------------- |
+| Layer cache hit (RUN line unchanged) | 0 s (regular layer cache applies) |
+| `--no-cache` locally                 | 45–129 s → 3–10 s per apt stage   |
+| RUN line changed (new package)       | ~30–60 s saved                    |
+| GitHub Actions / fresh CI runner     | 0 s without `cache-to/from` setup |
 
-`sharing=locked` (statt Default `shared`) gewählt: serialisiert parallele
-Builds am Cache → robust gegen apt-Lock-Races. Kostet bei seriellen
-`docker-compose build`-Workflows nichts.
+`sharing=locked` (instead of the default `shared`) chosen: serializes parallel
+builds at the cache → robust against apt lock races. Costs nothing in serial
+`docker-compose build` workflows.
 
-**Files:** alle 3 Dockerfiles. `# syntax=docker/dockerfile:1` war bereits in
-allen vorhanden — keine Toolchain-Voraussetzungen.
+**Files:** all 3 Dockerfiles. `# syntax=docker/dockerfile:1` was already
+present in all of them — no toolchain prerequisites.
 
-### Verifikation
+### Verification
 
 ```bash
-# 1. Erstbefüllung — Cache leer, ähnlich vorheriger Zeit
+# 1. Initial fill — cache empty, similar to previous time
 time doppler run -- docker-compose --profile production build --no-cache backend-prod
 
-# 2. Cache materialisiert?
+# 2. Cache materialised?
 docker buildx du --filter type=exec.cachemount
 
-# 3. Win-Messung — RUN-Zeile invalidieren (Whitespace-Edit), dann:
+# 3. Win measurement — invalidate the RUN line (whitespace edit), then:
 time doppler run -- docker-compose --profile production build backend-prod
-# Erwartung: apt-Stage 3–10 s statt 45–129 s
+# Expectation: apt stage 3–10 s instead of 45–129 s
 
-# 4. Image-Größe gleich? (Sanity-Check für "Mount nicht in Layer")
+# 4. Image size unchanged? (sanity check for "mount not in the layer")
 docker image ls assixx-backend:prod
-# Erwartung: ±0.1 % gegenüber Pre-Cache-Mount-Patch
+# Expectation: ±0.1 % vs. pre-cache-mount patch
 ```
 
-### Pin-Guard / CI
+### Pin-guard / CI
 
-Beide Changes sind orthogonal zu Pin-Guard (Amendment 2026-04-08).
-Image-Größe ist innerhalb ±0.1 % — keine Auswirkung auf Size-Budget oder
-CVE-Scan-Timing.
+Both changes are orthogonal to the pin-guard (Amendment 2026-04-08).
+Image size is within ±0.1 % — no impact on size budget or CVE scan timing.
 
 ---
 

@@ -1,84 +1,85 @@
-# ADR-045: Permission & Visibility Design — "Wer darf was?"
+# ADR-045: Permission & Visibility Design — "Who is allowed to do what?"
 
-| Metadata                | Value                                                                                                                                                                                                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                                                                                                                                                                                                    |
-| **Date**                | 2026-04-15                                                                                                                                                                                                                                                  |
-| **Decision Makers**     | SCS-Technik Team                                                                                                                                                                                                                                            |
-| **Affected Components** | ALL feature modules (Blackboard, KVP, Surveys, TPM, Work Orders, Vacation, Approvals, Inventory, Documents …), Backend Guards, Frontend Gates, Navigation                                                                                                   |
-| **Supersedes**          | —                                                                                                                                                                                                                                                           |
-| **Related ADRs**        | ADR-010 (Rollen/Hierarchie), ADR-012 (Route Security Groups), ADR-020 (Per-User Permissions), ADR-024 (Frontend Feature Guards), ADR-033 (Addons), ADR-034 (Hierarchy Labels), ADR-035 (Scope Architektur), ADR-036 (Scope Access), ADR-039 (Deputy-Toggle) |
+| Metadata                | Value                                                                                                                                                                                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                                                                                                                                                                                   |
+| **Date**                | 2026-04-15                                                                                                                                                                                                                                                 |
+| **Decision Makers**     | SCS-Technik Team                                                                                                                                                                                                                                           |
+| **Affected Components** | ALL feature modules (Blackboard, KVP, Surveys, TPM, Work Orders, Vacation, Approvals, Inventory, Documents …), backend guards, frontend gates, navigation                                                                                                  |
+| **Supersedes**          | —                                                                                                                                                                                                                                                          |
+| **Related ADRs**        | ADR-010 (roles/hierarchy), ADR-012 (route security groups), ADR-020 (per-user permissions), ADR-024 (frontend feature guards), ADR-033 (addons), ADR-034 (hierarchy labels), ADR-035 (scope architecture), ADR-036 (scope access), ADR-039 (deputy toggle) |
 
 ---
 
 ## Context
 
-Assixx hat über die letzten 12 Monate mehrere orthogonale Berechtigungs-Mechanismen eingeführt (Rollen, hasFullAccess, Lead-Positionen, Deputy-Scope-Toggle, Addon-Subscriptions, Per-User-Permissions). Jeder einzelne ist in einem ADR dokumentiert. Was **fehlt**, ist die **zusammenführende Regel**: _Wie kombinieren sich diese Mechanismen, wenn ich einen einzelnen Button im UI gate oder eine einzelne Mutation-Route im Backend schütze?_
+Over the last 12 months Assixx has introduced several orthogonal permission mechanisms (roles, hasFullAccess, lead positions, deputy-scope toggle, addon subscriptions, per-user permissions). Each one is documented in its own ADR. What is **missing** is the **unifying rule**: _how do these mechanisms combine when I gate a single button in the UI or protect a single mutation route in the backend?_
 
-Die Folge: **divergente Muster** in der Codebasis.
+The result: **divergent patterns** across the codebase.
 
-| Feature        | Frontend-Button-Gate                                            | Backend-Mutation-Guard                                    |
+| Feature        | Frontend button gate                                            | Backend mutation guard                                    |
 | -------------- | --------------------------------------------------------------- | --------------------------------------------------------- |
-| **Surveys**    | `canManageSurveys(role, hasFullAccess, isAnyLead)` ✅ kanonisch | `@RequirePermission(SURVEY_ADDON, ..., 'canWrite')` ✅    |
-| **Blackboard** | `const isAdmin = role === 'admin' \|\| 'root'` ❌ veraltet      | `@Roles('admin', 'root')` + `@RequirePermission(…)` ❌    |
-| **KVP**        | kein Gate (Employee darf Vorschlag einreichen — by design)      | `@RequirePermission(KVP_ADDON, ..., 'canWrite')` ✅       |
-| **TPM**        | `/tpm/plans/my-permissions` Self-Check ✅                       | `@RequirePermission(TPM_ADDON, MOD_PLANS, 'canWrite')` ✅ |
+| **Surveys**    | `canManageSurveys(role, hasFullAccess, isAnyLead)` ✅ canonical | `@RequirePermission(SURVEY_ADDON, ..., 'canWrite')` ✅    |
+| **Blackboard** | `const isAdmin = role === 'admin' \|\| 'root'` ❌ outdated      | `@Roles('admin', 'root')` + `@RequirePermission(…)` ❌    |
+| **KVP**        | no gate (employee may submit a suggestion — by design)          | `@RequirePermission(KVP_ADDON, ..., 'canWrite')` ✅       |
+| **TPM**        | `/tpm/plans/my-permissions` self-check ✅                       | `@RequirePermission(TPM_ADDON, MOD_PLANS, 'canWrite')` ✅ |
 
-Das `isAdmin`-Shortcut bei Blackboard ignoriert:
+The `isAdmin` shortcut in Blackboard ignores:
 
-- `hasFullAccess` (Admin ohne Full-Access sieht Button, obwohl er nichts tun sollte)
-- Lead-Positionen (Employee-Team-Lead sieht keinen Button, obwohl er verwalten dürfte)
-- Deputy-Scope-Toggle ADR-039 (Stellvertreter mit aktivem Tenant-Toggle werden ignoriert)
-- ADR-020 Per-User-Permissions (Admin mit explizit entzogenem `canWrite` sieht Button trotzdem)
+- `hasFullAccess` (an admin without full access still sees the button although they should not be able to do anything)
+- Lead positions (an employee team lead sees no button although they should be allowed to manage)
+- Deputy-scope toggle ADR-039 (deputies with active tenant toggle are ignored)
+- ADR-020 per-user permissions (an admin with explicitly revoked `canWrite` still sees the button)
 
-Das `@Roles('admin', 'root')` im Backend verschlimmert das Problem: Selbst wenn das Frontend korrekt gated wäre, würde der Backend-Guard einen Employee-Team-Lead **trotz vorhandener `canWrite`-Permission** mit 403 blockieren.
+The `@Roles('admin', 'root')` in the backend makes things worse: even if the frontend gated correctly, the backend guard would block an employee team lead with **a valid `canWrite` permission** with a 403.
 
-### Anforderungen
+### Requirements
 
-1. **EINE** kanonische Entscheidungsregel "Wer darf managen?" für alle Feature-Module.
-2. **Konsistenz** zwischen Frontend-Sichtbarkeit und Backend-Enforcement — kein Button sichtbar, der zu 403 führt.
-3. **Kompatibel** mit Deputy-Toggle (ADR-039) — das Routing durch Leads/Deputies ist Backend-Aufgabe, Frontend vertraut dem `orgScope.isAnyLead`-Flag.
-4. **Kompatibel** mit Per-User-Permissions (ADR-020) — fein-granulare Overrides bleiben wirksam.
-5. **Creator-Bypass** — wer einen Beitrag erstellt hat, darf ihn bearbeiten/löschen (sofern das Feature Besitz kennt, z. B. Blackboard-Eintrag, KVP-Vorschlag).
-6. **Einfach für neue Features**: Copy-Paste eines Patterns, keine Meta-Programmierung.
+1. **ONE** canonical decision rule "who is allowed to manage?" for all feature modules.
+2. **Consistency** between frontend visibility and backend enforcement — no button visible that ends in 403.
+3. **Compatible** with the deputy toggle (ADR-039) — routing through leads/deputies is the backend's job; the frontend trusts the `orgScope.isAnyLead` flag.
+4. **Compatible** with per-user permissions (ADR-020) — fine-grained overrides remain effective.
+5. **Creator bypass** — whoever created an item is allowed to edit/delete it (provided the feature has ownership semantics, e.g. blackboard entry, KVP suggestion).
+6. **Easy for new features**: copy/paste a pattern, no metaprogramming.
 
 ---
 
 ## Decision
 
-### 3-Schichten-Modell ("Permission Stack")
+### 3-Layer Model ("Permission Stack")
 
-Jede Aktion im System durchläuft **bis zu drei** Gates in dieser Reihenfolge:
+Every action in the system goes through **up to three** gates in this order:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Layer 0: Addon-Subscription (ADR-033)                            │
-│   → Hat der Tenant dieses Modul gebucht?                         │
+│ Layer 0: Addon subscription (ADR-033)                            │
+│   → Has the tenant booked this module?                           │
 │   → Frontend: `requireAddon()` in +page.server.ts                │
-│   → Backend: @RequireAddon-Guard (falls vorhanden)               │
-│   → Scheitert hier → Addon nicht abonniert, komplette Page weg   │
+│   → Backend: @RequireAddon guard (if present)                    │
+│   → Fails here → addon not subscribed, page is gone entirely     │
 ├─────────────────────────────────────────────────────────────────┤
-│ Layer 1: Management-Gate ("Darf der User überhaupt verwalten?")  │
-│   → Kombiniert Role + hasFullAccess + Lead-Scope + Deputy-Toggle │
-│   → Frontend: `canManage<Modul>(role, hasFullAccess, isAnyLead)` │
-│   → Backend: @RequirePermission (NICHT @Roles!)                  │
-│   → Scheitert hier → Button/Seite unsichtbar, 403 bei Direktzugriff │
+│ Layer 1: Management gate ("is the user allowed to manage at all?")│
+│   → Combines role + hasFullAccess + lead scope + deputy toggle   │
+│   → Frontend: `canManage<Module>(role, hasFullAccess, isAnyLead)`│
+│   → Backend: @RequirePermission (NOT @Roles!)                    │
+│   → Fails here → button/page invisible, 403 on direct access     │
 ├─────────────────────────────────────────────────────────────────┤
-│ Layer 2: Fine-grained Action-Permission (ADR-020)                │
-│   → Hat der User für dieses Modul+Action canRead/canWrite/canDelete? │
-│   → Frontend (optional): `/{modul}/my-permissions`-Endpoint      │
+│ Layer 2: Fine-grained action permission (ADR-020)                │
+│   → Does the user have canRead/canWrite/canDelete for this       │
+│     module + action?                                             │
+│   → Frontend (optional): `/{module}/my-permissions` endpoint     │
 │   → Backend: @RequirePermission(ADDON, MODULE, 'canWrite')       │
-│   → Scheitert hier → Einzelne Action verweigert                  │
+│   → Fails here → individual action denied                        │
 ├─────────────────────────────────────────────────────────────────┤
-│ Creator-Bypass (wenn anwendbar)                                  │
-│   → authorId === currentUser.id → Edit/Delete auf eigenem Content│
-│   → Service-intern, NICHT Controller-Guard                       │
+│ Creator bypass (when applicable)                                 │
+│   → authorId === currentUser.id → edit/delete on own content     │
+│   → service-internal, NOT a controller guard                     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Wichtig:** Layer 1 ist NEU-kanonisch und ersetzt jede Form von `isAdmin`-Shortcut. Layer 2 ist bereits in ADR-020 definiert. Creator-Bypass ist pro Feature zu entscheiden.
+**Important:** Layer 1 is the new canonical rule and replaces every form of `isAdmin` shortcut. Layer 2 is already defined in ADR-020. Creator bypass is decided per feature.
 
-### Layer 1: Die Management-Gate-Regel
+### Layer 1: The Management-Gate Rule
 
 ```
 canManage := role === 'root'
@@ -86,46 +87,46 @@ canManage := role === 'root'
           || isAnyLead === true
 ```
 
-**Erläuterung der Komponenten:**
+**Component breakdown:**
 
-| Komponente        | Bedeutung                                                                | Quelle                                   |
-| ----------------- | ------------------------------------------------------------------------ | ---------------------------------------- |
-| `role === 'root'` | System-Rolle Root — immer Bypass by design.                              | `users.role` (ADR-010)                   |
-| `hasFullAccess`   | Admin-Flag "sieht alles im Tenant wie Root".                             | `users.has_full_access` (ADR-010)        |
-| `isAnyLead`       | User ist Area-/Department-/Team-Lead **ODER** Deputy-mit-aktivem-Toggle. | `GET /users/me/org-scope` (ADR-035, 039) |
+| Component         | Meaning                                                             | Source                                   |
+| ----------------- | ------------------------------------------------------------------- | ---------------------------------------- |
+| `role === 'root'` | System role Root — always bypass by design.                         | `users.role` (ADR-010)                   |
+| `hasFullAccess`   | Admin flag "sees everything in the tenant like Root".               | `users.has_full_access` (ADR-010)        |
+| `isAnyLead`       | User is area/department/team lead **OR** deputy with active toggle. | `GET /users/me/org-scope` (ADR-035, 039) |
 
-**Deputy-Logik (ADR-039) ist bewusst _nicht_ explizit in der Formel:** Backend merged Deputy-IDs automatisch in `leadXxxIds`, wenn der Tenant-Toggle `deputy_has_lead_scope` aktiv ist. Das Frontend sieht nur noch `isAnyLead = true/false` — null Komplexität auf Seite des Consumers.
+**Deputy logic (ADR-039) is intentionally _not_ explicit in the formula:** the backend automatically merges deputy IDs into `leadXxxIds` when the tenant toggle `deputy_has_lead_scope` is active. The frontend only ever sees `isAnyLead = true/false` — zero complexity on the consumer side.
 
-### Decision-Table "Wer darf managen?" (Layer 1)
+### Decision Table "Who is allowed to manage?" (Layer 1)
 
-| User                             | role       | hasFullAccess | Lead? | Deputy? | deputyToggle | canManage? |
-| -------------------------------- | ---------- | ------------- | ----- | ------- | ------------ | ---------- |
-| Root                             | `root`     | —             | —     | —       | —            | ✅ ja      |
-| Admin (vollzugriff)              | `admin`    | `true`        | —     | —       | —            | ✅ ja      |
-| Admin (eingeschränkt, ohne Lead) | `admin`    | `false`       | nein  | nein    | —            | ❌ nein    |
-| Admin als Area-Lead              | `admin`    | `false`       | ja    | —       | —            | ✅ ja      |
-| Admin als Deputy (Toggle AUS)    | `admin`    | `false`       | nein  | ja      | `false`      | ❌ nein    |
-| Admin als Deputy (Toggle AN)     | `admin`    | `false`       | nein  | ja      | `true`       | ✅ ja¹     |
-| Employee (kein Lead)             | `employee` | —             | nein  | nein    | —            | ❌ nein    |
-| Employee als Team-Lead           | `employee` | —             | ja    | —       | —            | ✅ ja      |
-| Employee als Deputy (Toggle AUS) | `employee` | —             | nein  | ja      | `false`      | ❌ nein    |
-| Employee als Deputy (Toggle AN)  | `employee` | —             | nein  | ja      | `true`       | ✅ ja¹     |
+| User                            | role       | hasFullAccess | Lead? | Deputy? | deputyToggle | canManage? |
+| ------------------------------- | ---------- | ------------- | ----- | ------- | ------------ | ---------- |
+| Root                            | `root`     | —             | —     | —       | —            | ✅ yes     |
+| Admin (full access)             | `admin`    | `true`        | —     | —       | —            | ✅ yes     |
+| Admin (limited, no lead)        | `admin`    | `false`       | no    | no      | —            | ❌ no      |
+| Admin as area lead              | `admin`    | `false`       | yes   | —       | —            | ✅ yes     |
+| Admin as deputy (toggle OFF)    | `admin`    | `false`       | no    | yes     | `false`      | ❌ no      |
+| Admin as deputy (toggle ON)     | `admin`    | `false`       | no    | yes     | `true`       | ✅ yes¹    |
+| Employee (no lead)              | `employee` | —             | no    | no      | —            | ❌ no      |
+| Employee as team lead           | `employee` | —             | yes   | —       | —            | ✅ yes     |
+| Employee as deputy (toggle OFF) | `employee` | —             | no    | yes     | `false`      | ❌ no      |
+| Employee as deputy (toggle ON)  | `employee` | —             | no    | yes     | `true`       | ✅ yes¹    |
 
-¹ Backend setzt `isAnyLead = true` durch Deputy-Merge — Frontend sieht nur `isAnyLead=true`.
+¹ Backend sets `isAnyLead = true` via the deputy merge — frontend only sees `isAnyLead=true`.
 
 ### Layer 2: Fine-grained Override (ADR-020)
 
-Der Admin mit Vollzugriff darf _grundsätzlich_ alles. Der Tenant-Root-Admin kann aber **explizit** einzelne Permissions entziehen oder für delegierte Leads fein-granulare `canRead/canWrite/canDelete` pro Modul setzen (siehe ADR-020 Extension 2026-03-14).
+An admin with full access is _in principle_ allowed to do everything. The tenant root admin can however **explicitly** revoke individual permissions or set fine-grained `canRead/canWrite/canDelete` per module for delegated leads (see ADR-020 extension 2026-03-14).
 
-**Regel:** Layer 2 ist **immer enforced im Backend** via `@RequirePermission`. Im Frontend ist es _optional_ — nur nötig, wenn eine Action-Verweigerung sonst zu einem überraschenden 403 führen würde (siehe "Wann Layer 2 im Frontend?" unten).
+**Rule:** Layer 2 is **always enforced in the backend** via `@RequirePermission`. In the frontend it is _optional_ — only needed when an action denial would otherwise lead to a surprising 403 (see "When to add Layer 2 in the frontend?" below).
 
-### Creator-Bypass (optional, pro Feature)
+### Creator Bypass (optional, per feature)
 
-Wenn eine Entity einen `authorId`/`createdById` hat und die Fachlogik das erlaubt (z. B. Blackboard-Eintrag, KVP-Vorschlag, Kalender-Event `personal`), **umgeht der Autor sowohl Layer 1 als auch Layer 2** für Edit/Delete seiner _eigenen_ Records.
+If an entity has an `authorId`/`createdById` and the business logic permits (e.g. blackboard entry, KVP suggestion, calendar event `personal`), **the author bypasses both Layer 1 and Layer 2** for edit/delete on their _own_ records.
 
-- Implementation: **Service-intern**, nicht als Controller-Guard.
-- Kein Bypass für `canRead` (der ist ohnehin meist `canRead=true`).
-- Kein Bypass für Archive/Unarchive oder andere "Management"-Actions — nur _trivial_-Owner-Edits (Titel, Text, Anhänge).
+- Implementation: **service-internal**, not as a controller guard.
+- No bypass for `canRead` (which is usually `canRead=true` anyway).
+- No bypass for archive/unarchive or other "management" actions — only _trivial_ owner edits (title, text, attachments).
 
 ---
 
@@ -137,17 +138,17 @@ Wenn eine Entity einen `authorId`/`createdById` hat und die Fachlogik das erlaub
 // frontend/src/routes/(app)/_lib/navigation-config.ts
 
 /**
- * Kanonische "Darf der User dieses Modul verwalten?"-Entscheidung.
+ * Canonical "is the user allowed to manage this module?" decision.
  *
- * Pattern gilt für: Blackboard, Surveys, KVP-Kategorien, TPM-Config,
- *                   Vacation-Overview, Work-Orders-Admin, Approvals, …
+ * Pattern applies to: Blackboard, Surveys, KVP categories, TPM config,
+ *                     Vacation overview, Work Orders admin, Approvals, …
  *
- * - Root: immer ja (by design).
- * - Admin: nur mit hasFullAccess ODER Lead-Funktion ODER Deputy-mit-Toggle.
- * - Employee: nur mit Lead-Funktion ODER Deputy-mit-Toggle.
+ * - Root: always yes (by design).
+ * - Admin: only with hasFullAccess OR a lead position OR deputy with toggle.
+ * - Employee: only with a lead position OR deputy with toggle.
  *
- * `isAnyLead` merged Deputy-IDs automatisch wenn Tenant-Toggle
- * `deputy_has_lead_scope` aktiv ist (ADR-039).
+ * `isAnyLead` automatically merges deputy IDs when the tenant toggle
+ * `deputy_has_lead_scope` is active (ADR-039).
  *
  * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
  */
@@ -155,37 +156,37 @@ export function canManage(role: string | undefined, hasFullAccess: boolean, isAn
   return role === 'root' || (role === 'admin' && hasFullAccess) || isAnyLead;
 }
 
-// Wrapper pro Modul (für Lesbarkeit + Grep-Friendly):
+// Wrapper per module (for readability + grep-friendliness):
 export const canManageBlackboard = canManage;
 export const canManageSurveys = canManage;
 export const canManageKvpCategories = canManage;
 // ...
 ```
 
-**Wrapper-Namen sind reine Lesbarkeit** — sie delegieren alle zu `canManage`. Wenn ein Modul in Zukunft eine abweichende Regel braucht, kann der Wrapper selektiv divergieren, ohne die generische Funktion zu brechen.
+**Wrapper names are pure readability** — they all delegate to `canManage`. If a module needs a divergent rule in the future, the wrapper can selectively diverge without breaking the generic function.
 
-### Frontend — Page-Pattern
+### Frontend — Page Pattern
 
 ```typescript
-// +page.server.ts (Defense-in-Depth — verhindert direkten URL-Zugriff)
+// +page.server.ts (defense in depth — prevents direct URL access)
 import { canManageBlackboard } from '../../_lib/navigation-config';
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const { user, activeAddons, orgScope } = await parent();
   requireAddon(activeAddons, 'blackboard'); // Layer 0
 
-  // Layer 1: ist hier nur relevant wenn die GESAMTE Seite nur für Manager ist.
-  // Für gemischte Seiten (Read+ggf. Write) wird Layer 1 am Button geprüft.
-  // Page-Gate-Beispiel (manage-surveys):
+  // Layer 1: only relevant here when the ENTIRE page is for managers.
+  // For mixed pages (read + optional write), Layer 1 is checked at the button.
+  // Page-gate example (manage-surveys):
   if (!canManageBlackboard(user?.role, user?.hasFullAccess === true, orgScope.isAnyLead)) {
-    redirect(302, '/blackboard'); // oder 403
+    redirect(302, '/blackboard'); // or 403
   }
   // ...
 };
 ```
 
 ```svelte
-<!-- +page.svelte (Button-Gate) -->
+<!-- +page.svelte (button gate) -->
 <script lang="ts">
   import { canManageBlackboard } from '../../_lib/navigation-config';
 
@@ -201,19 +202,19 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
 {#if canManage}
   <button class="btn btn-primary" onclick={openCreateModal}>
-    <i class="fas fa-plus mr-2"></i>Neuer Eintrag
+    <i class="fas fa-plus mr-2"></i>New entry
   </button>
 {/if}
 ```
 
-### Frontend — Wann Layer 2 zusätzlich prüfen?
+### Frontend — When to add Layer 2?
 
-Layer 2 im Frontend ist nur dann sinnvoll, wenn:
+Layer 2 in the frontend only makes sense when:
 
-1. Das Backend **könnte** einem User mit `canManage=true` die einzelne Action trotzdem verweigern (z. B. Admin-mit-Lead, dem Root `canWrite=false` gesetzt hat).
-2. Die UX-Kosten eines überraschenden 403 sind hoch (z. B. User füllt Modal aus, klickt Save, bekommt dann 403).
+1. The backend **could** deny the individual action even for a user with `canManage=true` (e.g. an admin-with-lead for whom Root has set `canWrite=false`).
+2. The UX cost of a surprising 403 is high (e.g. user fills out a modal, clicks Save, then receives a 403).
 
-Dann: **Etablier den TPM-Pattern `/{modul}/my-permissions`-Endpoint.** Rückgabe:
+In that case: **adopt the TPM pattern `/{module}/my-permissions` endpoint.** Response:
 
 ```typescript
 // GET /blackboard/my-permissions
@@ -224,40 +225,40 @@ Dann: **Etablier den TPM-Pattern `/{modul}/my-permissions`-Endpoint.** Rückgabe
 Frontend:
 
 ```svelte
-<!-- Button-Gate mit Layer 1 + Layer 2 -->
+<!-- Button gate with Layer 1 + Layer 2 -->
 {#if canManage && myPermissions.canWritePosts}
-  <button>Neuer Eintrag</button>
+  <button>New entry</button>
 {/if}
 ```
 
-**Default-Empfehlung:** Fange mit nur Layer 1 an. Füge Layer 2 hinzu, sobald ein einziger Report eintrifft, dass Buttons 403-en.
+**Default recommendation:** start with Layer 1 only. Add Layer 2 as soon as a single report comes in that buttons return 403.
 
-### Backend — Canonical Controller-Guards
+### Backend — Canonical Controller Guards
 
 ```typescript
-// ✅ RICHTIG (Surveys-Pattern)
+// ✅ CORRECT (Surveys pattern)
 @Post('entries')
 @RequirePermission(BLACKBOARD_ADDON, BB_POSTS, 'canWrite')
 @HttpCode(HttpStatus.CREATED)
 async createEntry(@Body() dto: CreateEntryDto, @CurrentUser() user: NestAuthUser) { ... }
 
-// ❌ FALSCH (veralteter Blackboard-Stand)
+// ❌ WRONG (outdated Blackboard state)
 @Post('entries')
 @UseGuards(RolesGuard)
-@Roles('admin', 'root')                                     // ← blockt Employee-Leads
-@RequirePermission(BLACKBOARD_ADDON, BB_POSTS, 'canWrite')  // ← wird nie erreicht
+@Roles('admin', 'root')                                     // ← blocks employee leads
+@RequirePermission(BLACKBOARD_ADDON, BB_POSTS, 'canWrite')  // ← never reached
 async createEntry(...) { ... }
 ```
 
-**Regel:** `@Roles('admin', 'root')` ist für Mutationen (POST/PUT/DELETE/PATCH) **VERBOTEN**, wenn ein `@RequirePermission` existiert. Die Rollen-Whitelist ist bereits in `@RequirePermission`-Guard eingebettet (prüft Lead-Scope + Deputy-Merge + hasFullAccess + ADR-020 canWrite).
+**Rule:** `@Roles('admin', 'root')` is **FORBIDDEN** for mutations (POST/PUT/DELETE/PATCH) when a `@RequirePermission` exists. The role whitelist is already embedded in the `@RequirePermission` guard (checks lead scope + deputy merge + hasFullAccess + ADR-020 canWrite).
 
-`@Roles(...)` bleibt erlaubt für:
+`@Roles(...)` is still allowed for:
 
-- **Read-Endpoints, die auf Management-Level sind** (z. B. `/users` komplette Liste) — hier ist ein Role-Gate günstiger als Permission-Check.
-- **System-Endpoints** (`/root/…`), wo Root-Exklusivität fachlich gewollt ist.
-- **Als Defense-in-Depth _zusätzlich_** — wenn ein Endpoint nur für `employee` (z. B. Vacation-Request submitten) sein soll, `@Roles('employee', 'admin', 'root')` + `@RequirePermission` kombinieren. Aber nie enger als die Permission-Regel.
+- **Read endpoints at management level** (e.g. `/users` complete list) — here a role gate is cheaper than a permission check.
+- **System endpoints** (`/root/…`) where Root exclusivity is intentional by design.
+- **As defense in depth _on top_** — if an endpoint is meant only for `employee` (e.g. submitting a vacation request), combine `@Roles('employee', 'admin', 'root')` + `@RequirePermission`. But never narrower than the permission rule.
 
-### Backend — Creator-Bypass im Service
+### Backend — Creator Bypass in the Service
 
 ```typescript
 async updateEntry(
@@ -269,11 +270,11 @@ async updateEntry(
   const entry = await this.repo.findById(id, tenantId);
   if (entry === null) throw new NotFoundException();
 
-  // Creator-Bypass: Autor darf eigenen Beitrag editieren,
-  // auch ohne Layer-1 (canManage) oder Layer-2 (canWrite).
+  // Creator bypass: the author may edit their own entry,
+  // even without Layer 1 (canManage) or Layer 2 (canWrite).
   const isCreator = entry.authorId === currentUser.id;
   if (!isCreator) {
-    // Non-Creator: normale Permission-Prüfung
+    // Non-creator: regular permission check
     await this.permissions.assertCanWrite(currentUser, BB_ADDON, BB_POSTS);
   }
 
@@ -281,27 +282,27 @@ async updateEntry(
 }
 ```
 
-**Wichtig:** Der Creator-Bypass ist **Service-Logik**, nicht Controller-Guard, weil er entity-abhängig ist (`authorId` kommt aus DB-Row).
+**Important:** the creator bypass is **service logic**, not a controller guard, because it depends on the entity (`authorId` comes from the DB row).
 
 ---
 
 ## Alternatives Considered
 
-### 1. Alles in `@RequirePermission` verstecken, kein Layer-1-Helper
+### 1. Hide everything inside `@RequirePermission`, no Layer-1 helper
 
-**Verworfen.** Layer 1 ist als Frontend-Gate unverzichtbar (Button-Visibility vor API-Call). Ein reiner Backend-Only-Ansatz führt zu klickbaren Buttons, die dann 403-en — schlechte UX.
+**Rejected.** Layer 1 is indispensable as a frontend gate (button visibility before API call). A pure backend-only approach leads to clickable buttons that 403 — bad UX.
 
-### 2. Role-Explosion: `admin-with-blackboard-write`, `employee-team-lead-with-kvp-write`, …
+### 2. Role explosion: `admin-with-blackboard-write`, `employee-team-lead-with-kvp-write`, …
 
-**Verworfen** (bereits in ADR-020 abgelehnt). Unwartbar bei 19 Addons × 42 Modulen × 3 Actions.
+**Rejected** (already rejected in ADR-020). Unmaintainable with 19 addons × 42 modules × 3 actions.
 
-### 3. Pure ABAC (attribute-based) Policy-Engine (z. B. Casbin, OpenFGA)
+### 3. Pure ABAC (attribute-based) policy engine (e.g. Casbin, OpenFGA)
 
-**Verworfen.** Over-engineered für aktuellen Scope (4-6 Faktoren, keine komplexen Policies). ADR-020 hatte diese Entscheidung schon getroffen. Die Kombination aus Role + hasFullAccess + Lead-Scope + Permission deckt 100% der bekannten Anwendungsfälle ab.
+**Rejected.** Over-engineered for the current scope (4–6 factors, no complex policies). ADR-020 already made this decision. The combination of role + hasFullAccess + lead scope + permission covers 100% of known use cases.
 
-### 4. Nur Layer 2 (ADR-020 allein, kein Layer 1)
+### 4. Layer 2 only (ADR-020 alone, no Layer 1)
 
-**Verworfen.** Ohne Layer 1 müsste jeder User einzeln Permissions gesetzt bekommen — auch jeder Team-Lead manuell. Layer 1 ist das "vernünftige Default", das sagt: "Wer eine Führungsfunktion hat, darf verwalten — außer explizit anders geregelt."
+**Rejected.** Without Layer 1 every user would have to be granted permissions individually — including every team lead manually. Layer 1 is the "sensible default" that says: "Whoever holds a leadership role may manage — unless explicitly overridden."
 
 ---
 
@@ -309,69 +310,69 @@ async updateEntry(
 
 ### Positive
 
-1. **Ein Pattern für alle Module** — Copy-Paste, nicht Re-Invent.
-2. **Employee-Leads können echte Führungsarbeit tun**, nicht nur als Admins getaggt werden.
-3. **Deputy-Toggle ADR-039 wirkt konsistent** für jedes Modul, ohne Modul-spezifische Logik.
-4. **ADR-020 Fine-Grained-Permissions bleiben wirksam** — Layer 2 im Backend bleibt der verbindliche Enforcement-Punkt.
-5. **Frontend/Backend können nicht auseinanderlaufen** — beide nutzen die gleichen Eingangsgrößen (`role`, `hasFullAccess`, `isAnyLead`).
-6. **Migration-Aufwand ist überschaubar** — jeder "veraltete" `isAdmin`-Shortcut ist im Grep auffindbar.
+1. **One pattern for all modules** — copy/paste, not re-invent.
+2. **Employee leads can do real leadership work**, not be tagged as admins.
+3. **Deputy toggle ADR-039 acts consistently** for every module, without module-specific logic.
+4. **ADR-020 fine-grained permissions remain effective** — Layer 2 in the backend remains the authoritative enforcement point.
+5. **Frontend/backend cannot drift** — both use the same inputs (`role`, `hasFullAccess`, `isAnyLead`).
+6. **Migration effort is manageable** — every "outdated" `isAdmin` shortcut is grep-able.
 
 ### Negative
 
-1. **Migration-Aufwand:** Alle Module mit `const isAdmin = role === 'admin' \|\| 'root'` (aktuell Blackboard, potentiell weitere) müssen umgestellt werden.
-2. **Backend muss Guard-Kombinationen reviewen** — `@Roles('admin', 'root')` auf Mutations gehört in den meisten Fällen entfernt.
-3. **Etwas Overhead** bei Deputy-Toggle-Änderungen: der `orgScope`-Cache im Frontend muss invalidiert werden, wenn der Toggle umgeschaltet wird (existiert bereits via `invalidateAll()`).
+1. **Migration effort:** every module with `const isAdmin = role === 'admin' \|\| 'root'` (currently Blackboard, possibly more) has to be migrated.
+2. **Backend has to review guard combinations** — `@Roles('admin', 'root')` on mutations should be removed in most cases.
+3. **Some overhead** on deputy-toggle changes: the `orgScope` cache in the frontend has to be invalidated when the toggle is flipped (already exists via `invalidateAll()`).
 
 ### Risks & Mitigations
 
-| Risk                                                                                                           | Mitigation                                                                                                      |
-| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Entwickler vergisst Layer 1 im Frontend, nur Layer 2 → Button-403                                              | ESLint-Rule oder Review-Checkliste: jedes `@RequirePermission`-gated Mutation-UI muss `canManage` im Gate haben |
-| Backend-Refactor entfernt `@Roles`, aber @RequirePermission ist nicht registriert → alle User bekommen Zugriff | CI-Test: für jede Mutation muss entweder `@RequirePermission` oder explizites `@Public()` gesetzt sein          |
-| Deputy-Toggle wird serverseitig nicht in `orgScope` gemerged → Deputies sehen Buttons nicht                    | Unit-Test in ScopeService (existiert bereits für Surveys — als Referenz)                                        |
-| Creator-Bypass wird im Service übersehen → Ersteller kann eigenen Beitrag nicht editieren                      | Integration-Test pro Feature: Creator kann immer editieren/löschen (unabhängig von Permissions)                 |
+| Risk                                                                                               | Mitigation                                                                                                      |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Developer forgets Layer 1 in the frontend, only Layer 2 → button-403                               | ESLint rule or review checklist: every `@RequirePermission`-gated mutation UI must have `canManage` in the gate |
+| Backend refactor removes `@Roles`, but @RequirePermission is not registered → all users get access | CI test: every mutation must have either `@RequirePermission` or an explicit `@Public()` set                    |
+| Deputy toggle is not merged server-side into `orgScope` → deputies do not see buttons              | Unit test in ScopeService (already exists for surveys — use as reference)                                       |
+| Creator bypass is missed in the service → author cannot edit own entry                             | Integration test per feature: creator can always edit/delete (independent of permissions)                       |
 
 ---
 
 ## Migration Checklist
 
-Für JEDES Feature-Modul das Mutationen (POST/PUT/DELETE/PATCH) hat:
+For EVERY feature module that has mutations (POST/PUT/DELETE/PATCH):
 
 ### Frontend
 
-- [ ] Grep nach `isAdmin` / `role === 'admin'` / `role === 'root'` in `+page.svelte` und `+page.server.ts`.
-- [ ] Ersetze durch `canManage<Modul>(role, hasFullAccess, orgScope.isAnyLead)`.
-- [ ] Wrapper in `navigation-config.ts` eintragen (für Lesbarkeit + Grep).
-- [ ] Defense-in-Depth in `+page.server.ts`: Redirect für Nicht-Manager, wenn die Page _nur_ Management ist.
-- [ ] Optional Layer 2: Falls UX es verlangt, `/{modul}/my-permissions`-Endpoint einführen (TPM-Muster).
+- [ ] Grep for `isAdmin` / `role === 'admin'` / `role === 'root'` in `+page.svelte` and `+page.server.ts`.
+- [ ] Replace with `canManage<Module>(role, hasFullAccess, orgScope.isAnyLead)`.
+- [ ] Add wrapper to `navigation-config.ts` (for readability + grep).
+- [ ] Defense in depth in `+page.server.ts`: redirect non-managers when the page is _management only_.
+- [ ] Optional Layer 2: if UX requires it, introduce `/{module}/my-permissions` endpoint (TPM pattern).
 
 ### Backend
 
-- [ ] Grep nach `@Roles('admin', 'root')` in allen Feature-Controllern.
-- [ ] Auf Mutations (`@Post`, `@Put`, `@Delete`, `@Patch`): `@Roles(...)` ENTFERNEN, `@RequirePermission(...)` bleibt der alleinige Guard.
-- [ ] Auf Reads: Case-by-case — wenn reine Admin-Listen (`/admins`, `/root-users`), darf `@Roles('admin', 'root')` bleiben.
-- [ ] Creator-Bypass im Service einbauen, wenn das Feature Besitz kennt (`authorId`/`createdById`).
-- [ ] Integration-Test: Employee-Team-Lead kann Create/Update/Delete (über `@RequirePermission`-Pfad).
-- [ ] Integration-Test: Admin ohne hasFullAccess und ohne Lead-Funktion kann NICHT.
+- [ ] Grep for `@Roles('admin', 'root')` in all feature controllers.
+- [ ] On mutations (`@Post`, `@Put`, `@Delete`, `@Patch`): REMOVE `@Roles(...)`, `@RequirePermission(...)` remains the sole guard.
+- [ ] On reads: case by case — for pure admin lists (`/admins`, `/root-users`), `@Roles('admin', 'root')` may stay.
+- [ ] Add creator bypass in the service if the feature has ownership (`authorId`/`createdById`).
+- [ ] Integration test: employee-team-lead can create/update/delete (via the `@RequirePermission` path).
+- [ ] Integration test: admin without hasFullAccess and without a lead position CANNOT.
 
-### Priorisiertes Backlog
+### Prioritized Backlog
 
-Sortiert nach "Blast-Radius" — wo ein veraltetes `isAdmin`-Gate am meisten Schmerz produziert:
+Sorted by "blast radius" — where an outdated `isAdmin` gate causes the most pain:
 
-1. **Blackboard** — Referenz-Migration (dieses ADR wurde durch den konkreten Bug getriggert).
-2. **Weitere noch zu identifizieren** (grep-Scan im Rahmen der Blackboard-Migration).
+1. **Blackboard** — reference migration (this ADR was triggered by the concrete bug).
+2. **Others to be identified** (grep scan as part of the Blackboard migration).
 
 ---
 
 ## References
 
-- [ADR-010: Rollen & Hierarchie](./ADR-010-user-role-assignment-permissions.md) — `has_full_access`, Area/Dept/Team-Leads, Inheritance-Rules.
-- [ADR-012: Route Security Groups](./ADR-012-frontend-route-security-groups.md) — SvelteKit `(root)/(admin)/(shared)` Fail-Closed.
-- [ADR-020: Per-User Feature Permissions](./ADR-020-per-user-feature-permissions.md) — `user_addon_permissions`, Decentralized Registry, Delegated Management (2026-03-14 Extension).
-- [ADR-024: Frontend Feature Guards](./ADR-024-frontend-feature-guards.md) — `hasFeature()`, Addon-Gates.
-- [ADR-033: Addon-basiertes SaaS-Modell](./ADR-033-addon-based-saas-model.md) — `tenant_addons`, Subscription-Gate (Layer 0).
-- [ADR-035: Organizational Hierarchy](./ADR-035-organizational-hierarchy-and-assignment-architecture.md) — `orgScope` API, Lead-Position-Resolution.
-- [ADR-036: Organizational Scope Access](./ADR-036-organizational-scope-access-control.md) — Scope-Delegation, Deputy-Role.
-- [ADR-039: Per-Tenant Deputy-Scope Toggle](./ADR-039-per-tenant-deputy-scope-toggle.md) — Merge-Logik Deputy → Lead, Tenant-Setting.
-- [CODE-OF-CONDUCT.md](../../CODE-OF-CONDUCT.md) — KISS, keine Quick-Fixes.
-- Kanonische Referenz-Implementation: `backend/src/nest/surveys/surveys.controller.ts` + `frontend/src/routes/(app)/(shared)/manage-surveys/+page.server.ts`.
+- [ADR-010: Roles & hierarchy](./ADR-010-user-role-assignment-permissions.md) — `has_full_access`, area/dept/team leads, inheritance rules.
+- [ADR-012: Route Security Groups](./ADR-012-frontend-route-security-groups.md) — SvelteKit `(root)/(admin)/(shared)` fail-closed.
+- [ADR-020: Per-User Feature Permissions](./ADR-020-per-user-feature-permissions.md) — `user_addon_permissions`, decentralized registry, delegated management (2026-03-14 extension).
+- [ADR-024: Frontend Feature Guards](./ADR-024-frontend-feature-guards.md) — `hasFeature()`, addon gates.
+- [ADR-033: Addon-based SaaS model](./ADR-033-addon-based-saas-model.md) — `tenant_addons`, subscription gate (Layer 0).
+- [ADR-035: Organizational Hierarchy](./ADR-035-organizational-hierarchy-and-assignment-architecture.md) — `orgScope` API, lead-position resolution.
+- [ADR-036: Organizational Scope Access](./ADR-036-organizational-scope-access-control.md) — scope delegation, deputy role.
+- [ADR-039: Per-Tenant Deputy-Scope Toggle](./ADR-039-per-tenant-deputy-scope-toggle.md) — merge logic deputy → lead, tenant setting.
+- [CODE-OF-CONDUCT.md](../../CODE-OF-CONDUCT.md) — KISS, no quick fixes.
+- Canonical reference implementation: `backend/src/nest/surveys/surveys.controller.ts` + `frontend/src/routes/(app)/(shared)/manage-surveys/+page.server.ts`.

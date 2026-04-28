@@ -1,73 +1,73 @@
 # ADR-035: Organizational Hierarchy & Assignment Architecture
 
-| Metadata                | Value                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------ |
-| **Status**              | Accepted                                                                                   |
-| **Date**                | 2026-03-13                                                                                 |
-| **Decision Makers**     | SCS Technik                                                                                |
-| **Affected Components** | Database, Backend (NestJS), Frontend (SvelteKit), Guards, Organigram, All Management Pages |
+| Metadata                | Value                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                  |
+| **Date**                | 2026-03-13                                                                                |
+| **Decision Makers**     | SCS Technik                                                                               |
+| **Affected Components** | Database, backend (NestJS), frontend (SvelteKit), guards, org chart, all management pages |
 
 ---
 
 ## Context
 
-Assixx ist eine Multi-Tenant SaaS-Plattform für Industrieunternehmen. Die zentrale Herausforderung: **Wer darf was sehen und verwalten?** Die Antwort liegt in einer hierarchischen Organisationsstruktur, die physische Standorte, organisatorische Einheiten und Personalzuweisungen in einem kohärenten System verbindet.
+Assixx is a multi-tenant SaaS platform for industrial companies. The central challenge: **who is allowed to see and manage what?** The answer lies in a hierarchical organizational structure that connects physical locations, organizational units, and personnel assignments in a coherent system.
 
-Dieses ADR dokumentiert die **vollständige Architektur** des Zuweisungs- und Hierarchiesystems — von der Datenbankebene über die Backend-Permission-Services bis zur Frontend-Visualisierung.
+This ADR documents the **complete architecture** of the assignment and hierarchy system — from the database layer through the backend permission services to the frontend visualization.
 
-### Anforderungen
+### Requirements
 
-1. **Multi-Tenant-Isolation**: Tenant A darf NIEMALS Daten von Tenant B sehen (RLS-enforced)
-2. **Hierarchische Struktur**: Area → Department → Team mit automatischer Vererbung
-3. **Rollenbasierter Zugriff**: Root, Admin, Employee, Dummy mit unterschiedlichen Privilegien
-4. **Leitungspositionen**: Area-Leiter, Abteilungsleiter, Teamleiter mit besonderen Rechten
-5. **Explizite Zuweisung**: Kein impliziter Zugriff — alles muss explizit zugewiesen werden
-6. **Vererbung**: Berechtigungen fließen von oben nach unten durch die Hierarchie
-7. **Aufräumen**: Zuweisungsänderungen müssen inkonsistente Mitgliedschaften bereinigen
+1. **Multi-tenant isolation:** tenant A must NEVER see data of tenant B (RLS-enforced)
+2. **Hierarchical structure:** area → department → team with automatic inheritance
+3. **Role-based access:** root, admin, employee, dummy with different privileges
+4. **Lead positions:** area lead, department lead, team lead with special rights
+5. **Explicit assignment:** no implicit access — everything must be explicitly assigned
+6. **Inheritance:** permissions flow top-down through the hierarchy
+7. **Cleanup:** assignment changes must clean up inconsistent memberships
 
 ### Problem
 
-Wie implementiert man ein Berechtigungssystem, das gleichzeitig:
+How do you implement a permission system that is at the same time:
 
-- **Sicher** ist (kein versehentlicher Zugriff)
-- **Flexibel** ist (mehrere Zuweisungspfade)
-- **Performant** ist (keine N+1 Queries)
-- **Wartbar** ist (klare Regeln, keine Sonderfälle)
-- **Verständlich** ist (Entwickler können die Vererbungslogik nachvollziehen)
+- **Secure** (no accidental access)
+- **Flexible** (multiple assignment paths)
+- **Performant** (no N+1 queries)
+- **Maintainable** (clear rules, no special cases)
+- **Understandable** (developers can follow the inheritance logic)
 
 ---
 
 ## Decision
 
-### 1. Organisationshierarchie — Die vier Entitäten
+### 1. Organizational Hierarchy — The four entities
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════════╗
-║                              TENANT (Firma / Mandant)                            ║
-║                          tenant_id = Mandanten-ID (RLS)                          ║
+║                              TENANT (company / mandator)                         ║
+║                          tenant_id = tenant ID (RLS)                             ║
 ╠═══════════════════════════════════════════════════════════════════════════════════╣
 ║                                                                                   ║
 ║   ┌─────────────────────────────────────────────────────────────────────────┐     ║
-║   │                           AREA (Bereich)                                │     ║
+║   │                           AREA                                          │     ║
 ║   │                                                                         │     ║
-║   │  • Physischer Standort (Gebäude, Halle, Lager, Büro)                   │     ║
-║   │  • area_lead_id → User (Bereichsleiter)                                │     ║
-║   │  • Höchste Ebene der operativen Hierarchie                             │     ║
+║   │  • Physical location (building, hall, warehouse, office)                │     ║
+║   │  • area_lead_id → user (area lead)                                      │     ║
+║   │  • Highest level of the operational hierarchy                           │     ║
 ║   │                                                                         │     ║
 ║   │   ┌─────────────────────────────────────────────────────────────┐       │     ║
-║   │   │                    DEPARTMENT (Abteilung)                    │       │     ║
+║   │   │                    DEPARTMENT                                │       │     ║
 ║   │   │                                                              │       │     ║
-║   │   │  • Organisatorische Einheit (IT, Produktion, QS)            │       │     ║
-║   │   │  • department_lead_id → User (Abteilungsleiter)             │       │     ║
-║   │   │  • area_id → Area (physische Zuordnung, nullable)           │       │     ║
+║   │   │  • Organizational unit (IT, production, QA)                  │       │     ║
+║   │   │  • department_lead_id → user (department lead)               │       │     ║
+║   │   │  • area_id → area (physical assignment, nullable)            │       │     ║
 ║   │   │                                                              │       │     ║
 ║   │   │   ┌─────────────────────────────────────────────────┐       │       │     ║
 ║   │   │   │                    TEAM                          │       │       │     ║
 ║   │   │   │                                                  │       │       │     ║
-║   │   │   │  • Arbeitsgruppe innerhalb einer Abteilung      │       │       │     ║
-║   │   │   │  • team_lead_id → User (Teamleiter)             │       │       │     ║
-║   │   │   │  • deputy_lead_id → User (Stellvertreter)       │       │       │     ║
-║   │   │   │  • department_id → Department (nullable)        │       │       │     ║
+║   │   │   │  • Working group inside a department             │       │       │     ║
+║   │   │   │  • team_lead_id → user (team lead)               │       │       │     ║
+║   │   │   │  • deputy_lead_id → user (deputy)                │       │       │     ║
+║   │   │   │  • department_id → department (nullable)         │       │       │     ║
 ║   │   │   │                                                  │       │       │     ║
 ║   │   │   │        ┌──────────────────────┐                 │       │       │     ║
 ║   │   │   │        │   EMPLOYEES (N:M)    │                 │       │       │     ║
@@ -78,109 +78,109 @@ Wie implementiert man ein Berechtigungssystem, das gleichzeitig:
 ║   └─────────────────────────────────────────────────────────────────────────┘     ║
 ║                                                                                   ║
 ║   ┌─────────────────────────────────────────────────────────────────────────┐     ║
-║   │                        ASSET (Anlage/Maschine)                          │     ║
+║   │                        ASSET (machine/equipment)                        │     ║
 ║   │                                                                         │     ║
-║   │  • Doppelte Zuordnung: area_id + department_id (beide nullable)        │     ║
-║   │  • Team-Zuordnung über asset_teams (N:M)                               │     ║
-║   │  • Kein eigener Lead — Zuständigkeit über Department/Team              │     ║
+║   │  • Dual assignment: area_id + department_id (both nullable)             │     ║
+║   │  • Team assignment via asset_teams (N:M)                                │     ║
+║   │  • No own lead — responsibility through department/team                 │     ║
 ║   └─────────────────────────────────────────────────────────────────────────┘     ║
 ║                                                                                   ║
 ╚═══════════════════════════════════════════════════════════════════════════════════╝
 ```
 
-### 2. Datenbank-Schema — Tabellen und Beziehungen
+### 2. Database schema — tables and relationships
 
-#### 2.1 Hierarchie-Tabellen (Entitäten)
+#### 2.1 Hierarchy tables (entities)
 
 ```sql
--- AREA: Höchste operative Ebene
+-- AREA: highest operational level
 areas (
   id              SERIAL PRIMARY KEY,
   tenant_id       INT NOT NULL → tenants(id) ON DELETE CASCADE,
   name            VARCHAR(255) NOT NULL,
-  area_lead_id           INT NULL → users(id) ON DELETE SET NULL,     -- Bereichsleiter
-  area_deputy_lead_id    INT NULL → users(id) ON DELETE SET NULL,     -- Stellvertreter (DEPUTY_EQUALS_LEAD)
+  area_lead_id           INT NULL → users(id) ON DELETE SET NULL,     -- area lead
+  area_deputy_lead_id    INT NULL → users(id) ON DELETE SET NULL,     -- deputy (DEPUTY_EQUALS_LEAD)
   type            areas_type NOT NULL DEFAULT 'other',          -- building, production, warehouse, office, outdoor, other
-  is_active       SMALLINT NOT NULL DEFAULT 1,                  -- 0=inaktiv, 1=aktiv, 3=archiviert, 4=gelöscht
+  is_active       SMALLINT NOT NULL DEFAULT 1,                  -- 0=inactive, 1=active, 3=archived, 4=deleted
   created_by      INT NOT NULL → users(id) ON DELETE RESTRICT,
   uuid            CHAR(36) NOT NULL UNIQUE,
-  -- RLS: tenant_isolation Policy
+  -- RLS: tenant_isolation policy
 )
 
--- DEPARTMENT: Mittlere Ebene, gehört zu Area
+-- DEPARTMENT: middle level, belongs to an area
 departments (
   id                  SERIAL PRIMARY KEY,
   tenant_id           INT NOT NULL → tenants(id),
   name                VARCHAR(100) NOT NULL,                        -- UNIQUE per tenant
-  department_lead_id          INT NULL → users(id) ON DELETE SET NULL,     -- Abteilungsleiter
-  department_deputy_lead_id   INT NULL → users(id) ON DELETE SET NULL,     -- Stellvertreter (DEPUTY_EQUALS_LEAD)
-  area_id             INT NULL → areas(id) ON DELETE SET NULL,     -- Physische Zuordnung
+  department_lead_id          INT NULL → users(id) ON DELETE SET NULL,     -- department lead
+  department_deputy_lead_id   INT NULL → users(id) ON DELETE SET NULL,     -- deputy (DEPUTY_EQUALS_LEAD)
+  area_id             INT NULL → areas(id) ON DELETE SET NULL,     -- physical assignment
   is_active           SMALLINT NOT NULL DEFAULT 1,
   created_by          INT NULL → users(id) ON DELETE SET NULL,
   uuid                CHAR(36) NOT NULL UNIQUE,
   UNIQUE (tenant_id, name),
-  -- RLS: tenant_isolation Policy
+  -- RLS: tenant_isolation policy
 )
 
--- TEAM: Unterste Ebene, gehört zu Department
+-- TEAM: lowest level, belongs to a department
 teams (
   id               SERIAL PRIMARY KEY,
   tenant_id        INT NOT NULL → tenants(id) ON DELETE CASCADE,
-  department_id    INT NULL → departments(id) ON DELETE CASCADE,   -- ⚠️ CASCADE: Dept löschen → Teams werden gelöscht!
+  department_id    INT NULL → departments(id) ON DELETE CASCADE,   -- ⚠️ CASCADE: deleting a dept deletes its teams!
   name             VARCHAR(100) NOT NULL,                           -- UNIQUE per department
-  team_lead_id          INT NULL → users(id) ON DELETE SET NULL,        -- Teamleiter
-  team_deputy_lead_id   INT NULL → users(id) ON DELETE SET NULL,        -- Stellvertreter (DEPUTY_EQUALS_LEAD)
+  team_lead_id          INT NULL → users(id) ON DELETE SET NULL,        -- team lead
+  team_deputy_lead_id   INT NULL → users(id) ON DELETE SET NULL,        -- deputy (DEPUTY_EQUALS_LEAD)
   is_active        SMALLINT NULL DEFAULT 1,
   created_by       INT NULL → users(id) ON DELETE SET NULL,
   uuid             CHAR(36) NOT NULL UNIQUE,
   UNIQUE (department_id, name),
-  -- RLS: tenant_isolation Policy
+  -- RLS: tenant_isolation policy
 )
 
--- ASSET: Querverknüpft zu Area + Department + Teams
+-- ASSET: cross-linked to area + department + teams
 assets (
   id               SERIAL PRIMARY KEY,
   tenant_id        INT NOT NULL → tenants(id),
   name             VARCHAR(100) NOT NULL,
-  department_id    INT NULL → departments(id) ON DELETE SET NULL,  -- Organisatorische Zuständigkeit
-  area_id          INT NULL → areas(id) ON DELETE SET NULL,        -- Physischer Standort
+  department_id    INT NULL → departments(id) ON DELETE SET NULL,  -- organizational responsibility
+  area_id          INT NULL → areas(id) ON DELETE SET NULL,        -- physical location
   status           assets_status DEFAULT 'operational',
   asset_type       assets_asset_type DEFAULT 'production',
   is_active        SMALLINT DEFAULT 1,
   uuid             CHAR(36) NOT NULL UNIQUE,
-  -- RLS: tenant_isolation Policy
+  -- RLS: tenant_isolation policy
 )
 ```
 
-#### 2.2 Zuweisungs-Tabellen (N:M Junctions)
+#### 2.2 Assignment tables (N:M junctions)
 
 ```sql
--- EMPLOYEE → DEPARTMENT Mitgliedschaft (N:M)
+-- EMPLOYEE → DEPARTMENT membership (N:M)
 user_departments (
   id              SERIAL PRIMARY KEY,
   tenant_id       INT NOT NULL → tenants(id),
   user_id         INT NOT NULL → users(id) ON DELETE CASCADE,
   department_id   INT NOT NULL → departments(id) ON DELETE CASCADE,
-  is_primary      BOOLEAN NOT NULL DEFAULT true,        -- Hauptabteilung
+  is_primary      BOOLEAN NOT NULL DEFAULT true,        -- primary department
   assigned_by     INT NULL → users(id) ON DELETE SET NULL,
   assigned_at     TIMESTAMPTZ,
   UNIQUE (user_id, department_id, tenant_id),
-  -- RLS: tenant_isolation Policy
+  -- RLS: tenant_isolation policy
 )
 
--- EMPLOYEE → TEAM Mitgliedschaft (N:M)
+-- EMPLOYEE → TEAM membership (N:M)
 user_teams (
   id          SERIAL PRIMARY KEY,
   tenant_id   INT NOT NULL → tenants(id),
   user_id     INT NOT NULL → users(id) ON DELETE CASCADE,
   team_id     INT NOT NULL → teams(id) ON DELETE CASCADE,
   joined_at   TIMESTAMPTZ,
-  role        user_teams_role DEFAULT 'member',        -- Nur 'member' für Employees
+  role        user_teams_role DEFAULT 'member',        -- only 'member' for employees
   UNIQUE (user_id, team_id),
-  -- RLS: tenant_isolation Policy
+  -- RLS: tenant_isolation policy
 )
 
--- ASSET → TEAM Zuordnung (N:M)
+-- ASSET → TEAM assignment (N:M)
 asset_teams (
   id          SERIAL PRIMARY KEY,
   tenant_id   INT NOT NULL → tenants(id),
@@ -189,14 +189,14 @@ asset_teams (
   is_primary  BOOLEAN DEFAULT false,
   assigned_by INT NULL → users(id) ON DELETE SET NULL,
   UNIQUE (tenant_id, asset_id, team_id),
-  -- RLS: tenant_isolation Policy
+  -- RLS: tenant_isolation policy
 )
 ```
 
-#### 2.3 Admin-Permission-Tabellen (Granulare RBAC)
+#### 2.3 Admin permission tables (granular RBAC)
 
 ```sql
--- ADMIN → AREA Berechtigung (Granular: read/write/delete)
+-- ADMIN → AREA permission (granular: read/write/delete)
 admin_area_permissions (
   id              SERIAL PRIMARY KEY,
   tenant_id       INT NOT NULL → tenants(id),
@@ -210,7 +210,7 @@ admin_area_permissions (
   UNIQUE (admin_user_id, area_id, tenant_id),
 )
 
--- ADMIN → DEPARTMENT Berechtigung (Granular: read/write/delete)
+-- ADMIN → DEPARTMENT permission (granular: read/write/delete)
 admin_department_permissions (
   id              SERIAL PRIMARY KEY,
   tenant_id       INT NOT NULL → tenants(id),
@@ -225,7 +225,7 @@ admin_department_permissions (
 )
 ```
 
-#### 2.4 Users-Tabelle (Relevante Spalten)
+#### 2.4 Users table (relevant columns)
 
 ```sql
 users (
@@ -234,7 +234,7 @@ users (
   role             users_role NOT NULL DEFAULT 'employee',   -- root, admin, employee, dummy
   has_full_access  BOOLEAN NOT NULL DEFAULT false,
 
-  -- CHECK Constraints (DB-Level Enforcement):
+  -- CHECK constraints (DB-level enforcement):
   CONSTRAINT chk_root_full_access       CHECK (role != 'root'     OR has_full_access = true),
   CONSTRAINT chk_employee_no_full_access CHECK (role != 'employee' OR has_full_access = false),
   CONSTRAINT chk_dummy_no_full_access   CHECK (role != 'dummy'    OR has_full_access = false),
@@ -242,224 +242,224 @@ users (
 )
 ```
 
-**Bedeutung der CHECK Constraints:**
+**Meaning of the CHECK constraints:**
 
-| Constraint                    | Regel                                       | Warum                                                                    |
-| ----------------------------- | ------------------------------------------- | ------------------------------------------------------------------------ |
-| `chk_root_full_access`        | Root MUSS `has_full_access = true` haben    | Root hat per Definition Vollzugriff — DB verhindert inkonsistenten State |
-| `chk_employee_no_full_access` | Employee DARF NICHT `has_full_access` haben | Employees sehen nur zugewiesene Bereiche — nie alles                     |
-| `chk_dummy_no_full_access`    | Dummy DARF NICHT `has_full_access` haben    | Dummy-User sind Platzhalter ohne echte Rechte                            |
+| Constraint                    | Rule                                     | Why                                                                 |
+| ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------- |
+| `chk_root_full_access`        | Root MUST have `has_full_access = true`  | Root has full access by definition — DB prevents inconsistent state |
+| `chk_employee_no_full_access` | Employee MUST NOT have `has_full_access` | Employees only see assigned scopes — never everything               |
+| `chk_dummy_no_full_access`    | Dummy MUST NOT have `has_full_access`    | Dummy users are placeholders without real rights                    |
 
-### 3. Rollen und ihre Zugriffspfade
+### 3. Roles and their access paths
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════════╗
-║                              ROLLENMODELL                                        ║
+║                              ROLE MODEL                                          ║
 ╠═══════════════════════════════════════════════════════════════════════════════════╣
 ║                                                                                   ║
-║  ROOT (role = 'root', has_full_access = true ERZWUNGEN)                          ║
+║  ROOT (role = 'root', has_full_access = true ENFORCED)                           ║
 ║  ─────────────────────────────────────────────────                                ║
-║  • Prüfung: role === 'root' im Code                                             ║
-║  • DB-Einträge in Permission-Tabellen: NICHT NÖTIG                               ║
-║  • Zugriff: ALLES im Tenant (automatisch, CHECK Constraint erzwingt)             ║
-║  • Neue Entitäten: Sofort sichtbar ohne Zuweisung                                ║
+║  • Check: role === 'root' in code                                                ║
+║  • DB entries in permission tables: NOT REQUIRED                                 ║
+║  • Access: EVERYTHING in the tenant (automatically, CHECK constraint enforces)   ║
+║  • New entities: visible immediately without assignment                          ║
 ║                                                                                   ║
-║  ADMIN MIT has_full_access = true                                                ║
+║  ADMIN WITH has_full_access = true                                               ║
 ║  ───────────────────────────────                                                  ║
-║  • Prüfung: has_full_access Flag in users-Tabelle                                ║
-║  • DB-Einträge: NICHT NÖTIG (Flag übersteuert alles)                             ║
-║  • Zugriff: ALLES im Tenant (wie Root, aber Rolle bleibt 'admin')               ║
-║  • Use Case: Admin der alles sehen/verwalten darf, ohne Root-Rechte              ║
+║  • Check: has_full_access flag in the users table                                ║
+║  • DB entries: NOT REQUIRED (flag overrides everything)                          ║
+║  • Access: EVERYTHING in the tenant (like root, but role stays 'admin')          ║
+║  • Use case: admin who may see/manage everything without root rights             ║
 ║                                                                                   ║
-║  ADMIN MIT has_full_access = false (Standard)                                    ║
+║  ADMIN WITH has_full_access = false (default)                                    ║
 ║  ─────────────────────────────────────────────                                    ║
-║  • Prüfung: DB-Lookup in admin_area_permissions + admin_department_permissions   ║
-║  • Zuweisungen: Explizit auf Areas und/oder Departments                          ║
-║  • Vererbung: Area-Zuweisung → ALLE Departments in dieser Area automatisch      ║
-║  • Lead-Position: area_lead_id / department_lead_id = implizite Berechtigung     ║
+║  • Check: DB lookup in admin_area_permissions + admin_department_permissions     ║
+║  • Assignments: explicit on areas and/or departments                             ║
+║  • Inheritance: area assignment → ALL departments in that area automatically     ║
+║  • Lead position: area_lead_id / department_lead_id = implicit permission        ║
 ║                                                                                   ║
-║  EMPLOYEE (has_full_access = false ERZWUNGEN)                                    ║
+║  EMPLOYEE (has_full_access = false ENFORCED)                                     ║
 ║  ─────────────────────────────────────────────                                    ║
-║  • Prüfung: user_teams + user_departments                                        ║
-║  • Zuweisungen: Teams (N:M) und Departments (N:M)                                ║
-║  • Vererbung: Team → Department → Area (für Sichtbarkeit/Context)               ║
-║  • KEIN Schreibzugriff auf organisatorische Verwaltung                           ║
+║  • Check: user_teams + user_departments                                          ║
+║  • Assignments: teams (N:M) and departments (N:M)                                ║
+║  • Inheritance: team → department → area (for visibility/context)                ║
+║  • NO write access to organizational management                                  ║
 ║                                                                                   ║
-║  DUMMY (has_full_access = false ERZWUNGEN)                                       ║
+║  DUMMY (has_full_access = false ENFORCED)                                        ║
 ║  ──────────────────────────────────────────                                        ║
-║  • Platzhalter-User (z.B. für Schichtplanung ohne echten Account)                ║
-║  • Keine eigenen Berechtigungen, keine Login-Möglichkeit                         ║
+║  • Placeholder user (e.g. for shift planning without a real account)             ║
+║  • No own permissions, no login capability                                       ║
 ║                                                                                   ║
 ╚═══════════════════════════════════════════════════════════════════════════════════╝
 ```
 
-### 4. Leitungspositionen (Lead Assignments)
+### 4. Lead positions (lead assignments)
 
-Jede Hierarchie-Ebene hat einen dedizierten Leiter, der direkt als Foreign Key auf der Entität gespeichert wird:
+Each hierarchy level has a dedicated lead, stored directly as a foreign key on the entity:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                        LEAD-POSITIONEN                                          │
+│                        LEAD POSITIONS                                           │
 ├─────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                 │
 │  areas.area_lead_id → users.id                                                 │
 │  ────────────────────────────────                                               │
-│  • Wer: Admin oder Root (Backend-validiert: role IN ('admin', 'root'))         │
-│  • Rechte: Äquivalent zu admin_area_permissions mit can_read=true              │
-│  • Vererbung: Sieht automatisch ALLE Departments + Teams in dieser Area       │
-│  • UI-Label: Dynamisch via HierarchyLabels (z.B. "Hallen-Leiter")             │
+│  • Who: admin or root (backend-validated: role IN ('admin', 'root'))           │
+│  • Rights: equivalent to admin_area_permissions with can_read=true             │
+│  • Inheritance: automatically sees ALL departments + teams in this area        │
+│  • UI label: dynamic via HierarchyLabels (e.g. "Hall lead")                    │
 │                                                                                 │
 │  departments.department_lead_id → users.id                                     │
 │  ──────────────────────────────────────────                                      │
-│  • Wer: Admin oder Root (Backend-validiert: role IN ('admin', 'root'))         │
-│  • Rechte: Äquivalent zu admin_department_permissions mit can_read=true        │
-│  • Vererbung: Sieht automatisch ALLE Teams in dieser Abteilung                │
-│  • UI-Label: Dynamisch via HierarchyLabels (z.B. "Segment-Leiter")            │
+│  • Who: admin or root (backend-validated: role IN ('admin', 'root'))           │
+│  • Rights: equivalent to admin_department_permissions with can_read=true       │
+│  • Inheritance: automatically sees ALL teams in this department                │
+│  • UI label: dynamic via HierarchyLabels (e.g. "Segment lead")                 │
 │                                                                                 │
 │  teams.team_lead_id → users.id                                                 │
 │  ──────────────────────────────                                                  │
-│  • Wer: Jede Rolle mit Position "Teamleiter" (positions-basiert, nicht role)   │
-│  • Rechte: Sieht das Team                                                      │
-│  • Vererbung: KEINE nach oben — nur Team-Sicht                                │
-│  • Besonderheit: Trennung von System-Rolle und organisatorischer Funktion      │
+│  • Who: any role with position "team lead" (position-based, not role-based)    │
+│  • Rights: sees the team                                                       │
+│  • Inheritance: NONE upwards — team view only                                  │
+│  • Note: separation of system role and organizational function                 │
 │                                                                                 │
 │  teams.deputy_lead_id → users.id                                               │
 │  ────────────────────────────────                                                │
-│  • Stellvertretender Teamleiter                                                │
-│  • Gleiche Rechte wie team_lead_id                                             │
+│  • Deputy team lead                                                            │
+│  • Same rights as team_lead_id                                                 │
 │                                                                                 │
-│  VALIDIERUNG (Backend, nicht DB-Constraint):                                   │
-│  • Area/Department Lead: role IN ('admin', 'root') — Backend prüft            │
-│  • Team Lead: position = 'Teamleiter' — Positions-basiert, rollenunabhängig   │
+│  VALIDATION (backend, not a DB constraint):                                    │
+│  • Area/department lead: role IN ('admin', 'root') — backend checks            │
+│  • Team lead: position = 'Teamleiter' — position-based, role-agnostic          │
 │                                                                                 │
 │  ON DELETE SET NULL:                                                            │
-│  • Wenn der Lead-User gelöscht wird → Lead-Position wird NULL                  │
-│  • Die Entität bleibt bestehen, nur ohne Leiter                                │
+│  • If the lead user is deleted → lead position becomes NULL                    │
+│  • The entity remains, only without a lead                                     │
 │                                                                                 │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5. Vererbungsregeln (KRITISCH)
+### 5. Inheritance rules (CRITICAL)
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════════╗
 ║                     PERMISSION INHERITANCE FLOW                                  ║
 ╠═══════════════════════════════════════════════════════════════════════════════════╣
 ║                                                                                   ║
-║  ADMIN MIT AREA-BERECHTIGUNG:                                                    ║
+║  ADMIN WITH AREA PERMISSION:                                                     ║
 ║  ────────────────────────────                                                     ║
 ║  admin_area_permissions(area_id=1)                                               ║
 ║      │                                                                            ║
-║      ├──▶ Sieht Area 1                              (DIREKT)                    ║
-║      ├──▶ Sieht ALLE Departments WHERE area_id = 1  (VERERBT ↓)                ║
-║      └──▶ Sieht ALLE Teams in diesen Departments    (VERERBT ↓↓)               ║
+║      ├──▶ Sees area 1                              (DIRECT)                     ║
+║      ├──▶ Sees ALL departments WHERE area_id = 1   (INHERITED ↓)                ║
+║      └──▶ Sees ALL teams in those departments      (INHERITED ↓↓)               ║
 ║                                                                                   ║
-║  ADMIN MIT DEPARTMENT-BERECHTIGUNG:                                              ║
+║  ADMIN WITH DEPARTMENT PERMISSION:                                               ║
 ║  ──────────────────────────────────                                                ║
 ║  admin_department_permissions(department_id=11)                                   ║
 ║      │                                                                            ║
-║      ├──▶ Sieht Department 11                        (DIREKT)                    ║
-║      ├──▶ Sieht ALLE Teams WHERE department_id = 11  (VERERBT ↓)               ║
-║      └──▶ Sieht Area von Department 11               (READ-ONLY Kontext ↑)      ║
+║      ├──▶ Sees department 11                        (DIRECT)                     ║
+║      ├──▶ Sees ALL teams WHERE department_id = 11   (INHERITED ↓)               ║
+║      └──▶ Sees the area of department 11            (READ-ONLY context ↑)       ║
 ║                                                                                   ║
-║  ADMIN ALS LEAD:                                                                 ║
+║  ADMIN AS LEAD:                                                                  ║
 ║  ────────────────                                                                 ║
 ║  areas.area_lead_id = admin.id                                                   ║
-║      └──▶ Gleiche Rechte wie Area-Permission         (IMPLIZIT)                  ║
+║      └──▶ Same rights as area permission             (IMPLICIT)                  ║
 ║                                                                                   ║
 ║  departments.department_lead_id = admin.id                                       ║
-║      └──▶ Gleiche Rechte wie Department-Permission   (IMPLIZIT)                  ║
+║      └──▶ Same rights as department permission       (IMPLICIT)                  ║
 ║                                                                                   ║
 ║  teams.team_lead_id = admin.id                                                   ║
-║      └──▶ Sieht Team                                 (NUR TEAM)                 ║
+║      └──▶ Sees the team                              (TEAM ONLY)                ║
 ║                                                                                   ║
-║  EMPLOYEE IN TEAM:                                                               ║
+║  EMPLOYEE IN A TEAM:                                                             ║
 ║  ─────────────────                                                                ║
 ║  user_teams(team_id=7)                                                           ║
 ║      │                                                                            ║
-║      ├──▶ Sieht Team 7                               (DIREKT)                   ║
-║      ├──▶ Erbt Department-Zugehörigkeit              (teams.department_id ↑)     ║
-║      └──▶ Erbt Area-Zugehörigkeit                    (departments.area_id ↑↑)    ║
+║      ├──▶ Sees team 7                                (DIRECT)                   ║
+║      ├──▶ Inherits department membership             (teams.department_id ↑)     ║
+║      └──▶ Inherits area membership                   (departments.area_id ↑↑)    ║
 ║                                                                                   ║
-║  EMPLOYEE IN DEPARTMENT:                                                         ║
+║  EMPLOYEE IN A DEPARTMENT:                                                       ║
 ║  ────────────────────────                                                         ║
 ║  user_departments(department_id=11)                                              ║
 ║      │                                                                            ║
-║      ├──▶ Sieht Department 11                        (DIREKT)                    ║
-║      └──▶ Erbt Area-Zugehörigkeit                    (departments.area_id ↑)     ║
+║      ├──▶ Sees department 11                         (DIRECT)                    ║
+║      └──▶ Inherits area membership                   (departments.area_id ↑)     ║
 ║                                                                                   ║
 ╚═══════════════════════════════════════════════════════════════════════════════════╝
 ```
 
-#### 5.1 Vererbungs-Beispiel (Konkret)
+#### 5.1 Inheritance example (concrete)
 
 ```
-AREA "Produktionshalle Nord" (id=1)
+AREA "Production hall north" (id=1)
 │   area_lead_id = Admin.Alpha
 │
-├── DEPARTMENT "Stufenfertigung" (id=11, area_id=1)
+├── DEPARTMENT "Step manufacturing" (id=11, area_id=1)
 │   │   department_lead_id = Admin.Beta
 │   │
-│   ├── TEAM "Schicht A" (id=101, department_id=11)
+│   ├── TEAM "Shift A" (id=101, department_id=11)
 │   │   │   team_lead_id = Employee.Charlie
 │   │   │
 │   │   └── Members (user_teams):
 │   │       ├── Employee.Dave
 │   │       └── Employee.Eve
 │   │
-│   └── TEAM "Schicht B" (id=102, department_id=11)
+│   └── TEAM "Shift B" (id=102, department_id=11)
 │       │   team_lead_id = Employee.Frank
 │       │
 │       └── Members (user_teams):
 │           └── Employee.Grace
 │
-└── DEPARTMENT "Endmontage" (id=12, area_id=1)
-    │   department_lead_id = NULL (vakant)
+└── DEPARTMENT "Final assembly" (id=12, area_id=1)
+    │   department_lead_id = NULL (vacant)
     │
-    └── TEAM "Montage" (id=103, department_id=12)
+    └── TEAM "Assembly" (id=103, department_id=12)
         └── Members: Employee.Heidi
 
 
-WIRKUNG DER ZUWEISUNGEN:
+EFFECT OF THE ASSIGNMENTS:
 
-Admin.Alpha (area_lead_id von Area 1):
-  → Sieht: Area 1, Dept 11, Dept 12, Team 101, Team 102, Team 103
-  → Grund: Lead-Position = implizite Area-Permission → vererbt auf alles darunter
+Admin.Alpha (area_lead_id of area 1):
+  → Sees: area 1, dept 11, dept 12, team 101, team 102, team 103
+  → Reason: lead position = implicit area permission → inherited everywhere below
 
-Admin.Beta (department_lead_id von Dept 11):
-  → Sieht: Dept 11, Team 101, Team 102
-  → Sieht NICHT: Dept 12, Team 103 (anderes Department)
-  → Sieht: Area 1 (READ-ONLY Kontext, weil Dept 11 zu Area 1 gehört)
+Admin.Beta (department_lead_id of dept 11):
+  → Sees: dept 11, team 101, team 102
+  → Does NOT see: dept 12, team 103 (different department)
+  → Sees: area 1 (READ-ONLY context, because dept 11 belongs to area 1)
 
-Employee.Charlie (team_lead_id von Team 101, Mitglied via user_teams):
-  → Sieht: Team 101
-  → Erbt: Dept 11 (Kontext), Area 1 (Kontext)
-  → Sieht NICHT: Team 102 (anderes Team), Dept 12
+Employee.Charlie (team_lead_id of team 101, member via user_teams):
+  → Sees: team 101
+  → Inherits: dept 11 (context), area 1 (context)
+  → Does NOT see: team 102 (different team), dept 12
 
-Employee.Dave (Mitglied in Team 101 via user_teams):
-  → Sieht: Team 101
-  → Erbt: Dept 11 (Kontext), Area 1 (Kontext)
+Employee.Dave (member of team 101 via user_teams):
+  → Sees: team 101
+  → Inherits: dept 11 (context), area 1 (context)
 
-Admin mit admin_area_permissions(area_id=1):
-  → Sieht: Area 1, Dept 11, Dept 12, Team 101, 102, 103
-  → Identisch mit area_lead — aber ohne Lead-Titel
+Admin with admin_area_permissions(area_id=1):
+  → Sees: area 1, dept 11, dept 12, team 101, 102, 103
+  → Identical to area_lead — but without the lead title
 ```
 
-#### 5.2 NULL-Handling bei Vererbung
+#### 5.2 NULL handling for inheritance
 
 ```
 Department.area_id = NULL:
-→ KEINE Vererbung von Area möglich
-→ User braucht DIREKTE admin_department_permissions
-→ Oder: has_full_access = true
+→ NO inheritance from area possible
+→ User needs DIRECT admin_department_permissions
+→ Or: has_full_access = true
 
 Team.department_id = NULL:
-→ KEINE Vererbung von Department möglich
-→ User braucht DIREKTE user_teams Mitgliedschaft
-→ Oder: has_full_access = true
+→ NO inheritance from department possible
+→ User needs DIRECT user_teams membership
+→ Or: has_full_access = true
 ```
 
-### 6. Permission Check Flow (Backend)
+### 6. Permission check flow (backend)
 
 **Service:** `HierarchyPermissionService` (`backend/src/nest/hierarchy-permission/hierarchy-permission.service.ts`)
 
@@ -468,92 +468,92 @@ Team.department_id = NULL:
 │                         ACCESS CHECK FLOW                                       │
 └─────────────────────────────────────────────────────────────────────────────────┘
 
-User Request → hasAccess(userId, tenantId, resourceType, resourceId, permission)
+User request → hasAccess(userId, tenantId, resourceType, resourceId, permission)
      │
      ▼
 ┌─────────────────────────────────────┐
-│ 1. Ist user.role = 'root'?          │──── JA ──▶ ✅ VOLLZUGRIFF
+│ 1. Is user.role = 'root'?           │──── YES ──▶ ✅ FULL ACCESS
 └─────────────────────────────────────┘
-     │ NEIN
+     │ NO
      ▼
 ┌─────────────────────────────────────┐
-│ 2. Ist user.has_full_access = true? │──── JA ──▶ ✅ VOLLZUGRIFF
+│ 2. Is user.has_full_access = true?  │──── YES ──▶ ✅ FULL ACCESS
 └─────────────────────────────────────┘
-     │ NEIN
+     │ NO
      ▼
 ┌─────────────────────────────────────┐
-│ 3. Prüfe basierend auf             │
+│ 3. Check based on                   │
 │    resourceType:                    │
 └─────────────────────────────────────┘
      │
      ├── resourceType = 'area'
      │       │
-     │       └── Direkte admin_area_permissions? ────────────▶ ✅/❌
+     │       └── Direct admin_area_permissions? ────────────▶ ✅/❌
      │
      ├── resourceType = 'department'
      │       │
-     │       ├── 1. Direkte admin_department_permissions? ───▶ ✅ ZUGRIFF
+     │       ├── 1. Direct admin_department_permissions? ────▶ ✅ ACCESS
      │       │
-     │       └── 2. Department hat area_id?
+     │       └── 2. Department has area_id?
      │               │
-     │               ├── JA → admin_area_permissions für area_id? ▶ ✅ VERERBT
+     │               ├── YES → admin_area_permissions for area_id? ▶ ✅ INHERITED
      │               │
-     │               └── NEIN (NULL) ───────────────────────────▶ ❌ KEIN ZUGRIFF
+     │               └── NO (NULL) ───────────────────────────▶ ❌ NO ACCESS
      │
      └── resourceType = 'team'
              │
-             ├── 1. user_teams Mitgliedschaft? ──────────────▶ ✅ ZUGRIFF
+             ├── 1. user_teams membership? ──────────────────▶ ✅ ACCESS
              │
-             └── 2. Team hat department_id?
+             └── 2. Team has department_id?
                      │
-                     ├── JA → checkDepartmentAccess() rekursiv ▶ ✅ VERERBT
-                     │         (prüft direkte Dept-Perm ODER Area-Vererbung)
+                     ├── YES → checkDepartmentAccess() recursive ▶ ✅ INHERITED
+                     │         (checks direct dept perm OR area inheritance)
                      │
-                     └── NEIN (NULL) ───────────────────────────▶ ❌ KEIN ZUGRIFF
+                     └── NO (NULL) ───────────────────────────▶ ❌ NO ACCESS
 ```
 
-#### 6.1 Batch-Access-Methoden (für Listen-Filtering)
+#### 6.1 Batch access methods (for list filtering)
 
 ```typescript
-// Alle zugänglichen Area-IDs (für UI-Filter)
+// All accessible area IDs (for UI filters)
 getAccessibleAreaIds(userId, tenantId): number[]
   → SELECT area_id FROM admin_area_permissions WHERE admin_user_id = $1
 
-// Alle zugänglichen Department-IDs (direkt + vererbt)
+// All accessible department IDs (direct + inherited)
 getAccessibleDepartmentIds(userId, tenantId): number[]
-  → Direkt: SELECT department_id FROM admin_department_permissions WHERE admin_user_id = $1
-  → Vererbt: SELECT id FROM departments WHERE area_id IN (accessible_area_ids)
-  → Merge beider Sets
+  → Direct: SELECT department_id FROM admin_department_permissions WHERE admin_user_id = $1
+  → Inherited: SELECT id FROM departments WHERE area_id IN (accessible_area_ids)
+  → Merge of both sets
 
-// Alle zugänglichen Team-IDs (Mitgliedschaft + vererbt)
+// All accessible team IDs (membership + inherited)
 getAccessibleTeamIds(userId, tenantId): number[]
-  → Mitglied: SELECT team_id FROM user_teams WHERE user_id = $1
-  → Vererbt: SELECT id FROM teams WHERE department_id IN (accessible_department_ids)
-  → Merge beider Sets
+  → Member: SELECT team_id FROM user_teams WHERE user_id = $1
+  → Inherited: SELECT id FROM teams WHERE department_id IN (accessible_department_ids)
+  → Merge of both sets
 ```
 
-### 7. Content Visibility (org_level Pattern)
+### 7. Content visibility (org_level pattern)
 
-Für Features wie Kalender, Schwarzes Brett, Dokumente definiert `org_level` die Sichtbarkeit:
+For features such as calendar, blackboard, documents, `org_level` defines visibility:
 
-| org_level    | Sichtbar für                                                                    |
-| ------------ | ------------------------------------------------------------------------------- |
-| `company`    | Jeder im Tenant                                                                 |
-| `area`       | Jeder mit Area-Zugriff (Permission ODER Lead ODER Dept-Mitglied in dieser Area) |
-| `department` | Jeder mit Department-Zugriff (Permission ODER Lead ODER user_departments)       |
-| `team`       | Jeder mit Team-Zugriff (user_teams ODER Lead)                                   |
-| `personal`   | Nur der Ersteller                                                               |
+| org_level    | Visible to                                                                   |
+| ------------ | ---------------------------------------------------------------------------- |
+| `company`    | Everyone in the tenant                                                       |
+| `area`       | Anyone with area access (permission OR lead OR dept-membership in this area) |
+| `department` | Anyone with department access (permission OR lead OR user_departments)       |
+| `team`       | Anyone with team access (user_teams OR lead)                                 |
+| `personal`   | Only the creator                                                             |
 
-**SQL-Pattern für Visibility-Queries:**
+**SQL pattern for visibility queries:**
 
 ```sql
 SELECT e.* FROM calendar_events e
 WHERE e.tenant_id = $1
   AND (
-    -- 1. Company: Jeder sieht es
+    -- 1. Company: everybody sees it
     e.org_level = 'company'
 
-    -- 2. Area: Permission + Lead + Dept-Mitgliedschaft
+    -- 2. Area: permission + lead + dept membership
     OR (e.org_level = 'area' AND (
       EXISTS (SELECT 1 FROM admin_area_permissions aap
               WHERE aap.admin_user_id = $2 AND aap.area_id = e.area_id)
@@ -564,7 +564,7 @@ WHERE e.tenant_id = $1
                  WHERE ud.user_id = $2 AND d.area_id = e.area_id)
     ))
 
-    -- 3. Department: Permission + Lead + Mitgliedschaft + Area-Vererbung
+    -- 3. Department: permission + lead + membership + area inheritance
     OR (e.org_level = 'department' AND (
       EXISTS (SELECT 1 FROM admin_department_permissions adp
               WHERE adp.admin_user_id = $2 AND adp.department_id = e.department_id)
@@ -577,7 +577,7 @@ WHERE e.tenant_id = $1
                  WHERE d.id = e.department_id AND aap.admin_user_id = $2)
     ))
 
-    -- 4. Team: Mitgliedschaft + Lead + Dept-Vererbung + Area-Vererbung
+    -- 4. Team: membership + lead + dept inheritance + area inheritance
     OR (e.org_level = 'team' AND (
       EXISTS (SELECT 1 FROM user_teams ut
               WHERE ut.user_id = $2 AND ut.team_id = e.team_id)
@@ -594,232 +594,232 @@ WHERE e.tenant_id = $1
   )
 ```
 
-### 8. Synchronisation bei Berechtigungsänderungen (Cleanup)
+### 8. Synchronization on permission changes (cleanup)
 
 **Service:** `AdminPermissionsService.cleanupEmployeeMemberships()`
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════════════════╗
-║           ADMIN PERMISSION SYNCHRONISATION (setAreaPermissions)                   ║
+║           ADMIN PERMISSION SYNCHRONIZATION (setAreaPermissions)                  ║
 ╠═══════════════════════════════════════════════════════════════════════════════════╣
 ║                                                                                   ║
-║  WENN: Admin erhält Area-Permissions für Area X                                  ║
-║  DANN:                                                                            ║
-║    1. admin_area_permissions werden gesetzt (normal)                              ║
-║    2. user_departments AUSSERHALB Area X werden GELÖSCHT                         ║
-║    3. user_teams für Teams in Departments AUSSERHALB Area X werden GELÖSCHT      ║
+║  WHEN: an admin gets area permissions for area X                                 ║
+║  THEN:                                                                            ║
+║    1. admin_area_permissions are set (normal)                                    ║
+║    2. user_departments OUTSIDE area X are DELETED                                ║
+║    3. user_teams for teams in departments OUTSIDE area X are DELETED             ║
 ║                                                                                   ║
-║  BEISPIEL:                                                                       ║
+║  EXAMPLE:                                                                        ║
 ║  ──────────                                                                       ║
-║  Admin.Zwei hat:                                                                 ║
+║  Admin.Two has:                                                                  ║
 ║    • admin_area_permissions: area_id=2                                           ║
-║    • user_departments: dept_id=11 (area_id=1 — ANDERE Area!)                    ║
-║    • user_teams: team in dept mit area_id=1                                      ║
+║    • user_departments: dept_id=11 (area_id=1 — DIFFERENT area!)                  ║
+║    • user_teams: team in a dept with area_id=1                                   ║
 ║                                                                                   ║
-║  Nach setAreaPermissions(areaIds=[2]):                                           ║
-║    • admin_area_permissions: ✅ area_id=2 bleibt                                  ║
-║    • user_departments: ❌ dept_id=11 wird GELÖSCHT (area_id=1 ≠ 2)              ║
-║    • user_teams: ❌ Teams in Depts außerhalb Area 2 werden GELÖSCHT              ║
+║  After setAreaPermissions(areaIds=[2]):                                          ║
+║    • admin_area_permissions: ✅ area_id=2 stays                                   ║
+║    • user_departments: ❌ dept_id=11 is DELETED (area_id=1 ≠ 2)                  ║
+║    • user_teams: ❌ teams in depts outside area 2 are DELETED                    ║
 ║                                                                                   ║
-║  WARUM:                                                                          ║
+║  WHY:                                                                            ║
 ║  ──────                                                                           ║
-║  Verhindert, dass ein Admin über alte Employee-Zuweisungen Content               ║
-║  außerhalb seines Zuständigkeitsbereichs sieht.                                  ║
+║  Prevents an admin from seeing content outside their scope through old           ║
+║  employee assignments.                                                           ║
 ║                                                                                   ║
 ╚═══════════════════════════════════════════════════════════════════════════════════╝
 ```
 
-**Implementierung (SQL-Logik):**
+**Implementation (SQL logic):**
 
 ```sql
--- Schritt 1: Teams in Departments außerhalb der erlaubten Areas löschen
+-- Step 1: delete teams in departments outside the allowed areas
 DELETE FROM user_teams
 WHERE user_id = $1
   AND team_id IN (
     SELECT t.id FROM teams t
     JOIN departments d ON t.department_id = d.id
     WHERE d.area_id IS NOT NULL
-      AND d.area_id NOT IN ($2, $3, ...)  -- erlaubte Area-IDs
+      AND d.area_id NOT IN ($2, $3, ...)  -- allowed area IDs
   );
 
--- Schritt 2: Departments außerhalb der erlaubten Areas löschen
+-- Step 2: delete departments outside the allowed areas
 DELETE FROM user_departments
 WHERE user_id = $1
   AND department_id IN (
     SELECT d.id FROM departments d
     WHERE d.area_id IS NOT NULL
-      AND d.area_id NOT IN ($2, $3, ...)  -- erlaubte Area-IDs
+      AND d.area_id NOT IN ($2, $3, ...)  -- allowed area IDs
   );
 ```
 
-### 9. Zwei separate Berechtigungssysteme
+### 9. Two separate permission systems
 
-Das Assixx-System hat **zwei orthogonale Berechtigungsebenen**, die unabhängig voneinander funktionieren:
+The Assixx system has **two orthogonal permission layers** that work independently of each other:
 
 ```
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                    SYSTEM 1: ORGANISATIONSHIERARCHIE                      ║
-║                    "Wer sieht welche Bereiche/Abteilungen/Teams?"        ║
+║                    SYSTEM 1: ORGANIZATIONAL HIERARCHY                     ║
+║                    "Who sees which areas/departments/teams?"             ║
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║                                                                            ║
-║  Tabellen:                                                                ║
-║  • admin_area_permissions      (Admin → Area)                             ║
-║  • admin_department_permissions (Admin → Department)                      ║
-║  • user_teams                  (Employee → Team)                          ║
-║  • user_departments            (Employee → Department)                    ║
-║  • areas.area_lead_id          (Lead → Area)                              ║
-║  • departments.department_lead_id (Lead → Department)                    ║
-║  • teams.team_lead_id          (Lead → Team)                              ║
-║  • users.has_full_access       (Vollzugriff-Flag)                         ║
+║  Tables:                                                                  ║
+║  • admin_area_permissions      (admin → area)                             ║
+║  • admin_department_permissions (admin → department)                      ║
+║  • user_teams                  (employee → team)                          ║
+║  • user_departments            (employee → department)                    ║
+║  • areas.area_lead_id          (lead → area)                              ║
+║  • departments.department_lead_id (lead → department)                    ║
+║  • teams.team_lead_id          (lead → team)                              ║
+║  • users.has_full_access       (full-access flag)                         ║
 ║                                                                            ║
 ║  Service: HierarchyPermissionService                                      ║
-║  Frage: "Kann User X die Daten von Area/Dept/Team Y sehen?"             ║
+║  Question: "Can user X see the data of area/dept/team Y?"               ║
 ║                                                                            ║
 ╠════════════════════════════════════════════════════════════════════════════╣
-║                    SYSTEM 2: ADDON-BERECHTIGUNGEN                        ║
-║                    "Welche Features darf der User nutzen?"               ║
+║                    SYSTEM 2: ADDON PERMISSIONS                            ║
+║                    "Which features may the user use?"                    ║
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║                                                                            ║
-║  Tabelle: user_addon_permissions                                          ║
+║  Table: user_addon_permissions                                            ║
 ║  • tenant_id, user_id, addon_code, module_code                           ║
 ║  • can_read, can_write, can_delete                                       ║
 ║                                                                            ║
 ║  Service: UserPermissionsService                                          ║
-║  Guard: PermissionGuard + @RequirePermission() Decorator                 ║
-║  Frage: "Darf User X das Feature 'Schwarzes Brett' lesen/schreiben?"    ║
+║  Guard: PermissionGuard + @RequirePermission() decorator                 ║
+║  Question: "May user X read/write the 'Blackboard' feature?"             ║
 ║                                                                            ║
-║  Registry-Pattern: Jedes Addon registriert seine Permission-Kategorien   ║
-║  bei OnModuleInit über den PermissionRegistryService.                    ║
+║  Registry pattern: each addon registers its permission categories        ║
+║  on OnModuleInit via the PermissionRegistryService.                      ║
 ║                                                                            ║
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║                                                                            ║
-║  ZUSAMMENSPIEL:                                                           ║
-║  System 1 bestimmt: "User sieht Abteilung Produktion"                    ║
-║  System 2 bestimmt: "User darf Schwarzes Brett lesen"                    ║
-║  → User sieht Schwarzes-Brett-Einträge der Abteilung Produktion          ║
+║  INTERPLAY:                                                               ║
+║  System 1 decides: "User sees department production"                     ║
+║  System 2 decides: "User may read blackboard"                            ║
+║  → User sees blackboard entries of department production                 ║
 ║                                                                            ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 ```
 
-### 10. Frontend-Visualisierung (Badge-System)
+### 10. Frontend visualization (badge system)
 
-Die Zuweisungen werden in den Management-Tabellen durch ein einheitliches Badge-System visualisiert:
+Assignments are visualized in management tables through a unified badge system:
 
-| Badge-Typ       | CSS-Klasse         | Icon         | Verwendung                                |
+| Badge type      | CSS class          | Icon         | Use                                       |
 | --------------- | ------------------ | ------------ | ----------------------------------------- |
-| **Vollzugriff** | `badge--primary`   | `fa-globe`   | `has_full_access = true`                  |
-| **Anzahl**      | `badge--info`      | —            | N direkte Zuweisungen, Tooltip = Namen    |
-| **Vererbt**     | `badge--warning`   | `fa-sitemap` | Zugriff via Hierarchie-Vererbung (orange) |
-| **Keine**       | `badge--secondary` | —            | Keine Zuweisungen                         |
+| **Full access** | `badge--primary`   | `fa-globe`   | `has_full_access = true`                  |
+| **Count**       | `badge--info`      | —            | N direct assignments, tooltip = names     |
+| **Inherited**   | `badge--warning`   | `fa-sitemap` | Access via hierarchy inheritance (orange) |
+| **None**        | `badge--secondary` | —            | No assignments                            |
 
-**Badge-Logik für Admins:**
+**Badge logic for admins:**
 
-Datenquellen: `areas[]` + `leadAreas[]` (explizite Permissions + Lead-Positionen, dedupliziert).
-Ebenso: `departments[]` + `leadDepartments[]`. Lead-Einträge erhalten Suffix `(Lead)` im Tooltip.
+Data sources: `areas[]` + `leadAreas[]` (explicit permissions + lead positions, deduplicated).
+Same for: `departments[]` + `leadDepartments[]`. Lead entries get the suffix `(Lead)` in the tooltip.
 
 ```
 getAreasBadge(admin):
-  has_full_access → "Alle" (globe)
-  (areas + leadAreas).length > 0 → "N {label}" (info), Tooltip: Namen
-  departments/leadDepartments haben areaId → "Vererbt" (sitemap, Aufwärts ↑)
-  else → "Keine" (secondary)
+  has_full_access → "All" (globe)
+  (areas + leadAreas).length > 0 → "N {label}" (info), tooltip: names
+  departments/leadDepartments have areaId → "Inherited" (sitemap, upwards ↑)
+  else → "None" (secondary)
 
 getDepartmentsBadge(admin):
-  has_full_access → "Alle" (globe)
-  (depts + leadDepts) + (areas + leadAreas) → "N + Vererbt"
+  has_full_access → "All" (globe)
+  (depts + leadDepts) + (areas + leadAreas) → "N + Inherited"
   only (depts + leadDepts) → "N {label}"
-  only (areas + leadAreas) → "Vererbt" (sitemap, Abwärts ↓)
-  else → "Keine"
+  only (areas + leadAreas) → "Inherited" (sitemap, downwards ↓)
+  else → "None"
 
 getTeamsBadge(admin):
-  has_full_access → "Alle" (globe)
-  has (areas + leadAreas) OR (depts + leadDepts) → "Vererbt" (sitemap)
-  else → "Keine"
+  has_full_access → "All" (globe)
+  has (areas + leadAreas) OR (depts + leadDepts) → "Inherited" (sitemap)
+  else → "None"
 ```
 
-**API-Response (`GET /admin-permissions/:id`):**
+**API response (`GET /admin-permissions/:id`):**
 
 ```json
 {
-  "areas": [...],            // Explizite admin_area_permissions
-  "departments": [...],      // Explizite admin_department_permissions (inkl. areaId/areaName)
-  "leadAreas": [...],        // Areas WHERE area_lead_id = userId (ohne Duplikate)
-  "leadDepartments": [...],  // Departments WHERE department_lead_id = userId (inkl. areaId/areaName)
+  "areas": [...],            // Explicit admin_area_permissions
+  "departments": [...],      // Explicit admin_department_permissions (incl. areaId/areaName)
+  "leadAreas": [...],        // Areas WHERE area_lead_id = userId (deduplicated)
+  "leadDepartments": [...],  // Departments WHERE department_lead_id = userId (incl. areaId/areaName)
   "hasFullAccess": false
 }
 ```
 
-**Badge-Logik für Employees:**
+**Badge logic for employees:**
 
 ```
 getTeamsBadge(employee):
-  teamIds.length > 0 → "N Teams" (info)
-  else → "Nicht zugewiesen"
+  teamIds.length > 0 → "N teams" (info)
+  else → "Not assigned"
 
 getAreasBadge(employee):
-  → IMMER vererbt von Team → Department → Area
-  → "Vererbt" (sitemap) mit Tooltip der Kette
+  → ALWAYS inherited from team → department → area
+  → "Inherited" (sitemap) with the chain in the tooltip
 
 getDepartmentsBadge(employee):
-  → IMMER vererbt von Team → Department
-  → "Vererbt" (sitemap) mit Tooltip
+  → ALWAYS inherited from team → department
+  → "Inherited" (sitemap) with tooltip
 ```
 
-### 11. Foreign Key Kaskaden und ihre Konsequenzen
+### 11. Foreign key cascades and their consequences
 
-| FK-Beziehung                                               | ON DELETE  | Konsequenz                                                       |
-| ---------------------------------------------------------- | ---------- | ---------------------------------------------------------------- |
-| `departments.area_id → areas`                              | `SET NULL` | Area löschen → Department bleibt, aber ohne Area-Zuordnung       |
-| `teams.department_id → departments`                        | `CASCADE`  | **⚠️ Department löschen → ALLE Teams werden gelöscht!**          |
-| `areas.area_lead_id → users`                               | `SET NULL` | User löschen → Area bleibt ohne Leiter                           |
-| `departments.department_lead_id → users`                   | `SET NULL` | User löschen → Department bleibt ohne Leiter                     |
-| `teams.team_lead_id → users`                               | `SET NULL` | User löschen → Team bleibt ohne Leiter                           |
-| `user_teams.user_id → users`                               | `CASCADE`  | User löschen → Team-Mitgliedschaften werden gelöscht             |
-| `user_teams.team_id → teams`                               | `CASCADE`  | Team löschen → Team-Mitgliedschaften werden gelöscht             |
-| `user_departments.user_id → users`                         | `CASCADE`  | User löschen → Department-Mitgliedschaften werden gelöscht       |
-| `user_departments.department_id → departments`             | `CASCADE`  | Department löschen → Department-Mitgliedschaften werden gelöscht |
-| `admin_area_permissions.admin_user_id → users`             | `CASCADE`  | User löschen → Area-Permissions werden gelöscht                  |
-| `admin_area_permissions.area_id → areas`                   | `CASCADE`  | Area löschen → Area-Permissions werden gelöscht                  |
-| `admin_department_permissions.admin_user_id → users`       | `CASCADE`  | User löschen → Dept-Permissions werden gelöscht                  |
-| `admin_department_permissions.department_id → departments` | `CASCADE`  | Dept löschen → Dept-Permissions werden gelöscht                  |
-| `asset_teams.asset_id → assets`                            | `CASCADE`  | Asset löschen → Team-Zuordnungen werden gelöscht                 |
-| `asset_teams.team_id → teams`                              | `CASCADE`  | Team löschen → Asset-Zuordnungen werden gelöscht                 |
+| FK relation                                                | ON DELETE  | Consequence                                                   |
+| ---------------------------------------------------------- | ---------- | ------------------------------------------------------------- |
+| `departments.area_id → areas`                              | `SET NULL` | Delete area → department remains, but without area assignment |
+| `teams.department_id → departments`                        | `CASCADE`  | **⚠️ Delete department → ALL teams are deleted!**             |
+| `areas.area_lead_id → users`                               | `SET NULL` | Delete user → area remains without a lead                     |
+| `departments.department_lead_id → users`                   | `SET NULL` | Delete user → department remains without a lead               |
+| `teams.team_lead_id → users`                               | `SET NULL` | Delete user → team remains without a lead                     |
+| `user_teams.user_id → users`                               | `CASCADE`  | Delete user → team memberships are deleted                    |
+| `user_teams.team_id → teams`                               | `CASCADE`  | Delete team → team memberships are deleted                    |
+| `user_departments.user_id → users`                         | `CASCADE`  | Delete user → department memberships are deleted              |
+| `user_departments.department_id → departments`             | `CASCADE`  | Delete department → department memberships are deleted        |
+| `admin_area_permissions.admin_user_id → users`             | `CASCADE`  | Delete user → area permissions are deleted                    |
+| `admin_area_permissions.area_id → areas`                   | `CASCADE`  | Delete area → area permissions are deleted                    |
+| `admin_department_permissions.admin_user_id → users`       | `CASCADE`  | Delete user → dept permissions are deleted                    |
+| `admin_department_permissions.department_id → departments` | `CASCADE`  | Delete dept → dept permissions are deleted                    |
+| `asset_teams.asset_id → assets`                            | `CASCADE`  | Delete asset → team assignments are deleted                   |
+| `asset_teams.team_id → teams`                              | `CASCADE`  | Delete team → asset assignments are deleted                   |
 
-### 12. Guard-Kette (Request Lifecycle)
+### 12. Guard chain (request lifecycle)
 
 ```
-HTTP Request
+HTTP request
      │
      ▼
 ┌──────────────────────┐
-│ 1. JwtAuthGuard      │  → Authentifizierung (Token prüfen)
-│    (Global)          │  → user Objekt auf Request setzen
+│ 1. JwtAuthGuard      │  → authentication (verify token)
+│    (global)          │  → set user object on the request
 └──────────────────────┘
      │
      ▼
 ┌──────────────────────┐
-│ 2. RolesGuard        │  → @Roles('admin', 'root') Decorator prüfen
-│    (Global)          │  → Rollen-basierte Zugriffskontrolle
+│ 2. RolesGuard        │  → check @Roles('admin', 'root') decorator
+│    (global)          │  → role-based access control
 └──────────────────────┘
      │
      ▼
 ┌──────────────────────┐
 │ 3. PermissionGuard   │  → @RequirePermission('addon', 'module', 'action')
-│    (Global)          │  → Addon-basierte Feature-Berechtigung
-│                      │  → has_full_access = true → Skip
+│    (global)          │  → addon-based feature permission
+│                      │  → has_full_access = true → skip
 └──────────────────────┘
      │
      ▼
 ┌──────────────────────┐
-│ 4. Service-Level     │  → HierarchyPermissionService.hasAccess()
-│    (Pro Endpunkt)    │  → Organisationshierarchie-Prüfung
-│                      │  → Wird im Service aufgerufen, nicht als Guard
+│ 4. Service-level     │  → HierarchyPermissionService.hasAccess()
+│    (per endpoint)    │  → organizational hierarchy check
+│                      │  → called inside the service, not as a guard
 └──────────────────────┘
      │
      ▼
 ┌──────────────────────┐
-│ 5. RLS (PostgreSQL)  │  → SET app.tenant_id = $1 vor Query
-│    (Datenbank-Level) │  → Tenant-Isolation als letzte Verteidigungslinie
+│ 5. RLS (PostgreSQL)  │  → SET app.tenant_id = $1 before the query
+│    (database level)  │  → tenant isolation as the last line of defence
 └──────────────────────┘
 ```
 
@@ -827,64 +827,64 @@ HTTP Request
 
 ## Alternatives Considered
 
-### 1. Flat Permission System (Abgelehnt)
+### 1. Flat permission system (Rejected)
 
-Jeder User hat explizite Berechtigungen für jede einzelne Ressource.
+Every user has explicit permissions for every single resource.
 
-- ✅ Einfach zu verstehen
-- ❌ Datenmenge explodiert bei großen Organisationen
-- ❌ Keine Vererbung
-- ❌ Wartungshölle bei Umstrukturierungen
+- ✅ Easy to understand
+- ❌ Data volume explodes for large organizations
+- ❌ No inheritance
+- ❌ Maintenance hell on restructuring
 
-**Entscheidung:** Abgelehnt — Nicht skalierbar.
+**Decision:** rejected — not scalable.
 
-### 2. RBAC ohne Hierarchie (Abgelehnt)
+### 2. RBAC without hierarchy (Rejected)
 
-Feste Rollen wie "Bereichsmanager", "Abteilungsmanager" mit vordefinierten Rechten.
+Fixed roles like "area manager", "department manager" with predefined rights.
 
-- ✅ Industriestandard
-- ❌ Keine flexible Vererbung
-- ❌ Zu rigid bei Organisationsänderungen
+- ✅ Industry standard
+- ❌ No flexible inheritance
+- ❌ Too rigid for organizational changes
 
-**Entscheidung:** Abgelehnt — Zu unflexibel für unterschiedliche Firmenstrukturen.
+**Decision:** rejected — too inflexible for varying company structures.
 
-### 3. Reine PostgreSQL RLS für Hierarchie (Teilweise verwendet)
+### 3. Pure PostgreSQL RLS for the hierarchy (partially used)
 
 ```sql
 CREATE POLICY tenant_isolation ON users
   USING (tenant_id = current_setting('app.tenant_id')::int);
 ```
 
-- ✅ Wasserdicht auf DB-Ebene
-- ❌ Hierarchie-Vererbung in RLS-Policies extrem komplex
-- ❌ Schwer debuggbar
+- ✅ Watertight at the DB level
+- ❌ Hierarchy inheritance in RLS policies is extremely complex
+- ❌ Hard to debug
 
-**Entscheidung:** Teilweise verwendet für Tenant-Isolation, aber NICHT für die Hierarchie.
+**Decision:** partially used for tenant isolation, but NOT for the hierarchy.
 
-### 4. Zentrale Permission-Tabelle (Abgelehnt)
+### 4. Central permission table (Rejected)
 
 ```sql
 permissions (user_id, resource_type, resource_id, permission_type)
 ```
 
-- ✅ Generisch
-- ❌ Vererbung schwer abzubilden
-- ❌ Keine FK-Integrität zu den Ressourcen-Tabellen
+- ✅ Generic
+- ❌ Inheritance hard to model
+- ❌ No FK integrity to the resource tables
 
-**Entscheidung:** Abgelehnt — Zu generisch, Vererbung schwer modellierbar.
+**Decision:** rejected — too generic, inheritance hard to model.
 
-### 5. JSON Arrays für Permissions (Abgelehnt)
+### 5. JSON arrays for permissions (Rejected)
 
 ```sql
 users.area_permissions JSONB DEFAULT '[]'
 ```
 
-- ✅ Flexible Struktur
-- ❌ Keine Foreign Keys (referentielle Integrität)
-- ❌ Schlechte Query-Performance
-- ❌ Keine JOINs möglich
+- ✅ Flexible structure
+- ❌ No foreign keys (referential integrity)
+- ❌ Bad query performance
+- ❌ No JOINs possible
 
-**Entscheidung:** Abgelehnt — N:M-Tabellen sind performanter und bieten Integrität.
+**Decision:** rejected — N:M tables are more performant and provide integrity.
 
 ---
 
@@ -892,195 +892,195 @@ users.area_permissions JSONB DEFAULT '[]'
 
 ### Positive
 
-1. **Klare Hierarchie** — Area → Department → Team ist intuitiv und bildet reale Firmenstrukturen ab
-2. **Automatische Vererbung** — Area-Berechtigung vererbt sich automatisch auf Departments und Teams
-3. **Explizite Zuweisung** — Kein versehentlicher Zugriff durch implizite Regeln
-4. **Flexible Zuweisungspfade** — Permission, Lead-Position und Mitgliedschaft als parallele Wege
-5. **Multi-Tenant-sicher** — `tenant_id` in jeder Tabelle + RLS auf DB-Ebene
-6. **Performant** — EXISTS-Subqueries mit Indizes, keine N+1-Queries
-7. **DB-enforced Constraints** — CHECK Constraints verhindern inkonsistente Zustände (z.B. Employee mit has_full_access)
-8. **Cleanup-Logik** — Automatische Bereinigung bei Berechtigungsänderungen verhindert verwaiste Zuweisungen
-9. **Zwei orthogonale Systeme** — Organisationshierarchie und Addon-Permissions sind unabhängig und komponierbar
-10. **Dynamische Labels** — Hierarchy Labels (ADR-034) ermöglichen tenant-spezifische Bezeichnungen ohne DB-Schema-Änderungen
+1. **Clear hierarchy** — area → department → team is intuitive and matches real company structures
+2. **Automatic inheritance** — area permission inherits automatically to departments and teams
+3. **Explicit assignment** — no accidental access through implicit rules
+4. **Flexible assignment paths** — permission, lead position, and membership as parallel routes
+5. **Multi-tenant safe** — `tenant_id` in every table + RLS at DB level
+6. **Performant** — EXISTS subqueries with indexes, no N+1 queries
+7. **DB-enforced constraints** — CHECK constraints prevent inconsistent states (e.g. employee with has_full_access)
+8. **Cleanup logic** — automatic cleanup on permission changes prevents orphan assignments
+9. **Two orthogonal systems** — organizational hierarchy and addon permissions are independent and composable
+10. **Dynamic labels** — hierarchy labels (ADR-034) allow tenant-specific naming without DB-schema changes
 
 ### Negative
 
-1. **Komplexe Queries** — Visibility-Queries mit mehreren EXISTS-Checks pro Abfrage
-2. **Lernkurve** — Entwickler müssen Vererbungslogik und beide Systeme verstehen
-3. **Refactoring-Risiko** — Änderungen an der Hierarchie können weitreichende Auswirkungen haben
-4. **CASCADE-Gefahr** — `departments → teams` CASCADE kann unbeabsichtigt Teams löschen
+1. **Complex queries** — visibility queries with several EXISTS checks per query
+2. **Learning curve** — developers must understand the inheritance logic and both systems
+3. **Refactor risk** — changes to the hierarchy can have far-reaching effects
+4. **CASCADE risk** — `departments → teams` CASCADE can delete teams unintentionally
 
 ### Mitigations
 
-| Problem          | Mitigation                                                                 |
-| ---------------- | -------------------------------------------------------------------------- |
-| Komplexe Queries | SQL als Konstanten in Services, gut dokumentiert, zentral in einem Service |
-| Lernkurve        | Dieses ADR + inline Docs + Code Reviews                                    |
-| Refactoring      | Umfassende Tests, inkrementelle Änderungen                                 |
-| CASCADE-Gefahr   | UI zeigt Warnung vor Department-Löschung ("N Teams werden mitgelöscht")    |
+| Problem         | Mitigation                                                                |
+| --------------- | ------------------------------------------------------------------------- |
+| Complex queries | SQL as constants in services, well documented, centralized in one service |
+| Learning curve  | This ADR + inline docs + code reviews                                     |
+| Refactor risk   | Comprehensive tests, incremental changes                                  |
+| CASCADE risk    | UI shows a warning before department deletion ("N teams will be deleted") |
 
 ---
 
 ## Implementation Details
 
-### Dateien
+### Files
 
 ```
 backend/src/nest/
 ├── hierarchy-permission/
-│   └── hierarchy-permission.service.ts          # Zentrale Permission-Logik mit Vererbung
+│   └── hierarchy-permission.service.ts          # central permission logic with inheritance
 ├── admin-permissions/
-│   ├── admin-permissions.controller.ts          # API-Endpoints für Area/Dept Permissions
-│   ├── admin-permissions.service.ts             # CRUD + Cleanup-Logik
+│   ├── admin-permissions.controller.ts          # API endpoints for area/dept permissions
+│   ├── admin-permissions.service.ts             # CRUD + cleanup logic
 │   └── dto/
 │       ├── set-area-permissions.dto.ts          # { areaIds: number[], permissions?: PermissionSet }
 │       └── permission-set.schema.ts             # { canRead, canWrite, canDelete }
 ├── user-permissions/
-│   ├── user-permissions.service.ts              # Addon-Permission-Logik
-│   └── user-permissions.controller.ts           # Addon-Permission CRUD
+│   ├── user-permissions.service.ts              # addon permission logic
+│   └── user-permissions.controller.ts           # addon permission CRUD
 ├── common/
 │   ├── guards/
-│   │   ├── jwt-auth.guard.ts                    # Authentifizierung
-│   │   ├── roles.guard.ts                       # @Roles() Decorator
-│   │   └── permission.guard.ts                  # @RequirePermission() Decorator
+│   │   ├── jwt-auth.guard.ts                    # authentication
+│   │   ├── roles.guard.ts                       # @Roles() decorator
+│   │   └── permission.guard.ts                  # @RequirePermission() decorator
 │   ├── decorators/
 │   │   ├── current-user.decorator.ts            # @CurrentUser()
 │   │   └── require-permission.decorator.ts      # @RequirePermission()
 │   └── permission-registry/
 │       ├── permission.types.ts                  # PermissionCategoryDef
-│       └── permission-registry.service.ts       # Registry für Addon-Permissions
+│       └── permission-registry.service.ts       # registry for addon permissions
 ├── organigram/
-│   ├── organigram.service.ts                    # Org-Chart Tree mit Leads + Member Counts
+│   ├── organigram.service.ts                    # org-chart tree with leads + member counts
 │   ├── organigram.controller.ts                 # GET /tree, GET/PATCH /hierarchy-labels
 │   └── organigram.types.ts                      # OrgChartNode, HierarchyLabels
-├── areas/areas.service.ts                       # CRUD Areas + area_lead_id Management
-├── departments/departments.service.ts           # CRUD Departments + department_lead_id
-└── teams/teams.service.ts                       # CRUD Teams + team_lead_id + user_teams
+├── areas/areas.service.ts                       # CRUD areas + area_lead_id management
+├── departments/departments.service.ts           # CRUD departments + department_lead_id
+└── teams/teams.service.ts                       # CRUD teams + team_lead_id + user_teams
 
 frontend/src/
 ├── routes/(app)/(admin)/
 │   ├── manage-admins/
-│   │   ├── +page.svelte                         # Admin-Liste mit Badge-Spalten
-│   │   ├── +page.server.ts                      # Parallel-Fetch: Admins + Areas + Depts + Permissions
+│   │   ├── +page.svelte                         # admin list with badge columns
+│   │   ├── +page.server.ts                      # parallel fetch: admins + areas + depts + permissions
 │   │   └── _lib/
-│   │       ├── AdminFormModal.svelte             # Formular mit AdminOrganizationSection
-│   │       ├── AdminOrganizationSection.svelte   # Full-Access Toggle + Area/Dept Multi-Select
-│   │       ├── AdminTableRow.svelte              # Badge-Anzeige pro Admin-Zeile
+│   │       ├── AdminFormModal.svelte             # form with AdminOrganizationSection
+│   │       ├── AdminOrganizationSection.svelte   # full-access toggle + area/dept multi-select
+│   │       ├── AdminTableRow.svelte              # badge display per admin row
 │   │       ├── utils.ts                          # getAreasBadge, getDepartmentsBadge, getTeamsBadge
-│   │       ├── filters.ts                        # filterAvailableDepartments (entfernt Depts von gewählten Areas)
+│   │       ├── filters.ts                        # filterAvailableDepartments (removes depts of selected areas)
 │   │       └── api.ts                            # saveAdminWithPermissions, setFullAccess
 │   └── manage-employees/
-│       ├── +page.svelte                         # Employee-Liste mit vererbten Badges
-│       ├── +page.server.ts                      # Fetch: Employees + Teams
+│       ├── +page.svelte                         # employee list with inherited badges
+│       ├── +page.server.ts                      # fetch: employees + teams
 │       └── _lib/
-│           ├── EmployeeFormModal.svelte          # Team Multi-Select
-│           ├── EmployeeTableRow.svelte           # Vererbte Area/Dept Badges
-│           ├── utils.ts                          # Vererbungs-Badge-Logik
-│           └── api.ts                            # syncTeamMemberships (Diff-basiert)
+│           ├── EmployeeFormModal.svelte          # team multi-select
+│           ├── EmployeeTableRow.svelte           # inherited area/dept badges
+│           ├── utils.ts                          # inheritance badge logic
+│           └── api.ts                            # syncTeamMemberships (diff-based)
 ├── lib/
-│   ├── types/hierarchy-labels.ts                # HierarchyLabels Type + Defaults + resolvePositionDisplay
+│   ├── types/hierarchy-labels.ts                # HierarchyLabels type + defaults + resolvePositionDisplay
 │   └── components/
-│       ├── Breadcrumb.svelte                    # Dynamische Labels in Breadcrumbs
-│       └── PermissionSettings.svelte            # Addon-Permission Matrix (Addon × Modul × R/W/D)
+│       ├── Breadcrumb.svelte                    # dynamic labels in breadcrumbs
+│       └── PermissionSettings.svelte            # addon permission matrix (addon × module × R/W/D)
 └── routes/(app)/_lib/
-    └── navigation-config.ts                     # Dynamische Sidebar-Labels via HierarchyLabels
+    └── navigation-config.ts                     # dynamic sidebar labels via HierarchyLabels
 ```
 
-### API-Endpoints
+### API endpoints
 
-| Methode | Pfad                                             | Beschreibung                          | Rollen      |
-| ------- | ------------------------------------------------ | ------------------------------------- | ----------- |
-| GET     | `/admin-permissions/:userId`                     | Alle Permissions eines Admins         | Root, Admin |
-| POST    | `/admin-permissions/:userId/areas`               | Area-Permissions setzen (+ Cleanup)   | Root        |
-| DELETE  | `/admin-permissions/:userId/areas/:areaId`       | Einzelne Area-Permission entfernen    | Root        |
-| POST    | `/admin-permissions`                             | Department-Permissions setzen         | Root        |
-| DELETE  | `/admin-permissions/:userId/departments/:deptId` | Einzelne Dept-Permission entfernen    | Root        |
-| PATCH   | `/admin-permissions/:userId/full-access`         | has_full_access Flag setzen/entfernen | Root        |
-| GET     | `/user-permissions/:uuid`                        | Addon-Permissions eines Users         | Root, Admin |
-| PUT     | `/user-permissions/:uuid`                        | Addon-Permissions setzen              | Root, Admin |
-| POST    | `/teams/:teamId/members`                         | User zu Team hinzufügen               | Root, Admin |
-| DELETE  | `/teams/:teamId/members/:userId`                 | User aus Team entfernen               | Root, Admin |
+| Method | Path                                             | Description                         | Roles       |
+| ------ | ------------------------------------------------ | ----------------------------------- | ----------- |
+| GET    | `/admin-permissions/:userId`                     | All permissions of an admin         | Root, admin |
+| POST   | `/admin-permissions/:userId/areas`               | Set area permissions (+ cleanup)    | Root        |
+| DELETE | `/admin-permissions/:userId/areas/:areaId`       | Remove a single area permission     | Root        |
+| POST   | `/admin-permissions`                             | Set department permissions          | Root        |
+| DELETE | `/admin-permissions/:userId/departments/:deptId` | Remove a single dept permission     | Root        |
+| PATCH  | `/admin-permissions/:userId/full-access`         | Set/remove the has_full_access flag | Root        |
+| GET    | `/user-permissions/:uuid`                        | Addon permissions of a user         | Root, admin |
+| PUT    | `/user-permissions/:uuid`                        | Set addon permissions               | Root, admin |
+| POST   | `/teams/:teamId/members`                         | Add a user to a team                | Root, admin |
+| DELETE | `/teams/:teamId/members/:userId`                 | Remove a user from a team           | Root, admin |
 
-### Datenbank-Tabellen
+### Database tables
 
-| Tabelle                        | Zweck                                   | Typ        |
+| Table                          | Purpose                                 | Type       |
 | ------------------------------ | --------------------------------------- | ---------- |
-| `areas`                        | Physische Bereiche (Level 1)            | Entität    |
-| `departments`                  | Organisatorische Einheiten (Level 2)    | Entität    |
-| `teams`                        | Arbeitsgruppen (Level 3)                | Entität    |
-| `assets`                       | Anlagen/Maschinen (Quer)                | Entität    |
-| `admin_area_permissions`       | Admin → Area Zugriff                    | Permission |
-| `admin_department_permissions` | Admin → Department Zugriff              | Permission |
-| `user_teams`                   | Employee → Team Mitgliedschaft          | Membership |
-| `user_departments`             | Employee → Department Mitgliedschaft    | Membership |
-| `asset_teams`                  | Asset → Team Zuordnung                  | Assignment |
-| `user_addon_permissions`       | User → Addon Feature Zugriff            | Permission |
-| `users.has_full_access`        | Vollzugriff-Flag                        | Flag       |
-| `users.role`                   | Systemrolle (root/admin/employee/dummy) | Enum       |
+| `areas`                        | Physical areas (level 1)                | Entity     |
+| `departments`                  | Organizational units (level 2)          | Entity     |
+| `teams`                        | Working groups (level 3)                | Entity     |
+| `assets`                       | Machines/equipment (cross-cutting)      | Entity     |
+| `admin_area_permissions`       | Admin → area access                     | Permission |
+| `admin_department_permissions` | Admin → department access               | Permission |
+| `user_teams`                   | Employee → team membership              | Membership |
+| `user_departments`             | Employee → department membership        | Membership |
+| `asset_teams`                  | Asset → team assignment                 | Assignment |
+| `user_addon_permissions`       | User → addon feature access             | Permission |
+| `users.has_full_access`        | Full-access flag                        | Flag       |
+| `users.role`                   | System role (root/admin/employee/dummy) | Enum       |
 
 ---
 
 ## Verification
 
-| Szenario                          | Erwartet                                           | Status |
+| Scenario                          | Expected                                           | Status |
 | --------------------------------- | -------------------------------------------------- | ------ |
-| Root User                         | Sieht alles im Tenant                              | ✅     |
-| Admin mit has_full_access=true    | Sieht alles im Tenant                              | ✅     |
-| Admin mit Area-Permission         | Sieht Area + alle Depts + alle Teams               | ✅     |
-| Admin mit Dept-Permission         | Sieht Dept + alle Teams in Dept                    | ✅     |
-| Admin als area_lead               | Gleiche Rechte wie Area-Permission                 | ✅     |
-| Admin als department_lead         | Gleiche Rechte wie Dept-Permission                 | ✅     |
-| Admin als team_lead               | Sieht nur Team                                     | ✅     |
-| Employee in Team                  | Sieht Team, erbt Dept + Area Kontext               | ✅     |
-| Employee in Department            | Sieht Department, erbt Area Kontext                | ✅     |
-| Admin ohne Permissions            | Sieht nur company-level Content                    | ✅     |
-| Cross-Tenant Zugriff              | Blockiert durch tenant_id Filter + RLS             | ✅     |
-| setAreaPermissions Cleanup        | Entfernt user_departments außerhalb Areas          | ✅     |
-| setAreaPermissions Cleanup        | Entfernt user_teams außerhalb Areas                | ✅     |
-| Department.area_id = NULL         | Keine Area-Vererbung, direkte Permission nötig     | ✅     |
-| Team.department_id = NULL         | Keine Dept-Vererbung, direkte Mitgliedschaft nötig | ✅     |
-| Root hat has_full_access=false    | DB CHECK Constraint verhindert dies                | ✅     |
-| Employee hat has_full_access=true | DB CHECK Constraint verhindert dies                | ✅     |
-| Department löschen                | CASCADE: Alle Teams werden mitgelöscht             | ✅     |
-| Area löschen                      | SET NULL: Departments bleiben, area_id wird NULL   | ✅     |
-| Lead-User löschen                 | SET NULL: Entität bleibt, Lead wird NULL           | ✅     |
+| Root user                         | Sees everything in the tenant                      | ✅     |
+| Admin with has_full_access=true   | Sees everything in the tenant                      | ✅     |
+| Admin with area permission        | Sees area + all depts + all teams                  | ✅     |
+| Admin with dept permission        | Sees dept + all teams in the dept                  | ✅     |
+| Admin as area_lead                | Same rights as area permission                     | ✅     |
+| Admin as department_lead          | Same rights as dept permission                     | ✅     |
+| Admin as team_lead                | Sees only the team                                 | ✅     |
+| Employee in a team                | Sees the team, inherits dept + area context        | ✅     |
+| Employee in a department          | Sees the department, inherits area context         | ✅     |
+| Admin without permissions         | Sees only company-level content                    | ✅     |
+| Cross-tenant access               | Blocked through tenant_id filter + RLS             | ✅     |
+| setAreaPermissions cleanup        | Removes user_departments outside the areas         | ✅     |
+| setAreaPermissions cleanup        | Removes user_teams outside the areas               | ✅     |
+| Department.area_id = NULL         | No area inheritance, direct permission required    | ✅     |
+| Team.department_id = NULL         | No dept inheritance, direct membership required    | ✅     |
+| Root has has_full_access=false    | DB CHECK constraint prevents this                  | ✅     |
+| Employee has has_full_access=true | DB CHECK constraint prevents this                  | ✅     |
+| Delete department                 | CASCADE: all teams are deleted with it             | ✅     |
+| Delete area                       | SET NULL: departments remain, area_id becomes NULL | ✅     |
+| Delete a lead user                | SET NULL: entity remains, lead becomes NULL        | ✅     |
 
 ---
 
-## Lead-Positionen und Permission-Delegation (2026-03-14)
+## Lead positions and permission delegation (2026-03-14)
 
-Lead-Positionen und Deputies auf allen 3 Ebenen (seit Deputy Leads Feature, 2026-03-21):
+Lead positions and deputies on all 3 levels (since the deputy-leads feature, 2026-03-21):
 
-| Tabelle       | Lead-Spalte          | Deputy-Spalte               |
+| Table         | Lead column          | Deputy column               |
 | ------------- | -------------------- | --------------------------- |
 | `areas`       | `area_lead_id`       | `area_deputy_lead_id`       |
 | `departments` | `department_lead_id` | `department_deputy_lead_id` |
 | `teams`       | `team_lead_id`       | `team_deputy_lead_id`       |
 
-Deputies haben identische Scope-Rechte wie ihre Leads (DEPUTY_EQUALS_LEAD):
+Deputies have identical scope rights as their leads (DEPUTY_EQUALS_LEAD):
 
-1. **Scope-Zugang:** Leads + Deputies sehen/bearbeiten Entities in ihrem Scope (Manage-Seiten)
-2. **Permission-Delegation:** Leads/Deputies mit `manage-permissions` können Addon-Permissions ihrer Untergebenen verwalten
-3. **DB-Trigger:** `trg_enforce_manage_permissions_target_is_lead` — `manage-permissions` kann NUR an Users mit Lead- oder Deputy-Position vergeben werden
-4. **DB-Trigger:** `trg_validate_team_lead_position` — `team_lead_id`/`team_deputy_lead_id` muss `position='team_lead'` haben
-5. **DB-Trigger:** `trg_validate_area_deputy_lead` / `trg_validate_dept_deputy_lead` — Deputies müssen admin/root Rolle haben
-6. **DB-Trigger:** `trg_validate_dept_lead` / `trg_validate_area_lead` — Dept/Area-Leads müssen admin/root sein
+1. **Scope access:** leads + deputies see/manage entities in their scope (manage pages)
+2. **Permission delegation:** leads/deputies with `manage-permissions` can manage the addon permissions of their subordinates
+3. **DB trigger:** `trg_enforce_manage_permissions_target_is_lead` — `manage-permissions` can ONLY be granted to users with a lead or deputy position
+4. **DB trigger:** `trg_validate_team_lead_position` — `team_lead_id`/`team_deputy_lead_id` must have `position='team_lead'`
+5. **DB trigger:** `trg_validate_area_deputy_lead` / `trg_validate_dept_deputy_lead` — deputies must have role admin/root
+6. **DB trigger:** `trg_validate_dept_lead` / `trg_validate_area_lead` — dept/area leads must be admin/root
 
-**Konsequenz:** Lead-Entfernung (SET NULL) entfernt Scope-Zugang + Delegationsrechte. Auto-Cleanup in `TeamsService.cleanupLeadPermissions()`.
+**Consequence:** removing a lead (SET NULL) removes scope access + delegation rights. Auto cleanup in `TeamsService.cleanupLeadPermissions()`.
 
 ---
 
 ## References
 
-- [ADR-005: Authentication Strategy](./ADR-005-authentication-strategy.md) — JWT Guard
-- [ADR-006: Multi-Tenant Context Isolation](./ADR-006-multi-tenant-context-isolation.md) — CLS-basierte Tenant-Isolation
-- [ADR-009: User Role Assignment & Permissions](./ADR-009-user-role-assignment-permissions.md) — Ursprüngliches Permission-System (Vorgänger)
+- [ADR-005: Authentication Strategy](./ADR-005-authentication-strategy.md) — JWT guard
+- [ADR-006: Multi-Tenant Context Isolation](./ADR-006-multi-tenant-context-isolation.md) — CLS-based tenant isolation
+- [ADR-009: User Role Assignment & Permissions](./ADR-009-user-role-assignment-permissions.md) — original permission system (predecessor)
 - [ADR-019: Multi-Tenant RLS Data Isolation](./ADR-019-multi-tenant-rls-isolation.md) — PostgreSQL RLS
-- [ADR-020: Per-User Feature Permissions](./ADR-020-per-user-feature-permissions.md) — Addon-basierte Feature-Permissions
-- [ADR-033: Addon-basiertes SaaS-Modell](./ADR-033-addon-based-saas-model.md) — Core vs. Purchasable Addons
-- [ADR-034: Hierarchy Labels Propagation](./ADR-034-hierarchy-labels-propagation.md) — Dynamische UI-Labels
-- [ADR-036: Organizational Scope Access Control](./ADR-036-organizational-scope-access-control.md) — Scope-basierte Zugriffskontrolle für Manage-Seiten (Employee-Leads + Scoped Admins)
-- [HIERARCHY.md](/docs/HIERARCHY.md) — Historische Organisationsstruktur-Dokumentation
-- [Refactoring Assignment Plan](/docs/plans/refactoring-assignment-plan.md) — H-RBAC Design-Entscheidungen
-- [Refactoring Assignment Concrete Plan](/docs/plans/refactoring-assignment-concrete-plan.md) — Implementierungsdetails
-- [Lead-ID Assignment Fix](/docs/plans/ASSIGNED-LEAD_ID-SOLUTION.md) — Chat-Suche Lead-Path Fix
+- [ADR-020: Per-User Feature Permissions](./ADR-020-per-user-feature-permissions.md) — addon-based feature permissions
+- [ADR-033: Addon-based SaaS Model](./ADR-033-addon-based-saas-model.md) — core vs. purchasable addons
+- [ADR-034: Hierarchy Labels Propagation](./ADR-034-hierarchy-labels-propagation.md) — dynamic UI labels
+- [ADR-036: Organizational Scope Access Control](./ADR-036-organizational-scope-access-control.md) — scope-based access control for manage pages (employee leads + scoped admins)
+- [HIERARCHY.md](/docs/HIERARCHY.md) — historical organizational structure documentation
+- [Refactoring Assignment Plan](/docs/plans/refactoring-assignment-plan.md) — H-RBAC design decisions
+- [Refactoring Assignment Concrete Plan](/docs/plans/refactoring-assignment-concrete-plan.md) — implementation details
+- [Lead-ID Assignment Fix](/docs/plans/ASSIGNED-LEAD_ID-SOLUTION.md) — chat search lead-path fix

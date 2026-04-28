@@ -177,12 +177,12 @@ Each feature module owns two files:
 ```typescript
 export const BLACKBOARD_PERMISSIONS: PermissionCategoryDef = {
   code: 'blackboard', // Must match addons.code in DB
-  label: 'Schwarzes Brett',
+  label: 'Blackboard',
   icon: 'fa-clipboard',
   modules: [
     {
       code: 'blackboard-posts',
-      label: 'Beitraege',
+      label: 'Posts',
       allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
     },
   ],
@@ -284,7 +284,7 @@ export async function apiFetchWithPermission<T>(
 <PermissionDenied addonName="das KVP-Modul" />
 ```
 
-Renders a lock icon with the message: _"Sie haben keine Berechtigung für {addonName}. Bitte wenden Sie sich an Ihren Administrator."_ — consistent across all addon-gated pages.
+Renders a lock icon with the message: _"You do not have permission for {addonName}. Please contact your administrator."_ — consistent across all addon-gated pages.
 
 **Coverage:**
 
@@ -402,7 +402,7 @@ Evaluate permissions based on attributes (user department, time of day, location
 6. **Audit-ready** — `assigned_by` + `updated_at` track who changed permissions and when
 7. **Type-safe** — registry validates feature/module codes at runtime, TypeScript catches structural errors at compile time
 8. **KISS** — single table, single UPSERT pattern, no complex inheritance trees
-9. **Consistent frontend UX** — all 31 addon-gated pages show "Keine Berechtigung" on 403 instead of misleading empty states (added 2026-03-13)
+9. **Consistent frontend UX** — all 31 addon-gated pages show "No permission" on 403 instead of misleading empty states (added 2026-03-13)
 
 ### Negative
 
@@ -444,44 +444,44 @@ Each future phase builds on the `user_addon_permissions` table without schema re
 
 ### 7. Delegated Permission Management (2026-03-14)
 
-> **Erweiterung:** Leads können Addon-Permissions ihrer Untergebenen verwalten — mit strikter Hierarchie-Kontrolle. Zuvor: Nur Root und Admin mit `has_full_access=true`.
+> **Extension:** leads can manage addon permissions of their subordinates — with strict hierarchy control. Previously: only Root and Admin with `has_full_access=true`.
 
-**Delegationskette:** `Root → Admin(full) → Area-Lead → Dept-Lead → Team-Lead → Team-Members`
+**Delegation chain:** `Root → Admin(full) → Area lead → Dept lead → Team lead → Team members`
 
-**Controller-Änderung:** `assertFullAccess()` ersetzt durch `assertPermissionAccess()`:
+**Controller change:** `assertFullAccess()` replaced by `assertPermissionAccess()`:
 
 ```
-1. Root → immer OK (inkl. Self-Edit)
-2. Admin mit has_full_access → OK (Self-Edit blockiert)
-3. Lead mit manage-permissions.canRead/canWrite → OK:
-   a) Target-User im eigenen Scope (ScopeService)
-   b) Target-User ≠ Current-User (kein Self-Grant)
-4. Alle anderen → 403
+1. Root → always OK (incl. self-edit)
+2. Admin with has_full_access → OK (self-edit blocked)
+3. Lead with manage-permissions.canRead/canWrite → OK:
+   a) Target user is in own scope (ScopeService)
+   b) Target user ≠ current user (no self-grant)
+4. Everyone else → 403
 ```
 
-**`@Roles('admin', 'root', 'employee')`** — Employee-Rolle jetzt erlaubt auf Permission-Endpoints.
+**`@Roles('admin', 'root', 'employee')`** — employee role is now allowed on permission endpoints.
 
-**Service-Änderungen:**
+**Service changes:**
 
-- `upsertPermissions()`: Neuer Parameter `delegatorScope` für delegierte Filterung
-- `filterDelegatedPermissions()`: Regel 2 (nur eigene Permissions) + Regel 4 (manage-permissions nicht delegierbar)
-- `filterByLeaderPerms()`: GET zeigt nur Module die der Lead hat
-- `hideManagePermissionsModule()`: manage-permissions nur für Leads sichtbar (nicht für Nicht-Leads)
-- Return-Type: `{ applied: number }` statt `void` (tatsächlicher Count nach Filterung)
+- `upsertPermissions()`: new parameter `delegatorScope` for delegated filtering
+- `filterDelegatedPermissions()`: rule 2 (only own permissions) + rule 4 (manage-permissions is not delegable)
+- `filterByLeaderPerms()`: GET only shows modules the lead has
+- `hideManagePermissionsModule()`: manage-permissions only visible to leads (not to non-leads)
+- Return type: `{ applied: number }` instead of `void` (actual count after filtering)
 
-**Neue Permission:** `manage_hierarchy.manage-permissions` (canRead + canWrite)
+**New permission:** `manage_hierarchy.manage-permissions` (canRead + canWrite)
 
-- canRead = Permission-Seite von Untergebenen sehen
-- canWrite = Permissions von Untergebenen ändern
-- Rote Hervorhebung (`perm-row--danger`) in UI
-- NUR für Leads sichtbar/setzbar (Backend + DB-Trigger)
+- canRead = view subordinates' permission page
+- canWrite = change subordinates' permissions
+- Red highlight (`perm-row--danger`) in UI
+- ONLY visible / settable for leads (backend + DB trigger)
 
-**DB-Trigger (Defense-in-Depth):**
+**DB triggers (defense in depth):**
 
-1. `trg_prevent_manage_permissions_self_grant`: Nur Root/Admin-full dürfen `manage-permissions.canWrite` vergeben
-2. `trg_enforce_manage_permissions_target_is_lead`: `manage-permissions` NUR für Users mit Lead-Position
+1. `trg_prevent_manage_permissions_self_grant`: only Root / Admin-full may grant `manage-permissions.canWrite`
+2. `trg_enforce_manage_permissions_target_is_lead`: `manage-permissions` ONLY for users with a lead position
 
-**`allowedRoles` auf `PermissionModuleDef`:** Neues optionales Feld — wenn gesetzt, wird das Modul nur für Users mit diesen Rollen auf der Permission-Seite angezeigt.
+**`allowedRoles` on `PermissionModuleDef`:** new optional field — when set, the module is only shown on the permission page for users with those roles.
 
 **@see** [FEAT_DELEGATED_PERMISSION_MANAGEMENT_MASTERPLAN.md](../../FEAT_DELEGATED_PERMISSION_MANAGEMENT_MASTERPLAN.md), [ADR-036](./ADR-036-organizational-scope-access-control.md)
 

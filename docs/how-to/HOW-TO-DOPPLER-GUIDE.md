@@ -1,27 +1,27 @@
 # Doppler Secret Management Guide
 
-> Assixx - Zentrale Secrets-Verwaltung mit Doppler
+> Assixx — central secrets management with Doppler
 
-**Stand:** 2026-04-03
+**As of:** 2026-04-03
 **Doppler CLI:** v3.75.3
 **Project:** assixx
 **Configs:** dev, stg, prd
 
 ---
 
-## Inhaltsverzeichnis
+## Table of Contents
 
 1. [Quick Start](#1-quick-start)
-2. [Die 2 Säulen: Doppler + .locklock](#2-die-2-säulen-doppler--locklock)
-3. [Token-System verstehen](#3-token-system-verstehen)
-4. [Docker Commands mit Doppler](#4-docker-commands-mit-doppler)
-5. [Development Workflow](#5-development-workflow)
-6. [Production Workflow](#6-production-workflow)
-7. [Token verloren? Neuen erstellen](#7-token-verloren-neuen-erstellen)
-8. [Secrets verwalten](#8-secrets-verwalten)
-9. [Team: Token-Management für Entwickler](#9-team-token-management-für-entwickler)
-10. [Multi-Environment Setup (dev / stg / prd)](#10-multi-environment-setup-dev--stg--prd)
-11. [Service Tokens für Deployment](#11-service-tokens-für-deployment)
+2. [The 2 pillars: Doppler + .locklock](#2-the-2-pillars-doppler--locklock)
+3. [Understanding the token system](#3-understanding-the-token-system)
+4. [Docker commands with Doppler](#4-docker-commands-with-doppler)
+5. [Development workflow](#5-development-workflow)
+6. [Production workflow](#6-production-workflow)
+7. [Lost a token? Create a new one](#7-lost-a-token-create-a-new-one)
+8. [Managing secrets](#8-managing-secrets)
+9. [Team: token management for developers](#9-team-token-management-for-developers)
+10. [Multi-environment setup (dev / stg / prd)](#10-multi-environment-setup-dev--stg--prd)
+11. [Service tokens for deployment](#11-service-tokens-for-deployment)
 12. [Troubleshooting](#12-troubleshooting)
 
 ---
@@ -29,189 +29,189 @@
 ## 1. Quick Start
 
 ```bash
-# Token setzen + Docker starten
+# Set token + start Docker
 cd /home/scs/projects/Assixx/docker
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose up -d
 ```
 
-**Oder permanent in Shell:**
+**Or permanently in your shell:**
 
 ```bash
-# Einmalig in ~/.bashrc
+# Once in ~/.bashrc
 echo 'export DOPPLER_TOKEN="dp.st.dev.xxx"' >> ~/.bashrc
 source ~/.bashrc
 
-# Ab jetzt einfach:
+# From now on, just:
 doppler run -- docker-compose up -d
 ```
 
 ---
 
-## 2. Die 2 Säulen: Doppler + .locklock
+## 2. The 2 Pillars: Doppler + .locklock
 
-### WICHTIG: Secrets leben NUR in Doppler + .locklock!
+### IMPORTANT: secrets live ONLY in Doppler + .locklock!
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SECRET ÄNDERN?                                     │
+│                           CHANGING A SECRET?                                 │
 │                                                                              │
-│   1. DOPPLER        →  Source of Truth für DEV + PROD (EINZIGE Quelle!)    │
-│   2. .locklock      →  IMMER als Archiv + Notfall-Backup aktualisieren!     │
+│   1. DOPPLER        →  Source of truth for DEV + PROD (THE single source!) │
+│   2. .locklock      →  ALWAYS update as archive + emergency backup!         │
 │                                                                              │
-│   docker/.env enthält KEINE Secrets mehr! Nur Konfiguration (Ports, Hosts). │
+│   docker/.env contains NO MORE secrets! Only configuration (ports, hosts).  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Die 2 Säulen erklärt
+### The 2 pillars explained
 
-| Säule         | Zweck                         | Wann aktualisieren? |
-| ------------- | ----------------------------- | ------------------- |
-| **Doppler**   | Aktive Secrets für DEV + PROD | Bei jeder Änderung  |
-| **.locklock** | Archiv + Sicherheit + Notfall | Bei jeder Änderung  |
+| Pillar        | Purpose                       | When to update? |
+| ------------- | ----------------------------- | --------------- |
+| **Doppler**   | Active secrets for DEV + PROD | On every change |
+| **.locklock** | Archive + safety + emergency  | On every change |
 
-### Was ist mit docker/.env?
+### What about docker/.env?
 
-`docker/.env` enthält **nur noch Non-Secrets** (Ports, Hostnames, Versions).
-Ohne Doppler schlägt `docker-compose` sofort fehl mit klaren Fehlermeldungen:
+`docker/.env` only contains **non-secrets** (ports, hostnames, versions).
+Without Doppler, `docker-compose` fails immediately with clear error messages:
 
 ```
 ERROR: required variable REDIS_PASSWORD is missing a value:
   REDIS_PASSWORD must be set - use doppler run
 ```
 
-### Warum nur 2 Säulen?
+### Why only 2 pillars?
 
 ```
-Szenario 1: Doppler funktioniert (Normalfall)
+Scenario 1: Doppler works (normal case)
 ├── doppler run -- docker-compose up -d
-└── ✅ Secrets kommen von Doppler
+└── ✅ Secrets come from Doppler
 
-Szenario 2: Doppler down / Token verloren
-├── docker-compose up -d (ohne doppler run)
-├── ❌ Fehler: "JWT_SECRET must be set - use doppler run"
-├── .locklock öffnen → Secrets manuell als ENV setzen
-└── ✅ Notfall-Recovery möglich
+Scenario 2: Doppler down / token lost
+├── docker-compose up -d (without doppler run)
+├── ❌ Error: "JWT_SECRET must be set - use doppler run"
+├── Open .locklock → set secrets manually as ENV
+└── ✅ Emergency recovery possible
 
-Szenario 3: Alles kaputt / Neuer Rechner / Disaster Recovery
-├── .locklock öffnen
-└── ✅ Alle Secrets + History + Tokens dokumentiert
+Scenario 3: Everything broken / new machine / disaster recovery
+├── Open .locklock
+└── ✅ All secrets + history + tokens documented
 ```
 
-### Workflow bei Secret-Änderung
+### Workflow on a secret change
 
 ```bash
-# Beispiel: JWT_SECRET rotieren
+# Example: rotate JWT_SECRET
 
-# 1. Neues Secret generieren
+# 1. Generate a new secret
 NEW_JWT=$(node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
 
-# 2. In DOPPLER aktualisieren (Primary)
+# 2. Update in DOPPLER (primary)
 doppler secrets set JWT_SECRET="$NEW_JWT" --project assixx --config dev
 
-# 3. In .locklock dokumentieren (Archiv)
-# → Manuell: Alten Wert in ARCHIV Sektion verschieben
-# → Neuen Wert in AKTUELL Sektion eintragen
+# 3. Document in .locklock (archive)
+# → Manually: move old value to ARCHIVE section
+# → Add new value to CURRENT section
 
-# docker/.env muss NICHT aktualisiert werden (enthält keine Secrets!)
+# docker/.env does NOT need to be updated (contains no secrets!)
 ```
 
-### Checkliste bei jeder Secret-Änderung
+### Checklist on every secret change
 
 ```
-□ Doppler aktualisiert?     → doppler secrets set ...
-□ .locklock aktualisiert?   → Archiv + Dokumentation
+□ Doppler updated?     → doppler secrets set ...
+□ .locklock updated?   → archive + documentation
 ```
 
 ---
 
-## 3. Token-System verstehen
+## 3. Understanding the Token System
 
-### Was ist der DOPPLER_TOKEN?
+### What is the DOPPLER_TOKEN?
 
-| Eigenschaft          | Wert                              |
-| -------------------- | --------------------------------- |
-| **Was ist es?**      | Service Token für Doppler API     |
-| **Wer braucht ihn?** | Docker, CI/CD, Scripts            |
-| **Berechtigung**     | Read-Only auf `assixx/dev` Config |
+| Property          | Value                             |
+| ----------------- | --------------------------------- |
+| **What is it?**   | Service token for the Doppler API |
+| **Who needs it?** | Docker, CI/CD, scripts            |
+| **Permission**    | Read-only on `assixx/dev` config  |
 
-### WICHTIG: Token wird nur EINMAL angezeigt!
+### IMPORTANT: the token is shown only ONCE!
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Token erstellen                                            │
+│  Create token                                               │
 │  └── doppler configs tokens create NAME ...                 │
-│      └── Token wird EINMAL angezeigt: dp.st.dev.xxxxx       │
-│          └── SOFORT in .locklock speichern!                 │
+│      └── Token shown ONCE: dp.st.dev.xxxxx                   │
+│          └── Save IMMEDIATELY in .locklock!                 │
 └─────────────────────────────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Danach in Doppler Cloud                                    │
-│  └── Token-WERT ist NICHT mehr sichtbar                     │
-│  └── Nur Token-NAME und Metadaten sichtbar                  │
-│  └── Das ist ein SICHERHEITSFEATURE!                        │
+│  Afterwards in Doppler Cloud                                │
+│  └── Token VALUE is no longer visible                       │
+│  └── Only token NAME and metadata visible                   │
+│  └── This is a SECURITY FEATURE!                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Wo finde ich meinen Token?
+### Where do I find my token?
 
-| Ort                          | Token-Wert sichtbar? | Anmerkung                 |
-| ---------------------------- | -------------------- | ------------------------- |
-| `.locklock`                  | ✅ JA                | **Deine lokale Referenz** |
-| Doppler Cloud Dashboard      | ❌ NEIN              | Nur Name/Metadaten        |
-| `doppler configs tokens` CLI | ❌ NEIN              | Nur Name/Metadaten        |
+| Location                     | Token value visible? | Note                     |
+| ---------------------------- | -------------------- | ------------------------ |
+| `.locklock`                  | ✅ YES               | **Your local reference** |
+| Doppler Cloud dashboard      | ❌ NO                | Only name/metadata       |
+| `doppler configs tokens` CLI | ❌ NO                | Only name/metadata       |
 
-**Der Token-Wert steht NUR in `.locklock`!**
+**The token value lives ONLY in `.locklock`!**
 
 ```bash
-# Token aus .locklock anzeigen
+# Show token from .locklock
 grep -A 2 "docker-dev:" /home/scs/projects/Assixx/.locklock
 ```
 
 ---
 
-## 4. Docker Commands mit Doppler
+## 4. Docker Commands with Doppler
 
-### Basis-Befehle
+### Basic commands
 
-> **Profile-System** (ADR-027 Amendment 2026-04-28): `backend`/`deletion-worker` leben im `dev` Profile, `backend-prod`/`deletion-worker-prod` im `production` Profile. Default via `docker/.env`: `COMPOSE_PROFILES=dev,observability`.
+> **Profile system** (ADR-027 amendment 2026-04-28): `backend`/`deletion-worker` live in the `dev` profile, `backend-prod`/`deletion-worker-prod` in the `production` profile. Default via `docker/.env`: `COMPOSE_PROFILES=dev,observability`.
 
 ```bash
 cd /home/scs/projects/Assixx/docker
 
-# Basis (liest .env Default: dev,observability) — Backend (dev) + PG + Redis + Observability
+# Default (reads .env default: dev,observability) — backend (dev) + PG + Redis + observability
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose up -d
 
-# Explizit nur dev (ohne observability)
+# Explicit dev only (no observability)
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile dev up -d
 
-# Explizit dev + observability
+# Explicit dev + observability
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile dev --profile observability up -d
 
-# Production (CI-Parität: backend-prod aus docker/Dockerfile + Frontend + Nginx + Observability)
+# Production (CI parity: backend-prod from docker/Dockerfile + frontend + Nginx + observability)
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile production up -d
 ```
 
-### Stoppen
+### Stop
 
 ```bash
-# Dev-Stack stoppen
+# Stop dev stack
 doppler run -- docker-compose --profile dev down
 
-# Mit Observability
+# With observability
 doppler run -- docker-compose --profile dev --profile observability down
 
-# Production stoppen
+# Stop production
 doppler run -- docker-compose --profile production down
 ```
 
-### Neubauen (nach Dependency-Änderung)
+### Rebuild (after a dependency change)
 
 ```bash
-# DEV Backend neu bauen (profile dev erforderlich — sonst "service not found")
+# Rebuild DEV backend (profile dev required — otherwise "service not found")
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile dev build --no-cache backend
 
-# PROD komplett neu bauen (backend-prod + frontend)
+# Rebuild PROD completely (backend-prod + frontend)
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile production build --no-cache
 ```
 
@@ -219,48 +219,48 @@ DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile production
 
 ## 5. Development Workflow
 
-### DEV Starten (Standard)
+### Start DEV (default)
 
 ```bash
-# Terminal 1: Docker Services (.env Default: COMPOSE_PROFILES=dev,observability)
+# Terminal 1: Docker services (.env default: COMPOSE_PROFILES=dev,observability)
 cd /home/scs/projects/Assixx/docker
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose up -d
-# ODER explizit:
+# OR explicit:
 # DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile dev --profile observability up -d
 
-# Terminal 2: Frontend Dev Server (HMR)
+# Terminal 2: frontend dev server (HMR)
 cd /home/scs/projects/Assixx
 pnpm run dev:svelte
 ```
 
 ### DEV URLs
 
-| Service        | URL                   | Beschreibung     |
+| Service        | URL                   | Description      |
 | -------------- | --------------------- | ---------------- |
-| Frontend (HMR) | http://localhost:5173 | Vite Dev Server  |
+| Frontend (HMR) | http://localhost:5173 | Vite dev server  |
 | Backend API    | http://localhost:3000 | NestJS + Fastify |
 | Grafana        | http://localhost:3050 | Dashboards       |
 | Prometheus     | http://localhost:9090 | Metrics          |
 | Loki           | http://localhost:3100 | Logs             |
 
-### Nach Code-Änderung
+### After a code change
 
-| Änderung              | Befehl                                                 |
+| Change                | Command                                                |
 | --------------------- | ------------------------------------------------------ |
-| Backend Code          | `docker-compose restart backend`                       |
-| Frontend Code         | **Nichts** - HMR lädt automatisch neu                  |
-| Backend Dependencies  | `docker-compose build backend && docker-compose up -d` |
-| Frontend Dependencies | **Nichts** - läuft lokal, `pnpm add` reicht            |
+| Backend code          | `docker-compose restart backend`                       |
+| Frontend code         | **Nothing** — HMR reloads automatically                |
+| Backend dependencies  | `docker-compose build backend && docker-compose up -d` |
+| Frontend dependencies | **Nothing** — runs locally, `pnpm add` is enough       |
 
-### DEV Zusammenfassung
+### DEV summary
 
 ```
 ┌──────────────┬───────────────────────┬──────────────────────┐
-│   Änderung   │        Backend        │       Frontend       │
+│    Change    │        Backend        │       Frontend       │
 ├──────────────┼───────────────────────┼──────────────────────┤
-│ Code         │ restart backend       │ nichts (HMR)         │
+│ Code         │ restart backend       │ nothing (HMR)        │
 ├──────────────┼───────────────────────┼──────────────────────┤
-│ Dependencies │ build backend + up -d │ nichts (läuft lokal) │
+│ Dependencies │ build backend + up -d │ nothing (runs local) │
 └──────────────┴───────────────────────┴──────────────────────┘
 ```
 
@@ -268,7 +268,7 @@ pnpm run dev:svelte
 
 ## 6. Production Workflow
 
-### PROD Starten
+### Start PROD
 
 ```bash
 cd /home/scs/projects/Assixx/docker
@@ -277,44 +277,44 @@ DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- docker-compose --profile production
 
 ### PROD URLs
 
-| Service           | URL                   | Beschreibung     |
+| Service           | URL                   | Description      |
 | ----------------- | --------------------- | ---------------- |
 | Frontend (SSR)    | http://localhost      | Via Nginx        |
-| Frontend (direkt) | http://localhost:3001 | SvelteKit Node   |
+| Frontend (direct) | http://localhost:3001 | SvelteKit Node   |
 | Backend API       | http://localhost:3000 | NestJS + Fastify |
 
-### Nach Code-Änderung
+### After a code change
 
-| Änderung      | Befehl                                                       |
+| Change        | Command                                                      |
 | ------------- | ------------------------------------------------------------ |
-| Backend Code  | `docker-compose --profile production restart backend-prod`   |
-| Frontend Code | `docker-compose --profile production up -d --build frontend` |
+| Backend code  | `docker-compose --profile production restart backend-prod`   |
+| Frontend code | `docker-compose --profile production up -d --build frontend` |
 
-### PROD Zusammenfassung
+### PROD summary
 
 ```
 ┌──────────────┬──────────────────────────────────────────────────────┐
-│   Schritt    │                        Befehl                        │
+│    Step      │                       Command                        │
 ├──────────────┼──────────────────────────────────────────────────────┤
-│ PROD bauen   │ docker-compose --profile production build --no-cache │
+│ Build PROD   │ docker-compose --profile production build --no-cache │
 ├──────────────┼──────────────────────────────────────────────────────┤
-│ PROD starten │ docker-compose --profile production up -d            │
+│ Start PROD   │ docker-compose --profile production up -d            │
 ├──────────────┼──────────────────────────────────────────────────────┤
-│ PROD stoppen │ docker-compose --profile production down             │
+│ Stop PROD    │ docker-compose --profile production down             │
 └──────────────┴──────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 7. Token verloren? Neuen erstellen
+## 7. Lost a Token? Create a New One
 
-### Schritt 1: Alten Token widerrufen
+### Step 1: revoke the old token
 
 ```bash
 doppler configs tokens revoke docker-dev --project assixx --config dev
 ```
 
-### Schritt 2: Neuen Token erstellen
+### Step 2: create a new token
 
 ```bash
 doppler configs tokens create docker-dev-v2 \
@@ -324,62 +324,62 @@ doppler configs tokens create docker-dev-v2 \
   --plain
 ```
 
-**Output (EINMALIG!):**
+**Output (ONCE!):**
 
 ```
-dp.st.dev.NEUERTOKENxxxxxxxxxxxxxxxxxxxxx
+dp.st.dev.NEWTOKENxxxxxxxxxxxxxxxxxxxxx
 ```
 
-### Schritt 3: SOFORT in .locklock speichern
+### Step 3: save IMMEDIATELY in .locklock
 
 ```bash
-# .locklock öffnen und Token aktualisieren
+# Open .locklock and update the token
 nano /home/scs/projects/Assixx/.locklock
 
-# Unter "Doppler Service Tokens:" den neuen Wert eintragen
+# Replace the value under "Doppler Service Tokens:"
 ```
 
-### Schritt 4: ~/.bashrc aktualisieren (falls verwendet)
+### Step 4: update ~/.bashrc (if used)
 
 ```bash
-# Alte Zeile ersetzen
+# Replace the old line
 nano ~/.bashrc
-# export DOPPLER_TOKEN="dp.st.dev.NEUERTOKEN..."
+# export DOPPLER_TOKEN="dp.st.dev.NEWTOKEN..."
 source ~/.bashrc
 ```
 
 ---
 
-## 8. Secrets verwalten
+## 8. Managing Secrets
 
-### Alle Secrets anzeigen
+### Show all secrets
 
 ```bash
 doppler secrets --project assixx --config dev
 ```
 
-### Einzelnes Secret abrufen
+### Get a single secret
 
 ```bash
 doppler secrets get JWT_SECRET --project assixx --config dev
 ```
 
-### Secret hinzufügen/ändern
+### Add/change a secret
 
 ```bash
-doppler secrets set NEW_SECRET="wert" --project assixx --config dev
+doppler secrets set NEW_SECRET="value" --project assixx --config dev
 ```
 
-### Secret löschen
+### Delete a secret
 
 ```bash
 doppler secrets delete OLD_SECRET --project assixx --config dev
 ```
 
-### Mehrere Secrets auf einmal (JSON Upload)
+### Multiple secrets at once (JSON upload)
 
 ```bash
-# 1. JSON erstellen
+# 1. Create JSON
 cat > /tmp/secrets.json << 'EOF'
 {
   "NEW_KEY_1": "value1",
@@ -387,14 +387,14 @@ cat > /tmp/secrets.json << 'EOF'
 }
 EOF
 
-# 2. Hochladen
+# 2. Upload
 doppler secrets upload /tmp/secrets.json --project assixx --config dev
 
-# 3. JSON löschen!
+# 3. Delete the JSON!
 rm /tmp/secrets.json
 ```
 
-### Activity Log (Wer hat was geändert?)
+### Activity log (who changed what?)
 
 ```bash
 doppler activity --project assixx
@@ -402,21 +402,21 @@ doppler activity --project assixx
 
 ---
 
-## 9. Team: Token-Management für Entwickler
+## 9. Team: Token Management for Developers
 
-### Grundregel: Token pro Entwickler
+### Ground rule: one token per developer
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  NIEMALS einen Token für alle teilen!                       │
-│  → Jeder Entwickler bekommt seinen EIGENEN Token            │
+│  NEVER share one token with everyone!                       │
+│  → Every developer gets their OWN token                     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Token für neuen Entwickler erstellen
+### Create a token for a new developer
 
 ```bash
-# Du (Admin) erstellst Token für "Max"
+# You (admin) create a token for "Max"
 doppler configs tokens create max-dev \
   --project assixx \
   --config dev \
@@ -424,186 +424,186 @@ doppler configs tokens create max-dev \
   --plain
 
 # Output: dp.st.dev.MAXTOKENxxxxx
-# → Token EINMAL angezeigt, sofort notieren!
+# → Token shown ONCE, write it down immediately!
 ```
 
-### Token sicher an Entwickler übergeben
+### Hand the token over securely
 
-| Methode                                    | Sicherheit   |
-| ------------------------------------------ | ------------ |
-| ❌ Email                                   | NIEMALS      |
-| ❌ Slack/Teams                             | NIEMALS      |
-| ⚠️ Signal/WhatsApp (verschwindend)         | Okay         |
-| ✅ Persönlich / Videocall                  | Beste Option |
-| ✅ Passwort-Manager (1Password, Bitwarden) | Beste Option |
+| Method                                     | Security    |
+| ------------------------------------------ | ----------- |
+| ❌ Email                                   | NEVER       |
+| ❌ Slack/Teams                             | NEVER       |
+| ⚠️ Signal/WhatsApp (disappearing)          | OK          |
+| ✅ In person / video call                  | Best option |
+| ✅ Password manager (1Password, Bitwarden) | Best option |
 
-### Was der neue Entwickler tun muss
+### What the new developer has to do
 
 ```bash
-# 1. Doppler CLI installieren
+# 1. Install the Doppler CLI
 curl -Ls --tlsv1.2 --proto "=https" \
   "https://cli.doppler.com/install.sh" | sudo sh
 
-# 2. Docker starten MIT Token (explizit, kein export!)
+# 2. Start Docker WITH the token (explicit, no export!)
 cd /home/scs/projects/Assixx/docker
 DOPPLER_TOKEN="dp.st.dev.MAXTOKENxxx" doppler run -- docker-compose up -d
 
-# 3. Mit Observability
+# 3. With observability
 DOPPLER_TOKEN="dp.st.dev.MAXTOKENxxx" doppler run -- docker-compose --profile observability up -d
 ```
 
-### Was der Entwickler NICHT braucht
+### What the developer does NOT need
 
-| Braucht er? | Was?                            |
-| ----------- | ------------------------------- |
-| ❌ NEIN     | Doppler Account                 |
-| ❌ NEIN     | Doppler Login (`doppler login`) |
-| ❌ NEIN     | Zugang zum Doppler Dashboard    |
-| ✅ JA       | Seinen Service Token            |
-| ✅ JA       | Doppler CLI installiert         |
-| ✅ JA       | Docker installiert              |
+| Needs it? | What?                           |
+| --------- | ------------------------------- |
+| ❌ NO     | Doppler account                 |
+| ❌ NO     | Doppler login (`doppler login`) |
+| ❌ NO     | Access to the Doppler dashboard |
+| ✅ YES    | Their service token             |
+| ✅ YES    | Doppler CLI installed           |
+| ✅ YES    | Docker installed                |
 
-### Alle Team-Tokens anzeigen
+### Show all team tokens
 
 ```bash
 doppler configs tokens --project assixx --config dev
 ```
 
-### Token widerrufen (Entwickler verlässt Team)
+### Revoke a token (developer leaves the team)
 
 ```bash
-# Max verlässt das Team → Token sofort widerrufen
+# Max leaves the team → revoke the token immediately
 doppler configs tokens revoke max-dev --project assixx --config dev
 ```
 
-### Token-Namenskonvention
+### Token naming convention
 
 ```
 Format: [name]-[environment]
 
-Beispiele:
-├── docker-dev      → Dein lokaler Token
-├── max-dev         → Max's Token
-├── anna-dev        → Anna's Token
+Examples:
+├── docker-dev      → your local token
+├── max-dev         → Max's token
+├── anna-dev        → Anna's token
 ├── ci-github-dev   → GitHub Actions
-└── ci-github-prod  → GitHub Actions Production
+└── ci-github-prod  → GitHub Actions production
 ```
 
-### Team-Token Checkliste
+### Team token checklist
 
 ```
-Neuer Entwickler:
-□ Token erstellt: doppler configs tokens create NAME-dev ...
-□ Token sicher übergeben (NICHT per Email!)
-□ In .locklock dokumentiert (nur Token-NAME, nicht Wert!)
+New developer:
+□ Token created: doppler configs tokens create NAME-dev ...
+□ Token handed over securely (NOT via email!)
+□ Documented in .locklock (token NAME only, not the value!)
 
-Entwickler verlässt Team:
-□ Token widerrufen: doppler configs tokens revoke NAME-dev ...
-□ Aus .locklock entfernen
+Developer leaves the team:
+□ Token revoked: doppler configs tokens revoke NAME-dev ...
+□ Removed from .locklock
 ```
 
-### Audit: Wer hat wann zugegriffen?
+### Audit: who accessed what and when?
 
 ```bash
-# Activity Log anzeigen
+# Show activity log
 doppler activity --project assixx
 
-# Zeigt: Token-Name, Zeitpunkt, Aktion
+# Shows: token name, timestamp, action
 ```
 
 ---
 
 ## 10. Multi-Environment Setup (dev / stg / prd)
 
-### Übersicht
+### Overview
 
-Assixx hat **3 Doppler-Configs** mit eigenständigen, kryptographisch starken Secrets:
+Assixx has **3 Doppler configs** with independent, cryptographically strong secrets:
 
-| Config  | Zweck              | NODE_ENV    | Domains                        | Secrets                       |
-| ------- | ------------------ | ----------- | ------------------------------ | ----------------------------- |
-| **dev** | Lokale Entwicklung | development | localhost:3000, localhost:5173 | Dev-Passwörter (`dev_only_*`) |
-| **stg** | Staging / QA       | production  | stg.assixx.com, stg.assixx.de  | 128-char Hex-Secrets          |
-| **prd** | Live-Produktion    | production  | assixx.com, assixx.de, www.\*  | 128-char Hex-Secrets          |
+| Config  | Purpose           | NODE_ENV    | Domains                        | Secrets                      |
+| ------- | ----------------- | ----------- | ------------------------------ | ---------------------------- |
+| **dev** | Local development | development | localhost:3000, localhost:5173 | Dev passwords (`dev_only_*`) |
+| **stg** | Staging / QA      | production  | stg.assixx.com, stg.assixx.de  | 128-char hex secrets         |
+| **prd** | Live production   | production  | assixx.com, assixx.de, www.\*  | 128-char hex secrets         |
 
-> **Warum `NODE_ENV=production` für stg?** Der Backend-Config-Validator (`config.service.ts`) akzeptiert nur
-> `development`, `production`, `test`. Staging-spezifisches Verhalten wird über `LOG_LEVEL`,
-> `ALLOWED_ORIGINS` und `ORIGIN` gesteuert.
+> **Why `NODE_ENV=production` for stg?** The backend config validator (`config.service.ts`) only accepts
+> `development`, `production`, `test`. Staging-specific behaviour is steered via `LOG_LEVEL`,
+> `ALLOWED_ORIGINS`, and `ORIGIN`.
 
-### Unterschiede zwischen den Environments
+### Differences between the environments
 
-| Variable             | dev                       | stg                           | prd                           |
-| -------------------- | ------------------------- | ----------------------------- | ----------------------------- |
-| `LOG_LEVEL`          | debug                     | info                          | warn                          |
-| `ALLOWED_ORIGINS`    | localhost:3000,5173       | stg.assixx.com, stg.assixx.de | assixx.com, assixx.de, www.\* |
-| `ORIGIN`             | http://localhost          | https://stg.assixx.com        | https://assixx.com            |
-| `REDIS_PASSWORD`     | `dev_only_redis_p@ss_...` | 64-char Hex                   | 64-char Hex                   |
-| `JWT_SECRET`         | `DEV_91040ae...`          | 128-char Hex                  | 128-char Hex                  |
-| Alle anderen Secrets | Dev-Strings               | Eigenständig generiert        | Eigenständig generiert        |
+| Variable          | dev                       | stg                           | prd                           |
+| ----------------- | ------------------------- | ----------------------------- | ----------------------------- |
+| `LOG_LEVEL`       | debug                     | info                          | warn                          |
+| `ALLOWED_ORIGINS` | localhost:3000,5173       | stg.assixx.com, stg.assixx.de | assixx.com, assixx.de, www.\* |
+| `ORIGIN`          | http://localhost          | https://stg.assixx.com        | https://assixx.com            |
+| `REDIS_PASSWORD`  | `dev_only_redis_p@ss_...` | 64-char hex                   | 64-char hex                   |
+| `JWT_SECRET`      | `DEV_91040ae...`          | 128-char hex                  | 128-char hex                  |
+| All other secrets | Dev strings               | Independently generated       | Independently generated       |
 
-**Jedes Environment hat komplett eigenständige Secrets.** Kein Secret wird zwischen stg/prd geteilt
-(außer Sentry DSN und Grafana Cloud Keys — das sind Monitoring-Endpoints, keine Geheimnisse).
+**Every environment has fully independent secrets.** No secret is shared between stg/prd
+(except Sentry DSN and Grafana Cloud keys — those are monitoring endpoints, not secrets).
 
-### Environment Seeder Script
+### Environment seeder script
 
-Secrets für stg/prd werden mit dem Seeder-Script generiert:
+Secrets for stg/prd are generated with the seeder script:
 
 ```bash
-# Preview (kein Schreibzugriff)
+# Preview (no write access)
 ./scripts/doppler-seed-environment.sh stg --dry-run
 ./scripts/doppler-seed-environment.sh prd --dry-run
 
-# Tatsächlich seeden (erfordert Bestätigung)
+# Actually seed (requires confirmation)
 ./scripts/doppler-seed-environment.sh stg
 ./scripts/doppler-seed-environment.sh prd
 
-# Bestehende Secrets überschreiben (z.B. bei Rotation)
+# Overwrite existing secrets (e.g. for rotation)
 ./scripts/doppler-seed-environment.sh prd --force
 ```
 
-**Sicherheitsregeln des Scripts:**
+**Safety rules of the script:**
 
-- `dev` wird **immer abgelehnt** — Dev-Secrets werden separat verwaltet
-- Secrets werden **nie** auf stdout gedruckt
-- Bestätigung: Man muss den Environment-Namen eintippen
-- Automatische Verifizierung: JWT≠Refresh, Mindestlängen, alle kritischen Keys gesetzt
+- `dev` is **always rejected** — dev secrets are managed separately
+- Secrets are **never** printed to stdout
+- Confirmation: you have to type the environment name
+- Automatic verification: JWT≠Refresh, minimum lengths, all critical keys set
 
-### Secrets vergleichen (nur Namen, nie Werte!)
+### Compare secrets (only names, never values!)
 
 ```bash
-# Welche Secrets hat stg?
+# Which secrets does stg have?
 doppler secrets --project assixx --config stg --only-names
 
-# Welche Secrets hat prd?
+# Which secrets does prd have?
 doppler secrets --project assixx --config prd --only-names
 
-# Einzelnes Secret prüfen (Länge, nicht Wert)
+# Inspect a single secret (length, not value)
 doppler secrets get JWT_SECRET --project assixx --config prd --plain | wc -c
 ```
 
-### Manuelle Secret-Änderung (z.B. SMTP)
+### Manual secret change (e.g. SMTP)
 
 ```bash
-# SMTP für Production setzen
+# Set SMTP for production
 doppler secrets set SMTP_USER="real-email@assixx.com" --project assixx --config prd
 doppler secrets set SMTP_PASS="app-specific-password" --project assixx --config prd
 
-# Domain ändern
-doppler secrets set ALLOWED_ORIGINS="https://neue-domain.com" --project assixx --config prd
+# Change a domain
+doppler secrets set ALLOWED_ORIGINS="https://new-domain.com" --project assixx --config prd
 ```
 
 ---
 
-## 11. Service Tokens für Deployment
+## 11. Service Tokens for Deployment
 
-### Was ist ein Service Token?
+### What is a service token?
 
-Ein Service Token ist ein **read-only API-Key**, der es einem Server/Container erlaubt,
-Secrets aus einer bestimmten Doppler-Config zu ziehen. Jedes Environment braucht seinen eigenen Token.
+A service token is a **read-only API key** that lets a server/container pull
+secrets from a specific Doppler config. Every environment needs its own token.
 
 ```
-┌─��───────────────────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────────────────────┐
 │                                                                         │
-│   Dein Laptop (dev)          Staging-Server          Production-Server  │
+│   Your laptop (dev)         Staging server          Production server   │
 │   ┌─────────────┐           ┌─────────────┐         ┌─────────────┐   │
 │   │ docker-dev  │           │ docker-stg  │         │ docker-prd  │   │
 │   │ Token       │           │ Token       │         │ Token       │   │
@@ -615,61 +615,61 @@ Secrets aus einer bestimmten Doppler-Config zu ziehen. Jedes Environment braucht
 │   │ Config      │           │ Config      │         │ Config      │   │
 │   └─────────────┘           └─────────────┘         └─────────────┘   │
 │                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Aktueller Status
+### Current status
 
-| Token        | Config | Erstellt                | Wo gespeichert |
-| ------------ | ------ | ----------------------- | -------------- |
-| `docker-dev` | dev    | 2026-01-14              | .locklock      |
-| —            | stg    | **Noch nicht erstellt** | —              |
-| —            | prd    | **Noch nicht erstellt** | —              |
+| Token        | Config | Created             | Stored in |
+| ------------ | ------ | ------------------- | --------- |
+| `docker-dev` | dev    | 2026-01-14          | .locklock |
+| —            | stg    | **Not yet created** | —         |
+| —            | prd    | **Not yet created** | —         |
 
-**stg/prd Tokens werden erst benötigt, wenn ein Staging- oder Production-Server aufgesetzt wird.**
-Solange alles lokal läuft, reicht der `docker-dev` Token.
+**stg/prd tokens are only needed when a staging or production server is set up.**
+As long as everything runs locally, the `docker-dev` token is enough.
 
-### Token erstellen (wenn Deployment ansteht)
+### Create a token (when deployment is due)
 
 ```bash
-# Staging-Token erstellen (wird EINMAL angezeigt!)
+# Create staging token (shown ONCE!)
 doppler configs tokens create docker-stg \
   --project assixx \
   --config stg \
   --max-age 0 \
   --plain
-# Output: dp.st.stg.xxxxx → SOFORT in .locklock speichern!
+# Output: dp.st.stg.xxxxx → save IMMEDIATELY in .locklock!
 
-# Production-Token erstellen
+# Create production token
 doppler configs tokens create docker-prd \
   --project assixx \
   --config prd \
   --max-age 0 \
   --plain
-# Output: dp.st.prd.xxxxx → SOFORT in .locklock speichern!
+# Output: dp.st.prd.xxxxx → save IMMEDIATELY in .locklock!
 ```
 
-### Token auf dem Server verwenden
+### Use the token on the server
 
 ```bash
-# Auf dem Staging-Server:
+# On the staging server:
 export DOPPLER_TOKEN="dp.st.stg.xxxxx"
 doppler run -- docker-compose --profile production up -d
 
-# Auf dem Production-Server:
+# On the production server:
 export DOPPLER_TOKEN="dp.st.prd.xxxxx"
 doppler run -- docker-compose --profile production up -d
 ```
 
-### Sicherheitsregeln
+### Safety rules
 
-- **1 Token pro Server/Environment** — niemals denselben Token teilen
-- **Token-Wert wird nur EINMAL angezeigt** — sofort in .locklock dokumentieren
-- **Token widerrufen bei Kompromittierung:**
+- **1 token per server/environment** — never share the same token
+- **Token value shown only ONCE** — document immediately in .locklock
+- **Revoke the token on compromise:**
   ```bash
   doppler configs tokens revoke docker-stg --project assixx --config stg
   ```
-- **Token haben kein Ablaufdatum** (`max-age 0`) — bei Bedarf manuell rotieren
+- **Tokens have no expiry** (`max-age 0`) — rotate manually as needed
 
 ---
 
@@ -678,64 +678,64 @@ doppler run -- docker-compose --profile production up -d
 ### "you must provide a token"
 
 ```bash
-# Token nicht gesetzt
+# Token not set
 export DOPPLER_TOKEN="dp.st.dev.xxx"
-# oder
+# or
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- ...
 ```
 
 ### "invalid token"
 
 ```bash
-# Token falsch oder widerrufen
-# → Neuen Token erstellen (siehe Abschnitt 6)
+# Token wrong or revoked
+# → create a new token (see section 6)
 ```
 
 ### "Secrets not injected"
 
 ```bash
-# Test: Werden Secrets geladen?
+# Test: are secrets being loaded?
 DOPPLER_TOKEN="dp.st.dev.xxx" doppler run -- printenv | grep JWT
 
-# Wenn leer → Token prüfen
+# If empty → check the token
 doppler whoami
 ```
 
-### Container startet nicht
+### Container does not start
 
 ```bash
-# 1. Logs prüfen
+# 1. Check logs
 docker logs assixx-backend
 
-# 2. Secrets prüfen
+# 2. Check secrets
 doppler secrets --project assixx --config dev | grep -i error
 
-# 3. Notfall: Secrets manuell aus .locklock setzen
-export JWT_SECRET="wert-aus-locklock"
-export DB_PASSWORD="wert-aus-locklock"
-export REDIS_PASSWORD="wert-aus-locklock"
-# ... weitere Secrets aus .locklock
+# 3. Emergency: set secrets manually from .locklock
+export JWT_SECRET="value-from-locklock"
+export DB_PASSWORD="value-from-locklock"
+export REDIS_PASSWORD="value-from-locklock"
+# ... more secrets from .locklock
 docker-compose up -d
 ```
 
-### Wie funktioniert die Secret-Injection?
+### How does secret injection work?
 
 ```
 doppler run -- docker-compose up -d
        │
        ▼
 ┌─────────────────────────────────────┐
-│ 1. Doppler injiziert Secrets als    │
-│    Environment Variables            │
-│ 2. docker-compose liest ${VAR}      │
-│ 3. docker/.env liefert NUR          │
-│    Non-Secrets (Ports, Hosts)       │
-│ 4. Fehlende Secrets → klarer Fehler │
+│ 1. Doppler injects secrets as       │
+│    environment variables            │
+│ 2. docker-compose reads ${VAR}      │
+│ 3. docker/.env provides ONLY        │
+│    non-secrets (ports, hosts)       │
+│ 4. Missing secrets → clear error    │
 │    "must be set - use doppler run"  │
 └─────────────────────────────────────┘
 ```
 
-**Ohne Doppler startet NICHTS.** Das ist gewollt - keine versehentlichen Starts mit leeren Secrets.
+**Without Doppler NOTHING starts.** That is intentional — no accidental starts with empty secrets.
 
 ---
 
@@ -743,48 +743,48 @@ doppler run -- docker-compose up -d
 
 ```bash
 # === DOPPLER CLI ===
-doppler login                                    # Browser Auth
-doppler whoami                                   # Aktueller User
-doppler secrets --project assixx --config dev    # Alle Dev-Secrets
-doppler secrets --project assixx --config stg    # Alle Staging-Secrets
-doppler secrets --project assixx --config prd    # Alle Production-Secrets
-doppler configs --project assixx                 # Alle Configs auflisten
+doppler login                                    # browser auth
+doppler whoami                                   # current user
+doppler secrets --project assixx --config dev    # all dev secrets
+doppler secrets --project assixx --config stg    # all staging secrets
+doppler secrets --project assixx --config prd    # all production secrets
+doppler configs --project assixx                 # list all configs
 
 # === TOKEN MANAGEMENT ===
-doppler configs tokens --project assixx --config dev              # Tokens auflisten
-doppler configs tokens create NAME --project assixx --config dev  # Neuer Token
-doppler configs tokens revoke NAME --project assixx --config dev  # Token löschen
+doppler configs tokens --project assixx --config dev              # list tokens
+doppler configs tokens create NAME --project assixx --config dev  # new token
+doppler configs tokens revoke NAME --project assixx --config dev  # delete token
 
-# === DOCKER MIT DOPPLER (PFLICHT!) ===
+# === DOCKER WITH DOPPLER (REQUIRED!) ===
 DOPPLER_TOKEN="xxx" doppler run -- docker-compose up -d
 DOPPLER_TOKEN="xxx" doppler run -- docker-compose --profile observability up -d
 DOPPLER_TOKEN="xxx" doppler run -- docker-compose --profile production up -d
 
 # === ENVIRONMENT SEEDER (stg/prd) ===
-./scripts/doppler-seed-environment.sh stg --dry-run   # Staging Preview
-./scripts/doppler-seed-environment.sh prd --dry-run   # Production Preview
-./scripts/doppler-seed-environment.sh stg             # Staging seeden
-./scripts/doppler-seed-environment.sh prd             # Production seeden
-./scripts/doppler-seed-environment.sh prd --force     # Secrets rotieren
+./scripts/doppler-seed-environment.sh stg --dry-run   # staging preview
+./scripts/doppler-seed-environment.sh prd --dry-run   # production preview
+./scripts/doppler-seed-environment.sh stg             # seed staging
+./scripts/doppler-seed-environment.sh prd             # seed production
+./scripts/doppler-seed-environment.sh prd --force     # rotate secrets
 
-# === NOTFALL (ohne Doppler - Secrets aus .locklock) ===
+# === EMERGENCY (without Doppler — secrets from .locklock) ===
 # export JWT_SECRET="..." DB_PASSWORD="..." REDIS_PASSWORD="..." etc.
 # docker-compose up -d
 ```
 
 ---
 
-## Wichtige Dateien
+## Important Files
 
-| Datei                                 | Inhalt                                   | In Git? |
-| ------------------------------------- | ---------------------------------------- | ------- |
-| `.locklock`                           | Token-Werte, Passwörter, Archiv          | ❌ NEIN |
-| `docker/.env`                         | Nur Non-Secrets (Ports, Hosts, Versions) | ❌ NEIN |
-| `docker/.env.example`                 | Template mit CHANGE_ME Platzhaltern      | ✅ JA   |
-| `scripts/doppler-seed-environment.sh` | Environment Seeder (stg/prd)             | ✅ JA   |
-| `docs/DOPPLER-IMPLEMENTATION-PLAN.md` | Implementierungs-Details                 | ✅ JA   |
-| `HOW-TO-DOPPLER-GUIDE.md`             | Diese Anleitung                          | ❌ NEIN |
+| File                                  | Contents                                  | In Git? |
+| ------------------------------------- | ----------------------------------------- | ------- |
+| `.locklock`                           | Token values, passwords, archive          | ❌ NO   |
+| `docker/.env`                         | Non-secrets only (ports, hosts, versions) | ❌ NO   |
+| `docker/.env.example`                 | Template with CHANGE_ME placeholders      | ✅ YES  |
+| `scripts/doppler-seed-environment.sh` | Environment seeder (stg/prd)              | ✅ YES  |
+| `docs/DOPPLER-IMPLEMENTATION-PLAN.md` | Implementation details                    | ✅ YES  |
+| `HOW-TO-DOPPLER-GUIDE.md`             | This guide                                | ❌ NO   |
 
 ---
 
-**Letzte Aktualisierung:** 2026-04-03
+**Last update:** 2026-04-03
