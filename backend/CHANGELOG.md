@@ -1,5 +1,31 @@
 # assixx-backend
 
+## 0.4.13
+
+### Patch Changes
+
+- d512be6: refactor: add participants in kvp
+- 5036dfd: fix: cross-origin first-escrow bootstrap (ADR-022 §"New-user scenario")
+
+  The apex-login → subdomain-handoff flow now creates the user's first escrow
+  blob automatically via a bootstrap-variant of the unlock ticket. Previously
+  documented as deferred in the ADR-022 Amendment 2026-04-22, but every new
+  user (and every database restore without escrow rows) hit a non-recoverable
+  fail-closed state on the second cross-origin login. The unlock ticket payload
+  now optionally carries `argon2Salt + argon2Params` derived on apex; the
+  subdomain generates the X25519 key, registers it, and stores the first
+  escrow blob — all without re-prompting for the password and without a second
+  Argon2id round-trip. Pre-flight check on apex (`GET /e2e/keys/me`) skips
+  the bootstrap when the server already holds an active key for that user
+  (existing-user-without-escrow case → admin reset remains the recovery).
+
+- 5036dfd: chore: bump grafana v13
+- 62727d1: chore(docker): backend production image switches to `pnpm deploy` pattern (closes ADR-027 §3 deferred); cuts `assixx-backend:prod` image size from 1.27 GB to 614 MB (-52%) by mirroring `Dockerfile.frontend`. Moves frontend-only devDeps (Storybook, Stylelint suite, postcss-html, prettier-plugin-css-order) and 4 duplicates (vite, @tailwindcss/vite, prettier-plugin-svelte, prettier-plugin-tailwindcss) out of root `package.json` into `frontend/package.json` (single source of truth). Root scripts (`storybook`, `build-storybook`, `stylelint*`) now wrap to `pnpm --filter assixx-frontend run …`. Removes dead `eslint-plugin-storybook` import from root `eslint.config.mjs`. Fixes `docs/ARCHITECTURE.md` map drift (`Dockerfile.prod` → `Dockerfile`).
+- Updated dependencies [d512be6]
+- Updated dependencies [5036dfd]
+- Updated dependencies [62727d1]
+  - @assixx/shared@0.4.13
+
 ## 0.4.12
 
 ### Patch Changes

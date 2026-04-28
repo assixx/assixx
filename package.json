@@ -1,6 +1,6 @@
 {
   "name": "assixx",
-  "version": "0.4.12",
+  "version": "0.4.13",
   "type": "module",
   "main": "backend/dist/nest/main.js",
   "engines": {
@@ -163,6 +163,8 @@
     "nodemon": "^3.1.14",
     "prettier": "^3.8.3",
     "prettier-plugin-css-order": "^2.2.0",
+    "prettier-plugin-svelte": "^3.5.1",
+    "prettier-plugin-tailwindcss": "0.8.0",
     "tsx": "^4.21.0",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.59.1",

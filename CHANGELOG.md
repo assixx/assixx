@@ -5,6 +5,15 @@
 > CHANGELOGs after `pnpm changeset:version`. Do not hand-edit — changes
 > will be overwritten on the next release.
 
+## 0.4.13
+
+### Patch Changes
+
+- refactor: add participants in kvp
+- fix: cross-origin first-escrow bootstrap (ADR-022 §"New-user scenario")
+- chore: bump grafana v13
+- chore(docker): backend production image switches to `pnpm deploy` pattern (closes ADR-027 §3 deferred); cuts `assixx-backend:prod` image size from 1.27 GB to 614 MB (-52%) by mirroring `Dockerfile.frontend`. Moves frontend-only devDeps (Storybook, Stylelint suite, postcss-html, prettier-plugin-css-order) and 4 duplicates (vite, @tailwindcss/vite, prettier-plugin-svelte, prettier-plugin-tailwindcss) out of root `package.json` into `frontend/package.json` (single source of truth). Root scripts (`storybook`, `build-storybook`, `stylelint*`) now wrap to `pnpm --filter assixx-frontend run …`. Removes dead `eslint-plugin-storybook` import from root `eslint.config.mjs`. Fixes `docs/ARCHITECTURE.md` map drift (`Dockerfile.prod` → `Dockerfile`).
+
 ## 0.4.12
 
 ### Patch Changes
