@@ -547,7 +547,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx \
 
 > Reference module for shape: `backend/src/nest/auth/`. New module is `two-factor-auth/`.
 
-### Step 2.1: Module skeleton + types + DTOs + constants [PENDING]
+### Step 2.1: Module skeleton + types + DTOs + constants [DONE — 2026-04-28]
 
 **New directory:** `backend/src/nest/two-factor-auth/`
 
@@ -1382,7 +1382,7 @@ export const MESSAGES = {
 | 0       | 0     | DD sign-off (21/21 APPROVED)                                                                                                                                                   | DONE    | 2026-04-26 |
 | 1       | 0/0.5 | External-API audit · pre-deploy email draft · single-root detection · SPF/DKIM check · subdomain handoff verify · dev-SMTP smoke                                               | PENDING |            |
 | 2       | 1     | Migration: drop legacy 2FA columns + add 2 new columns                                                                                                                         | DONE    | 2026-04-28 |
-| 3       | 2     | Module skeleton · types · DTOs · constants · register in app.module                                                                                                            | PENDING |            |
+| 3       | 2     | Module skeleton · types · DTOs · constants · register in app.module                                                                                                            | DONE    | 2026-04-28 |
 | 4       | 2     | TwoFactorCodeService (crypto + Redis primitives via DI provider)                                                                                                               | PENDING |            |
 | 5       | 2     | TwoFactorAuthService (orchestration) · `send2faCode` + template                                                                                                                | PENDING |            |
 | 6       | 2     | Modify AuthService.login + SignupService (incl. tenant cleanup on SMTP fail per DD-14) · OAuth comment-only · **load-tests auf LoginResult umstellen** (v0.5.0 R13-Mitigation) | PENDING |            |
