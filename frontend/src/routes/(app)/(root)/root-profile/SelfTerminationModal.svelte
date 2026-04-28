@@ -39,22 +39,25 @@
 </script>
 
 {#if open}
+  <!-- Design-System modal classes (ds-modal__*, modal-overlay--active).
+       See frontend/src/design-system/primitives/modals/README.md.
+       Without `--active` the overlay is hidden (display:none / opacity:0). -->
   <div
-    class="modal-overlay"
+    class="modal-overlay modal-overlay--active"
     onclick={handleBackdropClick}
     onkeydown={handleKeydown}
     role="presentation"
   >
     <div
-      class="modal modal--md"
+      class="ds-modal ds-modal--md"
       role="dialog"
       aria-modal="true"
       aria-labelledby="self-term-title"
     >
-      <div class="modal-header">
+      <div class="ds-modal__header">
         <h2
           id="self-term-title"
-          class="modal-title"
+          class="ds-modal__title"
         >
           <i
             class="fas fa-exclamation-triangle"
@@ -62,9 +65,18 @@
           ></i>
           {SELF_TERMINATION_MESSAGES.modalTitle}
         </h2>
+        <button
+          type="button"
+          class="ds-modal__close"
+          aria-label="Schließen"
+          onclick={onclose}
+          disabled={submitting}
+        >
+          <i class="fas fa-times"></i>
+        </button>
       </div>
 
-      <div class="modal-body">
+      <div class="ds-modal__body">
         <div class="warning-banner">
           <i class="fas fa-shield-halved"></i>
           <p>{SELF_TERMINATION_MESSAGES.modalWarning}</p>
@@ -92,7 +104,7 @@
         </div>
       </div>
 
-      <div class="modal-footer modal-footer--spaced">
+      <div class="ds-modal__footer ds-modal__footer--spaced">
         <button
           type="button"
           class="btn btn-cancel"

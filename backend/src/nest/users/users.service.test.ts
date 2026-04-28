@@ -24,6 +24,7 @@ import type { TenantVerificationService } from '../domains/tenant-verification.s
 import type { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { UserPositionService } from '../organigram/user-position.service.js';
+import { ROOT_PROTECTION_CODES } from '../root/root-protection.service.js';
 import type { RootProtectionService } from '../root/root-protection.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
@@ -133,6 +134,32 @@ function createMockHierarchyPermission() {
   };
 }
 
+/**
+ * RootProtectionService mock — Layer 2 of FEAT_ROOT_ACCOUNT_PROTECTION
+ * (masterplan §2.3 wired in Session 4 into deleteUser + archiveUser).
+ *
+ * All methods default to no-op so the existing employee/admin-target tests
+ * (deleteUser → soft-delete, archiveUser → is_active=3) flow through to the
+ * SQL writes unchanged. The dedicated root-target tests below override
+ * specific methods to assert wiring (Session 11 follow-up: closes the
+ * unit-test gap behind Codecov's 10 % patch metric on this file — the
+ * behavior is already verified end-to-end by Session-8 API tests T16/T18,
+ * but the wiring assertion regression-protects against silent removal).
+ *
+ * Hoisted to a factory (mirrors createMockDb / createMockActivityLogger
+ * convention in this file) so individual tests can `.mockRejectedValueOnce`
+ * the guard chain without re-instantiating the whole service.
+ */
+function createMockRootProtection() {
+  return {
+    assertCrossRootTerminationForbidden: vi.fn().mockResolvedValue(undefined),
+    assertNotLastRoot: vi.fn().mockResolvedValue(undefined),
+    countActiveRoots: vi.fn().mockResolvedValue(2),
+    isTerminationOp: vi.fn().mockReturnValue(false),
+    auditDeniedAttempt: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
 /** Standard user row — all optional fields set to null (NOT undefined!) */
 function makeUserRow(overrides: Partial<UserRow> = {}): UserRow {
   return {
@@ -171,6 +198,7 @@ describe('UsersService', () => {
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
   let mockUserRepo: ReturnType<typeof createMockUserRepository>;
   let mockAvailability: ReturnType<typeof createMockAvailabilityService>;
+  let mockRootProtection: ReturnType<typeof createMockRootProtection>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -178,6 +206,7 @@ describe('UsersService', () => {
     mockActivityLogger = createMockActivityLogger();
     mockUserRepo = createMockUserRepository();
     mockAvailability = createMockAvailabilityService();
+    mockRootProtection = createMockRootProtection();
     const mockScope = createMockScope();
     const mockHierarchyPermission = createMockHierarchyPermission();
     const mockUserPositions = createMockUserPositionService();
@@ -198,18 +227,10 @@ describe('UsersService', () => {
         isVerified: vi.fn().mockResolvedValue(true),
       } as unknown as TenantVerificationService,
       // Layer-2 root protection (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md
-      // §2.3, Session 4). All methods no-op so existing employee-target
-      // tests for deleteUser / archiveUser / unarchiveUser still flow
-      // through to the SQL writes. A future "root target → 403" test would
-      // `.mockRejectedValueOnce(new ForbiddenException(...))` on
-      // `assertCrossRootTerminationForbidden`.
-      {
-        assertCrossRootTerminationForbidden: vi.fn().mockResolvedValue(undefined),
-        assertNotLastRoot: vi.fn().mockResolvedValue(undefined),
-        countActiveRoots: vi.fn().mockResolvedValue(2),
-        isTerminationOp: vi.fn().mockReturnValue(false),
-        auditDeniedAttempt: vi.fn().mockResolvedValue(undefined),
-      } as unknown as RootProtectionService,
+      // §2.3 + ADR-055, wired in Session 4 into deleteUser + archiveUser).
+      // Factory hoisted above so individual tests can override per-method
+      // (deleteUser root-target / archiveUser root-block — see end of file).
+      mockRootProtection as unknown as RootProtectionService,
     );
   });
 
@@ -822,6 +843,32 @@ describe('UsersService', () => {
       expect(updateSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
       expect(mockActivityLogger.logDelete).toHaveBeenCalled();
     });
+
+    it('invokes RootProtection chain when target.role === "root" (Layer-2 wiring)', async () => {
+      // FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.3 / ADR-055 — deleteUser
+      // wires `assertCrossRootTerminationForbidden` + `assertNotLastRoot` for
+      // root targets. End-to-end behavior is verified by Session-8 API test
+      // T16 (cross-root DELETE → 403 + DB-side `is_active|role` proof). This
+      // unit test regression-protects the wiring itself (R6 from §0.2):
+      // someone removing the guard call would make T16 fail too, but a
+      // unit-level smoke catches it ~5s instead of ~30s.
+      const rootRow = makeUserRow({ id: 5, role: 'root' });
+      // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([rootRow]);
+      // UPDATE is_active = 4 (guards default no-op → SQL still runs)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+
+      await service.deleteUser(5, 2, 10);
+
+      expect(
+        mockRootProtection.assertCrossRootTerminationForbidden,
+      ).toHaveBeenCalledExactlyOnceWith(
+        { id: 2, tenantId: 10 },
+        expect.objectContaining({ id: 5, tenantId: 10, role: 'root' }),
+        'soft-delete',
+      );
+      expect(mockRootProtection.assertNotLastRoot).toHaveBeenCalledExactlyOnceWith(10, 5);
+    });
   });
 
   // =============================================================
@@ -844,6 +891,35 @@ describe('UsersService', () => {
       expect(result.message).toBe('User archived successfully');
       const updateSql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain(`is_active = ${IS_ACTIVE.ARCHIVED}`);
+    });
+
+    it('throws CROSS_ROOT_FORBIDDEN when target.role === "root" (no DB UPDATE)', async () => {
+      // FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.3 / ADR-055 — archiveUser
+      // is NOT in §Operations Covered (archive=is_active 1→3 ≠ termination),
+      // so the canonical isTerminationOp gate is inert; instead, archiveUser
+      // applies a defensive role-block (users.service.ts:584-589) that
+      // throws CROSS_ROOT_FORBIDDEN directly. End-to-end behavior is verified
+      // by Session-8 API test T18 (POST /archive on root → 403 + DB-side
+      // is_active=1 proof). This unit test regression-protects the
+      // role-block (R6 from §0.2): silent removal would make T18 fail too,
+      // but the unit catches it earlier with no Docker dependency.
+      const rootRow = makeUserRow({ id: 5, role: 'root' });
+      // findUserById only — no UPDATE expected because the role-block
+      // throws BEFORE the UPDATE statement.
+      mockDb.tenantQuery.mockResolvedValueOnce([rootRow]);
+
+      await expect(service.archiveUser(5, 10)).rejects.toMatchObject({
+        constructor: ForbiddenException,
+        response: expect.objectContaining({
+          code: ROOT_PROTECTION_CODES.CROSS_ROOT_FORBIDDEN,
+        }),
+      });
+
+      // Defense: only the SELECT (findUserById) ran. The UPDATE is_active=3
+      // statement must NOT have been issued.
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
+      const calls = mockDb.tenantQuery.mock.calls.map((c) => String(c[0] ?? ''));
+      expect(calls.find((sql) => /UPDATE\s+users\b/i.test(sql))).toBeUndefined();
     });
   });
 

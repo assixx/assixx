@@ -204,6 +204,29 @@ describe('RootSelfTerminationNotificationService', () => {
       // Even with no peers, requester still gets a notification = 1 INSERT
       expect(countSqlMatches(mockDb, 'INSERT INTO notifications')).toBe(1);
     });
+
+    it('should swallow user-lookup errors (top-level catch — emit is skipped)', async () => {
+      // Symmetry with notifyRequested's identical test above. ADR-055 + §2.7
+      // require notification fan-out to be NEVER-throws so a failed
+      // recipient lookup cannot roll back the already-committed approve TX
+      // (vacation pattern, masterplan v1.0.6 Spec Deviation D7). The catch
+      // sits in the public method; verifying both notify* siblings closes
+      // the symmetric coverage gap on this service (Codecov 84 % → ~95 %).
+      mockDb.tenantQueryOne.mockRejectedValueOnce(new Error('DB connection lost'));
+
+      await expect(
+        service.notifyApproved({
+          tenantId: 7,
+          requesterId: 100,
+          requestId: 'req-uuid-approved-err',
+          approverId: 200,
+          comment: 'irrelevant — lookup blew up first',
+        }),
+      ).resolves.toBeUndefined();
+
+      // Lookup failed before emit — event must NOT have fired.
+      expect(mockEventBus.emitRootSelfTerminationApproved).not.toHaveBeenCalled();
+    });
   });
 
   // -----------------------------------------------------------
