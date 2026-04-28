@@ -102,8 +102,13 @@ function extractBullets(body) {
 
 /**
  * Drop changeset-generated cross-package noise, strip nested dep-update
- * lines from otherwise-valid bullets. Returns null if the whole bullet
+ * lines from otherwise-valid bullets, and remove the changeset-id hash
+ * prefix (`- 1031d27: …` → `- …`). Returns null if the whole bullet
  * should be dropped.
+ *
+ * Why strip the hash: /versioninfo is a user-facing changelog. The 7-char
+ * changeset hash adds visual noise without value — devs who need the
+ * commit reference can use per-package CHANGELOGs or `git log`.
  */
 function normalize(bullet) {
   const lines = bullet.split('\n');
@@ -111,10 +116,11 @@ function normalize(bullet) {
   // Drop auto-generated top-level bullets entirely.
   if (/^- Updated dependencies(\s*\[[a-f0-9]+\])?$/.test(firstLine)) return null;
   if (/^- (@assixx\/shared|assixx-backend|assixx-frontend)@\d/.test(firstLine)) return null;
-  // Strip nested "  - @assixx/shared@X.Y.Z" / "  - assixx-backend@X.Y.Z" lines.
-  const kept = lines.filter(
-    (l) => !/^\s+- (@assixx\/shared|assixx-backend|assixx-frontend)@\d/.test(l),
-  );
+  // Strip nested "  - @assixx/shared@X.Y.Z" / "  - assixx-backend@X.Y.Z" lines,
+  // then remove the leading "<hash>: " prefix Changesets writes per bullet.
+  const kept = lines
+    .filter((l) => !/^\s+- (@assixx\/shared|assixx-backend|assixx-frontend)@\d/.test(l))
+    .map((l) => l.replace(/^(\s*- )[a-f0-9]{7,}: /, '$1'));
   return kept.join('\n').trimEnd();
 }
 
