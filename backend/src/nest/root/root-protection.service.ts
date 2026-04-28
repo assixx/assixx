@@ -30,7 +30,7 @@
  *
  * @see docs/FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.2 (this Step)
  * @see docs/infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md (DB pool choice)
- * @see ADR-053 (planned, Phase 6)
+ * @see docs/infrastructure/adr/ADR-055-root-account-lifecycle-protection.md
  */
 import type { UserRole } from '@assixx/shared';
 import { IS_ACTIVE } from '@assixx/shared/constants';

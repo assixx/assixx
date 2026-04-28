@@ -293,6 +293,26 @@
   chains. Per-pair rate-limit (1 / 15 min) implemented via DB-lookup on
   `password_reset_tokens.initiated_by_user_id`. German-language blocked-
   and admin-initiated email templates (dark-mode MSO-compatible).
+- **Root Account Lifecycle Protection** (ADR-055): four-layer defense
+  prevents takeover and lock-out of `root` accounts across all four
+  termination operations (Soft-Delete, Deactivate, Role-Demotion,
+  Hard-Delete). (1) Frontend disables destructive controls on cross-root
+  rows in `/manage-root` and surfaces a self-termination card on
+  `/root-profile`. (2) Backend `RootProtectionService` blocks Root A →
+  Root B termination, wired into 4 mutation paths plus a defensive
+  role-block on the generic users archive. (3) Self-termination requires
+  peer approval — `RootSelfTerminationService` runs the 7-day-TTL request
+  workflow with single-pending-per-requester (DB unique partial index),
+  24h post-rejection cooldown, `FOR UPDATE` row lock in the approve TX,
+  and persistent notifications fanned out to all peer roots in tenant on
+  request / approve / reject. (4) PostgreSQL trigger `trg_root_protection`
+  (BEFORE UPDATE OR DELETE on `users`) backstops every layer including
+  raw-psql access as `app_user`; Hybrid Option 1+ verifies a real approved
+  row exists in a 5-min window before allowing the actor=approver flow
+  through. Last-root protection (`tenant must keep ≥ 1 active root`)
+  holds even with valid approval. `assixx_user` (DDL) + `sys_user`
+  (cron / signup / tenant deletion) bypass cleanly per the Triple-User
+  Model. 82 dedicated tests across 5 files (16 + 24 + 9 unit, 8 + 25 api).
 
 ### Document Management in Detail
 

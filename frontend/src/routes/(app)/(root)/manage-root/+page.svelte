@@ -335,7 +335,7 @@
     resetForm();
   }
 
-  // Preserved as dead-but-intentional after masterplan §5.2 / ADR-053:
+  // Preserved as dead-but-intentional after masterplan §5.2 / ADR-055:
   // the row-level Delete button is now permanently disabled (cross-root
   // immutability — Layer 1 UX hint). The downstream chain (DeleteModals
   // markup, deleteUser, closeDeleteModal, deleteUserId, executeDeleteRootUser)
@@ -647,7 +647,7 @@
                         (users.service.deleteUser, wired Session 4) and Layer 4
                         (DB trigger fn_prevent_cross_root_change) enforce the
                         same rule server-side; this `disabled` is the Layer 1 UX
-                        hint per masterplan §5.2 / ADR-053. `openDeleteModal`
+                        hint per masterplan §5.2 / ADR-055. `openDeleteModal`
                         retained as a noop reference for grep — the disabled
                         attribute prevents click events from firing on <button>.
                       -->
@@ -702,7 +702,7 @@
   (SSR filter excludes self at +page.server.ts:39, API filter `?role=root`),
   so the Edit modal's status dropdown must NEVER offer Inaktiv/Archiviert
   transitions. Backend Layer 4 trigger would 500 on such submits anyway —
-  this is the Layer 1 UX hint per masterplan §5.2 / ADR-053.
+  this is the Layer 1 UX hint per masterplan §5.2 / ADR-055.
 -->
 <RootUserModal
   {messages}

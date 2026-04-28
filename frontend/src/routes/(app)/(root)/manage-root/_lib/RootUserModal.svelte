@@ -42,7 +42,7 @@
      * When true (and isEditMode), the Status field renders read-only with a
      * lock indicator instead of the destructive dropdown (Inaktiv / Archiviert).
      * Used by /manage-root to enforce the cross-root immutability rule
-     * (masterplan §5.2 / ADR-053 — Layer 1 UX hint; backend Layer 2 + Layer 4
+     * (masterplan §5.2 / ADR-055 — Layer 1 UX hint; backend Layer 2 + Layer 4
      * are the real gates). Default false preserves backward-compatibility for
      * any future caller that allows status changes.
      */
@@ -395,7 +395,7 @@
             {#if lockDestructiveStatus}
               <!--
                 Cross-root immutability: status is read-only when the target is
-                another root account (masterplan §5.2 / ADR-053). The lock icon
+                another root account (masterplan §5.2 / ADR-055). The lock icon
                 + hint message tell the user WHY the dropdown is gone, instead
                 of silently hiding it. Backend Layer 2 + Layer 4 enforce the
                 same rule server-side; this branch is the Layer 1 UX hint only.

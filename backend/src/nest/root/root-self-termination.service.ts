@@ -33,7 +33,7 @@
  * @see docs/FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.4 (this Step)
  * @see docs/infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md (RLS, set_config)
  * @see backend/src/nest/root/root-protection.service.ts (Layer 2)
- * @see ADR-053 (planned, Phase 6)
+ * @see docs/infrastructure/adr/ADR-055-root-account-lifecycle-protection.md
  */
 import type { UserRole } from '@assixx/shared';
 import { IS_ACTIVE } from '@assixx/shared/constants';

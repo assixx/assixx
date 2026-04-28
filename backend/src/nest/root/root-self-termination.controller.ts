@@ -43,7 +43,7 @@
  * @see docs/infrastructure/adr/ADR-007-api-response-standardization.md
  * @see docs/infrastructure/adr/ADR-010-user-role-assignment-permissions.md
  * @see docs/infrastructure/adr/ADR-030-zod-validation-architecture.md
- * @see ADR-053 (planned, Phase 6)
+ * @see docs/infrastructure/adr/ADR-055-root-account-lifecycle-protection.md
  */
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
 

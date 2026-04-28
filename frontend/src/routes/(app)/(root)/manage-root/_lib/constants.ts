@@ -75,7 +75,7 @@ const BASE_MESSAGES = {
   EMAIL_USED_AS_USERNAME: 'Wird auch als Benutzername verwendet',
   INACTIVE_HINT: 'Inaktive/Archivierte Root-User können sich nicht anmelden',
 
-  // Cross-root immutability (masterplan §5.2 / ADR-053 — Layer 1 UX hint).
+  // Cross-root immutability (masterplan §5.2 / ADR-055 — Layer 1 UX hint).
   // Why: the SSR filter at +page.server.ts:39 already excludes the current user
   // and the API filter `?role=root` guarantees every row is another root, so
   // every Delete + Deactivate + Archive op on this page is cross-root by
