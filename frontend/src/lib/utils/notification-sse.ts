@@ -190,7 +190,7 @@ class NotificationSSEClient implements INotificationSSE {
       };
 
       this.eventSource.onerror = () => {
-        // Normal bei Page-Reload - kein echter Fehler
+        // Normal during page reload - not a real error
         log.debug('Connection closed (normal during page reload)');
         this.eventSource?.close();
         this.eventSource = null;

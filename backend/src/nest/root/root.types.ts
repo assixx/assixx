@@ -198,9 +198,9 @@ export interface AdminLog {
 export interface DashboardStats {
   adminCount: number;
   employeeCount: number;
-  // WHY: Single-Root-Warning-Banner auf /root-dashboard. Nur wenn rootCount === 1
-  // wird der Sicherheitshinweis zum Anlegen eines zweiten Root-Users angezeigt.
-  // Gegenmaßnahme gegen Credential-Verlust bei Single-Root-Tenants.
+  // WHY: Single-root warning banner on /root-dashboard. The hint to create a
+  // second root user is only rendered when rootCount === 1.
+  // Safeguard against credential loss in single-root tenants.
   rootCount: number;
   totalUsers: number;
   tenantCount?: number;

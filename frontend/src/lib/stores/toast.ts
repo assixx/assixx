@@ -20,11 +20,11 @@ export type ToastType = 'success' | 'error' | 'warning' | 'info';
  *
  * Exactly one of `href` or `onClick` must be set:
  * - `href`  — rendered as link-navigation button (e.g. "Berechtigungen zuweisen")
- * - `onClick` — rendered as callback button (e.g. "Rückgängig" für Undo-Pattern)
+ * - `onClick` — rendered as callback button (e.g. "Rückgängig" for the undo pattern)
  *
- * WHY: Undo-Pattern braucht Callback (DELETE-Call), nicht navigierenden Link.
- * Beide Varianten koexistieren damit Quick-Link (manage-employees) und Undo
- * (dieses ADR-Experiment) dasselbe Interface nutzen — siehe CLAUDE.md KISS.
+ * WHY: The undo pattern needs a callback (DELETE call), not a navigating link.
+ * Both variants coexist so quick-link (manage-employees) and undo
+ * (this ADR experiment) can share the same interface — see CLAUDE.md KISS.
  */
 export interface ToastAction {
   label: string;

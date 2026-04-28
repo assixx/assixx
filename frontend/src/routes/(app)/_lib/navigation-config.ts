@@ -986,11 +986,11 @@ export function filterMenuByScope(
  * alle Feature-Module (Blackboard, Surveys, KVP-Kategorien, TPM-Config, …).
  *
  * Allowed:
- * - Root (immer, by design)
- * - Admin mit `hasFullAccess=true`
- * - Jeder Lead (Team/Area/Department) — `orgScope.isAnyLead` deckt das ab
- * - Deputies mit Lead-Scope — Backend merged Deputy-IDs in `leadXxxIds` wenn
- *   Tenant-Toggle `deputy_has_lead_scope` aktiv ist (ADR-039), d.h. `isAnyLead=true`.
+ * - Root (always, by design)
+ * - Admin with `hasFullAccess=true`
+ * - Any lead (team/area/department) — covered by `orgScope.isAnyLead`
+ * - Deputies with lead scope — backend merges deputy IDs into `leadXxxIds` when
+ *   the tenant toggle `deputy_has_lead_scope` is active (ADR-039), i.e. `isAnyLead=true`.
  *
  * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
  */

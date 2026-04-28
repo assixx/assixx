@@ -9,10 +9,10 @@ import { addAssignment, createShiftDetail, removeAssignment } from './shift-oper
 
 import type { Employee, ShiftDetailData, WeeklyShiftsMap } from './types';
 
-// WHY: Dirty-Detection für "Ungespeicherte Änderungen"-Guard (ADR-045-style UX).
-// Ein Deep-Snapshot der geladenen Plan-Daten wird nach loadShiftPlan() und nach
-// erfolgreichem Save angelegt; weeklyShifts != snapshot ⇒ isDirty. Siehe
-// handlers.ts hasUnsavedChanges() für den strukturellen Compare.
+// WHY: Dirty detection for the "unsaved changes" guard (ADR-045-style UX).
+// A deep snapshot of the loaded plan is taken after loadShiftPlan() and after a
+// successful save; weeklyShifts != snapshot ⇒ isDirty. See
+// handlers.ts hasUnsavedChanges() for the structural compare.
 function cloneWeeklyShifts(source: WeeklyShiftsMap): WeeklyShiftsMap {
   const copy = new Map<string, Map<string, number[]>>();
   for (const [date, dayShifts] of source) {
@@ -52,8 +52,8 @@ function createNotesState() {
 function createCoreShiftState() {
   let weeklyShifts = $state(new Map<string, Map<string, number[]>>());
   let shiftDetails = $state(new Map<string, ShiftDetailData>());
-  // WHY: Snapshot der zuletzt geladenen/gespeicherten weeklyShifts — Referenzpunkt
-  // für isDirty. null = "noch nie geladen" (hasUnsavedChanges → dirty wenn size > 0).
+  // WHY: Snapshot of the most recently loaded/saved weeklyShifts — reference point
+  // for isDirty. null = "never loaded yet" (hasUnsavedChanges → dirty when size > 0).
   let originalWeeklyShifts = $state<WeeklyShiftsMap | null>(null);
 
   return {
@@ -75,11 +75,11 @@ function createCoreShiftState() {
     setShiftDetails: (details: Map<string, ShiftDetailData>) => {
       shiftDetails = details;
     },
-    // Snapshot nach loadShiftPlan() / handleSaveSchedule() — macht den aktuellen
-    // Stand zur neuen Baseline. Deep-Clone ist zwingend (shift-operations erzeugt
-    // zwar neue Top-Level-Maps, aber die inner number[]-Arrays könnten geteilt
-    // werden — ein späterer splice()-Call im Drop-Handler würde sonst auch den
-    // Snapshot mutieren und isDirty würde falsch false melden).
+    // Snapshot after loadShiftPlan() / handleSaveSchedule() — promotes the current
+    // state to the new baseline. Deep-clone is mandatory (shift-operations does
+    // produce fresh top-level Maps, but the inner number[] arrays could be shared
+    // — a later splice() call in the drop handler would otherwise also mutate
+    // the snapshot and isDirty would falsely report false).
     captureSnapshot: () => {
       originalWeeklyShifts = cloneWeeklyShifts(weeklyShifts);
     },

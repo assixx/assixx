@@ -105,16 +105,16 @@
     animation: slide-in-right 0.3s ease-out;
 
     /*
-     * Override design-system .toast { align-items: flex-start } — sonst klebt der
-     * Action-Button (Rückgängig / Weiter →) oben am Container, während der Text
-     * durch line-height unten länger ist → optisch ungleich ausgerichtet.
-     * center → Icon, Text, Button auf derselben Höhe.
+     * Override design-system .toast { align-items: flex-start } — otherwise the
+     * action button (Rückgängig / Weiter →) sticks to the container top while the
+     * text grows taller via line-height below → visually misaligned.
+     * center → icon, text, button on the same baseline.
      */
     align-items: center;
   }
 
-  /* Action-Button soll nicht umbrechen und nicht schrumpfen,
-     damit "Rückgängig ⟲" oder "Berechtigungen →" in einer Zeile bleibt. */
+  /* Action button must not wrap or shrink so "Rückgängig ⟲" or
+     "Berechtigungen →" stays on a single line. */
   .notification :global(.btn) {
     flex-shrink: 0;
     white-space: nowrap;

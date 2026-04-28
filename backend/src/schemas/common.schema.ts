@@ -5,7 +5,7 @@
 import { z } from 'zod';
 
 // ============================================================
-// BASIC TYPES - Häufig verwendete Basis-Schemas
+// BASIC TYPES - Frequently reused base schemas
 // ============================================================
 
 /**

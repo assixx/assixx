@@ -149,7 +149,7 @@
     draggedHallAreaUuid = hall.areaUuid;
     draggedHallIsPrimary = isHallPrimary(hallId);
 
-    // Primäre Halle → Offset vom Area-Node (bewegt Area + Kinder mit)
+    // Primary hall → offset from the area node (moves area + children together)
     if (hall.areaUuid !== null && draggedHallIsPrimary) {
       const areaPos = getNodePosition('area', hall.areaUuid);
       if (areaPos !== undefined) {
@@ -160,7 +160,7 @@
       }
     }
 
-    // Sekundäre oder unzugewiesene Halle → Offset von Hallen-Bounds
+    // Secondary or unassigned hall → offset from hall bounds
     hallDragOffsetX = svg.x - hall.x;
     hallDragOffsetY = svg.y - hall.y;
     (event.currentTarget as Element).setPointerCapture(event.pointerId);

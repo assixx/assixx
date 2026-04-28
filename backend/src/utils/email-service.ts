@@ -1,6 +1,6 @@
 /**
- * E-Mail-Service für Assixx
- * Stellt Funktionen zum Versenden von E-Mails bereit
+ * Email service for Assixx.
+ * Provides functions for sending emails.
  */
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
@@ -118,8 +118,8 @@ function sanitizeStyles(html: string): string {
 }
 
 /**
- * Sanitiert HTML-Inhalt für sicheren E-Mail-Versand
- * Entfernt gefährliche Tags und Attribute
+ * Sanitizes HTML content for safe email delivery.
+ * Removes dangerous tags and attributes.
  *
  * SECURITY NOTE: This implementation uses regex-based sanitization which
  * provides reasonable protection but may be bypassable with clever encoding.
@@ -214,12 +214,12 @@ type TemplateReplacements = Record<string, string>;
 
 type QueueItem = EmailOptions;
 
-// Queue für Massen-E-Mails
+// Queue for bulk emails
 const emailQueue: QueueItem[] = [];
 let isProcessingQueue = false;
-const MAX_EMAILS_PER_BATCH = 50; // Maximale Anzahl von E-Mails pro Batch
+const MAX_EMAILS_PER_BATCH = 50; // Maximum number of emails per batch
 
-// Konfiguration des Transport-Objekts (wird später aus .env geladen)
+// Transport configuration (loaded from .env later)
 let transporter: Transporter | null = null;
 
 function initializeTransporter(config: EmailConfig | null = null): Transporter {
@@ -306,8 +306,8 @@ async function getBrandingLogoAttachment(): Promise<Attachment> {
 }
 
 /**
- * Lädt ein E-Mail-Template und ersetzt Platzhalter
- * @param templateName - Name des Templates ohne .html-Erweiterung
+ * Loads an email template and replaces placeholders.
+ * @param templateName - Template name without the .html extension
  */
 async function loadTemplate(
   templateName: string,
@@ -347,7 +347,7 @@ async function loadTemplate(
 }
 
 /**
- * Lädt ein Template UND hängt das Branding-Logo als CID-Attachment an.
+ * Loads a template AND attaches the branding logo as a CID attachment.
  * Caller passes both `html` and `attachments` to sendEmail() — the logo
  * appears via `<img src="cid:assixx-logo">` in the template.
  */
@@ -383,11 +383,11 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     // HTML-Sanitization
     let sanitizedHtml: string | undefined = options.html;
     if (options.html != null && options.html !== '') {
-      // HTML mit unserer Sanitization-Funktion bereinigen
+      // Sanitize HTML via our sanitization function
       sanitizedHtml = sanitizeHtml(options.html);
 
-      // Zusätzliche Sicherheitsvalidierung als Backup
-      // Pattern das auch malformed end tags erkennt (z.B. </script foo="bar">)
+      // Additional security validation as backup
+      // Pattern that also catches malformed end tags (e.g. </script foo="bar">)
       // codeql[js/bad-tag-filter] - This is a backup check after comprehensive sanitization
       const scriptPattern = /<script\b[^>]*>[\s\S]*$3<\/script[^>]*>/i;
       const eventHandlerPattern = /\bon\w+\s*=/i;
@@ -403,9 +403,9 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
         };
       }
 
-      // Log wenn Inhalte entfernt wurden
+      // Log if content was stripped
       if (sanitizedHtml !== options.html) {
-        logger.warn('HTML-Inhalt wurde während der Sanitization modifiziert');
+        logger.warn('HTML content was modified during sanitization');
       }
     }
 
@@ -446,9 +446,9 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 
 function addToQueue(emailOptions: EmailOptions): void {
   emailQueue.push(emailOptions);
-  logger.info(`E-Mail zur Queue hinzugefügt. Queue-Länge: ${emailQueue.length}`);
+  logger.info(`Email added to queue. Queue length: ${emailQueue.length}`);
 
-  // Starte die Queue-Verarbeitung, falls sie nicht bereits läuft
+  // Start queue processing if it isn't already running
   if (!isProcessingQueue) {
     void processQueue();
   }

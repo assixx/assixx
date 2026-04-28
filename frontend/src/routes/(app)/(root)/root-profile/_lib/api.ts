@@ -16,6 +16,7 @@ import type {
   ApprovalItem,
   ProfileUpdatePayload,
   PasswordChangePayload,
+  SelfTerminationRequest,
 } from './types';
 
 const log = createLogger('RootProfileApi');
@@ -133,6 +134,51 @@ export async function approveRequest(id: number): Promise<void> {
 /** Reject tenant deletion request */
 export async function rejectRequest(id: number): Promise<void> {
   await apiClient.post(`/root/deletion-approvals/${id}/reject`);
+}
+
+// =============================================================================
+// SELF-TERMINATION (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN §5.1)
+// Backend: backend/src/nest/root/root-self-termination.controller.ts (6 routes)
+// Step 5.1 needs only 3: GET own pending, POST request, DELETE cancel.
+// Approve / reject / list-peer endpoints belong to Step 5.3 (manage-approvals).
+// =============================================================================
+
+/**
+ * Get the actor's currently pending self-termination request, or null.
+ * Backend GET `/users/me/self-termination-request` returns the row or null;
+ * `apiClient.get()` unwraps the {success,data} envelope. We narrow `unknown`
+ * defensively because Zod validation lives only on the backend (ADR-030).
+ */
+export async function getMyPendingSelfTermination(): Promise<SelfTerminationRequest | null> {
+  const result: unknown = await apiClient.get('/users/me/self-termination-request');
+  if (result === null) return null;
+  if (typeof result === 'object' && 'id' in result && 'status' in result) {
+    return result as SelfTerminationRequest;
+  }
+  return null;
+}
+
+/**
+ * Create a new self-termination request. Throws ApiError on backend rejection
+ * (412 LAST_ROOT_PROTECTION, 409 ALREADY_PENDING / COOLDOWN_ACTIVE) — caller
+ * inspects `error.code` + `error.message` (D10: cooldownEndsAt is embedded as
+ * ISO inside the message body, not a top-level field).
+ */
+export async function requestSelfTermination(
+  reason: string | null,
+): Promise<SelfTerminationRequest> {
+  const result: unknown = await apiClient.post('/users/me/self-termination-request', {
+    reason: reason ?? undefined,
+  });
+  return result as SelfTerminationRequest;
+}
+
+/**
+ * Cancel the actor's own pending request. Backend returns 204 No Content —
+ * `apiClient.delete` resolves to undefined.
+ */
+export async function cancelOwnSelfTermination(): Promise<void> {
+  await apiClient.delete('/users/me/self-termination-request');
 }
 
 /** Parse JWT token to get user role */

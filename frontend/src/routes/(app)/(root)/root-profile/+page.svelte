@@ -32,6 +32,7 @@
     isPasswordLengthValid,
     doPasswordsMatch,
   } from './_lib/utils';
+  import SelfTerminationCard from './SelfTerminationCard.svelte';
 
   import type { PageData } from './$types';
   import type { PasswordStrengthResult } from './_lib/types';
@@ -46,6 +47,9 @@
   // profile is guaranteed by server (redirect if missing)
   const user = $derived(data.profile);
   const pendingApprovals = $derived(data.pendingApprovals);
+  // Self-termination request (null when none pending). Used by
+  // SelfTerminationCard. See FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN §5.1.
+  const selfTerminationPending = $derived(data.selfTerminationPending);
 
   // Initialize form values from SSR data (user guaranteed by server)
   $effect(() => {
@@ -640,6 +644,10 @@
         </button>
       </form>
     </div>
+
+    <!-- Self-Termination (Danger Zone) — root-only peer-approved deletion.
+         FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN §5.1. -->
+    <SelfTerminationCard initialPending={selfTerminationPending} />
   </div>
 </div>
 

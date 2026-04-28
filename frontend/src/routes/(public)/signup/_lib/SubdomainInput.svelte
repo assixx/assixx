@@ -12,10 +12,10 @@
 
   let subdomainError: string | null = $state(null);
 
-  // Touched-Flag: Required-Empty erst NACH Blur anzeigen (kein aggressives
-  // Validieren beim ersten Öffnen). Analog zu companyName/firstName/lastName
-  // in +page.svelte. Invalid-Pattern-Fehler (subdomainError) bleibt davon
-  // unberührt — der greift ja nur wenn tatsächlich getippt wurde.
+  // Touched flag: show required-empty only AFTER blur (no aggressive
+  // validation on first open). Analogous to companyName/firstName/lastName
+  // in +page.svelte. The invalid-pattern error (subdomainError) is unaffected
+  // — it only fires once the user has actually typed something.
   let touched = $state(false);
   const showEmptyError = $derived(touched && subdomain === '');
 

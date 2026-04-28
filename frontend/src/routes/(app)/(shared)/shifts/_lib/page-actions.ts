@@ -51,16 +51,16 @@ const log = createLogger('ShiftsActions');
 // =============================================================================
 
 /**
- * Gate für Aktionen, die den aktuellen weeklyShifts-State überschreiben würden
- * (Wochen-Nav, Filter-Change, Route-Leave). Fragt den User per Warning-Modal,
- * wenn isDirty === true — sonst fährt er still durch.
+ * Gate for actions that would overwrite the current weeklyShifts state
+ * (week-nav, filter change, route leave). Prompts the user via a warning modal
+ * when isDirty === true — otherwise passes through silently.
  *
- * WHY: Drag-and-Drop mutiert weeklyShifts lokal. Ohne Guard wirft jede
- * Reload-Aktion (loadShiftPlan) die Änderungen weg — der User verliert Arbeit.
- * Baseline-Tracking via captureSnapshot() nach Load + Save (siehe ADR-011 +
+ * WHY: Drag-and-drop mutates weeklyShifts locally. Without this guard every
+ * reload action (loadShiftPlan) would discard the changes — the user loses work.
+ * Baseline tracking via captureSnapshot() after load + save (see ADR-011 +
  * state-shifts.svelte.ts isDirty).
  *
- * Returns: true = fortfahren, false = abbrechen
+ * Returns: true = proceed, false = cancel
  */
 export async function ensureDiscardConfirmed(): Promise<boolean> {
   if (!shiftsState.isDirty) return true;
@@ -101,8 +101,8 @@ export async function handleSaveSchedule(shiftTimesMap?: ShiftTimesMap): Promise
       shiftsState.setCurrentPlanId(result.planId);
     shiftsState.setIsPlanLocked(true);
     shiftsState.setIsEditMode(false);
-    // Gespeicherter Stand ist die neue Baseline — isDirty wird wieder false.
-    // Siehe ADR-011 + state-shifts.svelte.ts für die Snapshot-Semantik.
+    // The saved state becomes the new baseline — isDirty flips back to false.
+    // See ADR-011 + state-shifts.svelte.ts for snapshot semantics.
     shiftsState.captureSnapshot();
     showSuccessAlert('Schichtplan erfolgreich gespeichert!');
   } catch (error: unknown) {

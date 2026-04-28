@@ -1,165 +1,165 @@
-# ADR-033: Addon-basiertes SaaS-Modell (ersetzt Plan-Tiers)
+# ADR-033: Addon-based SaaS Model (replaces Plan Tiers)
 
-| Metadata                | Value                                                                                                         |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                                                      |
-| **Date**                | 2026-03-10 (Updated: 2026-04-03)                                                                              |
-| **Decision Makers**     | SCS Technik                                                                                                   |
-| **Supersedes**          | ADR-032 (Feature-Katalog und Plan-Tier-Zuordnung)                                                             |
-| **Affected Components** | PostgreSQL (10+ Tabellen), Backend (Guards, Services, Controllers), Frontend (Guards, Navigation), Seed-Daten |
-| **Related ADRs**        | ADR-020 (Per-User Permissions), ADR-024 (Frontend Feature Guards), ADR-032 (Superseded)                       |
+| Metadata                | Value                                                                                                          |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                                       |
+| **Date**                | 2026-03-10 (Updated: 2026-04-03)                                                                               |
+| **Decision Makers**     | SCS Technik                                                                                                    |
+| **Supersedes**          | ADR-032 (Feature catalog and plan-tier mapping)                                                                |
+| **Affected Components** | PostgreSQL (10+ tables), Backend (Guards, Services, Controllers), Frontend (Guards, Navigation), Seed data     |
+| **Related ADRs**        | ADR-020 (Per-User Permissions), ADR-024 (Frontend Feature Guards), ADR-032 (Superseded)                        |
 
 ---
 
 ## Context
 
-### Das Problem: Plan-Tiers passen nicht zur Zielgruppe
+### The Problem: Plan Tiers Don't Fit the Target Audience
 
-Das bisherige 3-Tier-Modell (Basic €49 / Professional €149 / Enterprise €299) zwingt Industrieunternehmen, teure Pakete zu kaufen, nur um ein einzelnes Feature zu nutzen. Ein Unternehmen, das nur TPM braucht, muss Enterprise (€299/Monat) lizenzieren — obwohl es 17 der 20 Features nicht nutzt.
+The previous 3-tier model (Basic €49 / Professional €149 / Enterprise €299) forces industrial companies to buy expensive packages just to use a single feature. A company that only needs TPM has to license Enterprise (€299/month) — even though it does not use 17 of the 20 features.
 
-**Kernprobleme:**
+**Core problems:**
 
-1. **Inflexibel:** Firmen zahlen für Features die sie nicht brauchen
-2. **Hohe Einstiegshürde:** €149 für Professional, obwohl nur 1-2 Premium-Features gebraucht werden
-3. **Keine Granularität:** Alles-oder-nichts pro Tier-Stufe
-4. **Komplexe Codebasis:** 3 Pläne × 20 Features × 60 Zuordnungsregeln — unnötige Komplexität
-5. **Inkonsistenzen:** `features.category` vs `plan_features.is_included` (ADR-032 dokumentierte 9 Fehler)
+1. **Inflexible:** companies pay for features they don't need
+2. **High entry barrier:** €149 for Professional, even if only 1–2 premium features are needed
+3. **No granularity:** all-or-nothing per tier level
+4. **Complex codebase:** 3 plans × 20 features × 60 mapping rules — unnecessary complexity
+5. **Inconsistencies:** `features.category` vs `plan_features.is_included` (ADR-032 documented 9 errors)
 
-### Anforderungen
+### Requirements
 
-- Jedes Unternehmen zahlt nur für das, was es nutzt
-- Einfaches, transparentes Preismodell
-- 30-Tage-Trial pro Addon ohne Zahlungspflicht
-- Daten bleiben bei Deaktivierung erhalten (Reaktivierung jederzeit)
-- Unlimited Users im Core (keine Mitarbeiter-/Admin-Limits)
-- Architektur vorbereitet für Payment-Integration (Stripe/PayPal)
+- Each company pays only for what it uses
+- Simple, transparent pricing model
+- 30-day trial per addon without payment obligation
+- Data is preserved on deactivation (reactivation possible at any time)
+- Unlimited users in Core (no employee/admin limits)
+- Architecture prepared for payment integration (Stripe/PayPal)
 
 ---
 
 ## Decision
 
-### Neues Modell: Core + À-la-carte Addons
+### New Model: Core + à la carte Addons
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  CORE (Grundgebühr €X/Monat — Preis TBD)                │
+│  CORE (base fee €X/month — price TBD)                   │
 │  ┌────────────────────────────────────────────────────┐  │
 │  │ ∞ Users (Root, Admin, Employee)                    │  │
-│  │ 100 GB Storage (Default)                           │  │
-│  │ 14 Core-Addons (immer aktiv)                       │  │
+│  │ 100 GB Storage (default)                           │  │
+│  │ 14 Core addons (always active)                     │  │
 │  └────────────────────────────────────────────────────┘  │
 │                                                          │
-│  + Beliebige Addons à la carte (je €10/Monat)            │
+│  + arbitrary addons à la carte (€10/month each)          │
 │    ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                  │
 │    │ TPM  │ │ Chat │ │ KVP  │ │ ...  │                   │
 │    └──────┘ └──────┘ └──────┘ └──────┘                  │
 └──────────────────────────────────────────────────────────┘
 ```
 
-**Keine Bundles, keine Tiers, keine Pakete.** Jede Firma stellt sich ihr Setup individuell zusammen.
+**No bundles, no tiers, no packages.** Every company assembles its setup individually.
 
-### Naming-Konvention
+### Naming Convention
 
-| Kontext             | Bezeichnung | Beispiel                                       |
+| Context             | Term        | Example                                        |
 | ------------------- | ----------- | ---------------------------------------------- |
 | Code / DB / Backend | `addon`     | `addons`, `tenant_addons`, `AddonCheckService` |
-| Frontend (intern)   | `addon`     | `addonGuard()`, `activeAddons`                 |
-| Landing Page / UI   | "Modul"     | "TPM Modul", "Chat Modul"                      |
+| Frontend (internal) | `addon`     | `addonGuard()`, `activeAddons`                 |
+| Landing page / UI   | "Modul"     | "TPM Modul", "Chat Modul"                      |
 | NestJS Module       | `Module`    | `TpmModule`, `ChatModule`                      |
 
-> **Warum `addon` statt `module`?** NestJS verwendet `Module` als Kernkonzept (`@Module()`). `addon` vermeidet Naming-Kollisionen und ist im Code sofort als Business-Konzept erkennbar.
+> **Why `addon` instead of `module`?** NestJS uses `Module` as a core concept (`@Module()`). `addon` avoids naming collisions and is immediately recognizable as a business concept in the code.
 
 ---
 
-## Addon-Katalog (24 Addons)
+## Addon Catalog (24 Addons)
 
-### Core-Addons (14) — Immer aktiv, in Grundgebühr enthalten
+### Core Addons (14) — Always active, included in base fee
 
-| #   | Code               | Name                  | Beschreibung                                                  | Permission-Module                                                                                                            |
-| --- | ------------------ | --------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `dashboard`        | Dashboard             | Zentrale Übersicht mit Kennzahlen und Schnellzugriff          | — (kein Guard)                                                                                                               |
-| 2   | `settings`         | Einstellungen         | Mandanten-Einstellungen und Konfiguration                     | `settings-tenant` (W/D)                                                                                                      |
-| 3   | `notifications`    | Benachrichtigungen    | Push-Benachrichtigungen und SSE-Streaming                     | `notifications-manage` (R/W)                                                                                                 |
-| 4   | `employees`        | Mitarbeiterverwaltung | Benutzer anlegen, bearbeiten, deaktivieren                    | `employees-manage` (R/W/D), `employees-availability` (R/W/D)                                                                 |
-| 5   | `departments`      | Abteilungen           | Abteilungen und Bereiche (Organisationsstruktur)              | `departments-manage` (W/D), `areas-manage` (W/D)                                                                             |
-| 6   | `teams`            | Teams                 | Teams verwalten, Mitglieder und Anlagen zuordnen              | `teams-manage` (W/D)                                                                                                         |
-| 7   | `manage_hierarchy` | Organisationsstruktur | Verwaltung von Bereichen, Abteilungen, Teams und Mitarbeitern | `manage-areas` (R/W), `manage-departments` (R/W), `manage-teams` (R/W), `manage-employees` (R/W), `manage-permissions` (R/W) |
-| 8   | `halls`            | Hallen                | Verwaltung von Produktionshallen                              | `halls-manage` (W/D)                                                                                                         |
-| 9   | `assets`           | Anlagen & Maschinen   | Anlagen-/Maschinenverwaltung mit Verfügbarkeitstracking       | `assets-manage` (W/D), `assets-availability` (W/D)                                                                           |
-| 10  | `dummy_users`      | Platzhalter-Benutzer  | Anonyme Anzeige-Accounts für Fabrik-Bildschirme (Kiosk-Modus) | `dummy-users-manage` (R/W/D)                                                                                                 |
-| 11  | `approvals`        | Freigaben             | Zentrales Freigabe-System für Genehmigungsworkflows           | `approvals-manage` (R/W/D), `approvals-request` (R/W)                                                                        |
-| 12  | `user_profiles`    | Benutzerprofile       | Profilansicht und Mitarbeiterübersicht                        | `user-profiles-view` (R)                                                                                                     |
-| 13  | `calendar`         | Kalender              | Gemeinsamer Unternehmenskalender                              | `calendar-events` (R/W/D)                                                                                                    |
-| 14  | `blackboard`       | Schwarzes Brett       | Digitales schwarzes Brett für Ankündigungen                   | `blackboard-posts` (R/W/D), `blackboard-comments` (R/W/D), `blackboard-archive` (R/W)                                        |
+| #   | Code               | Name                  | Description                                                       | Permission modules                                                                                                            |
+| --- | ------------------ | --------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `dashboard`        | Dashboard             | Central overview with KPIs and quick access                       | — (no guard)                                                                                                                 |
+| 2   | `settings`         | Settings              | Tenant settings and configuration                                 | `settings-tenant` (W/D)                                                                                                      |
+| 3   | `notifications`    | Notifications         | Push notifications and SSE streaming                              | `notifications-manage` (R/W)                                                                                                 |
+| 4   | `employees`        | Employee management   | Create, edit, deactivate users                                    | `employees-manage` (R/W/D), `employees-availability` (R/W/D)                                                                 |
+| 5   | `departments`      | Departments           | Departments and areas (organizational structure)                  | `departments-manage` (W/D), `areas-manage` (W/D)                                                                             |
+| 6   | `teams`            | Teams                 | Manage teams, assign members and assets                           | `teams-manage` (W/D)                                                                                                         |
+| 7   | `manage_hierarchy` | Organizational structure | Manage areas, departments, teams and employees                | `manage-areas` (R/W), `manage-departments` (R/W), `manage-teams` (R/W), `manage-employees` (R/W), `manage-permissions` (R/W) |
+| 8   | `halls`            | Halls                 | Manage production halls                                           | `halls-manage` (W/D)                                                                                                         |
+| 9   | `assets`           | Assets & machines     | Asset/machine management with availability tracking               | `assets-manage` (W/D), `assets-availability` (W/D)                                                                           |
+| 10  | `dummy_users`      | Placeholder users     | Anonymous display accounts for factory screens (kiosk mode)       | `dummy-users-manage` (R/W/D)                                                                                                 |
+| 11  | `approvals`        | Approvals             | Central approval system for authorization workflows               | `approvals-manage` (R/W/D), `approvals-request` (R/W)                                                                        |
+| 12  | `user_profiles`    | User profiles         | Profile view and employee overview                                | `user-profiles-view` (R)                                                                                                     |
+| 13  | `calendar`         | Calendar              | Shared company calendar                                           | `calendar-events` (R/W/D)                                                                                                    |
+| 14  | `blackboard`       | Blackboard            | Digital blackboard for announcements                              | `blackboard-posts` (R/W/D), `blackboard-comments` (R/W/D), `blackboard-archive` (R/W)                                        |
 
-> **Änderungen seit v1 (2026-03-10):** `assets`, `dummy_users` von Purchasable → Core (2026-04-03). `halls`, `user_profiles` als neue Core-Addons hinzugefügt (2026-03-31 / 2026-04-03).
+> **Changes since v1 (2026-03-10):** `assets`, `dummy_users` moved Purchasable → Core (2026-04-03). `halls`, `user_profiles` added as new core addons (2026-03-31 / 2026-04-03).
 
-### Kaufbare Addons (10) — Je €10/Monat (provisorisch), 30 Tage Trial
+### Purchasable Addons (10) — €10/month each (provisional), 30-day trial
 
-| #   | Code             | Name                    | Beschreibung                                                     | Permission-Module                                                                                                                            |
-| --- | ---------------- | ----------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 15  | `documents`      | Dokumente               | Dokumentenverwaltung mit Upload, Archiv und Zugriffskontrolle    | `documents-files` (R/W/D), `documents-archive` (R/W)                                                                                         |
-| 16  | `vacation`       | Urlaubsverwaltung       | Digitale Urlaubsanträge, Genehmigungsworkflow, Kapazitätsprüfung | `vacation-requests` (R/W/D), `vacation-rules` (R/W/D), `vacation-entitlements` (R/W/D), `vacation-holidays` (R/W/D), `vacation-overview` (R) |
-| 17  | `shift_planning` | Schichtplanung          | Schichtpläne, Tauschbörse, Rotation, Schichtzeiten               | `shift-plan` (R/W/D), `shift-swap` (R/W), `shift-rotation` (R/W/D), `shift-times` (R/W)                                                      |
-| 18  | `chat`           | Chat                    | Team-Chat mit Gesprächen und Nachrichten                         | `chat-conversations` (R/W/D), `chat-messages` (R/W/D)                                                                                        |
-| 19  | `work_orders`    | Arbeitsaufträge         | Modulübergreifendes Auftragssystem                               | `work-orders-manage` (R/W/D), `work-orders-execute` (R/W)                                                                                    |
-| 20  | `surveys`        | Umfragen                | Umfragen erstellen, durchführen und auswerten                    | `surveys-manage` (R/W/D), `surveys-participate` (R/W), `surveys-results` (R)                                                                 |
-| 21  | `kvp`            | KVP                     | Kontinuierlicher Verbesserungsprozess — Vorschlagswesen          | `kvp-suggestions` (R/W/D), `kvp-comments` (R/W/D)                                                                                            |
-| 22  | `tpm`            | TPM / Wartung           | Total Productive Maintenance — Kamishibai Board, Wartungspläne   | `tpm-plans` (R/W/D), `tpm-cards` (R/W/D), `tpm-executions` (R/W), `tpm-config` (R/W), `tpm-locations` (R/W/D)                                |
-| 23  | `reports`        | Berichte & Auswertungen | Unternehmensberichte, Analytics und Datenexporte                 | `reports-view` (R), `reports-export` (R/W)                                                                                                   |
-| 24  | `audit_trail`    | Protokoll & Audit       | Audit-Protokollierung, Compliance-Berichte                       | `audit-view` (R), `audit-export` (R/W), `audit-retention` (R/D)                                                                              |
-| 25  | `inventory`      | Inventar                | Betriebsmittel-Inventarverwaltung mit Listen, Custom Fields, QR  | `inventory-lists` (R/W/D), `inventory-items` (R/W/D)                                                                                         |
-
----
-
-## Deaktivierungsverhalten (Kritische Änderung)
-
-| Aspekt               | Alt (Plan-Tiers)                               | Neu (Addon-Modell)                                 |
-| -------------------- | ---------------------------------------------- | -------------------------------------------------- |
-| **Daten**            | Bleiben in DB                                  | Bleiben in DB — **identisch**                      |
-| **User Permissions** | **GELÖSCHT** bei Feature-Deaktivierung         | **ERHALTEN** — Permissions überleben Deaktivierung |
-| **UI-Zugang**        | Gesperrt (403)                                 | Gesperrt (403) — **identisch**                     |
-| **Reaktivierung**    | Permissions müssen manuell neu vergeben werden | Sofort voll funktionsfähig, alle Permissions da    |
-| **Navigation**       | Addon verschwindet aus Sidebar                 | Addon verschwindet aus Sidebar — **identisch**     |
-
-> **Begründung:** User Permissions bei Deaktivierung zu löschen ist destruktiv und erzeugt Mehrarbeit bei Reaktivierung. Ein Admin, der 50 Mitarbeitern TPM-Rechte vergeben hat, will nicht alles neu konfigurieren.
+| #   | Code             | Name                    | Description                                                          | Permission modules                                                                                                                            |
+| --- | ---------------- | ----------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 15  | `documents`      | Documents               | Document management with upload, archive and access control          | `documents-files` (R/W/D), `documents-archive` (R/W)                                                                                         |
+| 16  | `vacation`       | Vacation management     | Digital vacation requests, approval workflow, capacity check         | `vacation-requests` (R/W/D), `vacation-rules` (R/W/D), `vacation-entitlements` (R/W/D), `vacation-holidays` (R/W/D), `vacation-overview` (R) |
+| 17  | `shift_planning` | Shift planning          | Shift schedules, swap board, rotation, shift times                   | `shift-plan` (R/W/D), `shift-swap` (R/W), `shift-rotation` (R/W/D), `shift-times` (R/W)                                                      |
+| 18  | `chat`           | Chat                    | Team chat with conversations and messages                            | `chat-conversations` (R/W/D), `chat-messages` (R/W/D)                                                                                        |
+| 19  | `work_orders`    | Work orders             | Cross-module order system                                            | `work-orders-manage` (R/W/D), `work-orders-execute` (R/W)                                                                                    |
+| 20  | `surveys`        | Surveys                 | Create, run and evaluate surveys                                     | `surveys-manage` (R/W/D), `surveys-participate` (R/W), `surveys-results` (R)                                                                 |
+| 21  | `kvp`            | KVP                     | Continuous improvement process — suggestion system                   | `kvp-suggestions` (R/W/D), `kvp-comments` (R/W/D)                                                                                            |
+| 22  | `tpm`            | TPM / maintenance       | Total Productive Maintenance — Kamishibai board, maintenance plans   | `tpm-plans` (R/W/D), `tpm-cards` (R/W/D), `tpm-executions` (R/W), `tpm-config` (R/W), `tpm-locations` (R/W/D)                                |
+| 23  | `reports`        | Reports & analytics     | Company reports, analytics and data exports                          | `reports-view` (R), `reports-export` (R/W)                                                                                                   |
+| 24  | `audit_trail`    | Audit log               | Audit logging, compliance reports                                    | `audit-view` (R), `audit-export` (R/W), `audit-retention` (R/D)                                                                              |
+| 25  | `inventory`      | Inventory               | Equipment inventory management with lists, custom fields, QR         | `inventory-lists` (R/W/D), `inventory-items` (R/W/D)                                                                                         |
 
 ---
 
-## Datenbankänderungen
+## Deactivation Behaviour (Critical Change)
 
-### Tabellen-Übersicht
+| Aspect               | Old (plan tiers)                              | New (addon model)                                  |
+| -------------------- | --------------------------------------------- | -------------------------------------------------- |
+| **Data**             | Stays in DB                                   | Stays in DB — **identical**                        |
+| **User permissions** | **DELETED** on feature deactivation           | **PRESERVED** — permissions survive deactivation   |
+| **UI access**        | Blocked (403)                                 | Blocked (403) — **identical**                      |
+| **Reactivation**     | Permissions must be re-granted manually       | Fully functional immediately, all permissions kept |
+| **Navigation**       | Addon disappears from sidebar                 | Addon disappears from sidebar — **identical**      |
 
-| Aktion   | Alt                        | Neu                      | Begründung                                       |
-| -------- | -------------------------- | ------------------------ | ------------------------------------------------ |
-| RENAME   | `features`                 | `addons`                 | Naming-Konsistenz                                |
-| RECREATE | `tenant_features`          | `tenant_addons`          | Neue Spalten für Licensing + Trial               |
-| DROP     | `plans`                    | —                        | Keine Plan-Tiers mehr                            |
-| DROP     | `plan_features`            | —                        | Deterministische Zuordnung entfällt              |
-| DROP     | `tenant_plans`             | —                        | Keine Plan-Subscriptions mehr                    |
-| DROP     | `tenant_addons` (alt)      | —                        | Kapazitäts-Upgrades deprecated (unlimited Users) |
-| RENAME   | `feature_usage_logs`       | `addon_usage_logs`       | Naming-Konsistenz                                |
-| RENAME   | `feature_visits`           | `addon_visits`           | Naming-Konsistenz                                |
-| RENAME   | `user_feature_permissions` | `user_addon_permissions` | Naming-Konsistenz                                |
-| ALTER    | `tenants`                  | `tenants`                | `current_plan*` Spalten entfernen                |
-| CREATE   | —                          | `tenant_storage`         | Storage-Tracking (Platzhalter für Zukunft)       |
+> **Rationale:** Deleting user permissions on deactivation is destructive and creates extra work on reactivation. An admin who has granted TPM rights to 50 employees does not want to reconfigure everything.
 
-### Schema: `addons` (ehemals `features`)
+---
+
+## Database Changes
+
+### Table Overview
+
+| Action   | Old                        | New                      | Rationale                                          |
+| -------- | -------------------------- | ------------------------ | -------------------------------------------------- |
+| RENAME   | `features`                 | `addons`                 | Naming consistency                                 |
+| RECREATE | `tenant_features`          | `tenant_addons`          | New columns for licensing + trial                  |
+| DROP     | `plans`                    | —                        | No more plan tiers                                 |
+| DROP     | `plan_features`            | —                        | Deterministic mapping is gone                      |
+| DROP     | `tenant_plans`             | —                        | No more plan subscriptions                         |
+| DROP     | `tenant_addons` (old)      | —                        | Capacity upgrades deprecated (unlimited users)     |
+| RENAME   | `feature_usage_logs`       | `addon_usage_logs`       | Naming consistency                                 |
+| RENAME   | `feature_visits`           | `addon_visits`           | Naming consistency                                 |
+| RENAME   | `user_feature_permissions` | `user_addon_permissions` | Naming consistency                                 |
+| ALTER    | `tenants`                  | `tenants`                | Drop `current_plan*` columns                       |
+| CREATE   | —                          | `tenant_storage`         | Storage tracking (placeholder for the future)      |
+
+### Schema: `addons` (formerly `features`)
 
 ```sql
--- Änderungen an bestehender Tabelle:
+-- Changes to existing table:
 ALTER TABLE features RENAME TO addons;
--- Neue Spalten:
+-- New columns:
 ALTER TABLE addons ADD COLUMN is_core BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE addons ADD COLUMN trial_days INTEGER DEFAULT 30;
--- Bestehende Spalte umbenennen:
+-- Rename existing column:
 ALTER TABLE addons RENAME COLUMN base_price TO price_monthly;
--- Spalte entfernen:
+-- Drop column:
 ALTER TABLE addons DROP COLUMN category;
 -- DROP TYPE features_category;
 ```
 
-### Schema: `tenant_addons` (neu, ersetzt `tenant_features`)
+### Schema: `tenant_addons` (new, replaces `tenant_features`)
 
 ```sql
 CREATE TABLE tenant_addons (
@@ -194,7 +194,7 @@ CREATE INDEX idx_tenant_addons_tenant ON tenant_addons(tenant_id) WHERE is_activ
 CREATE INDEX idx_tenant_addons_status ON tenant_addons(tenant_id, status) WHERE is_active = 1;
 ```
 
-### Schema: `tenant_storage` (Platzhalter)
+### Schema: `tenant_storage` (placeholder)
 
 ```sql
 CREATE TABLE tenant_storage (
@@ -208,7 +208,7 @@ CREATE TABLE tenant_storage (
 );
 ```
 
-### Änderungen an `tenants`
+### Changes to `tenants`
 
 ```sql
 ALTER TABLE tenants DROP COLUMN current_plan;
@@ -216,76 +216,76 @@ ALTER TABLE tenants DROP COLUMN current_plan_id;
 -- DROP TYPE tenants_current_plan;
 ```
 
-### Deprecated ENUMs (zu entfernen)
+### Deprecated ENUMs (to be removed)
 
-| ENUM                         | Grund                            |
-| ---------------------------- | -------------------------------- |
-| `features_category`          | Keine Tier-Kategorien mehr       |
-| `tenants_current_plan`       | Keine Plan-Zuordnung mehr        |
-| `tenant_plans_status`        | tenant_plans Tabelle entfällt    |
-| `tenant_plans_billing_cycle` | tenant_plans Tabelle entfällt    |
-| `tenant_addons_addon_type`   | Alte Kapazitäts-Tabelle entfällt |
+| ENUM                         | Reason                            |
+| ---------------------------- | --------------------------------- |
+| `features_category`          | No more tier categories           |
+| `tenants_current_plan`       | No more plan assignment           |
+| `tenant_plans_status`        | tenant_plans table is gone        |
+| `tenant_plans_billing_cycle` | tenant_plans table is gone        |
+| `tenant_addons_addon_type`   | Old capacity table is gone        |
 
 ---
 
-## Backend-Änderungen
+## Backend Changes
 
-### Renames (Konsistenz)
+### Renames (Consistency)
 
-| Alt                                      | Neu                                 |
-| ---------------------------------------- | ----------------------------------- |
-| `FeatureCheckService`                    | `AddonCheckService`                 |
-| `FeatureCheckModule`                     | `AddonCheckModule`                  |
-| `@TenantFeature('code')`                 | `@RequireAddon('code')`             |
-| `TenantFeatureGuard`                     | `TenantAddonGuard`                  |
-| `FeaturesService`                        | `AddonsService`                     |
-| `FeaturesController` (`/features`)       | `AddonsController` (`/addons`)      |
-| `FeaturesModule`                         | `AddonsModule`                      |
-| `RequirePermission(featureCode, ...)`    | `RequirePermission(addonCode, ...)` |
-| `user_feature_permissions.feature_code`  | `user_addon_permissions.addon_code` |
-| Alle Permission Registrars `featureCode` | `addonCode`                         |
+| Old                                      | New                                  |
+| ---------------------------------------- | ------------------------------------ |
+| `FeatureCheckService`                    | `AddonCheckService`                  |
+| `FeatureCheckModule`                     | `AddonCheckModule`                   |
+| `@TenantFeature('code')`                 | `@RequireAddon('code')`              |
+| `TenantFeatureGuard`                     | `TenantAddonGuard`                   |
+| `FeaturesService`                        | `AddonsService`                      |
+| `FeaturesController` (`/features`)       | `AddonsController` (`/addons`)       |
+| `FeaturesModule`                         | `AddonsModule`                       |
+| `RequirePermission(featureCode, ...)`    | `RequirePermission(addonCode, ...)`  |
+| `user_feature_permissions.feature_code`  | `user_addon_permissions.addon_code`  |
+| All permission registrars `featureCode`  | `addonCode`                          |
 
-### Löschungen
+### Deletions
 
-| Datei/Modul                  | Grund                     |
-| ---------------------------- | ------------------------- |
-| `PlansService`               | Keine Pläne mehr          |
-| `PlansController` (`/plans`) | Keine Plan-Endpoints mehr |
-| `PlansModule`                | Keine Plan-Logik mehr     |
-| Alle Plan-DTOs               | Obsolet                   |
+| File / module                | Reason                       |
+| ---------------------------- | ---------------------------- |
+| `PlansService`               | No more plans                |
+| `PlansController` (`/plans`) | No more plan endpoints       |
+| `PlansModule`                | No more plan logic           |
+| All plan DTOs                | Obsolete                     |
 
-### AddonCheckService — Neue Logik
+### AddonCheckService — New Logic
 
 ```typescript
 async checkTenantAccess(tenantId: number, addonCode: string): Promise<boolean> {
-    // 1. Addon nachschlagen
-    // 2. Wenn addon.is_core → sofort true (immer aktiv)
-    // 3. Wenn nicht core → tenant_addons prüfen:
-    //    - Status 'active' → true
-    //    - Status 'trial' + trial_ends_at > now() → true
-    //    - Sonst → false (expired/cancelled/no entry)
+    // 1. Look up the addon
+    // 2. If addon.is_core → return true immediately (always active)
+    // 3. If not core → check tenant_addons:
+    //    - status 'active' → true
+    //    - status 'trial' + trial_ends_at > now() → true
+    //    - else → false (expired/cancelled/no entry)
 }
 ```
 
-### Deaktivierungslogik — Geändert
+### Deactivation Logic — Changed
 
 ```typescript
 async deactivateAddon(tenantId: number, addonCode: string): Promise<void> {
     // 1. tenant_addons.status → 'cancelled'
     // 2. tenant_addons.deactivated_at → now()
     // 3. tenant_addons.is_active → 0
-    // 4. KEINE Löschung von user_addon_permissions!
-    // 5. Daten in allen Addon-Tabellen bleiben unverändert
+    // 4. DO NOT delete user_addon_permissions!
+    // 5. Data in all addon tables remains untouched
 }
 ```
 
 ---
 
-## Frontend-Änderungen
+## Frontend Changes
 
 ### Renames
 
-| Alt                        | Neu                      |
+| Old                        | New                      |
 | -------------------------- | ------------------------ |
 | `feature-guard.ts`         | `addon-guard.ts`         |
 | `requireFeature()`         | `requireAddon()`         |
@@ -295,58 +295,58 @@ async deactivateAddon(tenantId: number, addonCode: string): Promise<void> {
 | `/feature-unavailable`     | `/addon-unavailable`     |
 | `parseActiveFeatures()`    | `parseActiveAddons()`    |
 
-### Betroffene Dateien
+### Affected Files
 
-- `frontend/src/lib/utils/addon-guard.ts` (Rename + Tests)
-- `frontend/src/routes/(app)/+layout.server.ts` (activeAddons statt activeFeatures)
+- `frontend/src/lib/utils/addon-guard.ts` (rename + tests)
+- `frontend/src/routes/(app)/+layout.server.ts` (activeAddons instead of activeFeatures)
 - `frontend/src/routes/(app)/+layout.svelte` (filterMenuByAddons)
 - `frontend/src/routes/(app)/_lib/navigation-config.ts` (addonCode)
-- Jede `+page.server.ts` mit `requireFeature()` → `requireAddon()`
-- `/addon-unavailable/+page.svelte` (Rename von feature-unavailable)
+- Every `+page.server.ts` with `requireFeature()` → `requireAddon()`
+- `/addon-unavailable/+page.svelte` (rename of feature-unavailable)
 
 ---
 
-## User-Limits — Vereinfacht
+## User Limits — Simplified
 
-| Aspekt        | Alt (Plan-Tiers)                      | Neu (Addon-Modell)                                              |
-| ------------- | ------------------------------------- | --------------------------------------------------------------- |
-| Max Employees | Basic: 10, Pro: 50, Enterprise: ∞     | **Unbegrenzt** (Core)                                           |
-| Max Admins    | Basic: 1, Pro: 3, Enterprise: ∞       | **Unbegrenzt** (Core)                                           |
-| Storage       | Basic: 100GB, Pro: 500GB, Ent: 1000GB | **100GB Default** (Core), Upgrade separat über `tenant_storage` |
+| Aspect        | Old (plan tiers)                         | New (addon model)                                                |
+| ------------- | ---------------------------------------- | ---------------------------------------------------------------- |
+| Max employees | Basic: 10, Pro: 50, Enterprise: ∞        | **Unlimited** (Core)                                             |
+| Max admins    | Basic: 1, Pro: 3, Enterprise: ∞          | **Unlimited** (Core)                                             |
+| Storage       | Basic: 100 GB, Pro: 500 GB, Ent: 1000 GB | **100 GB default** (Core), upgrade separately via `tenant_storage` |
 
-> **User-Limits entfallen komplett.** Jeder Tenant kann unbegrenzt Users anlegen. Storage-Upgrades sind ein separates Konzept (eigene Tabelle), unabhängig vom Addon-System.
+> **User limits are removed entirely.** Every tenant can create unlimited users. Storage upgrades are a separate concept (own table), independent from the addon system.
 
 ---
 
-## Payment-Integration (Architektur-Vorbereitung)
+## Payment Integration (Architectural Preparation)
 
-Die Addon-Architektur ist für Payment-Integration vorbereitet:
+The addon architecture is prepared for payment integration:
 
-- `tenant_addons.status` → steuert Zugang (trial → active nach Zahlung)
+- `tenant_addons.status` → controls access (trial → active after payment)
 - `tenant_addons.payment_reference` → Stripe Subscription ID / PayPal Agreement ID
-- `tenant_addons.custom_price` → Override für verhandelte Preise
+- `tenant_addons.custom_price` → override for negotiated prices
 
-**In Development:** Addons sind frei aktivierbar/deaktivierbar ohne Payment-Check. Die Payment-Integration (Stripe/PayPal Webhooks → Status-Updates) ist eine eigene Phase nach dem Refactor.
+**In development:** Addons can be activated/deactivated freely without a payment check. The payment integration (Stripe/PayPal webhooks → status updates) is a separate phase after the refactor.
 
 ---
 
 ## Alternatives Considered
 
-### Option A: Plan-Tiers beibehalten + Einzelkauf ergänzen
+### Option A: Keep plan tiers + add individual purchase
 
-Hybrid-Modell: Pläne als "Starterpakete" + Einzelkauf darüber hinaus.
+Hybrid model: plans as "starter packages" + à la carte on top.
 
-**Verworfen:** Doppelte Komplexität. Zwei Systeme parallel (Plan-Logik + Addon-Logik) mit Konfliktpotenzial. KISS-Prinzip verletzt.
+**Rejected:** double complexity. Two systems in parallel (plan logic + addon logic) with conflict potential. Violates KISS.
 
-### Option B: Feature-Bundles statt Einzelkauf
+### Option B: Feature bundles instead of individual purchase
 
-Thematische Pakete (z.B. "Produktion" = TPM + Assets + Work Orders).
+Thematic packages (e.g. "Production" = TPM + Assets + Work Orders).
 
-**Verworfen:** Gleiche Inflexibilität wie Tiers, nur feiner granuliert. Kunde zahlt immer noch für Features die er nicht braucht.
+**Rejected:** same inflexibility as tiers, only at finer granularity. Customer still pays for features they don't need.
 
-### Option C: `module` statt `addon` als Code-Bezeichnung
+### Option C: `module` instead of `addon` as code term
 
-**Verworfen:** Direkte Kollision mit NestJS `@Module()`. `TpmModule` (NestJS) vs `modules` Tabelle (Business) — verwirrend. `addon` ist eindeutig.
+**Rejected:** direct collision with NestJS `@Module()`. `TpmModule` (NestJS) vs `modules` table (business) — confusing. `addon` is unambiguous.
 
 ---
 
@@ -354,35 +354,35 @@ Thematische Pakete (z.B. "Produktion" = TPM + Assets + Work Orders).
 
 ### Positive
 
-1. **Maximale Flexibilität** — Jede Firma zahlt nur für das was sie nutzt
-2. **Niedrige Einstiegshürde** — Core-Grundgebühr statt €149+ für Plan-Upgrade
-3. **Transparente Preise** — €10/Addon/Monat, keine versteckten Tier-Logik
-4. **Einfachere Codebasis** — Kein Plan-Matching, keine Tier-Hierarchie, keine `plan_features` Matrix
-5. **Daten-Sicherheit** — Deaktivierung löscht keine Daten und keine Permissions
-6. **Unlimited Users** — Kein künstliches Limit auf Mitarbeiter oder Admins
-7. **Trial-fähig** — 30 Tage Test pro Addon ohne Commitment
+1. **Maximum flexibility** — every company pays only for what it uses
+2. **Low entry barrier** — Core base fee instead of €149+ for a plan upgrade
+3. **Transparent pricing** — €10/addon/month, no hidden tier logic
+4. **Simpler codebase** — no plan matching, no tier hierarchy, no `plan_features` matrix
+5. **Data safety** — deactivation deletes neither data nor permissions
+6. **Unlimited users** — no artificial limit on employees or admins
+7. **Trial-capable** — 30-day test per addon without commitment
 
 ### Negative
 
-1. **Großer Refactor** — ~10 Sessions, 10+ Tabellen, Backend + Frontend betroffen
-2. **Migration bestehender Tenants** — Daten müssen korrekt überführt werden
-3. **Kein Revenue-Floor pro Tier** — Kunde könnte nur Core kaufen (niedrigster Umsatz)
-4. **Payment-Integration offen** — Bis Stripe/PayPal implementiert ist, kein automatisches Billing
+1. **Large refactor** — ~10 sessions, 10+ tables, backend + frontend affected
+2. **Migration of existing tenants** — data must be migrated correctly
+3. **No revenue floor per tier** — customer could buy Core only (lowest revenue)
+4. **Payment integration open** — until Stripe/PayPal is implemented, no automated billing
 
 ### Mitigations
 
-| Problem                       | Mitigation                                               |
-| ----------------------------- | -------------------------------------------------------- |
-| Großer Refactor               | Phasenweise Umsetzung mit DoD pro Phase, Masterplan      |
-| Migration bestehender Tenants | Datenmigration in eigener Migration-Datei mit Rollback   |
-| Niedriger Revenue pro Tenant  | Core-Grundgebühr sichert Minimum; Addons sind der Upsell |
-| Fehlende Payment-Integration  | Status-basierte Architektur erlaubt spätere Integration  |
+| Problem                       | Mitigation                                                     |
+| ----------------------------- | -------------------------------------------------------------- |
+| Large refactor                | Phased execution with DoD per phase, masterplan                |
+| Migration of existing tenants | Data migration in its own migration file with rollback         |
+| Low revenue per tenant        | Core base fee secures the minimum; addons are the upsell       |
+| Missing payment integration   | Status-based architecture allows later integration             |
 
 ---
 
 ## References
 
-- [ADR-032: Feature-Katalog und Plan-Tier-Zuordnung](./ADR-032-feature-catalog-and-plan-tiers.md) — **Superseded by this ADR**
-- [ADR-020: Per-User Feature Permissions](./ADR-020-per-user-feature-permissions.md) — Permission-Registry-Pattern (bleibt, nur Rename)
-- [ADR-024: Frontend Feature Guards](./ADR-024-frontend-feature-guards.md) — Frontend-Gating (bleibt, nur Rename)
-- [Masterplan](../../FEAT_ADDON_SYSTEM_MASTERPLAN.md) — Execution Plan für diesen Refactor
+- [ADR-032: Feature catalog and plan-tier mapping](./ADR-032-feature-catalog-and-plan-tiers.md) — **Superseded by this ADR**
+- [ADR-020: Per-User Feature Permissions](./ADR-020-per-user-feature-permissions.md) — permission registry pattern (kept, only renamed)
+- [ADR-024: Frontend Feature Guards](./ADR-024-frontend-feature-guards.md) — frontend gating (kept, only renamed)
+- [Masterplan](../../FEAT_ADDON_SYSTEM_MASTERPLAN.md) — execution plan for this refactor

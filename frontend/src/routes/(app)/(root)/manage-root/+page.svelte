@@ -335,7 +335,15 @@
     resetForm();
   }
 
-  function openDeleteModal(userId: number): void {
+  // Preserved as dead-but-intentional after masterplan §5.2 / ADR-053:
+  // the row-level Delete button is now permanently disabled (cross-root
+  // immutability — Layer 1 UX hint). The downstream chain (DeleteModals
+  // markup, deleteUser, closeDeleteModal, deleteUserId, executeDeleteRootUser)
+  // stays in place because removing it would exceed Step 5.2 scope and
+  // delete behaviour may be revived under a future permission-gated flow.
+  // `_` prefix silences `@typescript-eslint/no-unused-vars` per the repo's
+  // `varsIgnorePattern: '^_|^\\$'` (frontend/eslint.config.mjs:280).
+  function _openDeleteModal(userId: number): void {
     deleteUserId = userId;
     showDeleteModal = true;
   }
@@ -631,13 +639,25 @@
                           openAvailabilityModal(user.id);
                         }}><i class="fas fa-calendar-alt"></i></button
                       >
+                      <!--
+                        Cross-root immutability: Delete is disabled because every
+                        row on this page is another root account by construction
+                        (+page.server.ts:39 SSR filter excludes the current user
+                        + API filter `?role=root`). Backend Layer 2
+                        (users.service.deleteUser, wired Session 4) and Layer 4
+                        (DB trigger fn_prevent_cross_root_change) enforce the
+                        same rule server-side; this `disabled` is the Layer 1 UX
+                        hint per masterplan §5.2 / ADR-053. `openDeleteModal`
+                        retained as a noop reference for grep — the disabled
+                        attribute prevents click events from firing on <button>.
+                      -->
                       <button
                         type="button"
                         class="action-icon action-icon--delete"
-                        title="Löschen"
-                        onclick={() => {
-                          openDeleteModal(user.id);
-                        }}><i class="fas fa-trash"></i></button
+                        disabled
+                        title={messages.CROSS_ROOT_BLOCKED_TOOLTIP}
+                        aria-label={messages.CROSS_ROOT_BLOCKED_TOOLTIP}
+                        ><i class="fas fa-trash"></i></button
                       >
                     </div>
                   </td>
@@ -677,6 +697,13 @@
   ><i class="fas fa-user-shield"></i></button
 >
 
+<!--
+  lockDestructiveStatus=true: every row on this page is another root account
+  (SSR filter excludes self at +page.server.ts:39, API filter `?role=root`),
+  so the Edit modal's status dropdown must NEVER offer Inaktiv/Archiviert
+  transitions. Backend Layer 4 trigger would 500 on such submits anyway —
+  this is the Layer 1 UX hint per masterplan §5.2 / ADR-053.
+-->
 <RootUserModal
   {messages}
   show={showRootModal}
@@ -684,6 +711,7 @@
   {modalTitle}
   {positionOptions}
   hierarchyLabels={labels}
+  lockDestructiveStatus={true}
   bind:firstName={formFirstName}
   bind:lastName={formLastName}
   bind:email={formEmail}

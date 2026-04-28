@@ -58,11 +58,11 @@
   let emailMatchError: string | null = $state(null);
   let passwordMatchError: string | null = $state(null);
 
-  // Touched-Flag: Feld erst NACH erstem Blur validieren, damit User nicht
-  // sofort beim Öffnen der Seite rote Borders sieht. Pattern analog zu
-  // emailMatchError/passwordMatchError (nur on-interact) — verhindert
-  // "aggressive validation"-Antipattern. Gilt für die Required-Felder die
-  // sonst kein Match-Feedback haben.
+  // Touched flag: validate the field only AFTER first blur so the user does not
+  // see red borders the moment the page opens. Pattern analogous to
+  // emailMatchError/passwordMatchError (on-interact only) — prevents the
+  // "aggressive validation" anti-pattern. Applies to required fields that
+  // otherwise have no match feedback.
   let companyNameTouched = $state(false);
   let firstNameTouched = $state(false);
   let lastNameTouched = $state(false);
