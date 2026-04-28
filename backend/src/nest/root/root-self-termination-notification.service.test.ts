@@ -28,6 +28,16 @@ const mockEventBus = vi.hoisted(() => ({
   emitRootSelfTerminationRejected: vi.fn(),
 }));
 
+// Phase 8 refactor (REFACTOR_MAILER_SERVICE_GOD_OBJECT): the email
+// transport is no longer reached through the MailerService DI wrapper.
+// The service calls `emailService.loadBrandedTemplate()` +
+// `emailService.sendEmail()` directly, so the test mocks the legacy
+// module instead of injecting a MailerService mock.
+const { mockLoadBrandedTemplate, mockSendEmail } = vi.hoisted(() => ({
+  mockLoadBrandedTemplate: vi.fn(),
+  mockSendEmail: vi.fn(),
+}));
+
 vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-notification-uuid'),
 }));
@@ -36,12 +46,39 @@ vi.mock('../../utils/event-bus.js', () => ({
   eventBus: mockEventBus,
 }));
 
+vi.mock('../../utils/email-service.js', () => ({
+  default: {
+    loadBrandedTemplate: mockLoadBrandedTemplate,
+    sendEmail: mockSendEmail,
+  },
+}));
+
 // =============================================================
 // Fixtures
 // =============================================================
 
-const ALICE_ROW = { id: 100, first_name: 'Alice', last_name: 'Root' };
-const BOB_ROW = { id: 200, first_name: 'Bob', last_name: 'Root' };
+// Phase 8: rows now also carry `email` so the email fan-out helpers
+// (findPeerRoots / resolveUserDetails) work end-to-end. The original
+// resolveUserName path still uses `first_name`/`last_name` only, so
+// tenantQueryOne can return the same shape for both helpers.
+const ALICE_ROW = {
+  id: 100,
+  email: 'alice@root.test',
+  first_name: 'Alice',
+  last_name: 'Root',
+};
+const BOB_ROW = {
+  id: 200,
+  email: 'bob@root.test',
+  first_name: 'Bob',
+  last_name: 'Root',
+};
+const PEER_ROW = (id: number, label: string) => ({
+  id,
+  email: `${label}@root.test`,
+  first_name: label,
+  last_name: 'Root',
+});
 
 function createMockDb() {
   return {
@@ -69,6 +106,13 @@ describe('RootSelfTerminationNotificationService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
+    // Default email-service mocks: branded template resolves and sendEmail
+    // succeeds. Tests that exercise SMTP failure paths can override these.
+    mockLoadBrandedTemplate.mockResolvedValue({
+      html: '<html>{{userName}}</html>',
+      attachments: [{ cid: 'assixx-logo' }],
+    });
+    mockSendEmail.mockResolvedValue({ success: true, messageId: 'msg-1' });
     service = new RootSelfTerminationNotificationService(mockDb as unknown as DatabaseService);
   });
 
@@ -80,7 +124,7 @@ describe('RootSelfTerminationNotificationService', () => {
     it('should emit event and INSERT one notification per peer root', async () => {
       mockDb.tenantQueryOne.mockResolvedValueOnce(ALICE_ROW);
       mockDb.tenantQuery
-        .mockResolvedValueOnce([{ id: 200 }, { id: 300 }]) // findPeerRoots
+        .mockResolvedValueOnce([PEER_ROW(200, 'bob'), PEER_ROW(300, 'carol')]) // findPeerRoots
         .mockResolvedValue(undefined); // INSERT no-op
 
       await service.notifyRequested({
@@ -96,11 +140,15 @@ describe('RootSelfTerminationNotificationService', () => {
         '2026-05-04T00:00:00.000Z',
       );
       expect(countSqlMatches(mockDb, 'INSERT INTO notifications')).toBe(2);
+      // Phase 8: per-peer email fan-out — 2 peers ⇒ 2 sendEmail calls.
+      expect(mockSendEmail).toHaveBeenCalledTimes(2);
+      const recipients = mockSendEmail.mock.calls.map((call) => (call[0] as { to: string }).to);
+      expect(recipients).toEqual(['bob@root.test', 'carol@root.test']);
     });
 
     it('should fall back to "Benutzer #<id>" when user lookup returns null', async () => {
       mockDb.tenantQueryOne.mockResolvedValueOnce(null);
-      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 200 }]).mockResolvedValue(undefined);
+      mockDb.tenantQuery.mockResolvedValueOnce([PEER_ROW(200, 'bob')]).mockResolvedValue(undefined);
 
       await service.notifyRequested({
         tenantId: 7,
@@ -155,10 +203,10 @@ describe('RootSelfTerminationNotificationService', () => {
   describe('notifyApproved()', () => {
     it('should emit event and INSERT for requester + peers (approver excluded)', async () => {
       mockDb.tenantQueryOne
-        .mockResolvedValueOnce(ALICE_ROW) // requester name (id=100)
-        .mockResolvedValueOnce(BOB_ROW); // approver name (id=200)
+        .mockResolvedValueOnce(ALICE_ROW) // requester details (id=100)
+        .mockResolvedValueOnce(BOB_ROW); // approver details (id=200)
       mockDb.tenantQuery
-        .mockResolvedValueOnce([{ id: 300 }]) // 1 peer root
+        .mockResolvedValueOnce([PEER_ROW(300, 'carol')]) // 1 peer root
         .mockResolvedValue(undefined);
 
       await service.notifyApproved({
@@ -178,6 +226,10 @@ describe('RootSelfTerminationNotificationService', () => {
       );
       // 1 INSERT for requester + 1 INSERT for peer = 2
       expect(countSqlMatches(mockDb, 'INSERT INTO notifications')).toBe(2);
+      // Phase 8: same fan-out applies to email — 2 recipients ⇒ 2 sendEmail calls.
+      expect(mockSendEmail).toHaveBeenCalledTimes(2);
+      const recipients = mockSendEmail.mock.calls.map((call) => (call[0] as { to: string }).to);
+      expect(recipients).toEqual(['alice@root.test', 'carol@root.test']);
     });
 
     it('should pass null comment through unchanged', async () => {
@@ -259,6 +311,18 @@ describe('RootSelfTerminationNotificationService', () => {
       );
       // Only the requester gets a persistent row.
       expect(countSqlMatches(mockDb, 'INSERT INTO notifications')).toBe(1);
+      // Phase 8: requester-only email fan-out — peer roots already saw
+      // the in-app card decision, so they receive no email.
+      expect(mockSendEmail).toHaveBeenCalledTimes(1);
+      const sendArg = mockSendEmail.mock.calls[0]?.[0] as {
+        to: string;
+        subject: string;
+        text: string;
+      };
+      expect(sendArg.to).toBe('alice@root.test');
+      expect(sendArg.subject).toContain('Root-Konto-Löschung abgelehnt');
+      expect(sendArg.text).toContain('Bob Root');
+      expect(sendArg.text).toContain('Insufficient justification');
     });
 
     it('should not throw when persistent INSERT fails (inner catch)', async () => {
@@ -288,7 +352,7 @@ describe('RootSelfTerminationNotificationService', () => {
   describe('UUID propagation', () => {
     it('should pass mocked uuid v7 into the persistent INSERT params', async () => {
       mockDb.tenantQueryOne.mockResolvedValueOnce(ALICE_ROW);
-      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 200 }]).mockResolvedValue(undefined);
+      mockDb.tenantQuery.mockResolvedValueOnce([PEER_ROW(200, 'bob')]).mockResolvedValue(undefined);
 
       await service.notifyRequested({
         tenantId: 7,

@@ -106,6 +106,9 @@ describe('DashboardCountsSchema', () => {
     tpm: { count: 0 },
     workOrders: { count: 0 },
     shiftSwap: { count: 0 },
+    // Pending approvals — added in masterplan v2.0.1 (D13 SSE sidebar-badge
+    // wiring). Schema requires it; absence here was the v2.0.2 regression.
+    approvals: { count: 0 },
     fetchedAt: '2025-06-01T12:00:00Z',
   };
 

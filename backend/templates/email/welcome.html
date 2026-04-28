@@ -84,16 +84,6 @@
         h1 {
           font-size: 20px !important;
         }
-        /* Mobile CTA — match design-system .btn-primary size (ADR-045 / button.primary.css):
-           padding 8px 16px (--spacing-2/--spacing-4), font-size 14px (--font-size-base).
-           Desktop & Outlook (MSO v:roundrect) stay untouched; only colors/weight/radius
-           are preserved per user spec ("alles andere bleibt"). */
-        .btn-cta {
-          padding: 8px 16px !important;
-        }
-        .btn-cta-link {
-          font-size: 14px !important;
-        }
       }
     </style>
   </head>
@@ -381,8 +371,8 @@
                                 xmlns:v="urn:schemas-microsoft-com:vml"
                                 xmlns:w="urn:schemas-microsoft-com:office:word"
                                 href="{{loginUrl}}"
-                                style="height: 64px; v-text-anchor: middle; width: 220px"
-                                arcsize="17%"
+                                style="height: 32px; v-text-anchor: middle; width: 120px"
+                                arcsize="31%"
                                 strokecolor="#0b70d7"
                                 fillcolor="#0b70d7"
                               >
@@ -391,7 +381,7 @@
                                   style="
                                     color: #ffffff;
                                     font-family: Arial, sans-serif;
-                                    font-size: 18px;
+                                    font-size: 14px;
                                     font-weight: bold;
                                   "
                                 >
@@ -412,11 +402,10 @@
                                 <td
                                   align="center"
                                   bgcolor="#0b70d7"
-                                  class="btn-cta"
                                   style="
                                     background-color: #0b70d7;
                                     border-radius: 10px;
-                                    padding: 22px 56px;
+                                    padding: 8px 16px;
                                     mso-padding-alt: 0;
                                   "
                                 >
@@ -424,13 +413,12 @@
                                     href="{{loginUrl}}"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="btn-cta-link"
                                     style="
                                       display: block;
                                       font-family:
                                         -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
                                         Arial, sans-serif;
-                                      font-size: 19px;
+                                      font-size: 14px;
                                       font-weight: 700;
                                       line-height: 1;
                                       color: #ffffff !important;

@@ -61,6 +61,14 @@ import { RootService } from './root.service.js';
     // blackboard-archive crons follow the same pattern). Not exported —
     // internal scheduler only, no consumer outside RootModule.
     RootSelfTerminationCron,
+    // Phase 8 of FEAT_ROOT_ACCOUNT_PROTECTION (email fan-out for the 3
+    // self-termination lifecycle events) lives DIRECTLY inside
+    // `RootSelfTerminationNotificationService` and uses the legacy
+    // `email-service.ts` transport without going through the MailerService
+    // DI wrapper. Rationale: MailerService was becoming a cross-domain
+    // god object — see `docs/REFACTOR_MAILER_SERVICE_GOD_OBJECT.md` and
+    // the same Spec Deviation D7 that put SSE + persistent INSERT into
+    // a per-domain notification service.
   ],
   exports: [RootService, RootProtectionService, RootSelfTerminationService],
 })
