@@ -145,7 +145,7 @@
     "@playwright/test": "1.59.1",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/k6": "1.7.0",
-    "@types/node": "^24.12.2",
+    "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.5",
     "@vitest/eslint-plugin": "^1.6.16",
     "@vitest/ui": "^4.1.5",
