@@ -13,8 +13,8 @@
 
 ## 1. What you get
 
-| Container        | Image                  | Profile | Host port | Internal port | Purpose         |
-| ---------------- | ---------------------- | ------- | --------- | ------------- | --------------- |
+| Container        | Image                    | Profile | Host port | Internal port | Purpose          |
+| ---------------- | ------------------------ | ------- | --------- | ------------- | ---------------- |
 | `assixx-maildev` | `maildev/maildev:latest` | `dev`   | `1080`    | `1025` (SMTP) | Dev SMTP capture |
 
 The SMTP port (1025) is **not** published to the host — only sibling containers on
@@ -122,14 +122,14 @@ doppler run -- docker-compose --profile dev up -d maildev
 
 ## 6. Troubleshooting
 
-| Symptom                                                          | Cause                                                                   | Fix                                                                                   |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Smoke command exits 1 with `ECONNREFUSED 127.0.0.1:587`          | Container env still points at the old SMTP host (Doppler change stale). | `docker-compose up -d --force-recreate backend` after `doppler secrets set`.          |
-| Smoke exits 0 but Maildev UI is empty                            | Mail captured by a different transport / wrong port.                    | `docker exec assixx-backend printenv SMTP_HOST SMTP_PORT` → must show `maildev` / `1025`. |
-| `assixx-maildev` keeps restarting                                | Port 1080 already bound on host (e.g. another tool).                    | `lsof -i :1080`; stop the conflicting process or change the publish port.             |
-| `pnpm exec tsc` not yet emitted `dist/utils/email-service.js`    | Backend is mid-cold-start (~60 s on first boot).                        | Wait for `docker-compose ps backend` → `(healthy)`, then re-run smoke.                |
-| Mail arrives but body is HTML-empty                              | Caller passed `html: ''` and no `text`.                                 | `sendEmail()` always needs at least `text` or `html` populated.                       |
-| Maildev UI shows mail but downstream test claims "no mail"       | Maildev keeps mail across restarts of OTHER services — but is wiped on its own restart. | Don't `docker-compose restart maildev` between tests; use `curl -X DELETE …/email/all` instead. |
+| Symptom                                                       | Cause                                                                                   | Fix                                                                                             |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Smoke command exits 1 with `ECONNREFUSED 127.0.0.1:587`       | Container env still points at the old SMTP host (Doppler change stale).                 | `docker-compose up -d --force-recreate backend` after `doppler secrets set`.                    |
+| Smoke exits 0 but Maildev UI is empty                         | Mail captured by a different transport / wrong port.                                    | `docker exec assixx-backend printenv SMTP_HOST SMTP_PORT` → must show `maildev` / `1025`.       |
+| `assixx-maildev` keeps restarting                             | Port 1080 already bound on host (e.g. another tool).                                    | `lsof -i :1080`; stop the conflicting process or change the publish port.                       |
+| `pnpm exec tsc` not yet emitted `dist/utils/email-service.js` | Backend is mid-cold-start (~60 s on first boot).                                        | Wait for `docker-compose ps backend` → `(healthy)`, then re-run smoke.                          |
+| Mail arrives but body is HTML-empty                           | Caller passed `html: ''` and no `text`.                                                 | `sendEmail()` always needs at least `text` or `html` populated.                                 |
+| Maildev UI shows mail but downstream test claims "no mail"    | Maildev keeps mail across restarts of OTHER services — but is wiped on its own restart. | Don't `docker-compose restart maildev` between tests; use `curl -X DELETE …/email/all` instead. |
 
 ---
 

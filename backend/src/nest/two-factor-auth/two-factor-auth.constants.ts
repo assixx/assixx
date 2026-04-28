@@ -40,3 +40,16 @@ export const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 /** Code length in characters (DD-1). */
 export const CODE_LENGTH = 6;
+
+/**
+ * Per-user wrong-code streak TTL — 24 hours.
+ *
+ * The fail streak is the brute-force detector that survives resends
+ * (DD-9 explicitly opts out of resetting it). It catches "rapid retry across
+ * freshly-issued challenges" which the per-challenge MAX_ATTEMPTS cap misses.
+ *
+ * TTL is anchored to the FIRST failure: `INCR` sets the counter, `EXPIRE`
+ * seeds the 24 h window exactly once on the 0→1 transition; subsequent
+ * INCRs do not extend it. See `TwoFactorCodeService.incrementFailStreak`.
+ */
+export const FAIL_STREAK_TTL_SEC = 86_400;

@@ -456,11 +456,7 @@ services:
     healthcheck:
       # Maildev exposes a JSON API on the same port as the Web-UI (/healthz on
       # newer tags; fall back to the root index for portability across versions).
-      test:
-        [
-          "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://localhost:1080/ || exit 1",
-        ]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1080/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
