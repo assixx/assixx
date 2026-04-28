@@ -4,17 +4,20 @@
 
 ### Patch Changes
 
-- d512be6: refactor: add participants in kvp
-- 5036dfd: chore: bump grafana v13
-- 62727d1: chore(docker): backend production image switches to `pnpm deploy` pattern (closes ADR-027 §3 deferred); cuts `assixx-backend:prod` image size from 1.27 GB to 614 MB (-52%) by mirroring `Dockerfile.frontend`. Moves frontend-only devDeps (Storybook, Stylelint suite, postcss-html, prettier-plugin-css-order) and 4 duplicates (vite, @tailwindcss/vite, prettier-plugin-svelte, prettier-plugin-tailwindcss) out of root `package.json` into `frontend/package.json` (single source of truth). Root scripts (`storybook`, `build-storybook`, `stylelint*`) now wrap to `pnpm --filter assixx-frontend run …`. Removes dead `eslint-plugin-storybook` import from root `eslint.config.mjs`. Fixes `docs/ARCHITECTURE.md` map drift (`Dockerfile.prod` → `Dockerfile`).
+- d512be6: [Changed] Added participants in kvp
+- 5036dfd: [Maintenance] Bumped grafana v13
+- 62727d1: [Maintenance] Backend prod image: `pnpm deploy` pattern — image size 1.27 GB → 614 MB (-52%). Closes ADR-027 §3.
+- 62727d1: [Maintenance] Moved frontend-only devDeps from root `package.json` into `frontend/package.json` (single source of truth)
+- 62727d1: [Maintenance] Removed dead `eslint-plugin-storybook` import from root `eslint.config.mjs`
+- 62727d1: [Docs] Fixed `docs/ARCHITECTURE.md` map drift (`Dockerfile.prod` → `Dockerfile`)
 
 ## 0.4.12
 
 ### Patch Changes
 
-- 1031d27: feat: add subdomain in url | Tenant isolation prevention
-- 1031d27: feat: add shift handover
-- 1031d27: chore: bump node 24.15.0 LTS
+- 1031d27: [Added] Added subdomain in url | Tenant isolation prevention
+- 1031d27: [Added] Added shift handover
+- 1031d27: [Maintenance] Bumped node 24.15.0 LTS
 
 ## 0.4.11
 
@@ -26,25 +29,25 @@
 
 ### Patch Changes
 
-- feat: add position master
+- [Added] Added position master
 
 ## 0.4.7
 
 ### Patch Changes
 
-- feat: add position master
+- [Added] Added position master
 
 ## 0.4.6
 
 ### Minor Changes
 
-- feat: PermissionControl (docs/infrastructure/adr/ADR-036-organizational-scope-access-control.md and docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md)
+- [Added] PermissionControl (docs/infrastructure/adr/ADR-036-organizational-scope-access-control.md and docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md)
 
 ## 0.4.5
 
 ### Patch Changes
 
-- ffd60c9: feat: add organigramm
+- ffd60c9: [Added] Added organigramm
   feat: add dynamic postions
   refactor: renaming feature to addon (module)
   chore: docs updated

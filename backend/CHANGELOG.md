@@ -4,8 +4,8 @@
 
 ### Patch Changes
 
-- d512be6: refactor: add participants in kvp
-- 5036dfd: fix: cross-origin first-escrow bootstrap (ADR-022 §"New-user scenario")
+- d512be6: [Changed] Added participants in kvp
+- 5036dfd: [Fixed] Cross-origin first-escrow bootstrap (ADR-022 §"New-user scenario")
 
   The apex-login → subdomain-handoff flow now creates the user's first escrow
   blob automatically via a bootstrap-variant of the unlock ticket. Previously
@@ -19,8 +19,11 @@
   the bootstrap when the server already holds an active key for that user
   (existing-user-without-escrow case → admin reset remains the recovery).
 
-- 5036dfd: chore: bump grafana v13
-- 62727d1: chore(docker): backend production image switches to `pnpm deploy` pattern (closes ADR-027 §3 deferred); cuts `assixx-backend:prod` image size from 1.27 GB to 614 MB (-52%) by mirroring `Dockerfile.frontend`. Moves frontend-only devDeps (Storybook, Stylelint suite, postcss-html, prettier-plugin-css-order) and 4 duplicates (vite, @tailwindcss/vite, prettier-plugin-svelte, prettier-plugin-tailwindcss) out of root `package.json` into `frontend/package.json` (single source of truth). Root scripts (`storybook`, `build-storybook`, `stylelint*`) now wrap to `pnpm --filter assixx-frontend run …`. Removes dead `eslint-plugin-storybook` import from root `eslint.config.mjs`. Fixes `docs/ARCHITECTURE.md` map drift (`Dockerfile.prod` → `Dockerfile`).
+- 5036dfd: [Maintenance] Bumped grafana v13
+- 62727d1: [Maintenance] Backend prod image: `pnpm deploy` pattern — image size 1.27 GB → 614 MB (-52%). Closes ADR-027 §3.
+- 62727d1: [Maintenance] Moved frontend-only devDeps from root `package.json` into `frontend/package.json` (single source of truth)
+- 62727d1: [Maintenance] Removed dead `eslint-plugin-storybook` import from root `eslint.config.mjs`
+- 62727d1: [Docs] Fixed `docs/ARCHITECTURE.md` map drift (`Dockerfile.prod` → `Dockerfile`)
 - Updated dependencies [d512be6]
 - Updated dependencies [5036dfd]
 - Updated dependencies [62727d1]
@@ -30,13 +33,13 @@
 
 ### Patch Changes
 
-- 1031d27: chore: add version reference and bug report
-- 1031d27: feat: add subdomain in url | Tenant isolation prevention
-- 1031d27: feat: add microsoft oAuth
-- 1031d27: feat: add shift handover
-- 1031d27: chore: add grafana tempo
-- 1031d27: chore: bump node 24.15.0 LTS
-- 1031d27: chore: add otelementry
+- 1031d27: [Maintenance] Added version reference and bug report
+- 1031d27: [Added] Added subdomain in url | Tenant isolation prevention
+- 1031d27: [Added] Added microsoft oAuth
+- 1031d27: [Added] Added shift handover
+- 1031d27: [Maintenance] Added grafana tempo
+- 1031d27: [Maintenance] Bumped node 24.15.0 LTS
+- 1031d27: [Maintenance] Added otelementry
 - Updated dependencies [1031d27]
 - Updated dependencies [1031d27]
 - Updated dependencies [1031d27]
@@ -46,32 +49,32 @@
 
 ### Patch Changes
 
-- chore: bump typsescript from 5 to 6
-- chore: bump postgres from 17 to 18
+- [Maintenance] Bumped typsescript from 5 to 6
+- [Maintenance] Bumped postgres from 17 to 18
   - @assixx/shared@0.4.11
 
 ## 0.4.10
 
 ### Patch Changes
 
-- ebd08ea: feat: add swap requests for shifts
-- 4a73906: feature: add inventory list
-- f929814: refactor: cleanup
+- ebd08ea: [Added] Added swap requests for shifts
+- 4a73906: [Added] Added inventory list
+- f929814: [Changed] Cleaned up
   - @assixx/shared@0.4.10
 
 ## 0.4.9
 
 ### Patch Changes
 
-- a180d70: refactor: add TPM apporval system
-- a180d70: feat: add defects chart
+- a180d70: [Changed] Added TPM apporval system
+- a180d70: [Added] Added defects chart
   - @assixx/shared@0.4.9
 
 ## 0.4.8
 
 ### Patch Changes
 
-- feat: add position master
+- [Added] Added position master
 - Updated dependencies
   - @assixx/shared@0.4.8
 
@@ -79,7 +82,7 @@
 
 ### Patch Changes
 
-- feat: add position master
+- [Added] Added position master
 - Updated dependencies
   - @assixx/shared@0.4.7
 
@@ -87,7 +90,7 @@
 
 ### Minor Changes
 
-- feat: PermissionControl (docs/infrastructure/adr/ADR-036-organizational-scope-access-control.md and docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md)
+- [Added] PermissionControl (docs/infrastructure/adr/ADR-036-organizational-scope-access-control.md and docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md)
 
 ### Patch Changes
 
@@ -98,22 +101,22 @@
 
 ### Patch Changes
 
-- a283d00: Refactor: is_active Magic Numbers durch IS_ACTIVE-Konstanten ersetzt (466 Stellen in 134 Dateien). Regressions-Schutz durch 4 Architektur-Tests in CI. Dokumentiert in TYPESCRIPT-STANDARDS.md Section 7.4 + No-Go #16.
-- ffd60c9: feat: add organigramm
+- a283d00: [Changed] Is_active Magic Numbers durch IS_ACTIVE-Konstanten ersetzt (466 Stellen in 134 Dateien). Regressions-Schutz durch 4 Architektur-Tests in CI. Dokumentiert in TYPESCRIPT-STANDARDS.md Section 7.4 + No-Go #16.
+- ffd60c9: [Added] Added organigramm
   feat: add dynamic postions
   refactor: renaming feature to addon (module)
   chore: docs updated
   style: adjust landingpage to addon modules
   chore: bump deps
   chore: stabilisation
-- bbba1ef: Partition Health: /health/partitions Endpoint + API-Test
+- bbba1ef: [Other] Partition Health: /health/partitions Endpoint + API-Test
   - Neuer Endpoint `/health/partitions` zur Verifizierung der pg_partman-Konfiguration (Extension, part_config, Partitionen, Defaults)
   - HTTP 200 bei gesundem Zustand, HTTP 503 bei Problemen
   - 9 API-Integrationstests (`partitions.api.test.ts`) verifizieren Partition-Coverage automatisch
   - GRANT für `app_user` auf `partman`-Schema (read-only, Monitoring)
 
-- eaec9d5: refactor: add adress for customer in db and signup page
-- eaec9d5: feat: add organigramm
+- eaec9d5: [Changed] Added adress for customer in db and signup page
+- eaec9d5: [Added] Added organigramm
 - Updated dependencies [ffd60c9]
   - @assixx/shared@0.4.5
 
@@ -121,7 +124,7 @@
 
 ### Minor Changes
 
-- 852a237: TPM (Total Productive Maintenance) feature complete: maintenance plans, Kamishibai board, card execution workflow, approval system, schedule projection, slot assistant, escalation, photo uploads, execution history, plan archive/unarchive, work order integration, shift assignments, category/interval/status color config, time estimates, rename machine to assets, audit trail logging, TPM card creation limits, template removal, API tests and full frontend UI
+- 852a237: [Other] TPM (Total Productive Maintenance) feature complete: maintenance plans, Kamishibai board, card execution workflow, approval system, schedule projection, slot assistant, escalation, photo uploads, execution history, plan archive/unarchive, work order integration, shift assignments, category/interval/status color config, time estimates, rename machine to assets, audit trail logging, TPM card creation limits, template removal, API tests and full frontend UI
 
 ### Patch Changes
 

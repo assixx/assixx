@@ -122,7 +122,8 @@
     "changeset": "changeset",
     "changeset:version": "changeset version && node scripts/sync-root-version.mjs && node scripts/aggregate-changelog.mjs",
     "changeset:tag": "VERSION=$(node -p \"require('./package.json').version\") && git tag -a \"v$VERSION\" -m \"v$VERSION\"",
-    "changeset:status": "changeset status"
+    "changeset:status": "changeset status",
+    "changeset:lint": "node scripts/lint-changesets.mjs"
   },
   "keywords": [
     "assixx",
