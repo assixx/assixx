@@ -355,7 +355,7 @@ All 21 DDs APPROVED on 2026-04-26 — see §0.4 table.
 
 **Owner:** DevOps + Backend. **Verification:** end-to-end signup mit neuer Subdomain `e2e-test-{timestamp}` completed in unter 5 Sekunden, keine DNS/cert errors. Wildcard-A + Wildcard-Cert beides bestätigt aktiv.
 
-### Step 0.5.5: Dev-SMTP Smoke Test (Maildev) [PENDING]
+### Step 0.5.5: Dev-SMTP Smoke Test (Maildev) [DONE — 2026-04-28]
 
 > **v0.4.0 Resolution (DD-25):** Dev-SMTP-Backend = **Maildev-Container** im `docker-compose.yml` `dev`-Profile (NICHT echter SMTP-Provider, NICHT Mailpit).
 
@@ -468,7 +468,7 @@ All 21 DDs APPROVED on 2026-04-26 — see §0.4 table.
 - [ ] mail-tester score ≥ 9/10 for `noreply@assixx.de` (Step 0.5.2)
 - [x] External-API audit complete + Spec Deviations updated (Step 0.5.3) — 2026-04-28
 - [ ] Subdomain DNS + cert model documented + e2e signup smoke green (Step 0.5.4)
-- [ ] Dev-SMTP smoke green + setup documented (Step 0.5.5)
+- [x] Dev-SMTP smoke green + setup documented (Step 0.5.5) — 2026-04-28
 - [ ] **Production-SMTP End-to-End Smoke green** (Step 0.5.6, NEW v0.5.0) — alle Test-Mailboxen Inbox, nicht Spam
 - [ ] **SMTP-Sender-Reputation-Warmup completed** (Step 0.5.7, NEW v0.5.0) — 7-Tage-Warmup ohne Bounce-Spikes, Sender-Score ≥ 80/100
 
@@ -480,7 +480,7 @@ All 21 DDs APPROVED on 2026-04-26 — see §0.4 table.
 
 > Single migration. Drops legacy 2FA cruft, adds new columns. No new tables. **No partial index** — V0.1 had one with no clear consumer; dropped per KISS.
 
-### Step 1.1: Drop legacy 2FA columns + add new columns [PENDING]
+### Step 1.1: Drop legacy 2FA columns + add new columns [DONE — 2026-04-28]
 
 **New file:** `database/migrations/20260427NNNNNNNNN_replace-2fa-state-on-users.ts`
 (generated via `doppler run -- pnpm run db:migrate:create replace-2fa-state-on-users`. Generator produces 17-digit UTC timestamp per ADR-014 / DATABASE-MIGRATION-GUIDE — never hand-craft the prefix.)
@@ -513,14 +513,14 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT fa
 
 **Mandatory checklist (per DATABASE-MIGRATION-GUIDE.md):**
 
-- [ ] No `IF NOT EXISTS` in `up()` (fail-loud on partial apply)
-- [ ] `IF EXISTS` / `IF NOT EXISTS` allowed in `down()` (defensive rollback)
-- [ ] Both new columns nullable — existing rows get NULL → triggers DD-11 transparent enrollment
-- [ ] No data backfill (NULL is correct semantic)
-- [ ] No new RLS policy needed (`users` already RLS-enabled — verified `relrowsecurity = t`)
-- [ ] No new GRANT needed (column-level GRANTs inherit from table per PG default)
-- [ ] File generated via `db:migrate:create` — **NEVER** hand-write 17-digit timestamp
-- [ ] Confirm legacy columns truly unused: `grep -rn "two_factor_secret\|two_factor_enabled" backend/ shared/` returns 0 hits in source (only test-mocks/freemail-domains-data are allowed false positives)
+- [x] No `IF NOT EXISTS` in `up()` (fail-loud on partial apply)
+- [x] `IF EXISTS` / `IF NOT EXISTS` allowed in `down()` (defensive rollback)
+- [x] Both new columns nullable — existing rows get NULL → triggers DD-11 transparent enrollment
+- [x] No data backfill (NULL is correct semantic)
+- [x] No new RLS policy needed (`users` already RLS-enabled — verified `relrowsecurity = t`)
+- [x] No new GRANT needed (column-level GRANTs inherit from table per PG default)
+- [x] File generated via `db:migrate:create` — **NEVER** hand-write 17-digit timestamp
+- [x] Confirm legacy columns truly unused: `grep -rn "two_factor_secret\|two_factor_enabled" backend/ shared/` returns 0 hits in source (verified 2026-04-28: 0 hits incl. tests; pre-migration data audit 0 non-NULL across 129 users)
 
 **Verification:**
 
@@ -532,14 +532,14 @@ docker exec assixx-postgres psql -U assixx_user -d assixx \
 
 ### Phase 1 — Definition of Done
 
-- [ ] 1 migration file with both `up()` and `down()`, generated via `db:migrate:create`
-- [ ] Dry run passes: `doppler run -- ./scripts/run-migrations.sh up --dry-run`
-- [ ] Backup taken before applying
-- [ ] Migration applied successfully
-- [ ] 2 new columns present, 2 legacy columns gone
-- [ ] No data backfill performed
-- [ ] Backend compiles after pull
-- [ ] Existing tests still pass
+- [x] 1 migration file with both `up()` and `down()`, generated via `db:migrate:create` — `database/migrations/20260428211706901_replace-2fa-state-on-users.ts`
+- [x] Dry run passes: `doppler run -- ./scripts/run-migrations.sh up --dry-run` (2026-04-28)
+- [x] Backup taken before applying — `database/backups/pre-2fa-20260428_231649.dump` (3.4 MB)
+- [x] Migration applied successfully — pgmigrations row #153 (2026-04-28 23:18:21 UTC)
+- [x] 2 new columns present, 2 legacy columns gone — verified via `\d users`
+- [x] No data backfill performed — both new columns NULL (DD-11 transparent enrollment)
+- [x] Backend compiles after pull — backend container healthy after `up -d --force-recreate`; type-check exit 0
+- [x] Existing tests still pass — 277 files, 7120 tests passed in 18.78s
 
 ---
 
@@ -1381,7 +1381,7 @@ export const MESSAGES = {
 | ------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | ---------- |
 | 0       | 0     | DD sign-off (21/21 APPROVED)                                                                                                                                                   | DONE    | 2026-04-26 |
 | 1       | 0/0.5 | External-API audit · pre-deploy email draft · single-root detection · SPF/DKIM check · subdomain handoff verify · dev-SMTP smoke                                               | PENDING |            |
-| 2       | 1     | Migration: drop legacy 2FA columns + add 2 new columns                                                                                                                         | PENDING |            |
+| 2       | 1     | Migration: drop legacy 2FA columns + add 2 new columns                                                                                                                         | DONE    | 2026-04-28 |
 | 3       | 2     | Module skeleton · types · DTOs · constants · register in app.module                                                                                                            | PENDING |            |
 | 4       | 2     | TwoFactorCodeService (crypto + Redis primitives via DI provider)                                                                                                               | PENDING |            |
 | 5       | 2     | TwoFactorAuthService (orchestration) · `send2faCode` + template                                                                                                                | PENDING |            |
