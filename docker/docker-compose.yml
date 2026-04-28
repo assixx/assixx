@@ -403,6 +403,71 @@ services:
     command: ["node", "backend/dist/workers/deletion-worker.js"]
 
   # ===========================================================================
+  # Maildev — Development SMTP capture (FEAT_2FA_EMAIL Step 0.5.5, DD-25)
+  # ===========================================================================
+  # WHY: Phase 2 of the email-2FA masterplan needs a working dev SMTP target
+  # before any backend code is written. Maildev gives us zero external deps and
+  # a Web-UI for visual verification that the email-service.ts pipeline reaches
+  # an SMTP listener and serialises the mail correctly. Production paths (SPF,
+  # DKIM, DMARC, real SMTP provider reputation) are tested separately in Step
+  # 0.5.2 / 0.5.6 / 0.5.7 — Maildev only validates the LOCAL network + code path.
+  #
+  # SCOPE: dev profile only. Default COMPOSE_PROFILES=dev,observability in
+  # docker/.env (ADR-027 Amendment 2026-04-28) → maildev starts automatically
+  # for every developer. Production never sees this container.
+  #
+  # PORT POLICY (per masterplan §0.5.5):
+  #   - 1080 → Web-UI, exposed on host so the developer can browse received mail
+  #   - 1025 → SMTP listener, NOT exposed externally; reachable only inside the
+  #     `assixx-network` bridge so only sibling containers (backend, deletion-
+  #     worker) can submit mail. Prevents accidental host-side mis-targeting.
+  #
+  # DOPPLER WIRING: dev config sets SMTP_HOST=maildev, SMTP_PORT=1025,
+  #   SMTP_USER/SMTP_PASS empty, SMTP_FROM=noreply@assixx.de.
+  #   See docs/how-to/HOW-TO-DEV-SMTP.md for the secret-set commands and the
+  #   smoke procedure.
+  #
+  # IMAGE TAG: `:latest` follows the masterplan literal value (DD-25). This is
+  # the only `:latest` image in this file — accepted because the container is
+  # dev-profile-only (never reaches CI/CD or production). Consider pinning to
+  # a SHA-tagged stable release if breakage from upstream tag movement bites.
+  #
+  # @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §0.5.5 (Step + verification)
+  # @see docs/how-to/HOW-TO-DEV-SMTP.md (setup, smoke, troubleshooting)
+  # ===========================================================================
+  maildev:
+    profiles: [dev]
+    image: maildev/maildev:latest
+    container_name: assixx-maildev
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+        reservations:
+          cpus: "0.1"
+          memory: 32M
+    ports:
+      - "1080:1080" # Web-UI (http://localhost:1080)
+      # 1025 SMTP intentionally NOT published — internal traffic only.
+    networks:
+      - assixx-network
+    healthcheck:
+      # Maildev exposes a JSON API on the same port as the Web-UI (/healthz on
+      # newer tags; fall back to the root index for portability across versions).
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:1080/ || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      start_interval: 5s
+
+  # ===========================================================================
   # Backend (Production) — multi-stage Dockerfile mit pnpm deploy
   # ===========================================================================
   # Implementiert das ADR-027 §"Decision 3 — pnpm deploy for Backend" (2026-04-27).

@@ -24,6 +24,7 @@
 | [HOW-TO-GRAFANA-CLI](./HOW-TO-GRAFANA-CLI.md)                   | `grafanactl` Observability-as-Code — Install, Cloud-Setup, Workflows, Abgrenzung zu `curl`-Approach (ADR-002 Phase 5g) |
 | [HOW-TO-TRACE-DEBUG](./HOW-TO-TRACE-DEBUG.md)                   | Debug slow/failing requests via distributed traces — complaint → trace_id → Tempo waterfall → root cause (ADR-048)     |
 | [HOW-TO-LOCAL-SUBDOMAINS](./HOW-TO-LOCAL-SUBDOMAINS.md)         | Neuen Tenant-Subdomain lokal testen — `/etc/hosts`-Eintrag, Fallstricke, Troubleshooting (ADR-050 Session 12c)         |
+| [HOW-TO-DEV-SMTP](./HOW-TO-DEV-SMTP.md)                         | Maildev als Dev-SMTP-Capture — Setup, Doppler-Secrets, Smoke-Test, Reset, Troubleshooting (FEAT_2FA_EMAIL §0.5.5)      |
 
 ### Testing
 
