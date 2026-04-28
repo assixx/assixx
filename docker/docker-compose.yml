@@ -751,7 +751,7 @@ services:
   # Prometheus - Metrics Collection
   # Scrapes /api/v2/metrics from backend
   prometheus:
-    image: prom/prometheus:v3.11.2
+    image: prom/prometheus:v3.11.3
     container_name: assixx-prometheus
     restart: unless-stopped
     deploy:
