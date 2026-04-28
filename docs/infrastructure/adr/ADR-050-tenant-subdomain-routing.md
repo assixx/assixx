@@ -266,13 +266,52 @@ the strongest guarantee available.
 future `domain: '.assixx.com'` literal — that single line would defeat the
 entire isolation model.
 
+### SSR Host Propagation: Nginx + adapter-node Chain (Amendment 2026-04-27)
+
+The R15 `CROSS_TENANT_HOST_MISMATCH` cross-check (above) is only as reliable
+as the host the backend sees. In production-profile Docker the host travels
+through three hops: **Browser → Nginx → SvelteKit (adapter-node) → Backend**.
+Each hop must propagate the original Host or the chain collapses to the
+internal docker hostname (`frontend:3001` / `backend:3000`), `extractSlug()`
+returns `null`, and every authenticated handoff 403s with
+`HANDOFF_HOST_MISMATCH`.
+
+**Required wiring (all three must hold):**
+
+| Hop                             | Configuration                                                                                                                                                         | File                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Nginx → SvelteKit / Backend     | `proxy_set_header X-Forwarded-Host $host;` on every `proxy_pass` block (SSE, `/api/`, `/uploads/`, `/chat-ws`, `/`)                                                   | `docker/nginx/nginx.conf`                                                           |
+| SvelteKit adapter-node          | `PROTOCOL_HEADER=x-forwarded-proto` + `HOST_HEADER=x-forwarded-host` (kit docs §"environment-variables") — populates `event.url` per request from the proxy's headers | `docker/docker-compose.yml` frontend env, `docker/Dockerfile.frontend` ENV defaults |
+| SvelteKit → Backend (SSR fetch) | `'X-Forwarded-Host': new URL(request.url).hostname` — only correct because adapter-node is configured per the previous row                                            | `frontend/src/routes/(public)/signup/oauth-complete/+page.server.ts::handleHandoff` |
+
+**Anti-pattern (pre-2026-04-27):** static `ORIGIN=http://localhost` env on
+adapter-node forced `event.url.origin` to a single host regardless of the
+inbound `Host` header, silently defeating subdomain awareness in SSR. Any
+adapter-node deployment behind a reverse proxy must use the header-driven
+configuration; static `ORIGIN` is incompatible with multi-tenant subdomain
+routing.
+
+**Cookie security follows the same chain:** `secure` is derived from
+`event.url.protocol` (which is now transport-accurate) inside
+`frontend/src/lib/server/auth-cookies.ts`, never from `process.env.NODE_ENV`.
+HTTP local prod-test → `secure: false` → browser keeps cookies; HTTPS prod
+→ `secure: true` → browser enforces transport guarantee. RFC 6265bis §4.1.2.5
+("user agent MUST ignore Set-Cookie if Secure is set on a non-secure
+connection") otherwise silently drops every Set-Cookie on local prod-test.
+
 ### CORS: Origin-Allowlist via subdomain regex
 
 Today's backend has no explicit CORS block (Fastify default = same-origin
 only). Multi-subdomain future requires explicit Fastify CORS plugin with an
 origin-callback that allows: apex (`assixx.com`, `www.assixx.com`), any
-subdomain (`<slug>.assixx.com`), and `localhost:5173` for dev. Static
-regex, not DB-driven — the regex shape IS the contract.
+subdomain (`<slug>.assixx.com`), `localhost:5173|5174` for Vite dev / E2E,
+and bare `http://localhost` (no port = port 80) for production-profile
+local testing per [PRODUCTION-AND-DEVELOPMENT-TESTING.md](../../PRODUCTION-AND-DEVELOPMENT-TESTING.md).
+Static regex, not DB-driven — the regex shape IS the contract. The bare
+`localhost` branch is required because SvelteKit SSR forwards the browser's
+`Origin: http://localhost` header on its server-to-server fetch to the
+backend; without it every auth POST 500s with `CORS origin not allowed:
+http://localhost` in production-profile local mode.
 
 ### OAuth (ADR-046): Centralized Callback, Post-Callback Handoff
 

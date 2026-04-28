@@ -37,7 +37,7 @@ beforeAll(async () => {
     method: 'POST',
     headers: authHeaders(rootToken),
     body: JSON.stringify({
-      email: `perm-api-test-${Date.now()}@apitest.de`,
+      email: `perm-api-test-${Date.now()}@assixx.com`,
       password: APITEST_PASSWORD,
       firstName: 'PermAPI',
       lastName: 'Test',
@@ -55,7 +55,7 @@ beforeAll(async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: 'employee@apitest.de',
+      email: 'employee@assixx.com',
       password: APITEST_PASSWORD,
     }),
   });

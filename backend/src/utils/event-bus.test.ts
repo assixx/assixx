@@ -88,6 +88,82 @@ describe('eventBus', () => {
     });
   });
 
+  // Root Self-Termination Events — Step 2.7 of FEAT_ROOT_ACCOUNT_PROTECTION.
+  // 3 typed events that fan out to peer roots; expired remains untyped (cron only).
+  describe('emitRootSelfTerminationRequested', () => {
+    it('should emit root.self-termination.requested event with full payload', () => {
+      const handler = vi.fn();
+      eventBus.on('root.self-termination.requested', handler);
+      const request = { id: 'req-uuid-1', requesterId: 42, requesterName: 'Alice Root' };
+      const expiresAt = '2026-05-04T00:00:00.000Z';
+      eventBus.emitRootSelfTerminationRequested(7, request, expiresAt);
+      expect(handler).toHaveBeenCalledWith({
+        tenantId: 7,
+        request,
+        expiresAt,
+      });
+      eventBus.removeListener('root.self-termination.requested', handler);
+    });
+  });
+
+  describe('emitRootSelfTerminationApproved', () => {
+    it('should emit root.self-termination.approved event with approver + comment', () => {
+      const handler = vi.fn();
+      eventBus.on('root.self-termination.approved', handler);
+      const request = { id: 'req-uuid-2', requesterId: 42, requesterName: 'Alice Root' };
+      eventBus.emitRootSelfTerminationApproved(7, request, 99, 'Bob Root', 'Approved.');
+      expect(handler).toHaveBeenCalledWith({
+        tenantId: 7,
+        request,
+        approverId: 99,
+        approverName: 'Bob Root',
+        comment: 'Approved.',
+      });
+      eventBus.removeListener('root.self-termination.approved', handler);
+    });
+
+    it('should pass null comment through unchanged', () => {
+      const handler = vi.fn();
+      eventBus.on('root.self-termination.approved', handler);
+      const request = { id: 'req-uuid-3', requesterId: 42, requesterName: 'Alice Root' };
+      eventBus.emitRootSelfTerminationApproved(7, request, 99, 'Bob Root', null);
+      expect(handler).toHaveBeenCalledWith({
+        tenantId: 7,
+        request,
+        approverId: 99,
+        approverName: 'Bob Root',
+        comment: null,
+      });
+      eventBus.removeListener('root.self-termination.approved', handler);
+    });
+  });
+
+  describe('emitRootSelfTerminationRejected', () => {
+    it('should emit root.self-termination.rejected event with reason + cooldown', () => {
+      const handler = vi.fn();
+      eventBus.on('root.self-termination.rejected', handler);
+      const request = { id: 'req-uuid-4', requesterId: 42, requesterName: 'Alice Root' };
+      const cooldownEndsAt = '2026-04-28T03:00:00.000Z';
+      eventBus.emitRootSelfTerminationRejected(
+        7,
+        request,
+        99,
+        'Bob Root',
+        'Insufficient justification.',
+        cooldownEndsAt,
+      );
+      expect(handler).toHaveBeenCalledWith({
+        tenantId: 7,
+        request,
+        approverId: 99,
+        approverName: 'Bob Root',
+        rejectionReason: 'Insufficient justification.',
+        cooldownEndsAt,
+      });
+      eventBus.removeListener('root.self-termination.rejected', handler);
+    });
+  });
+
   describe('getListenerCount', () => {
     it('should return 0 for events with no listeners', () => {
       expect(eventBus.getListenerCount('nonexistent.event')).toBe(0);

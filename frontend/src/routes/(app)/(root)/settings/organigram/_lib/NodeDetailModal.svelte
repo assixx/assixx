@@ -46,7 +46,7 @@
     )[entityType];
   }
 
-  // Lernübung: buildSubtitle implementieren — Key Counts für den Modal-Header zusammenfassen
+  // Learning exercise: implement buildSubtitle — summarize key counts for the modal header
   function buildSubtitle(_d: OrgNodeDetail): string {
     return '';
   }

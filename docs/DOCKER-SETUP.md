@@ -86,10 +86,12 @@ cp .env.example .env
 
 ### 4. Start containers
 
+`docker/.env.example` setzt `COMPOSE_PROFILES=dev` als Default — `docker-compose up -d` startet damit den Dev-Backend (`assixx-backend:dev` aus `docker/Dockerfile.dev` mit echtem Hot-Reload: `tsc --watch` + `nodemon`, ~4 s pro Source-Edit, kein Container-Restart nötig). Production-Backend (`backend-prod` aus `docker/Dockerfile`) läuft nur mit `--profile production`. Siehe ADR-027 Amendments 2026-04-28 (a) Profile-Split + (b) Hot-Reload-Pipeline.
+
 ```bash
 cd docker
 
-# With Doppler:
+# With Doppler (Default-Profile aus .env: dev,observability):
 doppler run -- docker-compose up -d
 
 # With local .env:
@@ -164,22 +166,24 @@ doppler run -- docker-compose ps
 # Logs
 docker logs -f assixx-backend
 
-# Restart backend (after code changes)
-doppler run -- docker-compose restart backend
+# Restart Dev-Backend (NUR für env/compose-Änderungen — Source-Edits hot-reloaden automatisch via tsc-watch + nodemon, ADR-027 §Amendment 2026-04-28 (b))
+doppler run -- docker-compose --profile dev restart backend
 
-# Stop all
-doppler run -- docker-compose down
+# Stop dev stack
+doppler run -- docker-compose --profile dev down
 
-# Production mode (includes SvelteKit SSR + Nginx)
-doppler run -- docker-compose --profile production up -d
-
-# Rebuild frontend for production
-doppler run -- docker-compose --profile production build frontend
+# Production mode (CI-Parität: backend-prod aus docker/Dockerfile, multi-stage)
+# Vorher: Dev-Backend stoppen (sonst container_name-Konflikt)
+doppler run -- docker-compose --profile dev stop backend deletion-worker
+doppler run -- docker-compose --profile dev rm -f backend deletion-worker
+doppler run -- docker-compose --profile production build
 doppler run -- docker-compose --profile production up -d
 
 # Database console
 docker exec -it assixx-postgres psql -U assixx_user -d assixx
 ```
+
+> **Profile-System** (ADR-027 Amendment 2026-04-28): Backend hat zwei Service-Definitionen — `backend` (dev) + `backend-prod` (production), beide nutzen denselben `container_name: assixx-backend` und Port 3000 (XOR via Profile). Volle Doku in [PRODUCTION-AND-DEVELOPMENT-TESTING.md](./PRODUCTION-AND-DEVELOPMENT-TESTING.md) und [COMMON-COMMANDS.md](./COMMON-COMMANDS.md).
 
 ---
 

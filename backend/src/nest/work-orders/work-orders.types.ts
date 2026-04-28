@@ -47,12 +47,12 @@ export const STATUS_LABELS: Record<WorkOrderStatus, string> = {
 /**
  * Defines valid status transitions.
  *
- * open → in_progress     (Employee: Arbeit begonnen)
- * open → completed       (Employee: Sofort erledigt)
- * in_progress → completed (Employee: Arbeit fertig)
- * completed → verified    (Admin: Verifiziert)
- * completed → in_progress (Admin: Zurück an Employee — nicht akzeptiert)
- * verified → completed    (Admin: Verifikation zurücknehmen)
+ * open → in_progress     (Employee: started work)
+ * open → completed       (Employee: completed immediately)
+ * in_progress → completed (Employee: work finished)
+ * completed → verified    (Admin: verified)
+ * completed → in_progress (Admin: bounced back to employee — not accepted)
+ * verified → completed    (Admin: revoke verification)
  */
 export const VALID_STATUS_TRANSITIONS: ReadonlyMap<WorkOrderStatus, readonly WorkOrderStatus[]> =
   new Map([

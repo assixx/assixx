@@ -107,14 +107,18 @@ nvm use <NEW>
 nvm uninstall <OLD>       # keep the toolchain clean
 
 # ─── 2. Docker full rebuild (base image changed) ─────────────────────────
+# Profile-System (ADR-027 Amendment 2026-04-28): nur Services mit `build:`
+# Block werden gebaut. deletion-worker/deletion-worker-prod reusen das
+# backend-Image (kein eigener build:), daher NICHT extra zu bauen.
 cd /home/scs/projects/Assixx/docker
-doppler run -- docker-compose build --no-cache backend deletion-worker
-doppler run -- docker-compose --profile production build --no-cache frontend
+doppler run -- docker-compose --profile dev build --no-cache backend
+doppler run -- docker-compose --profile production build --no-cache backend-prod frontend
 
 # ─── 3. Start containers ─────────────────────────────────────────────────
+# .env Default `COMPOSE_PROFILES=dev,observability` → `up -d` startet beide
 doppler run -- docker-compose up -d
-# with observability stack:
-doppler run -- docker-compose --profile observability up -d
+# Explizit (überschreibt .env):
+doppler run -- docker-compose --profile dev --profile observability up -d
 
 # ─── 4. Quick smoke ──────────────────────────────────────────────────────
 node -v                                     # → v<NEW>
@@ -152,10 +156,10 @@ git restore \
 nvm use <OLD>
 nvm alias default <OLD>
 
-# 3. Docker back to old base image
+# 3. Docker back to old base image (deletion-worker reuses backend image)
 cd /home/scs/projects/Assixx/docker
-doppler run -- docker-compose build --no-cache backend deletion-worker
-doppler run -- docker-compose --profile production build --no-cache frontend
+doppler run -- docker-compose --profile dev build --no-cache backend
+doppler run -- docker-compose --profile production build --no-cache backend-prod frontend
 ```
 
 ---

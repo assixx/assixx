@@ -15,6 +15,7 @@ import { createLogger } from '$lib/utils/logger';
 
 import type { OrganizationalScope } from '$lib/types/organizational-scope';
 import type { PageServerLoad } from './$types';
+import type { RootSelfTerminationRequest, RootUserLookup } from './_lib/types';
 
 interface ApprovalListItem {
   uuid: string;
@@ -64,6 +65,39 @@ function hasManageAccess(
   return orgScope.isAnyLead;
 }
 
+/**
+ * Fetch the root-only data for the self-termination peer-approval card.
+ *
+ * WHY a separate helper: keeps the conditional `isRoot ? apiFetch : Promise.resolve(null)`
+ * branches out of the main `load` function so its cyclomatic complexity stays
+ * under the project's `complexity: 10` ESLint cap. Returns the same paired
+ * shape regardless of role — non-root users get `[[], []]` so the page-data
+ * envelope is uniform and the consumer doesn't need a role check.
+ *
+ * @see docs/FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §5.3
+ */
+async function loadRootSelfTerminationData(
+  role: string,
+  token: string,
+  fetchFn: typeof fetch,
+): Promise<{ requests: RootSelfTerminationRequest[]; peerRoots: RootUserLookup[] }> {
+  if (role !== 'root') {
+    return { requests: [], peerRoots: [] };
+  }
+  const [requestsData, peerRootsData] = await Promise.all([
+    apiFetch<RootSelfTerminationRequest[]>(
+      '/users/self-termination-requests/pending',
+      token,
+      fetchFn,
+    ),
+    apiFetch<RootUserLookup[]>('/users?role=root', token, fetchFn),
+  ]);
+  return {
+    requests: Array.isArray(requestsData) ? requestsData : [],
+    peerRoots: Array.isArray(peerRootsData) ? peerRootsData : [],
+  };
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
@@ -100,7 +134,10 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     total: 0,
   };
 
-  const [approvalsData, statsData, rewardTiersData] = await Promise.all([
+  // Step 5.3 — root self-termination peer-approval card. Helper isolates
+  // the role-conditional fetch so this `load` function stays under the
+  // ESLint complexity cap.
+  const [approvalsData, statsData, rewardTiersData, rootSelfTermination] = await Promise.all([
     apiFetch<PaginatedApprovals>('/approvals?page=1&limit=20', token, fetch),
     apiFetch<ApprovalStats>('/approvals/stats', token, fetch),
     apiFetch<{ id: number; amount: number; sortOrder: number }[]>(
@@ -108,11 +145,14 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
       token,
       fetch,
     ),
+    loadRootSelfTerminationData(user.role, token, fetch),
   ]);
 
   return {
     approvals: approvalsData ?? emptyPage,
     stats: statsData ?? emptyStats,
     rewardTiers: Array.isArray(rewardTiersData) ? rewardTiersData : [],
+    rootSelfTerminationRequests: rootSelfTermination.requests,
+    rootUsers: rootSelfTermination.peerRoots,
   };
 };

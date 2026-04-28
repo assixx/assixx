@@ -303,16 +303,16 @@
   }
 
   // --- UNSAVED CHANGES — SPA NAVIGATION GUARD ---
-  // Cancel + async-confirm + re-goto Pattern: beforeNavigate ist synchron, unser
-  // Modal ist async. Flag `bypassNavGuard` verhindert Endlos-Loop beim
-  // programmatischen goto() nach erfolgreicher Bestätigung.
+  // Cancel + async-confirm + re-goto pattern: beforeNavigate is synchronous, but
+  // our modal is async. The `bypassNavGuard` flag prevents an infinite loop on
+  // the programmatic goto() after successful confirmation.
   let bypassNavGuard = $state(false);
 
   beforeNavigate((nav) => {
     if (bypassNavGuard) return;
     if (!shiftsState.isDirty) return;
-    // nav.type === 'leave' = Browser-Close/Reload — das regelt der
-    // beforeunload-Listener unten (native Browser-Dialog, keine Alternative).
+    // nav.type === 'leave' = browser close/reload — handled by the
+    // beforeunload listener below (native browser dialog, no alternative).
     if (nav.type === 'leave') return;
     if (nav.to === null) return;
     const targetUrl = nav.to.url;
@@ -338,10 +338,10 @@
       void loadShiftPlan();
     }
 
-    // Browser-Close / Reload / Tab-Close: native beforeunload. Browser zeigen
-    // aus Sicherheitsgründen IMMER ihren eigenen generischen Dialog — die
-    // Message wird ignoriert. preventDefault() reicht ab Chrome 119 / Firefox
-    // 44 / Safari 17 (returnValue ist deprecated, MDN).
+    // Browser close / reload / tab-close: native beforeunload. Browsers ALWAYS
+    // show their own generic dialog for security reasons — the message is
+    // ignored. preventDefault() is sufficient from Chrome 119 / Firefox 44 /
+    // Safari 17 onwards (returnValue is deprecated, see MDN).
     const beforeUnloadHandler = (event: BeforeUnloadEvent) => {
       if (shiftsState.isDirty) {
         event.preventDefault();
@@ -356,8 +356,8 @@
   });
 
   // --- DROPDOWN HANDLERS ---
-  // WHY: Jeder Filter-Change verwirft die aktuelle Woche via clearShiftData().
-  // Der Guard fragt den User zuerst, wenn isDirty — verhindert Datenverlust.
+  // WHY: Every filter change discards the current week via clearShiftData().
+  // The guard asks the user first when isDirty — prevents data loss.
   async function handleAreaChange(areaId: number) {
     if (!(await ensureDiscardConfirmed())) return;
     shiftsState.setSelectedContext({
@@ -426,12 +426,12 @@
       shiftsState.setShowPlanningUI(true);
       await loadShiftPlan();
     }
-    // 2+ Anlagen → warten bis User im Dropdown wählt
+    // 2+ assets → wait until the user picks one in the dropdown
   }
 
   async function navigateWeek(direction: number) {
-    // Der Kern-Bug: loadShiftPlan() überschreibt weeklyShifts — ohne Guard gehen
-    // ungespeicherte Drag-and-Drop-Änderungen verloren. Siehe ensureDiscardConfirmed.
+    // The core bug: loadShiftPlan() overwrites weeklyShifts — without this guard,
+    // unsaved drag-and-drop changes get lost. See ensureDiscardConfirmed.
     if (!(await ensureDiscardConfirmed())) return;
     const newWeek = addWeeks(shiftsState.currentWeek, direction);
     shiftsState.setCurrentWeek(newWeek);

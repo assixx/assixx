@@ -8,14 +8,23 @@
  * All queries use tenant-scoped parameterized SQL (ADR-019).
  * Returns raw data — ResponseInterceptor wraps automatically (ADR-007).
  */
+import type { UserRole } from '@assixx/shared';
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { TenantVerificationService } from '../domains/tenant-verification.service.js';
+import type { ProtectionActor, ProtectionTargetUser } from '../root/root-protection.service.js';
+import { ROOT_PROTECTION_CODES, RootProtectionService } from '../root/root-protection.service.js';
 import {
   buildDummyEmail,
   buildDummyEmployeeNumber,
@@ -108,6 +117,12 @@ export class DummyUsersService {
     // DummyUsersService is the ONE service with INSERT INTO users inline in
     // the public method (v0.3.6 D33), so the gate sits at public-method entry.
     private readonly tenantVerification: TenantVerificationService,
+    // Layer-2 root-protection wiring (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN
+    // .md §2.3, Session 4). Defensive only: `delete()` filters role='dummy'
+    // in its UPDATE WHERE clause, so the cross-root branch never fires in
+    // normal flow. Wiring exists to catch any future regression where a root
+    // row leaks into this path (e.g., a relaxed WHERE clause).
+    private readonly rootProtection: RootProtectionService,
   ) {}
 
   // ==========================================================================
@@ -296,6 +311,39 @@ export class DummyUsersService {
   // ==========================================================================
 
   async delete(tenantId: number, uuid: string, actingUserId: number): Promise<void> {
+    // Layer-2 root protection (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md
+    // §2.3, Session 4). Defensive: pre-fetch role, then run the chain.
+    // The UPDATE below filters role='dummy' already, so the SELECT here
+    // also returns role='dummy' in normal flow → chain is inert. The
+    // pre-fetch is O(1) on the (tenant_id, uuid) unique index.
+    const [target] = await this.db.tenantQuery<{ id: number; role: string }>(
+      `SELECT id, role FROM users
+       WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy' AND is_active != ${IS_ACTIVE.DELETED}`,
+      [tenantId, uuid],
+    );
+
+    if (target !== undefined && (target.role as UserRole) === 'root') {
+      const actor: ProtectionActor = { id: actingUserId, tenantId };
+      const protectTarget: ProtectionTargetUser = {
+        id: target.id,
+        tenantId,
+        role: target.role as UserRole,
+        isActive: IS_ACTIVE.ACTIVE,
+      };
+      await this.rootProtection.assertCrossRootTerminationForbidden(
+        actor,
+        protectTarget,
+        'soft-delete',
+      );
+      if (actor.id === protectTarget.id) {
+        throw new ForbiddenException({
+          code: ROOT_PROTECTION_CODES.SELF_VIA_APPROVAL_REQUIRED,
+          message: 'Root self-termination must use the peer-approval flow.',
+        });
+      }
+      await this.rootProtection.assertNotLastRoot(tenantId, target.id);
+    }
+
     const rows = await this.db.tenantQuery<{ id: number }>(
       `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
        WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy' AND is_active != ${IS_ACTIVE.DELETED}

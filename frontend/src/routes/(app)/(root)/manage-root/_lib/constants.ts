@@ -75,6 +75,18 @@ const BASE_MESSAGES = {
   EMAIL_USED_AS_USERNAME: 'Wird auch als Benutzername verwendet',
   INACTIVE_HINT: 'Inaktive/Archivierte Root-User können sich nicht anmelden',
 
+  // Cross-root immutability (masterplan §5.2 / ADR-055 — Layer 1 UX hint).
+  // Why: the SSR filter at +page.server.ts:39 already excludes the current user
+  // and the API filter `?role=root` guarantees every row is another root, so
+  // every Delete + Deactivate + Archive op on this page is cross-root by
+  // construction. Backend Layer 2 (users.service.deleteUser/archiveUser, wired
+  // Session 4) and Layer 4 (DB trigger fn_prevent_cross_root_change, end-to-end
+  // tested Sessions 7c + 8 T16/T17/T18) are the real security gates. This
+  // string surfaces WHY the buttons are inert so the user does not file a bug.
+  CROSS_ROOT_BLOCKED_TOOLTIP: 'Andere Root-Konten können nicht durch Sie geändert werden.',
+  CROSS_ROOT_STATUS_LOCKED_HINT:
+    'Status ist gesperrt: Andere Root-Konten können nicht durch Sie deaktiviert oder archiviert werden.',
+
   // Full access info
   FULL_ACCESS_TITLE: 'Vollzugriff auf alle Bereiche',
   FULL_ACCESS_MESSAGE:

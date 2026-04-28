@@ -2,7 +2,7 @@
  * Migration: Work Orders — Feature Flag, ENUMs, Core Tables
  * Date: 2026-03-03
  *
- * Creates the modulübergreifendes Arbeitsauftrag-System:
+ * Creates the cross-module work-order system:
  * - Feature flag in features table (category: premium)
  * - 3 ENUMs: work_order_status, work_order_priority, work_order_source_type
  * - work_orders table (core entity)

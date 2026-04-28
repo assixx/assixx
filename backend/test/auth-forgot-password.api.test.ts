@@ -6,13 +6,13 @@
  * admin-initiated reset-link endpoint (§2.7 / §2.8).
  *
  * Complements `auth-password-reset.api.test.ts` which covers the generic
- * happy-path (root user via `admin@apitest.de` — role='root' despite the
+ * happy-path (root user via `info@assixx.com` — role='root' despite the
  * misleading name, verified via DB) and standard validation scenarios.
  *
  * Test users (apitest tenant):
- *   - admin@apitest.de         id=1   role='root'      — cached by loginApitest()
- *   - perm-test-admin@apitest.de id=13 role='admin'   — used for admin target + admin caller
- *   - employee@apitest.de      id=5   role='employee' — used for employee target + employee caller
+ *   - info@assixx.com         id=1   role='root'      — cached by loginApitest()
+ *   - perm-test-admin@assixx.com id=13 role='admin'   — used for admin target + admin caller
+ *   - employee@assixx.com      id=5   role='employee' — used for employee target + employee caller
  *
  * Cleanup discipline:
  *   - `resetTokensFor(userId)` DELETEs rows (burn is not enough — the
@@ -40,9 +40,9 @@ import {
 // Test fixtures — cached across describe-blocks.
 // ───────────────────────────────────────────────────────────────────
 
-const ROOT_EMAIL = 'admin@apitest.de';
-const ADMIN_EMAIL = 'perm-test-admin@apitest.de';
-const EMPLOYEE_EMAIL = 'employee@apitest.de';
+const ROOT_EMAIL = 'info@assixx.com';
+const ADMIN_EMAIL = 'perm-test-admin@assixx.com';
+const EMPLOYEE_EMAIL = 'employee@assixx.com';
 
 let rootAuth: AuthState;
 let adminAuth: AuthState;
@@ -69,10 +69,10 @@ async function loginAs(email: string, password: string): Promise<AuthState> {
 beforeAll(async () => {
   flushThrottleKeys();
 
-  // admin@apitest.de is actually role='root' — cached login returns Root JWT.
+  // info@assixx.com is actually role='root' — cached login returns Root JWT.
   rootAuth = await loginApitest();
 
-  // Idempotent — creates employee@apitest.de if missing with APITEST_PASSWORD.
+  // Idempotent — creates employee@assixx.com if missing with APITEST_PASSWORD.
   employeeUserId = await ensureTestEmployee(rootAuth.authToken);
 
   // Separate JWTs for 403 RBAC tests on the Root-only endpoint. Cached
@@ -424,7 +424,7 @@ describe('ADR-051 §2.8 — Admin-Initiated Token Redemption', () => {
     flushThrottleKeys();
     resetTokensFor(adminUserId);
 
-    // admin target (perm-test-admin@apitest.de) — §2.6 self-service gate
+    // admin target (perm-test-admin@assixx.com) — §2.6 self-service gate
     // would 403 this, but §2.8 origin-check recognizes the admin-initiated
     // token (initiated_by_user_id = rootAuth.userId) and routes around it.
     const rawToken = insertResetToken(adminUserId, rootAuth.userId);

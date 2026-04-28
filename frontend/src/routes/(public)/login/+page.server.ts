@@ -7,9 +7,9 @@
  *
  * This enables SSR pages to access the auth token via cookies.
  */
-import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit';
+import { fail, redirect, type ActionFailure } from '@sveltejs/kit';
 
-import { extractJwtExp } from '$lib/server/jwt-exp';
+import { setAuthCookies, clearAuthCookies } from '$lib/server/auth-cookies';
 import { resilientFetch } from '$lib/server/resilient-fetch';
 import { verifyTurnstile } from '$lib/server/turnstile';
 import { createLogger } from '$lib/utils/logger';
@@ -20,32 +20,6 @@ const log = createLogger('Login');
 
 /** API base URL for server-side fetching */
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-/** Cookie options for access token */
-const ACCESS_COOKIE_OPTIONS = {
-  path: '/',
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-};
-
-/**
- * Cookie options for refresh token - STRICTER than access token
- * sameSite: 'strict' - Better CSRF protection
- * path: '/api/v2/auth' - Only sent to auth endpoints (minimizes exposure)
- */
-const REFRESH_COOKIE_OPTIONS = {
-  path: '/api/v2/auth',
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
-};
-
-/** Access token expiry: 30 minutes */
-const ACCESS_TOKEN_MAX_AGE = 30 * 60;
-
-/** Refresh token expiry: 7 days */
-const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60;
 
 type UserRole = 'root' | 'admin' | 'employee' | 'dummy';
 
@@ -95,46 +69,6 @@ interface LoginResponse {
   };
 }
 
-/**
- * Set authentication cookies after successful login.
- *
- * SECURITY: refreshToken uses stricter options (sameSite: strict, limited path)
- * to protect the long-lived token from CSRF attacks.
- */
-function setAuthCookies(cookies: Cookies, data: LoginResponseData): void {
-  // Access token - available everywhere for API calls
-  cookies.set('accessToken', data.accessToken, {
-    ...ACCESS_COOKIE_OPTIONS,
-    maxAge: ACCESS_TOKEN_MAX_AGE,
-  });
-
-  // Refresh token - stricter settings, only for auth endpoints
-  cookies.set('refreshToken', data.refreshToken, {
-    ...REFRESH_COOKIE_OPTIONS,
-    maxAge: REFRESH_TOKEN_MAX_AGE,
-  });
-
-  // User role - not httpOnly so client JS can read it
-  cookies.set('userRole', data.user.role, {
-    ...ACCESS_COOKIE_OPTIONS,
-    httpOnly: false,
-    maxAge: ACCESS_TOKEN_MAX_AGE,
-  });
-
-  // accessTokenExp — non-httpOnly companion cookie holding the JWT's `exp`
-  // (Unix seconds). TokenManager reads this as its canonical expiry source.
-  // Without this set here, SvelteKit's server-side fetch strips the backend's
-  // Set-Cookie header → stale value from a prior OAuth session lingers and
-  // the header timer shows wrong remaining after password login.
-  //
-  // @see ADR-046 OAuth Sign-In (2026-04-16 amendment — 3-cookie invariant)
-  cookies.set('accessTokenExp', String(extractJwtExp(data.accessToken)), {
-    ...ACCESS_COOKIE_OPTIONS,
-    httpOnly: false,
-    maxAge: ACCESS_TOKEN_MAX_AGE,
-  });
-}
-
 /** Get redirect path based on user role */
 function getRedirectPath(role: UserRole): string {
   const paths: Record<UserRole, string> = {
@@ -151,14 +85,6 @@ interface MeResponse {
   success?: boolean;
   data?: { role: UserRole };
   role?: UserRole;
-}
-
-/** Clear all auth cookies — must mirror setAuthCookies 1:1 (3-cookie invariant). */
-function clearAuthCookies(cookies: Cookies): void {
-  cookies.delete('accessToken', { path: '/' });
-  cookies.delete('refreshToken', { path: '/api/v2/auth' });
-  cookies.delete('userRole', { path: '/' });
-  cookies.delete('accessTokenExp', { path: '/' });
 }
 
 /** Extract role from /users/me response */
@@ -358,7 +284,7 @@ async function buildHandoffRedirect(
 }
 
 export const actions: Actions = {
-  default: async ({ request, cookies, fetch, locals }) => {
+  default: async ({ request, cookies, fetch, locals, url }) => {
     const formData = await request.formData();
     const email = formData.get('email');
     const password = formData.get('password');
@@ -419,7 +345,13 @@ export const actions: Actions = {
         };
       }
 
-      setAuthCookies(cookies, result.data);
+      setAuthCookies(
+        cookies,
+        url,
+        result.data.accessToken,
+        result.data.refreshToken,
+        result.data.user.role,
+      );
 
       return {
         success: true,

@@ -11,6 +11,7 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -27,6 +28,8 @@ import { TenantVerificationService } from '../domains/tenant-verification.servic
 import { UserPositionService } from '../organigram/user-position.service.js';
 import { RootAdminService } from './root-admin.service.js';
 import { RootDeletionService } from './root-deletion.service.js';
+import type { ProtectionActor, ProtectionTargetUser } from './root-protection.service.js';
+import { ROOT_PROTECTION_CODES, RootProtectionService } from './root-protection.service.js';
 import { RootTenantService } from './root-tenant.service.js';
 import {
   ERROR_CODES,
@@ -84,6 +87,10 @@ export class RootService {
     // (AST-enclosing helper of `INSERT INTO users`, v0.3.6 D33). tenantId
     // is the helper's 6th parameter.
     private readonly tenantVerification: TenantVerificationService,
+    // Layer 2 root-account protection — wired into `deleteRootUser` per
+    // FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.3 (Session 4). Replaces
+    // the previous inline self-delete BadRequest + inline last-root SQL.
+    private readonly rootProtection: RootProtectionService,
   ) {}
 
   // ==========================================================================
@@ -343,15 +350,9 @@ export class RootService {
   async deleteRootUser(id: number, tenantId: number, currentUserId: number): Promise<void> {
     this.logger.log(`Soft-deleting root user ${id} for tenant ${tenantId}`);
 
-    // Prevent self-deletion
-    if (id === currentUserId) {
-      throw new BadRequestException({
-        code: ERROR_CODES.SELF_DELETE,
-        message: 'Cannot delete yourself',
-      });
-    }
-
-    // Check if user exists
+    // Existence check first — RootProtectionService below needs target.role,
+    // and emitting NOT_FOUND before the protection chain matches the
+    // pre-Session-4 contract (response-shape stability for clients).
     const user = await this.getRootUserById(id, tenantId);
     if (user === null) {
       throw new NotFoundException({
@@ -360,17 +361,51 @@ export class RootService {
       });
     }
 
-    // SECURITY: Check if at least one ACTIVE root user will remain (is_active = 1)
-    const rootCount = await this.db.systemQuery<DbCountRow>(
-      `SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1 AND id != $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-      [tenantId, id],
-    );
+    // Layer-2 root protection (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md
+    // §2.3, Session 4). The wiring pattern replaces the previous inline
+    // self-delete BadRequest + inline last-root SELECT-COUNT.
+    //
+    // Order is intentional and matches §2.3:
+    //   1. cross-root assertion fires when actor != target → 403
+    //      ROOT_CROSS_TERMINATION_FORBIDDEN (audit-logged BEFORE throwing)
+    //   2. self-action throws SELF_VIA_APPROVAL_REQUIRED — self-delete must
+    //      go through the peer-approval flow added in Session 5
+    //   3. last-root assertion blocks even an approved request from leaving
+    //      the tenant root-less (R5 protection)
+    //
+    // `target.role === 'root'` is always true here (getRootUserById filters
+    // role='root'), but the literal §2.3 wiring is preserved for grep-friendly
+    // parallelism with the other wired services.
+    const actor: ProtectionActor = { id: currentUserId, tenantId };
+    const targetState: ProtectionTargetUser = {
+      id,
+      tenantId,
+      role: 'root',
+      isActive: IS_ACTIVE.ACTIVE,
+    };
+    const afterState: ProtectionTargetUser = {
+      ...targetState,
+      isActive: IS_ACTIVE.DELETED,
+    };
 
-    if (Number(rootCount[0]?.count ?? 0) < 1) {
-      throw new BadRequestException({
-        code: ERROR_CODES.LAST_ROOT_USER,
-        message: 'At least one root user must remain',
-      });
+    if (
+      targetState.role === 'root' &&
+      this.rootProtection.isTerminationOp(targetState, afterState, 'soft-delete')
+    ) {
+      await this.rootProtection.assertCrossRootTerminationForbidden(
+        actor,
+        targetState,
+        'soft-delete',
+      );
+
+      if (actor.id === targetState.id) {
+        throw new ForbiddenException({
+          code: ROOT_PROTECTION_CODES.SELF_VIA_APPROVAL_REQUIRED,
+          message: 'Root self-termination must use the peer-approval flow.',
+        });
+      }
+
+      await this.rootProtection.assertNotLastRoot(tenantId, id);
     }
 
     // Log activity BEFORE deleting

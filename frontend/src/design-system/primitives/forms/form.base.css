@@ -91,7 +91,7 @@
       color calc(infinity * 1s) step-end;
 
     /* Chrome/Safari: box-shadow inset overrides background */
-    box-shadow: 0 0 0 1000px var(--form-field-bg) inset !important;
+    box-shadow: 0 0 0 1000px var(--form-field-bg) inset;
     border: var(--form-field-border) !important;
 
     color: var(--form-field-text) !important;

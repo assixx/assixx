@@ -7,7 +7,6 @@ import prettierConfig from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import-x';
 import noUnsanitizedPlugin from 'eslint-plugin-no-unsanitized';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
-import storybook from 'eslint-plugin-storybook';
 import tseslint from 'typescript-eslint';
 
 export default [
@@ -732,5 +731,9 @@ export default [
       },
     },
   },
-  ...storybook.configs['flat/recommended'],
+  // NOTE: storybook ESLint config moved to frontend/eslint.config.mjs (2026-04-27)
+  // Reason: eslint-plugin-storybook + Storybook deps now live in frontend/package.json.
+  // Frontend's flat-config already enforces Storybook + Svelte rules on .stories.* files.
+  // Root config ignores `frontend/**` (line 22), so this block was dead code.
+  // See ADR-027 §3 Amendment.
 ];

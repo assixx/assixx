@@ -15,6 +15,7 @@ import type { UserRepository } from '../database/repositories/user.repository.js
 import type { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import type { UserPositionService } from '../organigram/user-position.service.js';
 import { RootAdminService } from './root-admin.service.js';
+import type { RootProtectionService } from './root-protection.service.js';
 
 // =============================================================
 // Module mocks
@@ -148,6 +149,17 @@ describe('RootAdminService', () => {
         assertVerified: vi.fn().mockResolvedValue(undefined),
         isVerified: vi.fn().mockResolvedValue(true),
       } as unknown as TenantVerificationService,
+      // Layer-2 root-protection (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md
+      // §2.3, Session 4). All methods no-op — `getAdminById` filters
+      // role='admin', so the cross-root branch is never entered in normal
+      // flow. Defaults exist purely to satisfy DI.
+      {
+        assertCrossRootTerminationForbidden: vi.fn().mockResolvedValue(undefined),
+        assertNotLastRoot: vi.fn().mockResolvedValue(undefined),
+        countActiveRoots: vi.fn().mockResolvedValue(2),
+        isTerminationOp: vi.fn().mockReturnValue(false),
+        auditDeniedAttempt: vi.fn().mockResolvedValue(undefined),
+      } as unknown as RootProtectionService,
     );
   });
 

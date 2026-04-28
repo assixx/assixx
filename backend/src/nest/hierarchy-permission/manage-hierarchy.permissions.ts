@@ -49,10 +49,10 @@ export const MANAGE_HIERARCHY_PERMISSIONS: PermissionCategoryDef = {
       label: 'Berechtigungen verwalten',
       icon: 'fa-shield-alt',
       allowedPermissions: ['canRead', 'canWrite'],
-      // Kein allowedRoles: alle Rollen können diese Permission bekommen.
-      // Root entscheidet wer Delegationsrechte erhält.
-      // canRead = Permission-Seite von Untergebenen sehen
-      // canWrite = Permissions von Untergebenen ändern
+      // No allowedRoles: every role can receive this permission.
+      // Root decides who gets delegation rights.
+      // canRead = view subordinates' permission page
+      // canWrite = modify subordinates' permissions
     },
   ],
 };

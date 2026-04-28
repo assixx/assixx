@@ -97,6 +97,35 @@ export interface WorkOrderEvent {
   changedByName?: string;
 }
 
+/**
+ * Root Self-Termination Events — Step 2.7 of FEAT_ROOT_ACCOUNT_PROTECTION.
+ *
+ * 3 user-facing lifecycle events that fan out to active root users in the
+ * tenant. The 4th event (`root.self-termination.expired`, emitted by the
+ * cron in §2.6) intentionally stays as a plain string-keyed emit — §2.7
+ * lists only Requested/Approved/Rejected as fan-out targets, expired is
+ * an internal book-keeping event with per-row audit already covered by
+ * `RootSelfTerminationService.expireOldRequests()`.
+ *
+ * Recipient resolution + persistent notification rows live in
+ * `backend/src/nest/root/root-self-termination-notification.service.ts`
+ * (per-domain subscriber pattern, mirrors `vacation-notification.service.ts`).
+ */
+export interface RootSelfTerminationEvent {
+  tenantId: number;
+  request: {
+    id: string; // UUIDv7
+    requesterId: number;
+    requesterName: string;
+  };
+  approverId?: number;
+  approverName?: string;
+  expiresAt?: string; // ISO 8601 — 'requested' only
+  comment?: string | null; // 'approved' only
+  rejectionReason?: string; // 'rejected' only
+  cooldownEndsAt?: string; // ISO 8601 — 'rejected' only (next eligible request)
+}
+
 interface ApprovalEvent {
   tenantId: number;
   approval: {
@@ -289,6 +318,53 @@ class NotificationEventBus extends EventEmitter {
       approverUserIds: [],
       requestedByUserId,
       decidedByUserId,
+    });
+  }
+
+  // ── Root Self-Termination Events (§2.7 — peer-approval lifecycle) ─
+
+  emitRootSelfTerminationRequested(
+    tenantId: number,
+    request: RootSelfTerminationEvent['request'],
+    expiresAt: string,
+  ): void {
+    logger.info(`[EventBus] Emitting root.self-termination.requested for tenant ${tenantId}`);
+    this.emit('root.self-termination.requested', { tenantId, request, expiresAt });
+  }
+
+  emitRootSelfTerminationApproved(
+    tenantId: number,
+    request: RootSelfTerminationEvent['request'],
+    approverId: number,
+    approverName: string,
+    comment: string | null,
+  ): void {
+    logger.info(`[EventBus] Emitting root.self-termination.approved for tenant ${tenantId}`);
+    this.emit('root.self-termination.approved', {
+      tenantId,
+      request,
+      approverId,
+      approverName,
+      comment,
+    });
+  }
+
+  emitRootSelfTerminationRejected(
+    tenantId: number,
+    request: RootSelfTerminationEvent['request'],
+    approverId: number,
+    approverName: string,
+    rejectionReason: string,
+    cooldownEndsAt: string,
+  ): void {
+    logger.info(`[EventBus] Emitting root.self-termination.rejected for tenant ${tenantId}`);
+    this.emit('root.self-termination.rejected', {
+      tenantId,
+      request,
+      approverId,
+      approverName,
+      rejectionReason,
+      cooldownEndsAt,
     });
   }
 

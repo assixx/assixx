@@ -1,0 +1,13 @@
+# Konfiguration des Issue-Choosers — siehe
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
+blank_issues_enabled: false
+contact_links:
+  - name: Sicherheitslücke melden (privat)
+    url: https://github.com/assixx/assixx/security/advisories/new
+    about: Sicherheitsthemen NIE als öffentliches Issue. Bitte privates Security Advisory anlegen.
+  - name: Dokumentation, ADRs & HOW-TOs
+    url: https://github.com/assixx/assixx/tree/main/docs
+    about: Architektur, Architectural Decision Records, HOW-TO-Guides. Viele Fragen sind hier bereits beantwortet.
+  - name: Navigation Map (Konzept zu Datei)
+    url: https://github.com/assixx/assixx/blob/main/docs/ARCHITECTURE.md
+    about: Wo lebt Konzept X im Code? — kuratierte Concept-zu-file:line-Map mit ADR-Verweisen.

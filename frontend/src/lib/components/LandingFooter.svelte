@@ -205,9 +205,9 @@
     color: var(--color-primary);
   }
 
-  /* WHY: Hover-Parität mit LegalFooter (compact) — Farbe → --color-primary +
-   * animierter 1px-Underline via ::after. Einheitliches Hover-Feel über alle
-   * Footer-Links (siehe LegalFooter.svelte). */
+  /* WHY: Hover parity with LegalFooter (compact) — color → --color-primary +
+   * animated 1px underline via ::after. Consistent hover feel across all
+   * footer links (see LegalFooter.svelte). */
   .landing-footer a {
     position: relative;
     padding-bottom: 1px;

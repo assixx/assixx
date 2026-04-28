@@ -74,8 +74,17 @@ html.dark {
   --glass-border: 1px solid oklch(100% 0 0 / 15%);
   --glass-border-sidebar-tree: 1px solid oklch(100% 0 0 / 26.7%);
 
+  /* Card-specific glass — Dark-Variante: Brand-Blau bleibt, leicht höhere
+     Alphas (35% / 18% / 2.5%) für Sichtbarkeit auf dunkler Surface.
+     Mirror von variables-light.css — beide Themes müssen card-* haben. */
+  --card-border: 1px solid oklch(58% 0.18 248 / 35%);
+  --card-bg:
+    radial-gradient(ellipse at 50% 0%, oklch(58% 0.18 248 / 18%) 0%, transparent 60%),
+    oklch(100% 0 0 / 2.5%);
+  --card-blur: 8px;
+
   /* Glass Form (dark mode) */
-  --glass-form-bg: oklch(100% 0 0 / 4%);
+  --glass-form-bg: oklch(100% 0 0 / 3%);
   --glass-form-bg-hover: oklch(100% 0 0 / 6%);
   --glass-form-bg-focus: oklch(100% 0 0 / 8%);
   --glass-form-border: 1px solid oklch(100% 0 0 / 20%);

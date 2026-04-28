@@ -6,11 +6,17 @@
  *
  * With isolate: false, this module is cached across all test files in the suite.
  * The login result is cached so only ONE login request is made for the entire run.
+ *
+ * Test-Tenant: subdomain `assixx`, email-domain `assixx.com`.
+ * WHY: Migration weg von der frueheren Test-Domain (fremde reale Domain → Catch-All-Risiko
+ * bei Password-Reset / Notification-Mails). `assixx.com` ist projekt-eigene Domain.
+ * Variable-Namen (APITEST_EMAIL/PASSWORD) historisch beibehalten zur Diff-Minimierung;
+ * funktional sind sie der Test-Tenant-Admin-Login.
  */
 import { execSync } from 'node:child_process';
 
 export const BASE_URL = 'http://localhost:3000/api/v2';
-const APITEST_EMAIL = 'admin@apitest.de';
+const APITEST_EMAIL = 'info@assixx.com';
 export const APITEST_PASSWORD = 'ApiTest12345!';
 
 /** Integration tests validate response shapes via assertions, not static types. */
@@ -30,9 +36,12 @@ let _cachedAuth: AuthState | null = null;
 let _authPromise: Promise<AuthState> | null = null;
 
 /**
- * Login as apitest admin and return auth state.
+ * Login as test-tenant admin (`info@assixx.com`, subdomain `assixx`) and return auth state.
  * Cached: only the first call makes a real HTTP request.
  * All subsequent calls (from other test files) return the cached result.
+ *
+ * Function-Name `loginApitest` historisch beibehalten — Test-Tenant heißt seit
+ * 2026-04 nicht mehr `apitest`, aber Rename würde alle 30+ Test-Files anfassen.
  */
 export async function loginApitest(): Promise<AuthState> {
   if (_cachedAuth) return _cachedAuth;
@@ -210,7 +219,7 @@ export async function ensureTestEmployee(token: string): Promise<number> {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({
-      email: 'employee@apitest.de',
+      email: 'employee@assixx.com',
       password: APITEST_PASSWORD,
       firstName: 'Test',
       lastName: 'Employee',
@@ -231,7 +240,7 @@ export async function ensureTestEmployee(token: string): Promise<number> {
   });
   const listBody = (await listRes.json()) as JsonBody;
   const users = listBody.data as Array<{ id: number; email: string }>;
-  const employee = users.find((u) => u.email === 'employee@apitest.de');
+  const employee = users.find((u) => u.email === 'employee@assixx.com');
 
   if (!employee) {
     throw new Error('Test employee not found after create attempt');
@@ -241,7 +250,7 @@ export async function ensureTestEmployee(token: string): Promise<number> {
 }
 
 /**
- * Create N assets for the apitest tenant and return their UUIDs.
+ * Create N assets for the test tenant and return their UUIDs.
  * Each asset gets a unique name to avoid conflicts.
  * Caller is responsible for cleanup via deleteAssets().
  */
@@ -286,7 +295,7 @@ export async function deleteAssets(token: string, uuids: string[]): Promise<void
 }
 
 /**
- * Create a department + team for the apitest tenant and return their IDs.
+ * Create a department + team for the test tenant and return their IDs.
  * Caller is responsible for cleanup.
  */
 export async function createDepartmentAndTeam(

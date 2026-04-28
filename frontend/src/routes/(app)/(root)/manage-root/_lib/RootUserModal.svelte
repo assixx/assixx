@@ -38,11 +38,20 @@
     positionOptions?: PositionOption[];
     hierarchyLabels: HierarchyLabels;
     onValidatePasswords: () => void;
+    /**
+     * When true (and isEditMode), the Status field renders read-only with a
+     * lock indicator instead of the destructive dropdown (Inaktiv / Archiviert).
+     * Used by /manage-root to enforce the cross-root immutability rule
+     * (masterplan §5.2 / ADR-055 — Layer 1 UX hint; backend Layer 2 + Layer 4
+     * are the real gates). Default false preserves backward-compatibility for
+     * any future caller that allows status changes.
+     */
+    lockDestructiveStatus?: boolean;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { messages, show, isEditMode, modalTitle, positionOptions, hierarchyLabels, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), positionIds = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
+  let { messages, show, isEditMode, modalTitle, positionOptions, hierarchyLabels, lockDestructiveStatus = false, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), positionIds = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   const LEAD_ORDER: string[] = [
@@ -383,56 +392,81 @@
               id="status-hidden"
               value={isActive}
             />
-            <div
-              class="dropdown"
-              id="status-dropdown"
-            >
-              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+            {#if lockDestructiveStatus}
+              <!--
+                Cross-root immutability: status is read-only when the target is
+                another root account (masterplan §5.2 / ADR-055). The lock icon
+                + hint message tell the user WHY the dropdown is gone, instead
+                of silently hiding it. Backend Layer 2 + Layer 4 enforce the
+                same rule server-side; this branch is the Layer 1 UX hint only.
+              -->
               <div
-                class="dropdown__trigger"
-                class:active={statusDropdownOpen}
-                onclick={toggleStatusDropdown}
+                class="status-readonly flex items-center gap-2"
+                title={messages.CROSS_ROOT_BLOCKED_TOOLTIP}
               >
                 <span class="badge {getStatusBadgeClass(isActive)}">{getStatusLabel(isActive)}</span
                 >
-                <i class="fas fa-chevron-down"></i>
+                <i
+                  class="fas fa-lock text-(--color-text-secondary)"
+                  aria-label={messages.CROSS_ROOT_BLOCKED_TOOLTIP}
+                ></i>
               </div>
+              <span class="form-field__message mt-1 block text-(--color-text-secondary)"
+                >{messages.CROSS_ROOT_STATUS_LOCKED_HINT}</span
+              >
+            {:else}
               <div
-                class="dropdown__menu"
-                class:active={statusDropdownOpen}
+                class="dropdown"
+                id="status-dropdown"
               >
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectStatus(1);
-                  }}
+                  class="dropdown__trigger"
+                  class:active={statusDropdownOpen}
+                  onclick={toggleStatusDropdown}
                 >
-                  <span class="badge badge--success">Aktiv</span>
+                  <span class="badge {getStatusBadgeClass(isActive)}"
+                    >{getStatusLabel(isActive)}</span
+                  >
+                  <i class="fas fa-chevron-down"></i>
                 </div>
-                <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectStatus(0);
-                  }}
+                  class="dropdown__menu"
+                  class:active={statusDropdownOpen}
                 >
-                  <span class="badge badge--warning">Inaktiv</span>
-                </div>
-                <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-                <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectStatus(3);
-                  }}
-                >
-                  <span class="badge badge--secondary">Archiviert</span>
+                  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectStatus(1);
+                    }}
+                  >
+                    <span class="badge badge--success">Aktiv</span>
+                  </div>
+                  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectStatus(0);
+                    }}
+                  >
+                    <span class="badge badge--warning">Inaktiv</span>
+                  </div>
+                  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectStatus(3);
+                    }}
+                  >
+                    <span class="badge badge--secondary">Archiviert</span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <span class="form-field__message mt-1 block text-(--color-text-secondary)"
-              >{messages.INACTIVE_HINT}</span
-            >
+              <span class="form-field__message mt-1 block text-(--color-text-secondary)"
+                >{messages.INACTIVE_HINT}</span
+              >
+            {/if}
           </div>
         {/if}
       </div>

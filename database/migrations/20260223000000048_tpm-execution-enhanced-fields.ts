@@ -5,8 +5,8 @@
  * Adds 3 new columns to tpm_card_executions for real-world maintenance documentation:
  *
  *   1. no_issues_found  BOOLEAN  — "Ohne Beanstandung" checkbox (80% fast path)
- *   2. actual_duration_minutes INTEGER — IST-Dauer für SOLL/IST-Vergleich
- *   3. actual_staff_count      INTEGER — IST-MA-Anzahl für Ressourcenplanung
+ *   2. actual_duration_minutes INTEGER — actual duration for planned-vs-actual comparison
+ *   3. actual_staff_count      INTEGER — actual staff count for resource planning
  *
  * Also makes execution_date client-provided (was auto-set to NOW() before).
  * The column already exists as DATE NOT NULL — no schema change needed,

@@ -522,7 +522,7 @@ describe('KVP: Delete Suggestion', () => {
 // ---- seq: 11 -- KVP Participants (FEAT_KVP_PARTICIPANTS_MASTERPLAN Phase 4) --
 //
 // API integration coverage for the participant-tagging feature. Reuses the
-// outer `auth` (admin@apitest.de, root, tenant=1) and the team/department
+// outer `auth` (info@assixx.com, root, tenant=1) and the team/department
 // already created by the file-level beforeAll.
 //
 // Scope reconciliation vs masterplan §Phase 4 (logged as Spec Deviation #8):

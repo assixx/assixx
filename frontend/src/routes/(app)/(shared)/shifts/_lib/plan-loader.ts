@@ -169,11 +169,11 @@ export async function loadShiftPlan(): Promise<void> {
       shiftsState.clearShiftData();
     }
 
-    // Snapshot nach Load: macht den frisch geladenen Stand zur neuen Baseline
-    // für isDirty-Tracking (ADR-011 Frontend State; siehe state-shifts.svelte.ts).
-    // Wichtig: NACH applyShiftPlanState + clearShiftData, damit der Snapshot den
-    // tatsächlich sichtbaren State einfängt (auch leere Map ist ein gültiger
-    // "sauberer" Stand).
+    // Snapshot after load: promotes the freshly loaded state to the new baseline
+    // for isDirty tracking (ADR-011 frontend state; see state-shifts.svelte.ts).
+    // Important: AFTER applyShiftPlanState + clearShiftData, so the snapshot captures
+    // the state actually visible to the user (an empty Map is also a valid
+    // "clean" state).
     shiftsState.captureSnapshot();
   } finally {
     shiftsState.setIsLoading(false);

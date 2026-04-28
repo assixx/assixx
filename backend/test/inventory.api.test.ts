@@ -872,13 +872,13 @@ describe('Inventory: Granular Permissions (ADR-020)', () => {
     });
     const usersBody = (await usersRes.json()) as JsonBody;
     const employee = (usersBody.data as Array<{ email: string; uuid: string }>).find(
-      (u: { email: string }): boolean => u.email === 'employee@apitest.de',
+      (u: { email: string }): boolean => u.email === 'employee@assixx.com',
     );
     if (employee?.uuid === undefined) {
       throw new Error('Test employee uuid missing');
     }
     employeeUuid = employee.uuid;
-    employeeToken = await loginAs('employee@apitest.de', APITEST_PASSWORD);
+    employeeToken = await loginAs('employee@assixx.com', APITEST_PASSWORD);
 
     // Create a list + item AS ROOT to operate on
     const listRes = await fetch(`${API}/lists`, {

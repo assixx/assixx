@@ -10,7 +10,7 @@
    */
   import { onDestroy, onMount, type Snippet } from 'svelte';
 
-  import { afterNavigate, beforeNavigate } from '$app/navigation';
+  import { afterNavigate, beforeNavigate, replaceState } from '$app/navigation';
 
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
@@ -315,9 +315,10 @@
 
     if (ticketId !== null && ticketId !== '') {
       // Strip the query param FIRST — if the bootstrap throws mid-flight we
-      // still want the URL clean. replaceState does not navigate.
+      // still want the URL clean. SvelteKit's replaceState does not navigate
+      // and avoids the `history.replaceState` warning (router conflict).
       url.searchParams.delete('unlock');
-      window.history.replaceState(window.history.state, '', url.toString());
+      replaceState(url, {});
 
       const recovered = await e2e.bootstrapFromUnlockTicket(userId, ticketId);
       if (!recovered) {

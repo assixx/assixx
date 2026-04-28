@@ -1,5 +1,12 @@
 # ADR-032: Feature-Katalog und Plan-Tier-Zuordnung
 
+> ⚠️ **SUPERSEDED — DO NOT USE FOR NEW WORK**
+>
+> The 3-tier plan model described here (Basic / Professional / Enterprise) was
+> replaced on 2026-03-10 by an à-la-carte addon model. Use
+> [**ADR-033: Addon-based SaaS Model**](./ADR-033-addon-based-saas-model.md)
+> as the canonical reference. This document is retained for historical context only.
+
 | Metadata                | Value                                                                                         |
 | ----------------------- | --------------------------------------------------------------------------------------------- |
 | **Status**              | **Superseded** by [ADR-033: Addon-basiertes SaaS-Modell](./ADR-033-addon-based-saas-model.md) |

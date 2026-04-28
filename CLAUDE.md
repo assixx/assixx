@@ -151,6 +151,15 @@ doppler run -- docker-compose -f /home/scs/projects/Assixx/docker/docker-compose
 curl -s http://localhost:3000/health | jq '.'
 ```
 
+### Profile-System (ADR-027 Amendment 2026-04-28)
+
+| Profile         | Backend Service | Image                 | Use-Case                                   |
+| --------------- | --------------- | --------------------- | ------------------------------------------ |
+| `dev` (default) | `backend`       | `assixx-backend:dev`  | HMR, Live-Reload, Source-Mounts            |
+| `production`    | `backend-prod`  | `assixx-backend:prod` | CI-Parität, dist-im-Image, ~11s Cold-Start |
+
+`docker/.env` setzt `COMPOSE_PROFILES=dev,observability` als Default. Beide Backend-Varianten teilen `container_name: assixx-backend` — XOR via Profile.
+
 ### Frontend (SvelteKit)
 
 ```bash
@@ -158,17 +167,19 @@ curl -s http://localhost:3000/health | jq '.'
 cd frontend && pnpm run dev
 # Test: http://localhost:5173
 
-# Production test
-doppler run -- docker-compose --profile production build frontend
+# Production test (CI-Parität: backend-prod aus docker/Dockerfile)
+doppler run -- docker-compose --profile dev stop backend deletion-worker  # erst dev raus
+doppler run -- docker-compose --profile dev rm -f backend deletion-worker
+doppler run -- docker-compose --profile production build
 doppler run -- docker-compose --profile production up -d
-# Test: http://localhost (via Nginx)
+# Test: http://localhost (via Nginx → backend-prod)
 ```
 
 ### Backend API
 
 ```bash
 docker exec assixx-backend pnpm run type-check
-doppler run -- docker-compose restart backend
+doppler run -- docker-compose --profile dev restart backend
 docker logs -f assixx-backend
 ```
 

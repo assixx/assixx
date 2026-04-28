@@ -6,7 +6,7 @@
 
 **Enterprise 2.0 Platform for Industrial Companies**
 
-[![Version](https://img.shields.io/badge/Version-0.4.12-blue.svg)](https://github.com/assixx/assixx)
+[![Version](https://img.shields.io/badge/Version-0.4.13-blue.svg)](https://github.com/assixx/assixx)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/assixx/assixx)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
@@ -48,6 +48,8 @@ cd .. && pnpm run dev:svelte
 ```
 
 Development: `http://localhost:5173` | Production: `http://localhost`
+
+> **Profiles** (ADR-027 Amendment 2026-04-28): `docker/.env` setzt `COMPOSE_PROFILES=dev,observability` als Default. Production-Mode (`backend-prod` aus `docker/Dockerfile`, CI-Parität) via `docker-compose --profile production up -d`. Siehe [docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md).
 
 > **Full setup guide:** [docs/DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)
 >

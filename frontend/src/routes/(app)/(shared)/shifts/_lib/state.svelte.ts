@@ -182,8 +182,8 @@ export const shiftsState = {
   get hasShiftData() {
     return shiftDataState.hasShiftData;
   },
-  // WHY: Dirty-Flag für "Ungespeicherte Änderungen"-Guard. Basiert auf
-  // strukturellem Compare zu originalWeeklyShifts (siehe handlers.hasUnsavedChanges).
+  // WHY: Dirty flag for the "unsaved changes" guard. Based on a
+  // structural compare against originalWeeklyShifts (see handlers.hasUnsavedChanges).
   get isDirty() {
     return shiftDataState.isDirty;
   },

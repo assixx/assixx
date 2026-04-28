@@ -790,7 +790,7 @@ describe('AddonsService', () => {
       mockDb.systemQuery.mockResolvedValueOnce([
         {
           id: 1,
-          subdomain: 'apitest',
+          subdomain: 'assixx',
           company_name: 'API Test GmbH',
           status: 'active',
         },
@@ -862,7 +862,7 @@ describe('AddonsService', () => {
       const result = await service.getAllTenantsWithAddons();
 
       expect(result).toHaveLength(2);
-      expect(result[0]?.subdomain).toBe('apitest');
+      expect(result[0]?.subdomain).toBe('assixx');
       expect(result[0]?.addonSummary.coreAddons).toBe(1);
       expect(result[0]?.addonSummary.monthlyCost).toBe(0);
 

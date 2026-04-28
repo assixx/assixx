@@ -102,7 +102,7 @@ describe('TenantsService', () => {
       ]);
       redis.set.mockResolvedValueOnce('OK');
 
-      const result = await service.getBranding('apitest');
+      const result = await service.getBranding('assixx');
 
       expect(result).toEqual({
         name: 'ApiTest Corp',
@@ -110,10 +110,10 @@ describe('TenantsService', () => {
         primaryColor: '#0066cc',
       });
       expect(db.systemQuery).toHaveBeenCalledWith(expect.stringContaining('FROM tenants'), [
-        'apitest',
+        'assixx',
       ]);
       expect(redis.set).toHaveBeenCalledWith(
-        'apitest',
+        'assixx',
         expect.any(String),
         'EX',
         FIVE_MINUTES_SECONDS,

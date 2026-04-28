@@ -5,7 +5,7 @@ const ADMIN_FILE = 'e2e/.auth/admin.json';
 setup('authenticate as admin', async ({ page }) => {
   await page.goto('/login');
 
-  await page.getByRole('textbox', { name: 'E-Mail' }).fill('admin@apitest.de');
+  await page.getByRole('textbox', { name: 'E-Mail' }).fill('info@assixx.com');
   await page.getByRole('textbox', { name: 'Passwort' }).fill('ApiTest12345!');
 
   // Wait for Turnstile token before clicking — fail fast with a clear message

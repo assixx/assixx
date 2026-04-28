@@ -12,7 +12,7 @@
  * - Zod validation rejects malformed bodies (400)
  *
  * WHY separate admin login (not `loginApitest`): loginApitest returns a
- * root token (`admin@apitest.de` has role=root despite the misleading
+ * root token (`info@assixx.com` has role=root despite the misleading
  * email). We need a real `admin` role to exercise the 403 paths.
  *
  * Cleanup: the suite flips the policy during tests but restores `false`
@@ -36,9 +36,9 @@ import {
 
 // ─── Test users ──────────────────────────────────────────────────────────────
 // perm-test-admin has role=admin in tenant 1 (same tenant as apitest root).
-// employee@apitest.de has role=employee in tenant 1.
-const ADMIN_EMAIL = 'perm-test-admin@apitest.de';
-const EMPLOYEE_EMAIL = 'employee@apitest.de';
+// employee@assixx.com has role=employee in tenant 1.
+const ADMIN_EMAIL = 'perm-test-admin@assixx.com';
+const EMPLOYEE_EMAIL = 'employee@assixx.com';
 
 let rootAuth: AuthState;
 let adminToken: string;

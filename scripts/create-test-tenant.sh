@@ -3,8 +3,12 @@
 # Create Test Tenant for Development
 # =====================================================
 #
-# Erstellt den apitest-Tenant über die Signup API.
+# Erstellt den `assixx`-Test-Tenant über die Signup API.
 # Benutzt den offiziellen Signup-Flow — kein manuelles SQL.
+#
+# WHY: Migration weg von `apitest`/`apitest.de` (fremde reale Domain →
+# Catch-All-Risiko bei Password-Reset/Notification-Mails). `assixx.com` ist
+# projekt-eigene Domain, daher sicher.
 #
 # VORAUSSETZUNG: Backend muss laufen (http://localhost:3000/health)
 #
@@ -13,8 +17,8 @@
 #
 # CREDENTIALS NACH ERSTELLUNG:
 #   URL:      http://localhost:5173/login
-#   Domain:   apitest
-#   Email:    admin@apitest.de
+#   Domain:   assixx
+#   Email:    info@assixx.com
 #   Passwort: ApiTest12345!
 #   Rolle:    Root (has_full_access = true)
 #
@@ -41,7 +45,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 # 1. Health Check
 echo ""
 echo "=========================================="
-echo "  Create Test Tenant (apitest)"
+echo "  Create Test Tenant (assixx)"
 echo "=========================================="
 echo ""
 
@@ -54,13 +58,13 @@ if [ "${HEALTH}" != "200" ]; then
 fi
 log_info "Backend läuft ✓"
 
-# 2. Prüfe ob apitest schon existiert
+# 2. Prüfe ob assixx-Test-Tenant schon existiert
 EXISTING=$(docker exec ${CONTAINER} psql -U ${DB_USER} -d ${DB_NAME} -t -c \
-    "SELECT COUNT(*) FROM tenants WHERE subdomain = 'apitest';" 2>/dev/null | tr -d ' ')
+    "SELECT COUNT(*) FROM tenants WHERE subdomain = 'assixx';" 2>/dev/null | tr -d ' ')
 
 if [ "${EXISTING}" -gt 0 ]; then
-    log_warn "Tenant 'apitest' existiert bereits!"
-    log_info "Zum Löschen: docker exec assixx-postgres psql -U assixx_user -d assixx -c \"DELETE FROM tenants WHERE subdomain = 'apitest' CASCADE;\""
+    log_warn "Tenant 'assixx' existiert bereits!"
+    log_info "Zum Löschen: docker exec assixx-postgres psql -U assixx_user -d assixx -c \"DELETE FROM tenants WHERE subdomain = 'assixx' CASCADE;\""
     exit 0
 fi
 
@@ -71,16 +75,16 @@ log_info "Erstelle Tenant über Signup API..."
 TMPFILE=$(mktemp /tmp/signup-XXXXXX.json)
 cat > "${TMPFILE}" << 'EOF'
 {
-  "companyName": "API Test GmbH",
-  "subdomain": "apitest",
-  "email": "info@apitest.de",
+  "companyName": "Assixx Test GmbH",
+  "subdomain": "assixx",
+  "email": "info@assixx.com",
   "phone": "+49123456789",
   "street": "Musterstraße",
   "houseNumber": "42",
   "postalCode": "10115",
   "city": "Berlin",
   "countryCode": "DE",
-  "adminEmail": "admin@apitest.de",
+  "adminEmail": "info@assixx.com",
   "adminPassword": "ApiTest12345!",
   "adminFirstName": "Admin",
   "adminLastName": "Test"
@@ -107,13 +111,13 @@ fi
 # 4. Verifizierung
 log_info "Verifiziere..."
 docker exec ${CONTAINER} psql -U ${DB_USER} -d ${DB_NAME} -c "
-SELECT 'Tenant' as typ, t.id::text, t.company_name as info FROM tenants t WHERE t.subdomain = 'apitest'
+SELECT 'Tenant' as typ, t.id::text, t.company_name as info FROM tenants t WHERE t.subdomain = 'assixx'
 UNION ALL
 SELECT 'User', u.id::text, u.email || ' (' || u.role || ', full_access=' || u.has_full_access || ')' FROM users u
-    JOIN tenants t ON u.tenant_id = t.id WHERE t.subdomain = 'apitest'
+    JOIN tenants t ON u.tenant_id = t.id WHERE t.subdomain = 'assixx'
 UNION ALL
 SELECT 'Addons', COUNT(*)::text, 'aktiviert' FROM tenant_addons ta
-    JOIN tenants t ON ta.tenant_id = t.id WHERE t.subdomain = 'apitest' AND ta.is_active = 1;
+    JOIN tenants t ON ta.tenant_id = t.id WHERE t.subdomain = 'assixx' AND ta.is_active = 1;
 "
 
 echo ""
@@ -122,8 +126,8 @@ echo "  CREDENTIALS"
 echo "=========================================="
 echo ""
 echo "  URL:      http://localhost:5173/login"
-echo "  Domain:   apitest"
-echo "  Email:    admin@apitest.de"
+echo "  Domain:   assixx"
+echo "  Email:    info@assixx.com"
 echo "  Passwort: ApiTest12345!"
 echo "  Rolle:    Root"
 echo ""

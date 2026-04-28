@@ -248,7 +248,7 @@ When adding a new named throttler to `AppThrottlerModule`, every convenience dec
 
 [ADR-049](./ADR-049-tenant-domain-verification.md) §2.7 introduced the `domain-verify` tier (10/10min) on `POST /domains/:id/verify`. The `domain-verify` key was added to `AppThrottlerModule` **but not to the other decorators' `SkipThrottle` lists**. Result: for ~24 hours, every authenticated endpoint (POST /users, POST /domains, GET /auth/me, …) silently counted against a 10/10min bucket. An actual customer session would have 429'd within minutes of normal usage.
 
-The bug was surfaced NOT by unit tests (they mock `pg` and `ioredis` — the real constraint layer never runs) but by a **live smoke-test** where the same `apitest` user exhausted the bucket across a suite of ~40 POST calls. Redis counter inspection proved the hypothesis: `throttle:{<hash>:domain-verify}:hits = 12` with a `:blocked` key, despite the failing route being `@UserThrottle()` (not `@DomainVerifyThrottle()`).
+The bug was surfaced NOT by unit tests (they mock `pg` and `ioredis` — the real constraint layer never runs) but by a **live smoke-test** where the same `assixx` user exhausted the bucket across a suite of ~40 POST calls. Redis counter inspection proved the hypothesis: `throttle:{<hash>:domain-verify}:hits = 12` with a `:blocked` key, despite the failing route being `@UserThrottle()` (not `@DomainVerifyThrottle()`).
 
 **Mitigation:** the 5 non-`domain-verify` decorators got `'domain-verify': true` added to their `SkipThrottle`, the integration suite went green in a single run (41 passed, 4 deferred, 0 failed), and this ADR section was added to codify the rule so the next tier addition doesn't repeat the mistake.
 

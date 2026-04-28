@@ -11,7 +11,7 @@
  *
  * ── Seed strategy ─────────────────────────────────────────────────────────────
  *   - `apitest` (tenant id=1) is the primary test tenant. It owns a verified
- *     `apitest.de` row, giving us a verified tenant for CRUD tests AND an
+ *     `assixx.com` row, giving us a verified tenant for CRUD tests AND an
  *     established RLS context for cross-tenant isolation assertions.
  *   - `firma-a` (tenant id=2) is the foreign tenant used for RLS assertions.
  *   - Fresh unverified tenants are created via `POST /api/v2/signup` for the
@@ -23,7 +23,7 @@
  *     NOT hard-deleted — mirrors prod behavior and preserves audit_trail rows.
  *   - Every temporary tenant created via signup is hard-deleted in afterAll
  *     (tenants table + its tenant_domains + users + tenant_addons + tenant_storage).
- *   - Soft-deleted domains from `apitest.de` remain; only rows this suite added
+ *   - Soft-deleted domains from `assixx.com` remain; only rows this suite added
  *     are touched.
  *
  * @see docs/FEAT_TENANT_DOMAIN_VERIFICATION_MASTERPLAN.md §4
@@ -40,9 +40,9 @@ import { BASE_URL, type JsonBody, authHeaders, authOnly, flushThrottleKeys } fro
 const RUN_SUFFIX = Date.now();
 
 /** Apitest users — seeded in the fixture (see docs/how-to/HOW-TO-TEST.md). */
-const APITEST_ROOT = { email: 'admin@apitest.de', password: 'ApiTest12345!' };
-const APITEST_ADMIN = { email: 'perm-test-admin@apitest.de', password: 'ApiTest12345!' };
-const APITEST_EMPLOYEE = { email: 'employee@apitest.de', password: 'ApiTest12345!' };
+const APITEST_ROOT = { email: 'info@assixx.com', password: 'ApiTest12345!' };
+const APITEST_ADMIN = { email: 'perm-test-admin@assixx.com', password: 'ApiTest12345!' };
+const APITEST_EMPLOYEE = { email: 'employee@assixx.com', password: 'ApiTest12345!' };
 
 /** Generic test password (matches `apitest` seed). */
 const TEST_PASSWORD = 'ApiTest12345!';
@@ -357,13 +357,13 @@ describe('GET /domains/verification-status — role gate (root + admin allowed)'
 // =============================================================================
 
 describe('GET /domains — list for apitest (verified tenant)', () => {
-  it('returns 200 with an array containing the verified apitest.de row', async () => {
+  it('returns 200 with an array containing the verified assixx.com row', async () => {
     const res = await fetch(`${BASE_URL}/domains`, { headers: authOnly(ROOT_TOKEN) });
     const json = (await res.json()) as JsonBody;
     expect(res.status).toBe(200);
     expect(json.success).toBe(true);
     expect(Array.isArray(json.data)).toBe(true);
-    const apitestRow = (json.data as JsonBody[]).find((d) => d.domain === 'apitest.de');
+    const apitestRow = (json.data as JsonBody[]).find((d) => d.domain === 'assixx.com');
     expect(apitestRow).toBeDefined();
     expect(apitestRow?.status).toBe('verified');
     expect(apitestRow).toHaveProperty('id');
@@ -564,11 +564,11 @@ describe('POST /domains/:id/verify — DNS negative path', () => {
     expect(json.data.verifiedAt).toBeNull();
   });
 
-  it('is idempotent on already-verified rows (apitest.de)', async () => {
-    // Use apitest.de directly — already verified. Need its id first.
+  it('is idempotent on already-verified rows (assixx.com)', async () => {
+    // Use assixx.com directly — already verified. Need its id first.
     const listRes = await fetch(`${BASE_URL}/domains`, { headers: authOnly(ROOT_TOKEN) });
     const listJson = (await listRes.json()) as JsonBody;
-    const apitestDotDe = (listJson.data as JsonBody[]).find((d) => d.domain === 'apitest.de');
+    const apitestDotDe = (listJson.data as JsonBody[]).find((d) => d.domain === 'assixx.com');
     expect(apitestDotDe).toBeDefined();
 
     const verifyRes = await fetch(`${BASE_URL}/domains/${apitestDotDe!.id as string}/verify`, {

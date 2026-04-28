@@ -1,8 +1,8 @@
 /**
  * Work Orders Module
  *
- * Modulübergreifendes Arbeitsauftrag-System für Mängelbeseitigung
- * und Aufgabenverwaltung. Erstellt aus TPM-Defekten oder manuell.
+ * Cross-module work-order system for defect resolution and
+ * task management. Created from TPM defects or manually.
  */
 import { Module } from '@nestjs/common';
 

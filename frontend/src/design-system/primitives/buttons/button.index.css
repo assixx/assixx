@@ -1,63 +1,78 @@
 /**
  * Design System - Index Button
  *
- * Purpose: Main call-to-action button for the Landing/Index page
- * Usage: Index page CTAs (Enterprise, Pricing, Signup Modal)
+ * Purpose: Main call-to-action button for Landing/Login/Signup
+ * Usage: Login submit, Microsoft sign-in, Index page CTAs
  *
- * Visual: Blue gradient background with white text
- * Hierarchy: Second-Level (with background)
+ * Visual: Transparent + blue-glow drop-shadow + white inset top sheen.
+ * Reads as "lifted glass with brand-glow" in both themes — light and
+ * dark differ only in shadow strength (theme-aware tokens, ADR-017 §3).
+ *
+ * Stand 2026-04-27: Light-Mode-Override (Border + tinted bg + blue text)
+ * entfernt. UX-Spec: Light muss optisch wie Dark wirken — strukturell
+ * dieselben Regeln, nur die theme-aware Shadow-Token (--shadow-btn-primary
+ * / --shadow-focus-primary) skalieren mit der Page-Helligkeit.
  *
  * DO NOT confuse with .btn-primary-first (transparent, no gradient)
  */
 
 .btn-index {
-  /* ========== VISUAL ========== */
   box-shadow: var(--shadow-btn-primary);
 
-  /* No border - gradient is the visual boundary */
+  /* No border - shadow + inset sheen draw the boundary */
   border: none;
 
-  /* Padding - Standard size */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
 }
 
-/* Focus state - Accessibility */
+/* Focus — Brand-blue ring layered over resting shadow */
 .btn-index:focus-visible {
   box-shadow: var(--shadow-btn-primary), var(--shadow-focus-primary);
 }
 
-/* Light mode: gradient background for contrast (transparent is invisible on light surfaces) */
-html:not(.dark) .btn-index {
-  border: 1px solid var(--color-primary-hover);
-  background: oklch(65.82% 0.169 248.81 / 10%);
-  color: var(--color-primary-hover);
-}
-
-html:not(.dark) .btn-index:disabled {
-  border-color: var(--color-text-disabled);
-  color: var(--color-text-disabled);
-}
-
-html:not(.dark) .btn-index:hover:not(:disabled) {
+/* Hover — stronger glow + slight lift (universal — same in both themes) */
+.btn-index:hover:not(:disabled) {
   box-shadow: var(--shadow-btn-primary-hover);
   transform: translateY(-1px);
 }
 
 /**
+ * Light-Mode-only Border (UX-Spec 2026-04-27):
+ * Auf hellen Surfaces verschwindet die transparente Surface fast komplett,
+ * der Brand-Blue-Drop-Shadow trägt allein nicht genug Kontrast. Ein zarter
+ * Brand-Blue-Border (40 % α) zeichnet den Edge ohne den Look in Richtung
+ * „filled CTA" zu kippen. Im Dark-Mode bleibt der Button border-los.
+ */
+html:not(.dark) .btn-index {
+  border: 1px solid oklch(56.45% 0.1633 253.27 / 40%);
+}
+
+html:not(.dark) .btn-index:hover:not(:disabled) {
+  border-color: oklch(56.45% 0.1633 253.27 / 65%);
+}
+
+html:not(.dark) .btn-index:disabled,
+html:not(.dark) .btn-index.disabled {
+  border-color: oklch(56.45% 0.1633 253.27 / 18%);
+}
+
+/**
  * WHY THIS DESIGN?
  *
- * - Gradient: Premium, modern look (like iOS)
- * - Shadow: Creates depth in dark UI
- * - White text: Maximum contrast for accessibility
- * - Hover lift: Clear interactive feedback
+ * - Transparent + blue-glow: lets the page bg shine through (glassmorphism),
+ *   while the brand-blue shadow signals "primary action".
+ * - Inset white sheen (in dark-mode token): "light from above" cue.
+ * - Theme-aware shadow tokens: light gets a softer glow (avoids blow-out
+ *   on bright surfaces), dark gets a stronger one (visible against black bg).
  *
  * WHEN TO USE:
+ * ✅ Login/Signup submit + Microsoft sign-in (always-dark per ADR-017 §5)
  * ✅ Index/Landing page CTAs (Enterprise, Pricing)
- * ✅ Landing page signup modal actions
+ * ✅ Signup modal actions
  *
  * WHEN NOT TO USE:
- * ❌ Forms or dialogs (use .btn-primary)
- * ❌ Hero/Landing page CTAs (use .btn-primary-first)
+ * ❌ In-app forms or dialogs (use .btn-primary)
+ * ❌ Hero/Landing CTAs (use .btn-primary-first)
  * ❌ Destructive actions (use .btn-danger)
  * ❌ Cancel/back actions (use .btn-cancel)
  */

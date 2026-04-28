@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { TenantVerificationService } from '../domains/tenant-verification.service.js';
+import type { RootProtectionService } from '../root/root-protection.service.js';
 import { DummyUsersService } from './dummy-users.service.js';
 import type { DummyUserWithTeamsRow } from './dummy-users.types.js';
 import { DUMMY_PERMISSIONS } from './dummy-users.types.js';
@@ -45,6 +46,18 @@ const mockTenantVerification = {
   assertVerified: vi.fn().mockResolvedValue(undefined),
   isVerified: vi.fn().mockResolvedValue(true),
 } as unknown as TenantVerificationService;
+
+// Session 4 (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.3): DummyUsersService
+// gained a 4th DI (RootProtectionService). All methods no-op — `delete()`
+// only ever sees role='dummy' targets so the cross-root branch is never
+// entered in normal flow. The mocks exist purely to satisfy DI.
+const mockRootProtection = {
+  assertCrossRootTerminationForbidden: vi.fn().mockResolvedValue(undefined),
+  assertNotLastRoot: vi.fn().mockResolvedValue(undefined),
+  countActiveRoots: vi.fn().mockResolvedValue(2),
+  isTerminationOp: vi.fn().mockReturnValue(false),
+  auditDeniedAttempt: vi.fn().mockResolvedValue(undefined),
+} as unknown as RootProtectionService;
 
 /** Creates a valid DummyUserWithTeamsRow for mocking getByUuid results */
 function createDummyRow(overrides: Partial<DummyUserWithTeamsRow> = {}): DummyUserWithTeamsRow {
@@ -86,6 +99,7 @@ describe('DummyUsersService', () => {
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
       mockTenantVerification,
+      mockRootProtection,
     );
   });
 
@@ -469,14 +483,23 @@ describe('DummyUsersService', () => {
   // =========================================================
 
   describe('delete', () => {
+    // Session 4 (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §2.3) added a
+    // pre-SELECT that resolves the target's role for the defensive
+    // RootProtection wiring. Active dummies hit the SELECT first
+    // (returns role='dummy'), THEN the UPDATE. Already-deleted / not-found
+    // dummies are filtered out by the SELECT's `is_active != DELETED`
+    // clause and skip the protection chain entirely.
     it('should soft-delete successfully', async () => {
-      // UPDATE returns non-empty (affected row)
+      // 1. SELECT id, role for protection chain → role='dummy' (chain inert)
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'dummy' }]);
+      // 2. UPDATE returns non-empty (affected row)
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
       await expect(service.delete(10, DUMMY_UUID, 1)).resolves.toBeUndefined();
     });
 
     it('should log activity after delete', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'dummy' }]);
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
       await service.delete(10, DUMMY_UUID, 1);
@@ -492,29 +515,35 @@ describe('DummyUsersService', () => {
     });
 
     it('should throw NotFoundException when dummy not found', async () => {
-      // UPDATE returns empty (no match)
+      // 1. Pre-SELECT for protection → empty (not found, also filters by role='dummy')
       mockDb.query.mockResolvedValueOnce([]);
-      // Check query also returns empty
+      // 2. UPDATE returns empty (no match)
+      mockDb.query.mockResolvedValueOnce([]);
+      // 3. Check query also returns empty
       mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.delete(10, 'non-existent', 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when already deleted', async () => {
-      // UPDATE returns empty (no match — already is_active=4)
+      // 1. Pre-SELECT filters `is_active != DELETED` → empty for already-deleted
       mockDb.query.mockResolvedValueOnce([]);
-      // Check query finds it (exists but is_active=4)
+      // 2. UPDATE returns empty (no match — already is_active=4)
+      mockDb.query.mockResolvedValueOnce([]);
+      // 3. Check query finds it (exists but is_active=4)
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
       await expect(service.delete(10, DUMMY_UUID, 1)).rejects.toThrow(BadRequestException);
     });
 
     it(`should set is_active = ${IS_ACTIVE.DELETED} in SQL`, async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'dummy' }]);
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
       await service.delete(10, DUMMY_UUID, 1);
 
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      // calls[0] = pre-SELECT for protection chain, calls[1] = the UPDATE.
+      const sql = mockDb.query.mock.calls[1]?.[0] as string;
       expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
       expect(sql).toContain("role = 'dummy'");
     });

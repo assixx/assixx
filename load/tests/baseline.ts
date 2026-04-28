@@ -76,7 +76,7 @@ interface Login {
   password: string;
 }
 
-/** Parse __ENV.LOGINS or fall back to single apitest. Failure aborts setup() loud. */
+/** Parse __ENV.LOGINS or fall back to single assixx tenant. Failure aborts setup() loud. */
 function resolveLoginPool(): Login[] {
   const raw = __ENV.LOGINS;
   if (raw === undefined || raw === '') {
@@ -113,7 +113,7 @@ function loginAll(pool: Login[]): AuthState[] {
       out.push(loginApitest());
       continue;
     }
-    // Generic login path for non-apitest tenants. Mirrors loginApitest() shape.
+    // Generic login path for non-assixx test tenants. Mirrors loginApitest() shape (assixx tenant).
     const res = http.post(
       `${BASE_URL}/auth/login`,
       JSON.stringify({ email: login.email, password: login.password }),

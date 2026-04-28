@@ -164,7 +164,7 @@ describe('A. Cross-tenant JWT replay — JwtAuthGuard cross-check', () => {
 
     beforeAll(async () => {
       res = await fetch(`${BASE_URL}/users`, {
-        headers: { ...authOnly(auth.authToken), ...withTenantHost('apitest') },
+        headers: { ...authOnly(auth.authToken), ...withTenantHost('assixx') },
       });
     });
 
@@ -270,7 +270,7 @@ describe('C. OAuth /authorize — returnToSlug sources', () => {
       flushThrottleKeys();
       res = await fetch(`${BASE_URL}/auth/oauth/microsoft/authorize?mode=login`, {
         redirect: 'manual',
-        headers: withTenantHost('apitest'),
+        headers: withTenantHost('assixx'),
       });
     });
 
@@ -289,7 +289,7 @@ describe('C. OAuth /authorize — returnToSlug sources', () => {
     beforeAll(async () => {
       flushThrottleKeys();
       res = await fetch(
-        `${BASE_URL}/auth/oauth/microsoft/authorize?mode=login&return_to_slug=apitest`,
+        `${BASE_URL}/auth/oauth/microsoft/authorize?mode=login&return_to_slug=assixx`,
         { redirect: 'manual' },
       );
     });
@@ -317,7 +317,7 @@ describe('D. OAuth /handoff endpoint', () => {
       flushThrottleKeys();
       res = await fetch(`${BASE_URL}/auth/oauth/handoff`, {
         method: 'POST',
-        headers: { ...authHeaders(auth.authToken), ...withTenantHost('apitest') },
+        headers: { ...authHeaders(auth.authToken), ...withTenantHost('assixx') },
         body: JSON.stringify({ token: 'too-short' }),
       });
       body = (await res.json()) as JsonBody;
@@ -341,7 +341,7 @@ describe('D. OAuth /handoff endpoint', () => {
       const token = randomBytes(32).toString('hex');
       res = await fetch(`${BASE_URL}/auth/oauth/handoff`, {
         method: 'POST',
-        headers: { ...authHeaders(auth.authToken), ...withTenantHost('apitest') },
+        headers: { ...authHeaders(auth.authToken), ...withTenantHost('assixx') },
         body: JSON.stringify({ token }),
       });
       body = (await res.json()) as JsonBody;
@@ -413,7 +413,7 @@ describe('D. OAuth /handoff endpoint', () => {
 
       res = await fetch(`${BASE_URL}/auth/oauth/handoff`, {
         method: 'POST',
-        headers: { ...authHeaders(auth.authToken), ...withTenantHost('apitest') },
+        headers: { ...authHeaders(auth.authToken), ...withTenantHost('assixx') },
         body: JSON.stringify({ token: seeded.token }),
       });
       body = (await res.json()) as JsonBody;
@@ -504,14 +504,14 @@ describe('E. CORS allowlist (main.ts isAllowedCorsOrigin)', () => {
     });
   });
 
-  describe('Subdomain origin (https://apitest.assixx.com) → allowed', () => {
+  describe('Subdomain origin (https://assixx.assixx.com) → allowed', () => {
     let res: Response;
 
     beforeAll(async () => {
       res = await fetch(`${BASE_URL}/users`, {
         method: 'OPTIONS',
         headers: {
-          Origin: 'https://apitest.assixx.com',
+          Origin: 'https://assixx.assixx.com',
           'Access-Control-Request-Method': 'GET',
           'Access-Control-Request-Headers': 'Authorization',
         },
@@ -519,7 +519,7 @@ describe('E. CORS allowlist (main.ts isAllowedCorsOrigin)', () => {
     });
 
     it('Access-Control-Allow-Origin reflects the subdomain origin', () => {
-      expect(res.headers.get('access-control-allow-origin')).toBe('https://apitest.assixx.com');
+      expect(res.headers.get('access-control-allow-origin')).toBe('https://assixx.assixx.com');
     });
   });
 

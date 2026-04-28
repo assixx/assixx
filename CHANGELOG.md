@@ -5,17 +5,26 @@
 > CHANGELOGs after `pnpm changeset:version`. Do not hand-edit — changes
 > will be overwritten on the next release.
 
+## 0.4.13
+
+### Patch Changes
+
+- refactor: add participants in kvp
+- fix: cross-origin first-escrow bootstrap (ADR-022 §"New-user scenario")
+- chore: bump grafana v13
+- chore(docker): backend production image switches to `pnpm deploy` pattern (closes ADR-027 §3 deferred); cuts `assixx-backend:prod` image size from 1.27 GB to 614 MB (-52%) by mirroring `Dockerfile.frontend`. Moves frontend-only devDeps (Storybook, Stylelint suite, postcss-html, prettier-plugin-css-order) and 4 duplicates (vite, @tailwindcss/vite, prettier-plugin-svelte, prettier-plugin-tailwindcss) out of root `package.json` into `frontend/package.json` (single source of truth). Root scripts (`storybook`, `build-storybook`, `stylelint*`) now wrap to `pnpm --filter assixx-frontend run …`. Removes dead `eslint-plugin-storybook` import from root `eslint.config.mjs`. Fixes `docs/ARCHITECTURE.md` map drift (`Dockerfile.prod` → `Dockerfile`).
+
 ## 0.4.12
 
 ### Patch Changes
 
-- 1031d27: chore: add version reference and bug report
-- 1031d27: feat: add subdomain in url | Tenant isolation prevention
-- 1031d27: feat: add microsoft oAuth
-- 1031d27: feat: add shift handover
-- 1031d27: chore: add grafana tempo
-- 1031d27: chore: bump node 24.15.0 LTS
-- 1031d27: chore: add otelementry
+- chore: add version reference and bug report
+- feat: add subdomain in url | Tenant isolation prevention
+- feat: add microsoft oAuth
+- feat: add shift handover
+- chore: add grafana tempo
+- chore: bump node 24.15.0 LTS
+- chore: add otelementry
 
 ## 0.4.11
 
@@ -28,16 +37,16 @@
 
 ### Patch Changes
 
-- ebd08ea: feat: add swap requests for shifts
-- 4a73906: feature: add inventory list
-- f929814: refactor: cleanup
+- feat: add swap requests for shifts
+- feature: add inventory list
+- refactor: cleanup
 
 ## 0.4.9
 
 ### Patch Changes
 
-- a180d70: refactor: add TPM apporval system
-- a180d70: feat: add defects chart
+- refactor: add TPM apporval system
+- feat: add defects chart
 
 ## 0.4.8
 
@@ -61,24 +70,24 @@
 
 ### Patch Changes
 
-- a283d00: Refactor: is_active Magic Numbers durch IS_ACTIVE-Konstanten ersetzt (466 Stellen in 134 Dateien). Regressions-Schutz durch 4 Architektur-Tests in CI. Dokumentiert in TYPESCRIPT-STANDARDS.md Section 7.4 + No-Go #16.
-- ffd60c9: feat: add organigramm
+- Refactor: is_active Magic Numbers durch IS_ACTIVE-Konstanten ersetzt (466 Stellen in 134 Dateien). Regressions-Schutz durch 4 Architektur-Tests in CI. Dokumentiert in TYPESCRIPT-STANDARDS.md Section 7.4 + No-Go #16.
+- feat: add organigramm
   feat: add dynamic postions
   refactor: renaming feature to addon (module)
   chore: docs updated
   style: adjust landingpage to addon modules
   chore: bump deps
   chore: stabilisation
-- bbba1ef: Partition Health: /health/partitions Endpoint + API-Test
+- Partition Health: /health/partitions Endpoint + API-Test
   - Neuer Endpoint `/health/partitions` zur Verifizierung der pg_partman-Konfiguration (Extension, part_config, Partitionen, Defaults)
   - HTTP 200 bei gesundem Zustand, HTTP 503 bei Problemen
   - 9 API-Integrationstests (`partitions.api.test.ts`) verifizieren Partition-Coverage automatisch
   - GRANT für `app_user` auf `partman`-Schema (read-only, Monitoring)
-- eaec9d5: refactor: add adress for customer in db and signup page
-- eaec9d5: feat: add organigramm
+- refactor: add adress for customer in db and signup page
+- feat: add organigramm
 
 ## 0.4.0
 
 ### Minor Changes
 
-- 852a237: TPM (Total Productive Maintenance) feature complete: maintenance plans, Kamishibai board, card execution workflow, approval system, schedule projection, slot assistant, escalation, photo uploads, execution history, plan archive/unarchive, work order integration, shift assignments, category/interval/status color config, time estimates, rename machine to assets, audit trail logging, TPM card creation limits, template removal, API tests and full frontend UI
+- TPM (Total Productive Maintenance) feature complete: maintenance plans, Kamishibai board, card execution workflow, approval system, schedule projection, slot assistant, escalation, photo uploads, execution history, plan archive/unarchive, work order integration, shift assignments, category/interval/status color config, time estimates, rename machine to assets, audit trail logging, TPM card creation limits, template removal, API tests and full frontend UI

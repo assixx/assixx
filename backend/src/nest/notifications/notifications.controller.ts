@@ -128,6 +128,19 @@ interface NotificationEventData {
     requesterName: string;
     startDate: string;
   };
+  /**
+   * Root self-termination event payload (FEAT_ROOT_ACCOUNT_PROTECTION
+   * Phase 7 / sidebar badge wiring). The eventBus emits with the
+   * `request: { id, requesterId, requesterName }` shape — kept identical
+   * here so re-using the existing NEW_APPROVAL / APPROVAL_DECIDED SSE
+   * message types stays type-safe (the frontend store only needs the
+   * counter increment, no payload field).
+   */
+  selfTerminationRequest?: {
+    id: string;
+    requesterId: number;
+    requesterName: string;
+  };
 }
 
 /**
@@ -163,6 +176,12 @@ const SSE_EVENTS = {
   APPROVAL_CREATED: 'approval.created',
   APPROVAL_DECIDED: 'approval.decided',
   SWAP_REQUEST_CREATED: 'swap.request.created',
+  // Root self-termination peer-approval lifecycle (Phase 7 / sidebar badge).
+  // Re-uses the NEW_APPROVAL / APPROVAL_DECIDED SSE message types so the
+  // existing `approvals` counter in the frontend store aggregates them.
+  ROOT_SELF_TERMINATION_REQUESTED: 'root.self-termination.requested',
+  ROOT_SELF_TERMINATION_APPROVED: 'root.self-termination.approved',
+  ROOT_SELF_TERMINATION_REJECTED: 'root.self-termination.rejected',
 } as const;
 
 /**
@@ -457,6 +476,85 @@ function registerApprovalHandlers(
 }
 
 /**
+ * Register root-self-termination peer-approval SSE handlers.
+ *
+ * Re-uses the NEW_APPROVAL / APPROVAL_DECIDED message types so the existing
+ * `approvals` counter in the frontend store aggregates them — single
+ * sidebar badge for `/manage-approvals` (FEAT_ROOT_ACCOUNT_PROTECTION
+ * Phase 7).
+ *
+ * Recipient rules:
+ * - REQUESTED  → all roots in the tenant EXCEPT the requester (peer roots)
+ * - APPROVED   → the requester only (decision feedback)
+ * - REJECTED   → the requester only (decision feedback)
+ *
+ * The `eventBus` payload uses `request: { id, requesterId, requesterName }`,
+ * which is structurally compatible with the existing
+ * `NotificationEventData.request` shape (id/requesterId/requesterName fields
+ * exist on both) — no payload remap needed for the read path.
+ *
+ * @see backend/src/utils/event-bus.ts (RootSelfTerminationEvent interface)
+ */
+function registerRootSelfTerminationHandlers(
+  handlers: EventHandler[],
+  userId: number,
+  role: string,
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): void {
+  // Only roots receive these events — non-roots can't manage them.
+  if (role !== 'root') return;
+
+  const requestedHandler = (eventData: NotificationEventData): void => {
+    if (eventData.tenantId !== tenantId) return;
+    const req = eventData.request;
+    if (req === undefined) return;
+    // Self-decision guard: requester does not see their own request as a
+    // peer-approval task.
+    if (req.requesterId === userId) return;
+    eventSubject.next({
+      data: {
+        type: 'NEW_APPROVAL',
+        timestamp: new Date().toISOString(),
+        approval: {
+          uuid: req.id,
+          title: `Konto-Löschung von ${req.requesterName ?? `Benutzer #${req.requesterId}`}`,
+          addonCode: 'root_self_termination',
+          status: 'pending',
+          requestedByName: req.requesterName ?? `Benutzer #${req.requesterId}`,
+        },
+      },
+    });
+  };
+  registerHandler(handlers, SSE_EVENTS.ROOT_SELF_TERMINATION_REQUESTED, requestedHandler);
+
+  const decidedHandler =
+    (status: 'approved' | 'rejected') =>
+    (eventData: NotificationEventData): void => {
+      if (eventData.tenantId !== tenantId) return;
+      const req = eventData.request;
+      if (req === undefined) return;
+      // Decision-feedback only to the requester.
+      if (req.requesterId !== userId) return;
+      eventSubject.next({
+        data: {
+          type: 'APPROVAL_DECIDED',
+          timestamp: new Date().toISOString(),
+          approval: {
+            uuid: req.id,
+            title: `Konto-Löschung — ${status === 'approved' ? 'genehmigt' : 'abgelehnt'}`,
+            addonCode: 'root_self_termination',
+            status,
+            requestedByName: req.requesterName ?? `Benutzer #${req.requesterId}`,
+          },
+        },
+      });
+    };
+  registerHandler(handlers, SSE_EVENTS.ROOT_SELF_TERMINATION_APPROVED, decidedHandler('approved'));
+  registerHandler(handlers, SSE_EVENTS.ROOT_SELF_TERMINATION_REJECTED, decidedHandler('rejected'));
+}
+
+/**
  * Register SSE handlers based on user role AND feature permissions (ADR-020).
  * Only registers handlers for features the user has read access to.
  * Root and admin with fullAccess: readableFeatures is null → all features.
@@ -503,6 +601,11 @@ function registerSSEHandlers(
 
   // Approvals — Core addon, always registered (no canAccess check)
   registerApprovalHandlers(handlers, userId, tenantId, eventSubject);
+
+  // Root self-termination peer-approval — root-only, always registered.
+  // Re-uses NEW_APPROVAL / APPROVAL_DECIDED so the existing `approvals`
+  // counter aggregates them. FEAT_ROOT_ACCOUNT_PROTECTION Phase 7.
+  registerRootSelfTerminationHandlers(handlers, userId, role, tenantId, eventSubject);
 
   // Swap requests — notify target user when a swap is requested
   if (canAccess('shift_planning')) {

@@ -190,7 +190,7 @@ The committed-JSON approach gives:
 Plan 1 (Forgot-Password Role Gate) and Plan 2 (this ADR) were drafted in parallel. The masterplan explicitly sequences Plan 2 to ship FIRST because:
 
 1. Plan 1's Phase 1 depends on the **TRUNCATE-cascade clean-slate** that Plan 2's Phase 1 performs — without it, Plan 1 would have to build on test-tenants that don't have a `tenant_domains` row.
-2. The **pre-verified test-tenant seed** (`firma-a` / `firma-b` / `scs` / `apitest` per Phase 1 Step 1.3) that Plan 2 creates is what Plan 1's Forgot-Password tests use as their tenant fixture.
+2. The **pre-verified test-tenant seed** (`firma-a` / `firma-b` / `scs` / `assixx` per Phase 1 Step 1.3) that Plan 2 creates is what Plan 1's Forgot-Password tests use as their tenant fixture.
 3. The single-root-mailbox-loss risk that Plan 2's Known Limitation #10 surfaces is what motivates Plan 1 in the first place — Plan 1 is the long-term resolution, Plan 2 establishes the constraint that makes the resolution useful (the customer's IT admin who recovers the mailbox is the same person who controls the verified DNS zone).
 
 The signal handoff to Plan 1 lives in this ADR's Phase 6 DoD: "Plan 1 (ADR-Forgot-PW) team unblocked once ADR-049 ships."
@@ -300,7 +300,7 @@ Per ADR-018's test pyramid:
 | Tier 2 API Integration | 46 API tests (Phase 4): `tenant-domains.api.test.ts` 40 + `signup.api.test.ts` extension +6. 4 deferred with rationale: DNS-positive verify (HTTP-layer mocking infeasible), OAuth concurrent-race ×2 (Microsoft endpoint mocking infeasible), general `UserThrottle` 1000/15min (suite-runtime budget).                                                                                                                                                                   |
 | Tier 3 E2E             | 2 working page-mount Playwright smokes. Full unverified-banner happy-path deferred — needs Phase 1 unverified-tenant seed addition (SSR-side `verification-status` fetch can't be Playwright-routed).                                                                                                                                                                                                                                                                      |
 
-**Live HTTP A→B→C cycle verified end-to-end during Phase 2** (apitest tenant, 2026-04-18): unverified → 403 `TENANT_NOT_VERIFIED` → manually-verified → 201 → re-locked-via-DELETE → 403 again. The `assertVerified` gate behaves correctly on both open and close transitions.
+**Live HTTP A→B→C cycle verified end-to-end during Phase 2** (assixx test tenant, 2026-04-18): unverified → 403 `TENANT_NOT_VERIFIED` → manually-verified → 201 → re-locked-via-DELETE → 403 again. The `assertVerified` gate behaves correctly on both open and close transitions.
 
 ---
 

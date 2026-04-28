@@ -78,3 +78,35 @@ export interface JwtPayload {
   role: string;
   [key: string]: unknown;
 }
+
+// =============================================================================
+// SELF-TERMINATION (FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN §5.1)
+// Backend domain shape: backend/src/nest/root/root-self-termination.service.ts
+// `RootSelfTerminationRequest` (camelCase, ISO date strings over the wire).
+// =============================================================================
+
+/** Status values for the request lifecycle (matches DB enum). */
+export type SelfTerminationStatus = 'pending' | 'approved' | 'rejected' | 'expired' | 'cancelled';
+
+/**
+ * Self-termination request as delivered by the API.
+ *
+ * NOTE: Dates are ISO 8601 strings here (backend returns Date instances which
+ * are serialised by JSON.stringify). Convert to Date only when needed for
+ * formatting/comparison.
+ */
+export interface SelfTerminationRequest {
+  id: string;
+  tenantId: number;
+  requesterId: number;
+  reason: string | null;
+  status: SelfTerminationStatus;
+  expiresAt: string;
+  approvedBy: number | null;
+  approvedAt: string | null;
+  rejectedBy: number | null;
+  rejectedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

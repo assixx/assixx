@@ -24,13 +24,13 @@ export interface OrgChartPosition {
 }
 
 /**
- * Aggregierter Node für Frontend.
+ * Aggregated node for the frontend.
  *
- * Tatsächliche DB-Hierarchie (verifiziert):
+ * Actual DB hierarchy (verified):
  *   Area → Departments (area_id), Assets (area_id)
  *   Department → Teams (department_id), Assets (department_id)
- *   Team → (Blattknoten, hat member_count)
- *   Asset → (Blattknoten, KEIN team_id in DB!)
+ *   Team → (leaf node, has member_count)
+ *   Asset → (leaf node, NO team_id in DB!)
  */
 export interface OrgChartNode {
   entityType: OrgEntityType;

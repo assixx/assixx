@@ -90,10 +90,10 @@
   const approval = $derived(data.approval);
   const hasApprovalConfig = $derived(data.hasApprovalConfig);
   const isApprovalMaster = $derived(data.isApprovalMaster);
-  // Reward-Tier-Katalog für KVP-Approve-Modal (Master vergibt optional Prämie).
-  // Server-loaded in +page.server.ts; gleiche Quelle wie /manage-approvals,
-  // damit beide Approve-Pfade konsistent bleiben (Masterplan v0.1.x deckt diesen
-  // zweiten Caller-Pfad nicht ab — Reward wurde nachträglich eingeführt).
+  // Reward-tier catalog for the KVP approve modal (master optionally awards a bonus).
+  // Server-loaded in +page.server.ts; same source as /manage-approvals so both
+  // approve paths stay consistent (Masterplan v0.1.x does not cover this second
+  // caller path — reward was introduced later).
   const rewardTiers = $derived(data.rewardTiers);
 
   // Derived: Photo attachments (uses IMAGE_FILE_TYPES from constants via util)

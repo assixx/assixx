@@ -82,6 +82,9 @@ ADRs document important architectural decisions:
 | [ADR-051](./ADR-051-forgot-password-role-gate.md)                            | Forgot-Password Role-Gate                                    | Accepted   | 2026-04-21 |
 | [ADR-052](./ADR-052-shift-handover-protocol.md)                              | Shift Handover Protocol (Schichtübergabe)                    | Accepted   | 2026-04-23 |
 | [ADR-053](./ADR-053-navigation-map-pointer-injection.md)                     | Navigation Map Pointer Injection                             | Accepted   | 2026-04-23 |
+| [ADR-055](./ADR-055-root-account-lifecycle-protection.md)                    | Root Account Lifecycle Protection                            | Accepted   | 2026-04-28 |
+
+> **Gap note:** ADR-054 is reserved by `FEAT_2FA_EMAIL_MASTERPLAN.md` for "Mandatory Email-Based 2FA" and will be added on completion of that feature.
 
 ## Template
 

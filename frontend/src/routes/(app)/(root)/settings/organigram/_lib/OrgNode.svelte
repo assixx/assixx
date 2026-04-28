@@ -44,7 +44,7 @@
   }
 
   function handlePointerDown(event: PointerEvent): void {
-    // Linksklick auf Node darf nie Canvas-Pan auslösen
+    // Left-click on a node must never trigger canvas pan
     if (event.button === 0 && !event.shiftKey) {
       event.stopPropagation();
     }

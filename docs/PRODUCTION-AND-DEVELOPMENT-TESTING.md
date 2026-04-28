@@ -19,22 +19,37 @@
 
 ## Architecture Overview
 
-### Development Mode (Default)
+### Profile-Schalter (ADR-027 Amendment 2026-04-28)
+
+Compose nutzt **Profile** zum Trennen von dev und production:
+
+| Profile         | Backend Service | Backend Image         | Volumes               | Cold-Start |
+| --------------- | --------------- | --------------------- | --------------------- | ---------- |
+| `dev` (default) | `backend`       | `assixx-backend:dev`  | Source-Mounts (HMR)   | ~60-120 s  |
+| `production`    | `backend-prod`  | `assixx-backend:prod` | Nur Daten (no source) | ~11 s      |
+
+`docker/.env` setzt `COMPOSE_PROFILES=dev` als Default — `docker-compose up -d` ohne Flag startet die dev-Variante. Beide Varianten teilen denselben `container_name: assixx-backend` und Port `3000:3000` (XOR via Profile).
+
+### Development Mode (`COMPOSE_PROFILES=dev`)
 
 ```
-Browser → Backend (:3000) → Serves API only
-Browser → SvelteKit Dev Server (:5173) → Hot reload, development
+Browser → Backend (:3000) ← assixx-backend:dev (Dockerfile.dev)
+                              live-reload via volume mounts
+                              build TS at container startup
+Browser → SvelteKit Dev Server (:5173) → Hot reload (separates Terminal)
 ```
 
-### Production Mode (with --profile production)
+### Production Mode (`--profile production`)
 
 ```
-Browser → Nginx (:80) ─┬→ /api/*     → Backend (:3000)
-                       ├→ /uploads/* → Backend (:3000)
-                       ├→ /health    → Backend (:3000)
-                       ├→ /chat-ws   → Backend (:3000) [WebSocket]
+Browser → Nginx (:80) ─┬→ /api/*     → backend-prod:3000 ← assixx-backend:prod (Dockerfile)
+                       ├→ /uploads/* → backend-prod:3000   multi-stage, pnpm deploy
+                       ├→ /health    → backend-prod:3000   no source mounts
+                       ├→ /chat-ws   → backend-prod:3000   pre-built dist
                        └→ /*         → SvelteKit (:3001)
 ```
+
+Network-Alias `backend` auf `backend-prod` — `nginx.conf` und `frontend.API_URL=http://backend:3000` bleiben unverändert.
 
 ---
 
@@ -69,11 +84,19 @@ Browser → Nginx (:80) ─┬→ /api/*     → Backend (:3000)
 
 ### Start Development Environment
 
+`docker/.env` muss `COMPOSE_PROFILES=dev` enthalten (Default in `.env.example`). Falls nicht gesetzt, würde `docker-compose up -d` nur postgres+redis starten — siehe ADR-027 Amendment 2026-04-28 für die Profile-Trennung.
+
 ```bash
 cd /home/scs/projects/Assixx/docker
 
 # Start core services (backend, postgres, redis, deletion-worker)
+# Liest COMPOSE_PROFILES aus .env (Default: dev)
 docker-compose up -d
+
+# Mit Observability-Stack (Loki + Prometheus + Grafana + Tempo):
+# docker/.env: COMPOSE_PROFILES=dev,observability
+# ODER per-Befehl:
+docker-compose --profile dev --profile observability up -d
 
 # Check status
 docker-compose ps
@@ -124,13 +147,19 @@ pnpm run dev
 
 ### Build & Start Production Environment
 
+`--profile production` aktiviert die echten Production-Services (`backend-prod` aus `docker/Dockerfile`, `frontend`, `nginx`, observability-Stack). Beide Backend-Varianten teilen `container_name: assixx-backend` und Port `3000:3000` — sie können nicht gleichzeitig laufen.
+
 ```bash
 cd /home/scs/projects/Assixx/docker
 
-# Build frontend image (only needed after code changes)
-docker-compose --profile production build frontend
+# Erst Dev-Backend stoppen falls läuft (sonst container-name-Konflikt)
+docker-compose --profile dev stop backend deletion-worker
+docker-compose --profile dev rm -f backend deletion-worker
 
-# Start all services including frontend + nginx
+# Build production images (backend-prod + frontend, mit cache nach erstem Build schnell)
+docker-compose --profile production build
+
+# Start all production services (backend-prod + deletion-worker-prod + frontend + nginx + observability)
 docker-compose --profile production up -d
 
 # Check status
@@ -142,12 +171,31 @@ docker-compose --profile production ps
 ```bash
 cd /home/scs/projects/Assixx/docker
 
-# Stop only frontend + nginx (keep backend running)
+# Stop only backend-prod variant (keep frontend/nginx running)
+docker-compose --profile production stop backend-prod deletion-worker-prod
+
+# Stop only frontend + nginx (keep backend-prod running)
 docker-compose --profile production down frontend nginx
 
 # Stop everything
 docker-compose --profile production down
 ```
+
+### Switch zwischen Dev und Production
+
+```bash
+# Dev → Prod
+docker-compose --profile dev stop backend deletion-worker
+docker-compose --profile dev rm -f backend deletion-worker
+docker-compose --profile production up -d
+
+# Prod → Dev
+docker-compose --profile production stop backend-prod deletion-worker-prod frontend nginx
+docker-compose --profile production rm -f backend-prod deletion-worker-prod frontend nginx
+docker-compose --profile dev up -d
+```
+
+postgres, redis und observability bleiben durch Profile-Sharing erhalten — kein Restart nötig.
 
 ### Production URLs
 
@@ -325,30 +373,32 @@ docker-compose --profile production up -d
 
 ## Quick Reference Commands
 
-### Development
+### Development (`--profile dev`)
 
 ```bash
-# Start
+# Start (COMPOSE_PROFILES=dev in .env)
 docker-compose up -d && cd ../frontend && pnpm run dev
 
 # Stop
-docker-compose down
+docker-compose --profile dev down
 
-# Restart backend
-docker-compose restart backend
+# Restart backend (dev image — NUR für env/compose-Änderungen; Source-Edits hot-reloaden automatisch via tsc-watch + nodemon, ADR-027 §Amendment 2026-04-28 (b))
+docker-compose --profile dev restart backend
 
 # View backend logs
 docker logs -f assixx-backend
 ```
 
-### Production
+### Production (`--profile production`)
 
 ```bash
-# Build & Start
-docker-compose --profile production build frontend && \
+# Erst Dev raus, dann build + start
+docker-compose --profile dev stop backend deletion-worker
+docker-compose --profile dev rm -f backend deletion-worker
+docker-compose --profile production build && \
 docker-compose --profile production up -d
 
-# Stop
+# Stop nur Production-Services (postgres/redis bleiben)
 docker-compose --profile production down
 
 # Restart all
@@ -390,6 +440,7 @@ echo "API:      http://localhost/api/v2/"
 | File                                    | Purpose                                        |
 | --------------------------------------- | ---------------------------------------------- |
 | `docker/docker-compose.yml`             | Docker Compose configuration                   |
+| `docker/Dockerfile`                     | Backend production build (uses pnpm deploy)    |
 | `docker/Dockerfile.frontend`            | SvelteKit production build (uses pnpm deploy)  |
 | `docker/Dockerfile.dev`                 | Backend development build                      |
 | `docker/nginx/nginx.conf`               | Nginx reverse proxy config                     |

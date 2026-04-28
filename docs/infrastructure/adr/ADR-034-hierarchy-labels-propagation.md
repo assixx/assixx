@@ -5,62 +5,62 @@
 | **Status**              | Accepted                                                                                                       |
 | **Date**                | 2026-03-11                                                                                                     |
 | **Decision Makers**     | SCS-Technik Team                                                                                               |
-| **Affected Components** | Backend (1 endpoint update), Frontend (50+ files: layout, navigation, breadcrumb, 22+ page modules)            |
+| **Affected Components** | Backend (1 endpoint update), frontend (50+ files: layout, navigation, breadcrumb, 22+ page modules)            |
 | **Supersedes**          | ---                                                                                                            |
-| **Related ADRs**        | ADR-012 (Route Security Groups), ADR-020 (Per-User Permissions), ADR-024 (Feature Guards), ADR-026 (TPM Arch.) |
+| **Related ADRs**        | ADR-012 (route security groups), ADR-020 (per-user permissions), ADR-024 (feature guards), ADR-026 (TPM arch.) |
 
 ---
 
 ## Context
 
-Assixx unterstützt seit dem Organigramm-Feature (V1) tenant-spezifische Hierarchy Labels — jeder Tenant kann seine Organisationsebenen umbenennen (z.B. "Bereiche" → "Hallen", "Abteilungen" → "Segmente"). **Problem:** V1 zeigte diese Labels ausschließlich auf der Organigramm-Seite. Alle anderen ~40 Seiten verwendeten weiterhin hardcoded deutsche Strings.
+Since the org-chart feature (V1) Assixx supports tenant-specific hierarchy labels — every tenant can rename its organizational levels (e.g. "Bereiche" → "Hallen", "Abteilungen" → "Segmente"). **Problem:** V1 only displayed these labels on the org-chart page. All other ~40 pages still used hardcoded German strings.
 
-| Problem                          | Impact                                                            |
-| -------------------------------- | ----------------------------------------------------------------- |
-| Inkonsistente Terminologie       | User sieht "Hallen" im Organigramm, aber "Bereiche" überall sonst |
-| Keine zentrale Label-Quelle      | Jedes Modul hat eigene `constants.ts` mit statischen Strings      |
-| Label-Änderung ohne Wirkung      | Tenant ändert Labels, aber 90% der UI ignoriert die Änderung      |
-| Skalierbarkeit bei neuen Modulen | Jedes neue Modul kopiert hardcoded Strings statt Labels zu nutzen |
+| Problem                      | Impact                                                            |
+| ---------------------------- | ----------------------------------------------------------------- |
+| Inconsistent terminology     | User sees "Halls" in the org chart but "Areas" everywhere else    |
+| No central label source      | Every module has its own `constants.ts` with static strings       |
+| Label changes have no effect | Tenant changes labels but 90% of the UI ignores the change        |
+| Scalability for new modules  | Every new module copies hardcoded strings instead of using labels |
 
 ### Scope
 
-5 Hierarchie-Ebenen, nur Plural-Form:
+5 hierarchy levels, plural form only:
 
-| Ebene        | Default (DE)  | Beispiel (Custom) |
-| ------------ | ------------- | ----------------- |
-| `hall`       | "Hallen"      | "Gebäude"         |
-| `area`       | "Bereiche"    | "Hallen"          |
-| `department` | "Abteilungen" | "Segmente"        |
-| `team`       | "Teams"       | "Teilbereiche"    |
-| `asset`      | "Anlagen"     | "Maschinen"       |
+| Level        | Default (DE)  | Example (custom) |
+| ------------ | ------------- | ---------------- |
+| `hall`       | "Hallen"      | "Gebäude"        |
+| `area`       | "Bereiche"    | "Hallen"         |
+| `department` | "Abteilungen" | "Segmente"       |
+| `team`       | "Teams"       | "Teilbereiche"   |
+| `asset`      | "Anlagen"     | "Maschinen"      |
 
 ---
 
 ## Decision
 
-### 1. Datenmodell: Plural-Only Labels
+### 1. Data Model: Plural-Only Labels
 
-**Entscheidung:** Ein String pro Ebene, immer Plural. Kein Singular/Plural-Split.
+**Decision:** one string per level, always plural. No singular/plural split.
 
-**Warum?**
+**Why?**
 
-- KISS: Ein Feld statt zwei pro Ebene (5 statt 10 Strings)
-- Deutsche Komposita ("Bereichsleiter") lassen sich nicht generisch aus Singular+Plural ableiten
-- Stellen die Singular brauchen nutzen neutrale Formulierungen ("Hinzufügen" statt "Neuer Bereich")
+- KISS: one field instead of two per level (5 strings instead of 10)
+- German compounds ("Bereichsleiter") cannot be derived generically from singular + plural
+- Places that need a singular use neutral phrasing ("Add" instead of "New area")
 
 ```typescript
 export interface HierarchyLabels {
-  hall: string; // z.B. "Gebäude"
-  area: string; // z.B. "Hallen"
-  department: string; // z.B. "Segmente"
-  team: string; // z.B. "Teilbereiche"
-  asset: string; // z.B. "Maschinen"
+  hall: string; // e.g. "Gebäude"
+  area: string; // e.g. "Hallen"
+  department: string; // e.g. "Segmente"
+  team: string; // e.g. "Teilbereiche"
+  asset: string; // e.g. "Maschinen"
 }
 ```
 
 ### 2. Transport: SSR Layout Data Inheritance
 
-**Entscheidung:** Labels werden einmalig im App-Layout geladen und per SvelteKit Data Inheritance an alle Child-Pages propagiert.
+**Decision:** labels are loaded once in the app layout and propagated to all child pages via SvelteKit data inheritance.
 
 ```
 Backend                    Frontend
@@ -69,69 +69,69 @@ Backend                    Frontend
 │ hierarchy-labels │ ←──── │   Promise.all([             │
 │ (public, cached) │      │     fetchCounts(),          │
 └──────────────────┘      │     fetchTheme(),           │
-                          │     fetchHierarchyLabels(), │ ← parallel, kein Waterfall
+                          │     fetchHierarchyLabels(), │ ← parallel, no waterfall
                           │   ])                        │
                           │   return { hierarchyLabels }│
                           └────────────┬────────────────┘
-                                       │ Data Inheritance (automatisch)
+                                       │ data inheritance (automatic)
                     ┌──────────────────┼──────────────────┐
                     ▼                  ▼                  ▼
               +page.svelte      +page.svelte       +page.svelte
-              data.hierarchyLabels (überall verfügbar)
+              data.hierarchyLabels (available everywhere)
 ```
 
-**Warum Data Inheritance statt Svelte Context?**
+**Why data inheritance instead of Svelte context?**
 
-- Context funktioniert nicht in plain `.ts` Dateien (`constants.ts`, `utils.ts`, `navigation-config.ts`)
-- Data Inheritance ist der SvelteKit-Standard für Layout → Page Datenfluss
-- Kein `await parent()` nötig — Labels sind automatisch in `data` verfügbar
-- Kein zusätzlicher API-Call pro Page — Layout lädt einmalig
+- Context does not work in plain `.ts` files (`constants.ts`, `utils.ts`, `navigation-config.ts`)
+- Data inheritance is the SvelteKit standard for the layout → page data flow
+- No `await parent()` needed — labels are automatically available in `data`
+- No additional API call per page — layout loads once
 
-**Warum nicht `$page.data` in Components?**
+**Why not `$page.data` in components?**
 
-- Versteckte Abhängigkeit: Component hängt implizit von Layout-Daten ab
-- Nicht testbar: `$page` muss in Tests gemockt werden
-- Explizite Props sind klarer und typsicher
+- Hidden dependency: component implicitly depends on layout data
+- Not testable: `$page` has to be mocked in tests
+- Explicit props are clearer and type safe
 
-### 3. Constants-Pattern: Factory + Backward-Compatible Export
+### 3. Constants Pattern: Factory + Backward-Compatible Export
 
-**Entscheidung:** Jedes Modul mit Hierarchy-Strings bekommt eine Factory-Funktion. Ein statischer Export bleibt für ungeänderte Consumer erhalten.
+**Decision:** every module with hierarchy strings gets a factory function. A static export is preserved for unchanged consumers.
 
 ```typescript
-// constants.ts — Factory erzeugt Objekt mit dynamischen + statischen Properties
+// constants.ts — factory creates an object with dynamic + static properties
 const BASE_MESSAGES = {
-  // ~20 statische Strings (kein Label-Bezug)
-  PAGE_TITLE: 'Anlagen verwalten',
-  BTN_SAVE: 'Speichern',
+  // ~20 static strings (no label reference)
+  PAGE_TITLE: 'Manage assets',
+  BTN_SAVE: 'Save',
   // ...
 } as const;
 
 export function createMessages(labels: HierarchyLabels) {
   return {
     ...BASE_MESSAGES,
-    // Nur dynamische Overrides
-    HEADING: `${labels.asset} — Übersicht`,
+    // Only dynamic overrides
+    HEADING: `${labels.asset} — Overview`,
     COL_AREA: labels.area,
     COL_DEPARTMENT: labels.department,
   } as const;
 }
 
-// Backward-compat: Ungeänderte Consumer importieren weiterhin MESSAGES
+// Backward-compat: unchanged consumers continue to import MESSAGES
 export const MESSAGES = createMessages(DEFAULT_HIERARCHY_LABELS);
 
-// Type-Alias für Child-Components
+// Type alias for child components
 export type ModuleMessages = ReturnType<typeof createMessages>;
 ```
 
-**Warum Factory + Backward-Compat statt Breaking Change?**
+**Why factory + backward-compat instead of a breaking change?**
 
-- Inkrementelles Rollout: Pages werden einzeln gewired, Rest funktioniert weiterhin
-- Kein Big-Bang-Refactoring: Nur Pages die dynamische Properties nutzen müssen geändert werden
-- Type-Safety: `ReturnType<typeof createMessages>` gibt exakten Typ ohne separate Interface-Definition
+- Incremental rollout: pages are wired one by one, the rest still works
+- No big-bang refactor: only pages that use dynamic properties have to be changed
+- Type safety: `ReturnType<typeof createMessages>` produces the exact type without a separate interface definition
 
 ### 4. Page Wiring: Prop Threading
 
-**Entscheidung:** `+page.svelte` erzeugt Messages aus Labels, Child-Components empfangen Messages als Prop.
+**Decision:** `+page.svelte` builds messages from labels, child components receive messages as a prop.
 
 ```svelte
 <!-- +page.svelte -->
@@ -159,31 +159,31 @@ export type ModuleMessages = ReturnType<typeof createMessages>;
 <h1>{messages.HEADING}</h1>
 ```
 
-**Warum Prop Threading statt Context/Store?**
+**Why prop threading instead of context/store?**
 
-- Explizit: Jede Abhängigkeit ist in der Component-Signatur sichtbar
-- Testbar: Messages können direkt als Prop injiziert werden
-- Konsistent: Folgt dem etablierten SvelteKit-Pattern für Datenfluss
-- Kein Boilerplate: 3 Zeilen im Page-Script, 1 Zeile im Child
+- Explicit: every dependency is visible in the component signature
+- Testable: messages can be injected directly as a prop
+- Consistent: follows the established SvelteKit pattern for data flow
+- No boilerplate: 3 lines in the page script, 1 line in the child
 
-### 5. Backend: Public Endpoint mit Role-Level Guards
+### 5. Backend: Public Endpoint with Role-Level Guards
 
-**Entscheidung:** `/organigram/hierarchy-labels` ist für alle authentifizierten Rollen zugänglich (root, admin, employee), da Labels in der gesamten UI benötigt werden.
+**Decision:** `/organigram/hierarchy-labels` is accessible to all authenticated roles (root, admin, employee), since labels are needed throughout the entire UI.
 
 ```typescript
 @Get('hierarchy-labels')
 @Roles(UserRole.ROOT, UserRole.ADMIN, UserRole.EMPLOYEE)
 async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
-  // Liest aus organigram_trees WHERE tenant_id = req.tenantId
-  // Fallback auf DEFAULT_HIERARCHY_LABELS wenn kein Tree existiert
+  // Reads from organigram_trees WHERE tenant_id = req.tenantId
+  // Falls back to DEFAULT_HIERARCHY_LABELS when no tree exists
 }
 ```
 
-**Warum kein separater Endpoint?**
+**Why no separate endpoint?**
 
-- Labels sind bereits im Organigramm-Tree gespeichert (`custom_labels` JSONB-Feld)
-- Ein zusätzlicher Endpoint hätte DB-Schema-Duplizierung bedeutet
-- Bestehende RLS-Policies schützen die Daten automatisch
+- Labels are already stored in the org-chart tree (`custom_labels` JSONB field)
+- An additional endpoint would have meant DB schema duplication
+- Existing RLS policies protect the data automatically
 
 ---
 
@@ -191,28 +191,28 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 
 ### A. Svelte Context API (Rejected)
 
-**Pros:** Kein Prop Drilling, Labels einmal setzen → überall verfügbar
-**Cons:** Funktioniert nicht in plain `.ts` Dateien (constants, utils, navigation-config). Diese Dateien haben keinen Component-Lifecycle und können `getContext()` nicht aufrufen. Da ~50% der Label-Verwendungen in `.ts` Dateien stattfinden, wäre ein Hybrid nötig gewesen (Context für Components, Parameter für .ts) — inkonsistent.
+**Pros:** no prop drilling, set labels once → available everywhere
+**Cons:** does not work in plain `.ts` files (constants, utils, navigation-config). These files have no component lifecycle and cannot call `getContext()`. Since ~50% of label uses live in `.ts` files, a hybrid would have been required (context for components, parameter for `.ts`) — inconsistent.
 
-### B. Svelte Store ($state in .svelte.ts) (Rejected)
+### B. Svelte store ($state in .svelte.ts) (Rejected)
 
-**Pros:** Reactive, global verfügbar, auch in .ts-Dateien nutzbar
-**Cons:** Globaler State für tenant-spezifische Daten widerspricht dem SSR-Pattern. Labels könnten zwischen Requests/Tenants leaken. SvelteKit's Data Inheritance ist die idiomatische Lösung für Layout → Page Datenfluss.
+**Pros:** reactive, globally available, also usable in `.ts` files
+**Cons:** global state for tenant-specific data contradicts the SSR pattern. Labels could leak between requests/tenants. SvelteKit's data inheritance is the idiomatic solution for layout → page data flow.
 
 ### C. Inline Label Resolution (Rejected)
 
-**Pros:** Jede Stelle löst Labels selbst auf: `data.hierarchyLabels.area`
-**Cons:** Kein zentrales Mapping von Property → Label. Wenn sich die Label-Struktur ändert, müssen alle ~250 Stellen einzeln aktualisiert werden. Factory-Pattern zentralisiert die Zuordnung.
+**Pros:** every spot resolves labels itself: `data.hierarchyLabels.area`
+**Cons:** no central mapping from property → label. If the label structure changes, all ~250 spots have to be updated individually. The factory pattern centralizes the mapping.
 
 ### D. Backend-Side String Rendering (Rejected)
 
-**Pros:** Backend liefert fertig gerenderte Strings, Frontend zeigt nur an
-**Cons:** Backend müsste alle ~250 UI-Strings kennen und rendern. Mischt Presentation-Logik in die API. Vervielfacht API-Payload. Frontend-Lokalisation wird unmöglich.
+**Pros:** backend ships fully rendered strings, frontend only displays
+**Cons:** backend would have to know and render all ~250 UI strings. Mixes presentation logic into the API. Multiplies API payload. Frontend localization becomes impossible.
 
 ### E. i18n Library (Rejected)
 
-**Pros:** Professionelle Lösung für String-Management, Plural-Handling
-**Cons:** Massiver Overkill — Assixx ist eine deutschsprachige App. Die 5 Hierarchy Labels sind die einzigen dynamischen Strings. Eine i18n-Library für 5 Variablen einzuführen wäre Over-Engineering. Kann in V3 eingeführt werden falls Mehrsprachigkeit benötigt wird.
+**Pros:** professional solution for string management, plural handling
+**Cons:** massive overkill — Assixx is a German-language app. The 5 hierarchy labels are the only dynamic strings. Introducing an i18n library for 5 variables would be over-engineering. Can be introduced in V3 if multilingual support is required.
 
 ---
 
@@ -220,53 +220,53 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 
 ### Positive
 
-- **Konsistente UX**: Tenant-spezifische Labels überall sichtbar — Sidebar, Breadcrumb, Tabellen-Header, Formulare, Tooltips
-- **Kein Performance-Impact**: Labels werden parallel mit bestehenden Layout-Fetches geladen (ein zusätzlicher leichtgewichtiger API-Call)
-- **Inkrementelles Rollout**: Backward-compatible Exports erlauben schrittweises Wiring ohne Big-Bang
-- **Type-Safe**: `ReturnType<typeof createMessages>` gibt exakten Typ, keine `any` oder `Record<string, string>`
-- **SSR-kompatibel**: Labels sind beim First Paint bereits korrekt (kein Flash of Default Labels)
-- **Testbar**: Factory-Funktionen sind pure Functions, Props sind direkt injizierbar
-- **~360 String-Ersetzungen** in ~50+ Dateien — vollständig per Factory-Pattern abgedeckt (V2: ~250, V2.1: ~110)
+- **Consistent UX**: tenant-specific labels visible everywhere — sidebar, breadcrumb, table headers, forms, tooltips
+- **No performance impact**: labels are loaded in parallel with the existing layout fetches (one additional lightweight API call)
+- **Incremental rollout**: backward-compatible exports allow stepwise wiring without a big bang
+- **Type safe**: `ReturnType<typeof createMessages>` produces the exact type, no `any` or `Record<string, string>`
+- **SSR-compatible**: labels are correct at first paint (no flash of default labels)
+- **Testable**: factory functions are pure, props are directly injectable
+- **~360 string replacements** across ~50+ files — fully covered by the factory pattern (V2: ~250, V2.1: ~110)
 
 ### Negative
 
-- **Prop Threading Boilerplate**: Jede Child-Component braucht `messages` Prop + Type-Import (3-5 Zeilen pro Component)
-- **~~Plural-Only Limitation~~ (V3 RESOLVED)**: Gelöst durch Positionsvorsilbe-Felder (`areaLeadPrefix`, `departmentLeadPrefix`, `teamLeadPrefix`) im JSONB. `resolvePositionDisplay()` nutzt `${prefix}leiter` / `Stellv. ${prefix}leiter`. Formular zeigt Live-Vorschau.
-- **Kein Live-Update**: Label-Änderungen werden erst nach Navigation/Reload sichtbar, nicht in Echtzeit
-- **~~7 Module nicht propagiert~~ (V2.1 RESOLVED)**: employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard — alle ~110 Stellen in V2.1 nachpropagiert
-- **~~Sidebar User Card nicht propagiert~~ (V2.2 RESOLVED)**: `SidebarUserCard` zeigte Lead-Positionen (`team_lead`, `area_lead`, `department_lead`) als rohe DB-Werte statt `resolvePositionDisplay()` zu nutzen — behoben durch Prop-Threading von `hierarchyLabels` über Layout → AppSidebar → SidebarUserCard
-- **~~Deputy Lead nicht als Position~~ (V2.3 RESOLVED via ADR-038, expanded V2.4)**: Deputies auf allen 3 Ebenen als System-Positionen: `area_deputy_lead` → `${labels.area} Stellvertreter`, `department_deputy_lead` → `${labels.department} Stellvertreter`, `team_deputy_lead` → `${labels.team} Stellvertreter`. 6 System-Positionen total, kein eigenes HierarchyLabels-Feld nötig — Display wird aus bestehenden Labels abgeleitet
-- **Keine E-Mail/PDF-Propagation**: Backend-generierte Texte (Notifications, Exports) nutzen weiterhin Default-Labels
-- **`hall` ist kein OrgEntityType**: Hall hat keine eigene Org-Chart-Farbe in `ENTITY_COLORS`, sondern eine separate `HALL_COLOR`-Konstante im Organigram-Modal
+- **Prop threading boilerplate**: every child component needs a `messages` prop + type import (3–5 lines per component)
+- **~~Plural-only limitation~~ (V3 RESOLVED)**: solved by positional prefix fields (`areaLeadPrefix`, `departmentLeadPrefix`, `teamLeadPrefix`) in JSONB. `resolvePositionDisplay()` uses `${prefix}leiter` / `Stellv. ${prefix}leiter`. Form shows a live preview.
+- **No live update**: label changes only become visible after navigation/reload, not in real time
+- **~~7 modules not propagated~~ (V2.1 RESOLVED)**: employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard — all ~110 spots propagated in V2.1
+- **~~Sidebar user card not propagated~~ (V2.2 RESOLVED)**: `SidebarUserCard` displayed lead positions (`team_lead`, `area_lead`, `department_lead`) as raw DB values instead of using `resolvePositionDisplay()` — fixed via prop-threading of `hierarchyLabels` through layout → AppSidebar → SidebarUserCard
+- **~~Deputy lead not represented as a position~~ (V2.3 RESOLVED via ADR-038, expanded V2.4)**: deputies on all 3 levels as system positions: `area_deputy_lead` → `${labels.area} Stellvertreter`, `department_deputy_lead` → `${labels.department} Stellvertreter`, `team_deputy_lead` → `${labels.team} Stellvertreter`. 6 system positions total, no separate HierarchyLabels field needed — display is derived from the existing labels.
+- **No email/PDF propagation**: backend-generated text (notifications, exports) still uses default labels
+- **`hall` is not an OrgEntityType**: hall has no own org-chart colour in `ENTITY_COLORS`, but a separate `HALL_COLOR` constant in the org-chart modal
 
 ---
 
 ## Implementation Summary
 
-| Phase | Scope                                                   | Sessions    | Dateien |
-| ----- | ------------------------------------------------------- | ----------- | ------- |
-| 1     | Backend: Public Endpoint                                | 1           | 2       |
-| 2     | Frontend: Layout + Nav + Breadcrumb                     | 1           | 5       |
-| 3     | Management-Seiten (areas, depts, teams, assets)         | 2           | ~20     |
-| 4     | Remaining Pages (halls, admins, dashboard, TPM, ...)    | 4           | ~25     |
-| 5     | Smoke Test + Docs + Polish                              | 1 (pending) | ~3      |
-| V2.1  | Nachpropagation: 7 zurückgestellte Module               | 1           | ~35     |
-| V2.2  | Sidebar User Card: Lead-Position Display                | 1           | 3       |
-| V3    | Positionsvorsilbe: Prefix-Felder für korrekte Komposita | 1           | ~10     |
+| Phase | Scope                                                | Sessions    | Files |
+| ----- | ---------------------------------------------------- | ----------- | ----- |
+| 1     | Backend: public endpoint                             | 1           | 2     |
+| 2     | Frontend: layout + nav + breadcrumb                  | 1           | 5     |
+| 3     | Management pages (areas, depts, teams, assets)       | 2           | ~20   |
+| 4     | Remaining pages (halls, admins, dashboard, TPM, …)   | 4           | ~25   |
+| 5     | Smoke test + docs + polish                           | 1 (pending) | ~3    |
+| V2.1  | Repropagation: 7 deferred modules                    | 1           | ~35   |
+| V2.2  | Sidebar user card: lead-position display             | 1           | 3     |
+| V3    | Position prefix: prefix fields for correct compounds | 1           | ~10   |
 
-**Total:** 11 Sessions, ~360 String-Ersetzungen, 0 Breaking Changes.
+**Total:** 11 sessions, ~360 string replacements, 0 breaking changes.
 
-### V3: Positionsvorsilbe (2026-03-24)
+### V3: Position Prefix (2026-03-24)
 
-3 neue Felder im JSONB (`areaLeadPrefix`, `departmentLeadPrefix`, `teamLeadPrefix`) lösen die Plural-Only Limitation. Statt `${plural}-Leiter` ("Bereiche-Leiter") wird `${prefix}leiter` ("Bereichsleiter") generiert. Deputies folgen dem Muster `Stellv. ${prefix}leiter`. Keine DB-Migration — reine JSONB-Erweiterung. HierarchyLabelsModal zeigt Prefix-Inputs mit Live-Vorschau.
+3 new fields in JSONB (`areaLeadPrefix`, `departmentLeadPrefix`, `teamLeadPrefix`) solve the plural-only limitation. Instead of `${plural}-Leiter` ("Bereiche-Leiter"), `${prefix}leiter` ("Bereichsleiter") is generated. Deputies follow the pattern `Stellv. ${prefix}leiter`. No DB migration — pure JSONB extension. HierarchyLabelsModal shows prefix inputs with a live preview.
 
 ---
 
 ## References
 
-- [Hierarchy Labels Propagation Masterplan](../../FEAT_HIERARCHY_LABELS_PROPAGATION_MASTERPLAN.md) — Full execution plan (8 Sessions, Phasen 1-5)
-- [Organigramm Masterplan](../../FEAT_ORGANIGRAM_MASTERPLAN.md) — V1 Organigramm (Known Limitation #5 → dieses Feature)
-- [ADR-012](./ADR-012-frontend-route-security-groups.md) — Frontend Route Security Groups (Layout-Struktur)
+- [Hierarchy Labels Propagation Masterplan](../../FEAT_HIERARCHY_LABELS_PROPAGATION_MASTERPLAN.md) — full execution plan (8 sessions, phases 1–5)
+- [Org Chart Masterplan](../../FEAT_ORGANIGRAM_MASTERPLAN.md) — V1 org chart (Known Limitation #5 → this feature)
+- [ADR-012](./ADR-012-frontend-route-security-groups.md) — Frontend Route Security Groups (layout structure)
 - [ADR-020](./ADR-020-per-user-feature-permissions.md) — Per-User Feature Permissions
 - [ADR-024](./ADR-024-frontend-feature-guards.md) — Frontend Feature Guards
-- [ADR-026](./ADR-026-tpm-architecture.md) — TPM Architecture (eines der propagierten Module)
+- [ADR-026](./ADR-026-tpm-architecture.md) — TPM Architecture (one of the propagated modules)

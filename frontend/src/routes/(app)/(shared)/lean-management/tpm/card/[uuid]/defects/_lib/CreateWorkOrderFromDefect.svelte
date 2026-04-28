@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * CreateWorkOrderFromDefect — Modal für Arbeitsauftrag aus TPM-Mangel.
+   * CreateWorkOrderFromDefect — modal for creating a work order from a TPM defect.
    *
    * Pre-fills title + description from defect, sets sourceType='tpm_defect'.
    * Fetches eligible users (team-filtered by assetId) on open.

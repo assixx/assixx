@@ -162,7 +162,7 @@ beforeAll(async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: 'employee@apitest.de',
+      email: 'employee@assixx.com',
       password: APITEST_PASSWORD,
     }),
   });
@@ -175,7 +175,7 @@ beforeAll(async () => {
   });
   const usersBody = (await usersRes.json()) as JsonBody;
   const employee = (usersBody.data as Array<{ id: number; email: string; uuid: string }>).find(
-    (u) => u.email === 'employee@apitest.de',
+    (u) => u.email === 'employee@assixx.com',
   );
 
   if (!employee?.uuid) {

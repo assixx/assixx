@@ -138,7 +138,7 @@ export const FILTER_OPTIONS: readonly FilterOption[] =
 
 /**
  * Work order calendar event color — uses design-system token --color-slate (oklch)
- * Einheitlich grau für alle Aufträge, unabhängig vom Status.
+ * Uniform grey for all work orders, regardless of status.
  */
 export const WORK_ORDER_EVENT_COLOR = 'var(--color-slate)';
 

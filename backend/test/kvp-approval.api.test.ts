@@ -24,7 +24,7 @@ beforeAll(async () => {
   const empRes = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'employee@apitest.de', password: APITEST_PASSWORD }),
+    body: JSON.stringify({ email: 'employee@assixx.com', password: APITEST_PASSWORD }),
   });
   const empBody = (await empRes.json()) as JsonBody;
   employeeToken = empBody.data.accessToken as string;

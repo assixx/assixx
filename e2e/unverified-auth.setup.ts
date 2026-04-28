@@ -5,7 +5,7 @@
  * WHY: every test in the "unverified-tenant static state" describe previously
  * ran its own fresh-context login. 4 logins × same user within seconds hits the
  * login rate-limiter (ADR-001) → tests 2-N fail with "Zu viele Anmeldeversuche".
- * Mirrors `auth.setup.ts` (apitest) — one login per suite, storageState reused.
+ * Mirrors `auth.setup.ts` (assixx test tenant) — one login per suite, storageState reused.
  *
  * Prerequisite: `/etc/hosts` entry `127.0.0.1 unverified-e2e.localhost`
  * (ADR-050 Session 12c — see docs/how-to/HOW-TO-LOCAL-SUBDOMAINS.md).
@@ -27,7 +27,7 @@ setup('authenticate as unverified root', async ({ page }) => {
 
   // Turnstile budget: 30s (not 15s like auth.setup.ts). This setup runs on
   // `unverified-e2e.localhost:5174` while `auth.setup.ts` runs on
-  // `apitest.localhost:5174` — different origin means the Turnstile iframe
+  // `assixx.localhost:5174` — different origin means the Turnstile iframe
   // cache is cold, and the fresh challenge script takes ~10 s + buffer to
   // unlock the submit button even with the official test keys (HOW-TO-CLOUDFLARE-TURNSTILE.md:
   // "sofort" auto-resolve only applies once the challenge script is already

@@ -2,7 +2,7 @@
  * API Integration Tests: GET /users/me/org-scope
  *
  * Tests the organizational scope endpoint for different user roles.
- * Uses apitest tenant (ID: 1) with admin@apitest.de (root).
+ * Uses apitest tenant (ID: 1) with info@assixx.com (root).
  *
  * @see docs/FEAT_ORGANIZATIONAL_SCOPE_ACCESS_MASTERPLAN.md Step 7.1
  */
@@ -70,7 +70,7 @@ describe('GET /users/me/org-scope — employee without lead', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'employee@apitest.de',
+        email: 'employee@assixx.com',
         password: APITEST_PASSWORD,
       }),
     });

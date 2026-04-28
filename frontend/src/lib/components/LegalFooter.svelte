@@ -60,7 +60,7 @@
 
   .legal-footer__sep {
     color: var(--color-text-secondary);
-    opacity: 0.5;
+    opacity: 50%;
   }
 
   .legal-footer a {
@@ -92,6 +92,7 @@
     margin: 0 auto;
     padding: var(--spacing-3) var(--spacing-5);
     max-width: 1200px;
+
     /* WHY: kanonisches Token statt Legacy-Alias `--text-secondary`
      * (laut variables-light.css/variables-dark.css Header als Legacy markiert). */
     color: var(--color-text-secondary);
@@ -107,7 +108,7 @@
 
   .legal-footer-compact__dot {
     color: var(--color-text-secondary);
-    opacity: 0.35;
+    opacity: 35%;
   }
 
   .legal-footer-compact a {

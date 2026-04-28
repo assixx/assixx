@@ -1,8 +1,10 @@
 # Test-Tenant erstellen (Development)
 
-> Nach einem Fresh Install ist die DB leer — kein Tenant, kein User. Dieses Script erstellt den apitest-Tenant über die Signup API.
+> Nach einem Fresh Install ist die DB leer — kein Tenant, kein User. Dieses Script erstellt den `assixx`-Test-Tenant über die Signup API.
+>
+> **2026-04 Migration:** Der Test-Tenant hieß früher `apitest` (subdomain) mit E-Mail-Domain `apitest.de`. Da `apitest.de` eine fremde reale Domain ist (Catch-All-Risiko bei Password-Reset / Notification-Mails), wurde alles auf den projekt-eigenen `assixx`/`assixx.com` umgestellt.
 
-**Stand:** 2026-03-10
+**Stand:** 2026-04-26
 
 ---
 
@@ -20,8 +22,8 @@ Das Script ruft `POST /api/v2/signup` auf. Die Signup API erstellt automatisch:
 
 | Was       | Wert                                            |
 | --------- | ----------------------------------------------- |
-| Tenant    | API Test GmbH (subdomain: `apitest`)            |
-| Root-User | admin@apitest.de mit `has_full_access = true`   |
+| Tenant    | API Test GmbH (subdomain: `assixx`)             |
+| Root-User | info@assixx.com mit `has_full_access = true`    |
 | Passwort  | `ApiTest12345!` (bcrypt-gehasht durch die API)  |
 | Adresse   | Musterstraße 42, 10115 Berlin, DE               |
 | Features  | Alle 20 Features aktiviert (14 Tage Trial)      |
@@ -34,7 +36,7 @@ Das Script ruft `POST /api/v2/signup` auf. Die Signup API erstellt automatisch:
 
 1. Fresh Install muss gelaufen sein (`customer/fresh-install/install.sh`)
 2. Backend muss laufen (`http://localhost:3000/health`)
-3. Kein Tenant mit Subdomain `apitest` darf existieren
+3. Kein Tenant mit Subdomain `assixx` darf existieren
 
 ---
 
@@ -42,8 +44,8 @@ Das Script ruft `POST /api/v2/signup` auf. Die Signup API erstellt automatisch:
 
 ```
 URL:      http://localhost:5173/login
-Domain:   apitest
-Email:    admin@apitest.de
+Domain:   assixx
+Email:    info@assixx.com
 Passwort: ApiTest12345!
 Rolle:    Root (has_full_access = true)
 Adresse:  Musterstraße 42, 10115 Berlin, DE
@@ -109,7 +111,7 @@ cd docker && doppler run -- docker-compose up -d
 # Option A: Nichts tun — Tenant ist schon da
 # Option B: Tenant löschen und neu erstellen
 docker exec assixx-postgres psql -U assixx_user -d assixx \
-  -c "DELETE FROM tenants WHERE subdomain = 'apitest' CASCADE;"
+  -c "DELETE FROM tenants WHERE subdomain = 'assixx' CASCADE;"
 ./scripts/create-test-tenant.sh
 ```
 

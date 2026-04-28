@@ -22,7 +22,7 @@ test.describe('Login Flow', () => {
   test('successful login redirects to dashboard', async ({ page }) => {
     await page.goto('/login');
 
-    await page.getByRole('textbox', { name: 'E-Mail' }).fill('admin@apitest.de');
+    await page.getByRole('textbox', { name: 'E-Mail' }).fill('info@assixx.com');
     await page.getByRole('textbox', { name: 'Passwort' }).fill('ApiTest12345!');
     await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
 

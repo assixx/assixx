@@ -1,0 +1,141 @@
+name: Bug Report
+description: Einen Fehler im Code, in der UI oder im Verhalten melden
+title: "fix: <kurze Beschreibung>"
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für den Report. Bitte fülle die Felder so präzise wie möglich aus.
+
+        **Vorab:**
+        - **Sicherheitslücke?** Bitte NICHT als öffentliches Issue melden, sondern als privates [Security Advisory](https://github.com/assixx/assixx/security/advisories/new).
+        - **Suche zuerst** nach Duplikaten im Issue-Tracker.
+        - **Reproduzierbar auf `main`?** Falls nein, bitte Branch/Commit unten angeben.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschreibung
+      description: Was passiert, was sollte passieren?
+      placeholder: Klick auf "Speichern" in /manage-areas führt zu HTTP 500 statt zu einem erfolgreichen Update.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Betroffener Bereich
+      description: Wo lebt der Bug primär?
+      options:
+        - Backend (NestJS / Fastify)
+        - Frontend (SvelteKit)
+        - Datenbank / Migration / RLS
+        - Docker / Nginx / Doppler
+        - Tests (Vitest / Playwright / k6)
+        - Dokumentation
+        - CI/CD / GitHub Actions
+        - Sonstiges
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Schweregrad
+      options:
+        - Critical (Production down, Datenverlust, Sicherheits-Bypass, Tenant-Leak)
+        - High (Kern-Feature unbenutzbar, kein Workaround)
+        - Medium (Feature beeinträchtigt, Workaround vorhanden)
+        - Low (Kosmetisch, kleinere Unannehmlichkeit)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Umgebung
+      options:
+        - Development (`pnpm run dev:svelte` auf :5173)
+        - Production (Docker Profile `production`, Nginx auf :80)
+        - Beide
+    validations:
+      required: true
+
+  - type: input
+    id: addon
+    attributes:
+      label: Betroffener Addon (falls zutreffend)
+      description: Code aus `addons.code`, siehe ADR-033 (z.B. tpm, kvp, chat, vacation, inventory, blackboard).
+      placeholder: tpm
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduktionsschritte
+      description: Schritt-für-Schritt-Anleitung, idealerweise mit einem Test-User.
+      value: |
+        1. Login als `<user@example.com>` (Rolle: <root | admin | employee>)
+        2. Navigation zu `/...`
+        3. Klick auf `...`
+        4. Beobachte: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Tatsächliches Verhalten
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Stacktrace / Screenshots
+      description: |
+        - Backend: `docker logs assixx-backend --tail 100`
+        - Frontend Console (DevTools)
+        - Postgres: ggf. `pg_stat_statements`-Auszug oder `EXPLAIN ANALYZE`
+        - Tempo `trace_id` (falls Request-bezogen, siehe ADR-048)
+
+        Bitte **niemals** Secrets, Tokens, JWTs oder personenbezogene Daten posten.
+      render: shell
+
+  - type: input
+    id: client
+    attributes:
+      label: Browser & OS (bei UI-Bugs)
+      placeholder: Chrome 131 / Windows 11
+
+  - type: input
+    id: version
+    attributes:
+      label: Git-Commit / Branch
+      description: Output von `git rev-parse --short HEAD` oder Branch-Name.
+      placeholder: d512be63 (main)
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Zusätzlicher Kontext
+      description: Verlinke verwandte Issues, ADRs oder Masterpläne.
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Pre-Flight Check
+      options:
+        - label: Ich habe nach Duplikaten gesucht.
+          required: true
+        - label: Keine Secrets, Tokens oder Tenant-Daten im Report.
+          required: true
+        - label: Reproduktion auf aktuellem `main` geprüft (oder Branch oben angegeben).
+          required: true

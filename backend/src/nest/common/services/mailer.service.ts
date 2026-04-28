@@ -67,6 +67,20 @@ export interface BugReportPayload {
 const PASSWORD_RESET_EXPIRY_MINUTES = 60;
 
 /**
+ * Fallback when `APP_URL` is unset — every send method reads it lazily so a
+ * deploy-time env-var swap never requires a rebuild. Centralised here to
+ * satisfy `sonarjs/no-duplicate-string` (each send* method needs the value).
+ */
+const DEFAULT_APP_URL = 'http://localhost:5173';
+
+/**
+ * Generic placeholder for the `result.error` field when the underlying
+ * Nodemailer call resolved with `success=false` but no error message
+ * — same wording as the existing log lines, extracted to a constant.
+ */
+const UNKNOWN_ERROR = 'unknown error';
+
+/**
  * Recipient for user-submitted bug reports. Configurable via env so staging can
  * redirect away from production inbox without a code change. Default stays on
  * the production inbox per product decision (info@assixx.com).
@@ -110,7 +124,7 @@ export class MailerService {
     expiresAt: Date,
   ): Promise<void> {
     try {
-      const appUrl = process.env['APP_URL'] ?? 'http://localhost:5173';
+      const appUrl = process.env['APP_URL'] ?? DEFAULT_APP_URL;
       const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
       const userName = this.buildUserName(recipient);
       const expiresAtFormatted = expiresAt.toLocaleString('de-DE', {
@@ -134,7 +148,7 @@ export class MailerService {
 
       if (!result.success) {
         this.logger.error(
-          `Password reset email send failed for ${recipient.email}: ${result.error ?? 'unknown error'}`,
+          `Password reset email send failed for ${recipient.email}: ${result.error ?? UNKNOWN_ERROR}`,
         );
       }
     } catch (error: unknown) {
@@ -188,7 +202,7 @@ export class MailerService {
 
       if (!result.success) {
         this.logger.error(
-          `Password-reset BLOCKED email send failed for ${recipient.email}: ${result.error ?? 'unknown error'}`,
+          `Password-reset BLOCKED email send failed for ${recipient.email}: ${result.error ?? UNKNOWN_ERROR}`,
         );
       }
     } catch (error: unknown) {
@@ -215,7 +229,7 @@ export class MailerService {
     expiresAt: Date,
   ): Promise<void> {
     try {
-      const appUrl = process.env['APP_URL'] ?? 'http://localhost:5173';
+      const appUrl = process.env['APP_URL'] ?? DEFAULT_APP_URL;
       const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
       const userName = this.buildUserName(recipient);
       const expiresAtFormatted = expiresAt.toLocaleString('de-DE', {
@@ -245,7 +259,7 @@ export class MailerService {
 
       if (!result.success) {
         this.logger.error(
-          `Admin-initiated password-reset email send failed for ${recipient.email}: ${result.error ?? 'unknown error'}`,
+          `Admin-initiated password-reset email send failed for ${recipient.email}: ${result.error ?? UNKNOWN_ERROR}`,
         );
       }
     } catch (error: unknown) {
@@ -272,7 +286,7 @@ export class MailerService {
     });
 
     if (!result.success) {
-      const reason = result.error ?? 'unknown error';
+      const reason = result.error ?? UNKNOWN_ERROR;
       this.logger.error(
         `Bug report email send failed (user=${String(payload.reporterUserId)}): ${reason}`,
       );

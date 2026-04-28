@@ -20,9 +20,11 @@ FROM node:${NODE_VERSION} AS builder
 LABEL org.opencontainers.image.authors="Assixx"
 
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
-# pnpm version is configurable for consistency across environments
+# pnpm AND npm parameterised — versions configurable via docker-compose
+# build args / docker/.env. See ADR-027 §"Amendment 2026-04-27".
 ARG PNPM_VERSION=10.33.2
-RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
+ARG NPM_VERSION=11.13.0
+RUN npm install -g "npm@${NPM_VERSION}" "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app
 
@@ -95,12 +97,29 @@ LABEL org.opencontainers.image.authors="Assixx"
 # image so both tiers share one libc. Rationale documented in Dockerfile.dev
 # header (musl's getaddrinfo + Docker embedded DNS quirk on AAAA-only).
 # See moby#41651, bell-sw "Alpine DNS issues", ADR-027.
-RUN apt-get update \
+ARG NPM_VERSION=11.13.0
+# Non-root user — UID 1001 lies OUTSIDE Debian's system-user range
+# (SYS_UID_MAX=999). `-r`/`--system` was dropped to silence the
+# `sveltekit's uid 1001 > SYS_UID_MAX 999` warning that useradd emits.
+# Hardening previously implied by `-r` is preserved explicitly:
+#   -M                     → no home directory
+#   -s /usr/sbin/nologin   → interactive login disabled
+#   --no-log-init          → skip lastlog/faillog allocation
+# UID 1001 unchanged to preserve volume ownership and the
+# COPY --chown=1001:1001 invariant. See ADR-027.
+# BuildKit cache-mounts für apt: ~30-60s schneller pro lokalem Rebuild ohne
+# Layer-Cache. Mount-Inhalt landet NICHT im Image-Layer (BuildKit-Eigenschaft),
+# daher kein Bloat. `rm -f docker-clean` ist Pflicht (sonst purgt apt eigene
+# Downloads), `rm -rf /var/lib/apt/lists/*` MUSS raus (würde den Cache killen).
+# Siehe docs.docker.com/build/cache/optimize/#use-cache-mounts und ADR-027.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean \
+    && apt-get update \
     && apt-get install -y --no-install-recommends dumb-init \
-    && rm -rf /var/lib/apt/lists/* \
-    && npm install -g npm@11.9.0 \
-    && groupadd -r -g 1001 nodejs \
-    && useradd -r -u 1001 -g nodejs --no-log-init sveltekit
+    && npm install -g "npm@${NPM_VERSION}" \
+    && groupadd -g 1001 nodejs \
+    && useradd -u 1001 -g nodejs -M -s /usr/sbin/nologin --no-log-init sveltekit
 
 WORKDIR /app
 
@@ -119,7 +138,12 @@ EXPOSE 3001
 
 ENV NODE_ENV=production
 ENV PORT=3001
-ENV ORIGIN=http://localhost
+# SvelteKit adapter-node: derive event.url per request from proxy headers
+# (Nginx forwards both). Required for ADR-050 multi-tenant subdomain SSR;
+# static ORIGIN would collapse every host into one, defeating extractSlug()
+# and R15 host cross-check. See docker-compose.yml frontend env for context.
+ENV PROTOCOL_HEADER=x-forwarded-proto
+ENV HOST_HEADER=x-forwarded-host
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "const http = require('http'); http.get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"

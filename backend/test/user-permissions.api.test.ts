@@ -45,7 +45,7 @@ beforeAll(async () => {
   });
   const usersBody = (await usersRes.json()) as JsonBody;
   const employee = (usersBody.data as Array<{ email: string; uuid: string }>).find(
-    (u) => u.email === 'employee@apitest.de',
+    (u) => u.email === 'employee@assixx.com',
   );
 
   if (!employee?.uuid) {
@@ -58,7 +58,7 @@ beforeAll(async () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: 'employee@apitest.de',
+      email: 'employee@assixx.com',
       password: APITEST_PASSWORD,
     }),
   });
@@ -487,7 +487,7 @@ describe('REGRESSION: manage-permissions self-grant trigger with deputy columns'
   beforeAll(async () => {
     try {
       const token = auth.authToken;
-      const leadEmail = `trigger-lead-${uniqueSuffix}@apitest.de`;
+      const leadEmail = `trigger-lead-${uniqueSuffix}@assixx.com`;
 
       // 1. Hierarchy: Area → Department → Team
       const area = await postJson(`${BASE_URL}/areas`, token, {
@@ -513,7 +513,7 @@ describe('REGRESSION: manage-permissions self-grant trigger with deputy columns'
         positionIds: teamLeadPositionIds,
       });
       const deputy = await postJson(`${BASE_URL}/users`, token, {
-        email: `trigger-deputy-${uniqueSuffix}@apitest.de`,
+        email: `trigger-deputy-${uniqueSuffix}@assixx.com`,
         password: APITEST_PASSWORD,
         firstName: 'TriggerDeputy',
         lastName: 'Test',

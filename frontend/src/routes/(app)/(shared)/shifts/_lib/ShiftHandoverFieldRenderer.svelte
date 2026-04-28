@@ -26,6 +26,9 @@
   @see shared/src/shift-handover/field-types.ts
 -->
 <script lang="ts">
+  import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import AppTimePicker from '$lib/components/AppTimePicker.svelte';
+
   import type { ShiftHandoverFieldDef } from '@assixx/shared/shift-handover';
 
   interface Props {
@@ -136,24 +139,31 @@
       oninput={handleDecimal}
     />
   {:else if field.type === 'date'}
-    <input
-      id={`sh-field-${field.key}`}
-      type="date"
-      class="form-field__control"
+    <!-- Design-system glassmorphism picker (Bits-UI). Native <input type="date">
+         bypasste Theme-Tokens; AppDatePicker hält Date-Segments + Kalender-Popup
+         konsistent mit BlackboardEntryModal/EventFormModal/RequestForm.
+         Empty -> undefined: handleFieldChange der Page strippt das Feld aus dem
+         PATCH-Wire-Payload (siehe Renderer-Docstring oben, Session-23 finding). -->
+    <AppDatePicker
       value={textValue}
+      name={`sh-field-${field.key}`}
       required={field.required}
       {disabled}
-      oninput={handleText}
+      onchange={(v: string) => {
+        onchange(v === '' ? undefined : v);
+      }}
     />
   {:else if field.type === 'time'}
-    <input
-      id={`sh-field-${field.key}`}
-      type="time"
-      class="form-field__control"
+    <!-- Symmetrisch zu AppDatePicker — Custom HH:MM-Segments statt nativem
+         <input type="time">. Empty-String-Mapping identisch (siehe oben). -->
+    <AppTimePicker
       value={textValue}
+      name={`sh-field-${field.key}`}
       required={field.required}
       {disabled}
-      oninput={handleText}
+      onchange={(v: string) => {
+        onchange(v === '' ? undefined : v);
+      }}
     />
   {:else if field.type === 'boolean'}
     <!-- Canonical design-system toggle-switch — Storybook `Design System/

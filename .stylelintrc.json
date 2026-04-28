@@ -6,6 +6,18 @@
     "stylelint-prettier/recommended"
   ],
   "plugins": ["stylelint-order"],
+  "ignoreFiles": [
+    "**/lib/**",
+    "**/vendor/**",
+    "**/*.min.css",
+    "**/*.min.scss",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/.svelte-kit/**",
+    "**/storybook-static/**"
+  ],
   "rules": {
     "alpha-value-notation": "percentage",
     "at-rule-no-unknown": [
@@ -96,16 +108,6 @@
     "value-no-vendor-prefix": true
   },
   "overrides": [
-    {
-      "files": ["**/lib/**/*.css", "**/vendor/**/*.css", "**/*.min.css"],
-      "rules": {
-        "selector-class-pattern": null,
-        "selector-id-pattern": null,
-        "selector-max-specificity": null,
-        "property-no-vendor-prefix": null,
-        "value-no-vendor-prefix": null
-      }
-    },
     {
       "files": ["**/tailwind.css", "**/app.css"],
       "rules": {

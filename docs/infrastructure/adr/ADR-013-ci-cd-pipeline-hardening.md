@@ -1,11 +1,11 @@
 # ADR-013: CI/CD Pipeline Hardening
 
-| Metadata                | Value                                                               |
-| ----------------------- | ------------------------------------------------------------------- |
-| **Status**              | Amended                                                             |
-| **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21, 2026-04-14, 2026-04-21) |
-| **Decision Makers**     | SCS Technik                                                         |
-| **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml           |
+| Metadata                | Value                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| **Status**              | Amended                                                                         |
+| **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21, 2026-04-14, 2026-04-21, 2026-04-27) |
+| **Decision Makers**     | SCS Technik                                                                     |
+| **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml                       |
 
 ---
 
@@ -170,6 +170,89 @@ _Negative:_
 **Rule (binding):** any new `PUBLIC_*` env key that backend code treats as always-defined must also be injected as a dummy into any CI job that runs `svelte-kit sync`. Otherwise the type emitted in CI diverges from local and `strictTypeChecked` lint rules flip. See [ADR-041](./ADR-041-typescript-compiler-configuration.md) (svelte-kit sync pre-step discipline) for the related build-tooling discipline.
 
 **Alternative rejected:** three inline `eslint-disable-next-line` comments. Would scatter the workaround across three frontend files for a CI-only symptom, weaken a rule that catches real bugs elsewhere, and need re-justification at every review. Fixing CI parity once is cleaner.
+
+---
+
+### Fix 10: Dependabot Engine Floor + Local-Image Ignore (Amendment 2026-04-27)
+
+Two independent Dependabot job failures surfaced on the same day. Different ecosystems, different root causes — bundled here because the diagnostic flow is the same: Dependabot's runner is a sandboxed container, and any project assumption about its environment that diverges from that container kills the whole job.
+
+#### Symptom 1 — npm ecosystem: `tool_version_not_supported`
+
+```
+| Dependency  | Error Type                 | Error Details                      |
+| @types/node | tool_version_not_supported | { "tool-name": "Node",             |
+|             |                            |   "detected-version": ">=24.15.0", |
+|             |                            |   "supported-versions": "v24.14.1" }
+```
+
+**Root cause:** `package.json` declared `engines.node: ">=24.15.0"`. Dependabot's updater container ships Node `v24.14.1` (one patch behind). Their image lags GA Node releases by days to weeks. With the engine gate set above their runner, `pnpm install` refuses to bootstrap inside the Dependabot container → no resolution → all npm updates abort.
+
+**Fix:** lower the engine floor to `">=24.14.1"`. Functionally identical for our codebase (24.14.1 → 24.15.0 is patch-level only; no API additions, no syntax changes). The floor is a _minimum_, not a pin — local dev, Docker images, and CI runners all continue to run 24.15.0:
+
+| Layer                                   | Node Version                            |
+| --------------------------------------- | --------------------------------------- |
+| `package.json` engines.node             | `>=24.14.1` (Dependabot's runner floor) |
+| `Dockerfile` / `.dev` / `.frontend` ARG | `24.15.0-bookworm-slim`                 |
+| `docker-compose.yml` (DEV+PROD)         | `24.15.0-bookworm-slim`                 |
+| `code-quality-checks.yml` (4 jobs)      | `"24.15.0"`                             |
+| Local dev (host + backend container)    | `v24.15.0`                              |
+
+**Rule (binding):** `engines.node` may be raised again only after Dependabot's runner image catches up. Verify via a manual run before bumping. Re-bumps must be paired with an ADR-013 amendment line so the rationale stays grep-able.
+
+#### Symptom 2 — docker-compose ecosystem: `private_source_authentication_failure`
+
+```
+| Dependency      | Error Type                            | Error Details                         |
+| assixx-postgres | private_source_authentication_failure | { "source": "registry.hub.docker.com" }
+```
+
+**Root cause:** the `docker-compose` ecosystem (added in the ADR-027 amendment, GA since 2025-02-25) iterates **every** `image:` directive in `docker/docker-compose.yml` and resolves it against Docker Hub. Three of those images are locally built and have a sibling `build:` directive:
+
+| Image                        | Build Source                   | Sibling `build:` directive |
+| ---------------------------- | ------------------------------ | -------------------------- |
+| `assixx-postgres:18-partman` | `docker/Dockerfile.pg-partman` | yes                        |
+| `assixx-backend:dev`         | `docker/Dockerfile.dev`        | yes                        |
+| `assixx-frontend:prod`       | `docker/Dockerfile.frontend`   | yes                        |
+
+Dependabot ignores the `build:` directive and tries the registry lookup anyway → 401 from Docker Hub → entire docker-compose job aborts (one failure kills the whole batch — third-party PLG-stack images don't get checked either). This is a known Dependabot quirk; there's no `--skip-built` flag.
+
+**Fix:** add an `ignore` glob in the `docker-compose` block of `.github/dependabot.yml`:
+
+```yaml
+- package-ecosystem: 'docker-compose'
+  directory: '/docker'
+  ignore:
+    - dependency-name: 'assixx-*'
+```
+
+The base images those Dockerfiles inherit from are tracked separately:
+
+- `docker/Dockerfile` (production base) → `docker` ecosystem on `/docker`
+- `Dockerfile.pg-partman` (`FROM postgres:18.3-alpine`) → manual bumps, documented in coverage map (the FROM line is hardcoded, not `ARG`-driven, so the `docker` ecosystem can't see it either)
+- `Dockerfile.dev` / `Dockerfile.frontend` (Node version via compose `NODE_VERSION_*` ARG) → bumped through compose
+
+**Coverage map updated** in `.github/dependabot.yml` header so the exclusion is grep-able next to the rest of the policy.
+
+#### Three-scanner coverage post-fix (no degradation)
+
+| Scanner              | Coverage After Fix 10                                                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dependabot npm       | All workspace deps (unblocked)                                                                                                               |
+| Dependabot docker    | `/docker/Dockerfile` FROM line — unchanged                                                                                                   |
+| Dependabot compose   | All third-party image tags (Grafana/Loki/Prometheus/Redis/Nginx/Tempo/OTel/Postgres-Exporter/Redis-Exporter); skips locally-built `assixx-*` |
+| `pnpm audit` (Fix 8) | All HIGH+CRITICAL CVEs in lockfile — unchanged                                                                                               |
+| Trivy                | Container image layers (CRITICAL gate) — unchanged                                                                                           |
+
+#### Alternatives rejected
+
+| Option                                                 | Why rejected                                                                                             |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| Wait for Dependabot to bump runner to 24.15.x          | Time-uncertain (days to weeks); blocks every npm update PR in the meantime                               |
+| Drop `engines.node` floor entirely / use `^24`         | Weakens a real signal — we depend on Node 24+ ES2024 lib features (ADR-041)                              |
+| Remove `docker-compose` ecosystem from Dependabot      | Loses Grafana/Loki/Prometheus/Redis/Nginx CVE tracking (the original ADR-027 amendment goal)             |
+| List each `assixx-*` image individually under `ignore` | Glob `assixx-*` is identical in effect, future-proof against new locally-built services, and 1 line vs N |
+| Inline `# dependabot-skip` markers in compose YAML     | No such marker exists for the docker-compose ecosystem — `ignore:` in dependabot.yml is the only lever   |
 
 ---
 

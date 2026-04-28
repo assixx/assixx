@@ -6,13 +6,26 @@
    * Level 3 SSR: Stats cards, filter bar, data table, approve/reject modals.
    * Connected to real backend API.
    */
+  import { onMount } from 'svelte';
+
   import { invalidateAll } from '$app/navigation';
 
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
+  import RootSelfTerminationCard from './RootSelfTerminationCard.svelte';
+
   import type { PageData } from './$types';
+
+  // Sidebar badge clears the moment the user lands on /manage-approvals —
+  // both pending self-terminations and addon approvals are visible from
+  // here, so the consolidated `approvals` counter resets on entry.
+  // FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN Phase 7 / sidebar badge wiring.
+  onMount(() => {
+    notificationStore.resetCount('approvals');
+  });
 
   // =============================================================================
   // SSR DATA
@@ -238,6 +251,22 @@
 </svelte:head>
 
 <div class="container">
+  <!--
+    Step 5.3 — Root self-termination peer-approval card.
+    Visible only to root users (data.user.role === 'root'). Renders BEFORE
+    the generic approvals list because it is the highest-stakes decision
+    type (account termination) and must catch the actor's eye first.
+    Backend SSR returned an empty array for non-root → the {#if} below
+    keeps the DOM tree small for admins/leads.
+    @see docs/FEAT_ROOT_ACCOUNT_PROTECTION_MASTERPLAN.md §5.3
+  -->
+  {#if data.user?.role === 'root'}
+    <RootSelfTerminationCard
+      requests={data.rootSelfTerminationRequests}
+      peerRoots={data.rootUsers}
+    />
+  {/if}
+
   <!-- Header -->
   <div class="card mb-6">
     <div class="card__header">
