@@ -2,7 +2,7 @@
 
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
-> **Version:** 0.3.0 (ACCEPTED — all DDs signed off, operational prerequisites added)
+> **Version:** 0.3.1 (ACCEPTED — alphanumeric Crockford-Base32 code format adopted)
 > **Status:** ACCEPTED — Implementation Ready (Phase 0.5 + Phase 1 may begin)
 > **Branch:** `feat/2fa-email`
 > **Spec:** This document
@@ -34,6 +34,7 @@ Mandatory **email-based 2FA** at every password authentication entry point. Same
 | 0.1.0   | 2026-04-26 | Initial draft — full plan outlined, awaiting design-decision sign-off                                                                                                                                                                                                                                               |
 | 0.2.0   | 2026-04-26 | Codebase audit corrections: ADR number, file paths, throttler pattern, audit format, Redis pattern, OAuth exempt, no-recovery policy, signup form-action, drop legacy 2FA columns, drop partial index                                                                                                               |
 | 0.3.0   | 2026-04-26 | All 17 pending DDs APPROVED. DD-14 extended: cleanup deletes tenant + user (anti subdomain-squatting). New Phase 0.5 "Operational Prerequisites" (single-root detection, SMTP domain auth, external-API audit, subdomain-handoff verification). New Phase 2 step 2.11: stale-pending reaper cron. Status: ACCEPTED. |
+| 0.3.1   | 2026-04-28 | DD-1 / DD-12 / DD-17 patched: code format changed from 6-digit numeric → 6-char alphanumeric uppercase, Crockford-Base32 subset (`A-HJKMNP-Z2-9`, 31 chars, ~887M permutations). R2 keyspace ~887× larger → probability lowered Medium → Low. DTO regex, generator, frontend `pattern`/`inputmode` updated. Phase 3+4 tests gain alphabet-conformance + lowercase-normalisation bullets. Status: ACCEPTED. |
 
 > **Versioning rule:** 0.x.0 = planning · 1.x.0 = implementation in progress · 2.0.0 = shipped · x.x.1 = patch within phase.
 
@@ -86,7 +87,7 @@ Both are wanted per the user requirement "all three scenarios". They share the s
 | #   | Risk                                                                                  | Impact | Probability | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Verification                                                                                                                                                                                                                                                           |
 | --- | ------------------------------------------------------------------------------------- | ------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | R1  | User loses access to email → cannot log in                                            | High   | Medium      | **No in-app recovery (per business model)**. Documented runbook tells the user's company IT to restore mailbox access first. Lockout-clear endpoint (DD-8) only resets the 5-wrong-codes lockout, not the 2FA requirement.                                                                                                                                                                                                                                                                                                                                            | Manual: trigger lockout, root clears it, user retries with code                                                                                                                                                                                                        |
-| R2  | Brute-force on 6-digit code (1 M combinations)                                        | High   | Medium      | Max 5 attempts per challenge → ForbiddenException + 15-min user lockout. Code TTL 10 min. Throttler tiers `2fa-verify` (5 req / 10 min) per challenge token.                                                                                                                                                                                                                                                                                                                                                                                                          | Unit test: 6 wrong codes → ForbiddenException + lockout flag                                                                                                                                                                                                           |
+| R2  | Brute-force on 6-char alphanumeric code (~887 M combinations, Crockford-Base32 subset, v0.3.1) | High   | Low         | Max 5 attempts per challenge → ForbiddenException + 15-min user lockout. Code TTL 10 min. Throttler tiers `2fa-verify` (5 req / 10 min) per challenge token. Keyspace is ~887× larger than v0.3.0 numeric — brute-force probability of success across one challenge × 5 attempts ≈ 5.6 × 10⁻⁹.                                                                                                                                                                                                                                                                                                          | Unit test: 6 wrong codes → ForbiddenException + lockout flag. Generator output stays in alphabet over 10 000 samples.                                                                                                                                              |
 | R3  | Email delivery failure / latency > 60 s                                               | High   | High        | **Send awaited (synchronous)**, on failure return 503 (DD-14). UI shows spam-folder hint + Resend (60 s cooldown). Sentry alert on SMTP failure rate.                                                                                                                                                                                                                                                                                                                                                                                                                 | Manual: kill SMTP → graceful 503, no 500                                                                                                                                                                                                                               |
 | R4  | (Resolved by DD-7 = exempt OAuth)                                                     | —      | —           | OAuth users skip the 2FA layer; uniform email-2FA only on password paths.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Code path audit: `loginWithVerifiedUser()` → no challenge issued                                                                                                                                                                                                       |
 | R5  | Existing-user impact: every active user forced into 2FA on next login                 | Medium | Certain     | One-pager email to all tenants 7 days before flag flip. Soft-rollout flag (`FEATURE_2FA_EMAIL_ENFORCED`) — flip to disable instantly without code revert.                                                                                                                                                                                                                                                                                                                                                                                                             | Manual: deploy with flag OFF → no 2FA prompt                                                                                                                                                                                                                           |
@@ -144,7 +145,7 @@ Both are wanted per the user requirement "all three scenarios". They share the s
 
 | #     | Decision                                            | Resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Rationale                                                                                                                                                                                                   | Status       |
 | ----- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| DD-1  | Code format                                         | 6-digit numeric (`100000–999999`)                                                                                                                                                                                                                                                                                                                                                                                                                                   | NIST 800-63B AAL1 compliant. Mobile-friendly. Brute-force impractical with rate limit + 10-min TTL.                                                                                                         | **APPROVED** |
+| DD-1  | Code format                                         | **6 characters, uppercase alphanumeric, Crockford-Base32 subset.** Alphabet `A-HJKMNP-Z2-9` = `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (31 chars; excludes confusables `0/1/I/L/O`). Code regex `/^[A-HJKMNP-Z2-9]{6}$/`. Lowercase input is auto-normalised to uppercase server-side. (v0.3.1, was 6-digit numeric `100000–999999`.) | ~887 M permutations (vs. 1 M numeric) — brute-force essentially impossible with rate limit + 10-min TTL. NIST 800-63B AAL1+. Mobile-typeable, no `0`-vs-`O` / `1`-vs-`I/L` support tickets in factory environments with dirty/glare-prone screens. | **APPROVED** (v0.3.1) |
 | DD-2  | Code TTL                                            | 10 minutes                                                                                                                                                                                                                                                                                                                                                                                                                                                          | NIST recommends ≤10 min. Balance of user leeway and attack window.                                                                                                                                          | **APPROVED** |
 | DD-3  | Storage of code                                     | Redis only. Stored as `sha256(userId + ':' + code + ':' + purpose)` embedded in challenge record (single Redis read on verify).                                                                                                                                                                                                                                                                                                                                     | Auto-expiry · defense-in-depth at rest · zero DB bloat · single round-trip                                                                                                                                  | **APPROVED** |
 | DD-4  | Challenge token format                              | Opaque `crypto.randomBytes(32).toString('base64url')` (not JWT). Looked up via Redis.                                                                                                                                                                                                                                                                                                                                                                               | Single source of truth. Trivial to revoke (DEL). No JWT-secret coupling. Smaller payload than JWT.                                                                                                          | **APPROVED** |
@@ -155,24 +156,25 @@ Both are wanted per the user requirement "all three scenarios". They share the s
 | DD-9  | Resend cooldown + TTL behavior                      | 60 seconds between resends (per challenge token). Resend **extends** challenge TTL back to 10 min (PEXPIRE) and resets per-challenge attempt count to 0. Per-user fail-streak (24 h) is NOT reset by resend.                                                                                                                                                                                                                                                        | Friendlier UX (don't punish the legitimate user whose first email was slow). Per-user fail-streak still catches genuine brute-force.                                                                        | **APPROVED** |
 | DD-10 | Soft-rollout feature flag                           | `FEATURE_2FA_EMAIL_ENFORCED=true` (default `false` until cut-over date). Flip via env var, no code change. Wired through `AppConfigService` Zod env schema.                                                                                                                                                                                                                                                                                                         | Allows production deploy without forcing 2FA immediately. Emergency-disable possible.                                                                                                                       | **APPROVED** |
 | DD-11 | Existing users — first 2FA on next login            | Transparent enrollment. Any user without `tfa_enrolled_at` who logs in post-flip goes through the same flow → on first success, set `tfa_enrolled_at = NOW()`.                                                                                                                                                                                                                                                                                                      | No bulk migration. Existing email is implicitly trusted (verified at signup once we ship this).                                                                                                             | **APPROVED** |
-| DD-12 | Code generator                                      | `crypto.randomInt(100000, 1000000)` (Node `crypto` module)                                                                                                                                                                                                                                                                                                                                                                                                          | Cryptographically secure. Never `Math.random`.                                                                                                                                                              | **APPROVED** |
+| DD-12 | Code generator                                      | **Loop 6× over `crypto.randomInt(0, 31)` indexing into 31-char alphabet** `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (Node `crypto` module). v0.3.1: was `crypto.randomInt(100000, 1000000)`.                                                                                                                                                                                                                                                                                                                                                                                                          | Cryptographically secure (Node `crypto`). Never `Math.random`. `crypto.randomInt(0, 31)` is rejection-sampled internally — uniform over alphabet, no modulo bias.                                                                                                                                                              | **APPROVED** |
 | DD-13 | Email subject + sender                              | **Generic subject only.** Subject: "Ihr Bestätigungscode für Assixx". Code in body only. Sender: `noreply@<tenant-domain>` with fallback `noreply@assixx.de` (from `SMTP_FROM`).                                                                                                                                                                                                                                                                                    | Code never visible in mail-list previews, lock-screen banners, or screenshots. Marginal UX cost (one click to read code) accepted. Decided 2026-04-26.                                                      | **APPROVED** |
 | DD-14 | Behavior on email send failure                      | Login: 503 with retryable error. Signup: 503 + cleanup deletes **both `users` AND `tenants` row** in the same transaction (anti subdomain-squatting — without tenant cleanup, an attacker could squat any premium subdomain by signup + tab-close). Tenant cleanup conditional: only if no other users exist for that tenant (defensive — should always be true at this stage). UI: "Der Code konnte nicht gesendet werden — bitte erneut versuchen." Sentry alert. | Fail-loud. Don't silently degrade. Tenant-cleanup added 2026-04-26 to prevent subdomain-squatting attack vector identified during plan review.                                                              | **APPROVED** |
 | DD-15 | New columns on `users` (vs new table)               | (a) DROP legacy `two_factor_secret`, `two_factor_enabled`. (b) ADD `tfa_enrolled_at TIMESTAMPTZ NULL`, `last_2fa_verified_at TIMESTAMPTZ NULL`. No new table.                                                                                                                                                                                                                                                                                                       | KISS. Legacy columns are dead schema (zero references in code, confirmed by audit). V2 (backup codes / trusted devices) gets a separate table when needed.                                                  | **APPROVED** |
 | DD-16 | Audit-log destination                               | Existing partitioned `audit_trail` table (ADR-009). Tuples per §A8 (NOT dotted strings).                                                                                                                                                                                                                                                                                                                                                                            | Consistent with all other security events. Schema-correct.                                                                                                                                                  | **APPROVED** |
-| DD-17 | Frontend code-input UX                              | Single `<input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6">`. Auto-submit on 6th digit ON by default (no feature flag).                                                                                                                                                                                                                                                                                                              | iOS Safari + Android Chrome auto-suggest from email — `one-time-code` is the magic attribute. Single input is simpler + accessible.                                                                         | **APPROVED** |
+| DD-17 | Frontend code-input UX                              | Single `<input type="text" inputmode="text" autocapitalize="characters" autocomplete="one-time-code" maxlength="6" pattern="[A-HJKMNP-Z2-9]{6}">`. Auto-submit on 6th character ON by default (no feature flag). Lowercase input is auto-uppercased server-side via `z.string().trim().toUpperCase().regex(...)`. v0.3.1: changed `inputmode="numeric"`→`text` + added `autocapitalize`/`pattern`.                                                                                                                                                                                                                                                                                                              | iOS Safari + Android Chrome auto-suggest from email — `one-time-code` works for alphanumeric per WHATWG HTML spec. `autocapitalize="characters"` reduces typing friction on mobile. Trade-off: auto-fill heuristic ~5–10 % less reliable than pure-digit codes.                                                                         | **APPROVED** |
 | DD-18 | Pino redaction additions                            | Add `req.body.code`, `req.body.challengeToken`, `*.code`, `*.challengeToken` to `LOGGER_REDACT_PATHS` in `logger.constants.ts`.                                                                                                                                                                                                                                                                                                                                     | Defense-in-depth — codes never in logs even on error                                                                                                                                                        | **APPROVED** |
 | DD-19 | Frontend signup form pattern                        | **Add `+page.server.ts` form action** (currently signup posts client-side via `_lib/api.ts`). Server-side `cookies.set(challengeToken, …)` + `redirect(303, '/signup/verify')`. Match login pattern.                                                                                                                                                                                                                                                                | Cleanest separation of secrets from JS. Aligned with ADR-012 fail-closed pattern + CODE-OF-CONDUCT-SVELTE Form Actions. Heavier refactor accepted: "no quick ship, must be ordentlich". Decided 2026-04-26. | **APPROVED** |
 | DD-20 | Suspicious-activity email recipients                | **User only** (the locked-out account). No tenant-admin notification in V1 — would create a side channel for user-enumeration ("did the admin get an email about user X?").                                                                                                                                                                                                                                                                                         | Minimize side channels. V2 may add opt-in tenant-admin notification.                                                                                                                                        | **APPROVED** |
 | DD-21 | Per-challenge resend cap                            | `MAX_RESENDS_PER_CHALLENGE = 3`. After 3 resends on the same challenge token → 429 ConflictException, user must restart from `/login` (new challenge).                                                                                                                                                                                                                                                                                                              | Prevents SMTP spam-trap impact. 3 resends within a 10-min window is enough for genuine retry.                                                                                                               | **APPROVED** |
 
-> **Sign-off complete (2026-04-26):** all 21 DDs APPROVED. Phase 1 may begin after Phase 0.5 (Operational Prerequisites) is satisfied.
+> **Sign-off complete (2026-04-26):** all 21 DDs APPROVED.
+> **v0.3.1 patch (2026-04-28):** DD-1 / DD-12 / DD-17 modified to adopt 6-char alphanumeric Crockford-Base32 subset (`A-HJKMNP-Z2-9`, 31 chars, ~887 M permutations). R2 risk lowered Medium → Low. Plan stays ACCEPTED. Phase 1 may begin after Phase 0.5 (Operational Prerequisites) is satisfied.
 
 ---
 
 ## Phase 0: Audit & Sign-off
 
-### Step 0.1: External-API consumer audit [PENDING]
+### Step 0.1: External-API consumer audit [DONE — 2026-04-28]
 
 **Goal:** identify any non-browser client (mobile, CLI, partner integration) that calls `/api/v2/auth/login` and currently expects the old response shape (`{ accessToken, refreshToken, user }`).
 
@@ -194,7 +196,7 @@ All 21 DDs APPROVED on 2026-04-26 — see §0.4 table.
 
 ### Phase 0 — Definition of Done
 
-- [ ] External-consumer audit completed and findings recorded
+- [x] External-consumer audit completed and findings recorded (2026-04-28 — see §Spec Deviations)
 - [x] All 21 DDs APPROVED (2026-04-26)
 - [ ] Pre-deploy email drafted, queued
 - [ ] User confirms readiness to start Phase 0.5 → Phase 1
@@ -250,7 +252,7 @@ All 21 DDs APPROVED on 2026-04-26 — see §0.4 table.
 
 **Owner:** DevOps. **Verification:** mail-tester score ≥ 9/10 captured + linked to this masterplan.
 
-### Step 0.5.3: External-API Consumer Audit [PENDING — formerly Step 0.1]
+### Step 0.5.3: External-API Consumer Audit [DONE — 2026-04-28, formerly Step 0.1]
 
 **Why:** `AuthService.login()` return shape changes from `LoginResponse` to discriminated union `LoginResult`. Mobile/CLI/partner integrations that hard-code the old shape will break at flag-flip.
 
@@ -302,7 +304,7 @@ All 21 DDs APPROVED on 2026-04-26 — see §0.4 table.
 
 - [ ] Single-root-tenant detection query run + outreach started (Step 0.5.1)
 - [ ] mail-tester score ≥ 9/10 for `noreply@assixx.de` (Step 0.5.2)
-- [ ] External-API audit complete + Spec Deviations updated (Step 0.5.3)
+- [x] External-API audit complete + Spec Deviations updated (Step 0.5.3) — 2026-04-28
 - [ ] Subdomain DNS + cert model documented + e2e signup smoke green (Step 0.5.4)
 - [ ] Dev-SMTP smoke green + setup documented (Step 0.5.5)
 
@@ -394,7 +396,7 @@ backend/src/nest/two-factor-auth/
     two-factor-auth.service.ts          # orchestration
     two-factor-code.service.ts          # crypto + Redis primitives
     two-factor-auth.types.ts
-    two-factor-auth.constants.ts        # CODE_TTL_SEC=600, MAX_ATTEMPTS=5, LOCKOUT_SEC=900, RESEND_COOLDOWN_SEC=60, MAX_RESENDS_PER_CHALLENGE=3
+    two-factor-auth.constants.ts        # CODE_TTL_SEC=600, MAX_ATTEMPTS=5, LOCKOUT_SEC=900, RESEND_COOLDOWN_SEC=60, MAX_RESENDS_PER_CHALLENGE=3, CODE_ALPHABET='ABCDEFGHJKMNPQRSTUVWXYZ23456789' (31-char Crockford subset, v0.3.1), CODE_LENGTH=6
     dto/
         verify-code.dto.ts
         resend-code.dto.ts
@@ -443,7 +445,14 @@ export interface ChallengeRecord {
 ```typescript
 // dto/verify-code.dto.ts
 export const VerifyCodeSchema = z.object({
-  code: z.string().regex(/^\d{6}$/, 'Code muss aus 6 Ziffern bestehen'),
+  // v0.3.1: alphanumeric Crockford-Base32 subset (A-HJKMNP-Z2-9). `.trim()` drops
+  // copy-paste whitespace; `.toUpperCase()` normalises lowercase input from mobile
+  // keyboards (autocapitalize is best-effort, so we fail-safe on the server).
+  code: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-HJKMNP-Z2-9]{6}$/, 'Code muss aus 6 Zeichen (A-Z ohne O/I/L, Ziffern 2-9) bestehen'),
   // challengeToken read from httpOnly cookie, NOT body — single source of truth
 });
 export class VerifyCodeDto extends createZodDto(VerifyCodeSchema) {}
@@ -509,7 +518,7 @@ const TWO_FA_REDIS = Symbol('TWO_FA_REDIS');
 
 - Redis injected via the `TWO_FA_REDIS` token (constructor: `@Inject(TWO_FA_REDIS) private readonly redis: Redis`)
 - Constant-time compare via `crypto.timingSafeEqual()` — never `===` on hash strings
-- `crypto.randomInt(100000, 1000000)` for code (caller passes the plain code in)
+- Generate code via 6× `crypto.randomInt(0, 31)` indexing into `CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'` (31-char Crockford subset, v0.3.1) — caller passes the plain code in. `crypto.randomInt` rejection-samples internally → uniform over alphabet, no modulo bias.
 - All methods return promises (no sync Redis access)
 - All errors wrapped via `getErrorMessage()` per TYPESCRIPT-STANDARDS §7.3
 
@@ -521,7 +530,7 @@ const TWO_FA_REDIS = Symbol('TWO_FA_REDIS');
 
 | Method                                                                          | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `issueChallenge(userId, tenantId, email, purpose): Promise<TwoFactorChallenge>` | (1) `isLocked()` → throw ForbiddenException if true. (2) Generate plain code via `crypto.randomInt(100000, 1000000)`. (3) `createChallenge()`. (4) `await send2faCode(email, code, purpose, ttlMin=10)` — send is awaited per DD-14; SMTP error → ServiceUnavailableException + signup cleanup. (5) Audit `(create, 2fa-challenge)`. (6) Return `TwoFactorChallenge`.                                                                                                                                          |
+| `issueChallenge(userId, tenantId, email, purpose): Promise<TwoFactorChallenge>` | (1) `isLocked()` → throw ForbiddenException if true. (2) Generate plain code via 6× `crypto.randomInt(0, 31)` over the 31-char Crockford alphabet (v0.3.1). (3) `createChallenge()`. (4) `await send2faCode(email, code, purpose, ttlMin=10)` — send is awaited per DD-14; SMTP error → ServiceUnavailableException + signup cleanup. (5) Audit `(create, 2fa-challenge)`. (6) Return `TwoFactorChallenge`.                                                                                                                                          |
 | `verifyChallenge(token, code): Promise<{ userId, tenantId, email, purpose }>`   | (1) `loadChallenge()` — null → 401 generic. (2) `isLocked(record.userId)` — true → 403. (3) `verifyCode(record, code)` — false → `incrementFailStreak()`, if ≥ MAX_ATTEMPTS_TOTAL set lockout + send suspicious-activity email (DD-20: user only) + audit `(update, 2fa-lockout)`. Update record.attemptCount via `updateChallenge(token, record, false)`. Throw 401 generic. (4) Success → `consumeChallenge()`, `clearFailStreak()`, `(login, auth, success, {method:'2fa-email'})` audit. Return user info. |
 | `resendChallenge(token): Promise<TwoFactorChallenge>`                           | (1) `loadChallenge()` — null → 401. (2) Check `record.resendCount >= MAX_RESENDS_PER_CHALLENGE` (DD-21) → 429. (3) `isResendOnCooldown(token)` — true → 429. (4) Generate new plain code. (5) `updateChallenge()` with new codeHash + reset `attemptCount=0` + `resendCount++` + `extendTtl=true` (DD-9). (6) `setResendCooldown(token)`. (7) Email + audit `(create, 2fa-challenge, {kind:'resend'})`. (8) Return updated challenge.                                                                          |
 | `clearLockoutForUser(userId, byUserId): Promise<void>`                          | (1) Verify caller is root + ≠ target (two-root rule). (2) `clearLockout()`, `clearFailStreak()`. (3) Audit `(delete, 2fa-lockout, {clearedBy: byUserId, target: userId})`. **Note: this does NOT issue a new code or bypass 2FA — the user must still pass 2FA on next login attempt.**                                                                                                                                                                                                                        |
@@ -707,7 +716,7 @@ export async function send2faCode(
 **Template content (German, ä/ö/ü/ß per CLAUDE.local.md):**
 
 - Subject: per DD-13 — generic, NO code
-- Body: greeting · purpose-specific intro ("Sie haben sich angemeldet" vs "Willkommen bei Assixx") · 6-digit code in large monospace · TTL warning · "Geben Sie diesen Code niemandem weiter" notice · footer
+- Body: greeting · purpose-specific intro ("Sie haben sich angemeldet" vs "Willkommen bei Assixx") · 6-character alphanumeric code in large monospace, **no separator** (e.g. `K7PX3M` — preserves iOS auto-fill + simple `maxlength="6"` manual entry; v0.3.1) · TTL warning · "Geben Sie diesen Code niemandem weiter" notice · footer
 - Plain-text fallback for clients without HTML
 - No tracking pixels, no external assets
 
@@ -847,6 +856,8 @@ backend/src/nest/signup/
 - [ ] `setResendCooldown` + `isResendOnCooldown` 60 s TTL behavior
 - [ ] Concurrent `createChallenge` calls produce distinct tokens (no race)
 - [ ] `updateChallenge(extendTtl=true)` resets TTL to `CODE_TTL_SEC`
+- [ ] Generator output always matches `/^[A-HJKMNP-Z2-9]{6}$/` over 10 000 samples (no forbidden chars `0/1/I/L/O`, v0.3.1)
+- [ ] DTO normalises lowercase input via `.toUpperCase()` before regex check (lowercase `abc234` → uppercase `ABC234`, then alphabet check; v0.3.1)
 
 ### Mandatory scenarios — `TwoFactorAuthService`
 
@@ -915,6 +926,7 @@ backend/src/nest/signup/
 - [ ] 5 wrong codes → 6th attempt → 403 (lockout active)
 - [ ] Subsequent login during lockout → 403
 - [ ] Verify with malformed body → 400 (Zod validation)
+- [ ] Verify with code containing forbidden char (`O`/`I`/`L`/`0`/`1`) → 400 (Zod alphabet check, v0.3.1)
 - [ ] Verify with mismatched purpose (signup token used for login flow) → 401
 - [ ] Login with feature flag OFF → tokens returned directly, no challenge
 - [ ] 4th resend on same challenge → 429 (DD-21)
@@ -1009,10 +1021,11 @@ throw redirect(303, '/login/verify');
 
   <input
     type="text"
-    inputmode="numeric"
+    inputmode="text"
+    autocapitalize="characters"
     autocomplete="one-time-code"
     maxlength="6"
-    pattern="\d{6}"
+    pattern="[A-HJKMNP-Z2-9]{6}"
     name="code"
     bind:value={code}
     required
@@ -1037,9 +1050,9 @@ throw redirect(303, '/login/verify');
 
 **Behavior:**
 
-- Auto-submit when 6th digit entered (DD-17). No feature flag.
+- Auto-submit when 6th character entered (DD-17). No feature flag. (v0.3.1: digit → character.)
 - `autocomplete="one-time-code"` triggers iOS/Android auto-fill from email.
-- `inputmode="numeric"` shows numeric keyboard on mobile.
+- `inputmode="text"` + `autocapitalize="characters"` shows the alphanumeric letter keyboard with caps-lock primed on mobile (v0.3.1).
 - Resend button shows live countdown (60 s) using `$state` + `setInterval`. Cleans up via `$effect` cleanup function.
 - Error states: wrong code, expired challenge, lockout — distinct German messages from `MESSAGES`.
 - On success → server load redirects to dashboard (login) or onboarding (signup).
@@ -1304,6 +1317,39 @@ export const MESSAGES = {
 
 > Populate during implementation when actual code contradicts this plan.
 
+### Audit findings — Step 0.1 / Step 0.5.3 (External-API Consumer Audit, 2026-04-28)
+
+**Decision:** **0 external clients found → proceed without endpoint versioning or `X-Accept-2FA-Stage` header opt-in.**
+
+**Method (read-only, all four procedure points covered):**
+
+1. **Cross-org code search.**
+   - `gh search code --owner=assixx '/api/v2/auth/login'` → 22 hits, **all inside `assixx/assixx`** (this monorepo: docs/curl examples, audit-helper test fixture). No other repo under the assixx org references the endpoint.
+   - `gh search code --owner=SCS-Technik '/api/v2/auth/login'` → empty.
+   - Tooling: `gh` v2.x, authenticated `SCS-Technik` account, scopes `repo`, `read:org`, `gist`, `workflow`.
+2. **Backend OpenAPI/Swagger surface.**
+   - Grep across `backend/src` for `@ApiTags`, `SwaggerModule`, `@nestjs/swagger` → **zero** matches in production code (one JSDoc-comment hit in `shift-handover/dto/update-template.dto.ts` mentions "OpenAPI clarity" but is comment-only). Swagger is not wired up. Therefore no published OpenAPI contract → no auto-generated external SDK could exist.
+3. **Doppler secret inventory** (`doppler secrets --only-names`).
+   - 52 secret names: only DB / Redis / SMTP / Sentry / Grafana Cloud / Microsoft OAuth / Cloudflare Turnstile / JWT / session — no `*_API_KEY`, `*_PARTNER_*`, `*_MOBILE_*`, `*_SDK_*`, `*_WEBHOOK_*` entries. No credential pattern that would suggest a non-browser external client integration.
+4. **Repo top-level layout.**
+   - Top-level dirs: `backend/`, `frontend/`, `shared/`, `database/`, `docker/`, `docs/`, `e2e/`, `load/`, `scripts/`, `Testing/`, `archive/`, `customer/`, plus build artefacts. **No `mobile/`, `ios/`, `android/`, `electron/`, `cli/`, `sdk/` directory.** This is a pure SvelteKit-frontend + NestJS-backend monorepo; the only non-browser callers are k6 (`load/`) and Playwright (`e2e/`) — both internal infrastructure.
+
+**Internal consumers surfaced by the audit (NOT external — fixable in the same PR/branch as Phase 2/6, no coordination required):**
+
+| # | Path                                                                                                                                                                                                | Behaviour                                                                                                                                                                                                                                                              | Why it is not an external blocker                                                                                                                                                                       |
+| - | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | `load/lib/auth.ts:47-58`, `load/tests/baseline.ts:125-133`                                                                                                                                          | k6 load-test rig hard-codes `body.data = { accessToken, refreshToken, user: { id, tenantId } }`. Off-flag (default per DD-10) preserves the legacy shape, so load tests keep working through Phase 2-4 dev cycles. They will break the moment `FEATURE_2FA_EMAIL_ENFORCED` flips ON unless updated. | Same repo, same PR — recommendation for the Phase 2 author: extend the destructure to handle `LoginResult`, fail-loud on `stage === 'challenge_required'` so operators see "load tests need a 2FA-exempt account". Recommendation only — DoD not modified by this audit. |
+| 2 | `docs/COMMON-COMMANDS.md:303,374`, `docs/how-to/HOW-TO-CURL.md:44`, `docs/how-to/HOW-TO-TEST.md:740`, `docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md:278,284`, several FEAT_*_MASTERPLAN.md curl blocks | Curl one-liners extract `.data.accessToken` via `python3` / `jq`. Human-facing operator documentation only — not a runtime consumer.                                                                                                                                   | Recommendation for the Phase 6 documentation sweep author: refresh examples to `jq '.data'` (full envelope) plus a "if 2FA enforced, follow with /api/v2/auth/2fa/verify" note. Recommendation only.   |
+| 3 | `backend/src/nest/common/audit/audit.helpers.test.ts:309,366,368,466`                                                                                                                               | Uses `/api/v2/auth/login` only as a path-fixture for path-to-action mapping logic. Never POSTs, never reads the response body.                                                                                                                                         | No action needed. Independent of the response shape.                                                                                                                                                    |
+| 4 | `e2e/` (Playwright)                                                                                                                                                                                 | Grep across `e2e/**/*.{ts,js}` → no direct `/api/v2/auth/login` POST and no `accessToken` token-shape consumption. Playwright authenticates via the SvelteKit form action.                                                                                             | Already in scope for Phase 5 (frontend `(public)/login/+page.server.ts` modification). No additional action.                                                                                            |
+
+**Risk register update (R13):** R13 ("Mobile / external API client breaks because login response shape changed", probability **Medium**) → audit confirms probability is now **None** within the assixx + SCS-Technik GitHub footprint. R13 mitigation ("Discriminated-union response shape only when feature flag OFF") is still the correct design — it remains the safety net for any future external client that might appear before T-Day cut-over.
+
+**Verification record:**
+- Audit run on branch checkout `feat/2fa-email` candidate (HEAD `488baa30`).
+- Tooling versions: `gh` (CLI, GitHub auth verified for `SCS-Technik`), `doppler` v3.75.3.
+- Owner: Backend.
+
 | #   | Spec says  | Actual code | Decision |
 | --- | ---------- | ----------- | -------- |
 | —   | (none yet) |             |          |
@@ -1379,4 +1425,4 @@ Every decision in this plan respects existing ADRs:
 
 ---
 
-**This document is the execution plan. v0.3.0 / ACCEPTED — DD sign-off complete (21/21). Phase 1 may begin after Phase 0.5 Steps 0.5.3 (external-API audit) and 0.5.5 (dev-SMTP smoke) are DONE; Steps 0.5.1, 0.5.2, 0.5.4 must be DONE before T-Day cut-over.**
+**This document is the execution plan. v0.3.1 / ACCEPTED — DD sign-off complete (21/21), code-format DDs (DD-1/12/17) patched 2026-04-28 (alphanumeric Crockford-Base32 subset `A-HJKMNP-Z2-9`). Phase 1 may begin after Phase 0.5 Step 0.5.5 (dev-SMTP smoke) is DONE (Step 0.5.3 audit DONE 2026-04-28); Steps 0.5.1, 0.5.2, 0.5.4 must be DONE before T-Day cut-over.**
