@@ -84,6 +84,16 @@
         h1 {
           font-size: 20px !important;
         }
+        /* Mobile CTA — match design-system .btn-primary size (ADR-045 / button.primary.css):
+           padding 8px 16px (--spacing-2/--spacing-4), font-size 14px (--font-size-base).
+           Desktop & Outlook (MSO v:roundrect) stay untouched; only colors/weight/radius
+           are preserved per user spec ("alles andere bleibt"). */
+        .btn-cta {
+          padding: 8px 16px !important;
+        }
+        .btn-cta-link {
+          font-size: 14px !important;
+        }
       }
     </style>
   </head>
@@ -402,6 +412,7 @@
                                 <td
                                   align="center"
                                   bgcolor="#0b70d7"
+                                  class="btn-cta"
                                   style="
                                     background-color: #0b70d7;
                                     border-radius: 10px;
@@ -413,6 +424,7 @@
                                     href="{{loginUrl}}"
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    class="btn-cta-link"
                                     style="
                                       display: block;
                                       font-family:
