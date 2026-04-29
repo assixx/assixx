@@ -1,16 +1,18 @@
 /**
  * TwoFactorAuthModule — Mandatory email-based 2FA for password authentication.
  *
- * STATUS (after Step 2.3):
+ * STATUS (after Step 2.7):
  *   - Step 2.1 shipped: types, constants, DTOs, module skeleton.
  *   - Step 2.2 shipped: dedicated ioredis client + `TwoFactorCodeService`
  *     (crypto/Redis primitives).
- *   - Step 2.3 (this commit): registers `TwoFactorAuthService` (orchestration —
+ *   - Step 2.3 shipped: `TwoFactorAuthService` (orchestration —
  *     issue / verify / resend / clearLockout) plus its dependencies
  *     (`MailerService` for SMTP transport — DD-14 fail-loud).
- *   - Step 2.7 (later): registers `TwoFactorAuthController` with the
- *     three endpoints (`/2fa/verify`, `/2fa/resend`,
- *     `/users/:id/2fa/clear-lockout`).
+ *   - Step 2.7 (this commit): registers BOTH 2FA controllers
+ *     (`TwoFactorAuthController` for `/auth/2fa/*` verify+resend,
+ *     `TwoFactorLockoutController` for `/users/:id/2fa/clear-lockout`)
+ *     and adds `TwoFactorAuthService.markVerified` for the post-verify
+ *     user-table state write.
  *
  * Why a dedicated ioredis client (not `@nestjs/cache-manager`):
  *   The project doesn't use cache-manager — the throttler module
@@ -26,17 +28,38 @@
  *   transport surface scoped to where it's actually used. `DatabaseService`
  *   is `@Global()` (`database.module.ts`), so no import needed.
  *
- * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md (Phase 2 §2.2 + §2.3)
+ * Why `forwardRef(() => AuthModule)` (Step 2.7):
+ *   The verify endpoint delegates token issuance to
+ *   `AuthService.loginWithVerifiedUser` and the apex→subdomain handoff to
+ *   `OAuthHandoffService` (re-exported transitively via AuthModule's
+ *   `forwardRef(() => OAuthModule)`). AuthModule already imports
+ *   TwoFactorAuthModule (for `TwoFactorAuthService.issueChallenge` in
+ *   `AuthService.login` — Step 2.4); both edges now require `forwardRef`
+ *   to break the cycle. This mirrors the canonical AuthModule ↔ OAuthModule
+ *   resolution (auth.module.ts:36 — also `forwardRef`-paired).
+ *
+ * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md (Phase 2 §2.2, §2.3, §2.7, §2.8)
  * @see ADR-054 (drafted in Phase 6): Mandatory Email-Based 2FA.
  */
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 
+// eslint-disable-next-line import-x/no-cycle -- justified: canonical NestJS forwardRef pattern (Step 2.7); mirrors AuthModule ↔ OAuthModule.
+import { AuthModule } from '../auth/auth.module.js';
+// OAuthModule for `OAuthHandoffService` consumed by `TwoFactorAuthController.verify`
+// on the signup branch (apex → subdomain handoff per ADR-050). No back-dep
+// from OAuthModule to 2FA (DD-7 — OAuth is exempt from the 2FA gate), so
+// this edge is plain (no `forwardRef`). The chain
+// `TwoFactorAuthModule → OAuthModule → AuthModule → forwardRef(TwoFactorAuthModule)`
+// is broken at the last edge by the existing forwardRef.
+import { OAuthModule } from '../auth/oauth/oauth.module.js';
 import { MailerService } from '../common/services/mailer.service.js';
+import { TwoFactorAuthController } from './two-factor-auth.controller.js';
 import { TwoFactorAuthService } from './two-factor-auth.service.js';
 import { TWO_FA_REDIS } from './two-factor-auth.tokens.js';
 import { TwoFactorCodeService } from './two-factor-code.service.js';
+import { TwoFactorLockoutController } from './two-factor-lockout.controller.js';
 
 // Re-export so future consumers can `import { TWO_FA_REDIS } from
 // './two-factor-auth.module.js'` if they prefer the module-scoped reference
@@ -44,8 +67,8 @@ import { TwoFactorCodeService } from './two-factor-code.service.js';
 export { TWO_FA_REDIS } from './two-factor-auth.tokens.js';
 
 @Module({
-  imports: [ConfigModule],
-  controllers: [],
+  imports: [ConfigModule, forwardRef(() => AuthModule), OAuthModule],
+  controllers: [TwoFactorAuthController, TwoFactorLockoutController],
   providers: [
     {
       provide: TWO_FA_REDIS,

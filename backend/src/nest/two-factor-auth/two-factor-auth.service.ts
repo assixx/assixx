@@ -46,6 +46,7 @@
  * @see ADR-009 Central Audit Logging — `audit_trail` schema & semantics.
  * @see ADR-019 Multi-Tenant RLS Isolation — `queryAsTenant` vs `tenantQuery`.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   ForbiddenException,
   HttpException,
@@ -222,6 +223,60 @@ export class TwoFactorAuthService {
 
     await this.handleVerifyFailure(token, record);
     throw new UnauthorizedException('Ungültiger oder abgelaufener Code.');
+  }
+
+  /**
+   * Mark the user row as 2FA-verified — single helper for the post-verify
+   * state write. Splits two cases on `purpose` (DD-11 transparent enrollment
+   * + signup activation):
+   *
+   *   - `'login'`: stamp `last_2fa_verified_at` to NOW and (if NULL) seed
+   *     `tfa_enrolled_at` so the first successful 2FA on a legacy account
+   *     becomes the enrollment timestamp without an explicit migration.
+   *
+   *   - `'signup'`: flip `is_active` from INACTIVE (set by Step 2.5) to
+   *     ACTIVE, and stamp BOTH `tfa_enrolled_at` + `last_2fa_verified_at`
+   *     to NOW (always — a signup is by definition the enrollment moment).
+   *
+   * Why this method lives here despite Step 2.3's "no user-table writes"
+   * intent: the verify success path needs ONE post-verify write, and routing
+   * it through `AuthService` would force `AuthService → TwoFactorAuthService`
+   * + `TwoFactorAuthService → AuthService` cycles for both edges. Keeping
+   * the single write inside this service is the smallest surface that
+   * preserves the orchestration boundary documented in §2.3.
+   *
+   * RLS: `queryAsTenant(sql, params, tenantId)` (explicit tenant) — the verify
+   * controller is `@Public()`, so CLS may not yet hold a `tenantId` (the
+   * tenantId we use comes from the verified `ChallengeRecord` instead).
+   *
+   * @see masterplan §2.5 (signup post-condition), §2.7 caller contract,
+   *      DD-11 (transparent enrollment), DD-15 (column semantics), §A8.
+   */
+  async markVerified(userId: number, tenantId: number, purpose: ChallengePurpose): Promise<void> {
+    if (purpose === 'signup') {
+      await this.db.queryAsTenant(
+        `UPDATE users
+         SET is_active = $1,
+             tfa_enrolled_at = NOW(),
+             last_2fa_verified_at = NOW(),
+             updated_at = NOW()
+         WHERE id = $2 AND tenant_id = $3`,
+        [IS_ACTIVE.ACTIVE, userId, tenantId],
+        tenantId,
+      );
+      return;
+    }
+    // login: COALESCE preserves an existing enrollment timestamp; only first
+    // successful 2FA on a legacy (pre-cutover) account writes it for real.
+    await this.db.queryAsTenant(
+      `UPDATE users
+       SET last_2fa_verified_at = NOW(),
+           tfa_enrolled_at = COALESCE(tfa_enrolled_at, NOW()),
+           updated_at = NOW()
+       WHERE id = $1 AND tenant_id = $2`,
+      [userId, tenantId],
+      tenantId,
+    );
   }
 
   /**

@@ -77,6 +77,48 @@ export type LoginResultBody =
   | { stage: 'challenge_required'; challenge: PublicTwoFactorChallenge }
   | ({ stage: 'authenticated' } & LoginResponse);
 
+/**
+ * HTTP response body shape for `POST /auth/2fa/verify` (Step 2.7).
+ *
+ * Always `stage: 'authenticated'` — by the time this body is returned the
+ * code has been consumed (`verifyChallenge` is single-use), the user row has
+ * been stamped with `last_2fa_verified_at` (and `tfa_enrolled_at` on first
+ * 2FA), and tokens have been minted.
+ *
+ * `handoff` is present ONLY for signup-purpose verifies. Signup runs on apex
+ * (`www.assixx.com/signup/verify` — DTO requires the new tenant's subdomain),
+ * so cookies set on apex would scope to the wrong origin. The handoff
+ * payload reuses the OAuth subdomain-bridge primitive (`OAuthHandoffService`,
+ * ADR-050 §OAuth) — frontend redirects 303 to
+ * `https://${subdomain}.assixx.com/handoff?ticket=${token}`, the existing
+ * handoff endpoint consumes the ticket and writes cookies on the correct
+ * origin. Login-purpose verifies happen on the tenant subdomain itself, so
+ * cookies are set on the same origin and `handoff` is omitted.
+ *
+ * Under `exactOptionalPropertyTypes` (ADR-041) the `handoff?` field must be
+ * literally absent when not used (never `undefined`) — frontend guards via
+ * `'handoff' in response` or `response.handoff !== undefined` are both safe
+ * because the controller constructs the object with or without the key.
+ */
+export interface TwoFactorVerifyResponse {
+  stage: 'authenticated';
+  user: LoginResponse['user'];
+  handoff?: { token: string; subdomain: string };
+}
+
+/**
+ * HTTP response body shape for `POST /auth/2fa/resend` (Step 2.7).
+ *
+ * Strips `challengeToken` from the underlying `TwoFactorChallenge` (R8 — token
+ * never in body). The resend reuses the SAME challenge token in Redis (see
+ * `TwoFactorAuthService.resendChallenge` — `updateChallenge` overwrites in
+ * place), so the existing httpOnly cookie continues to work; the controller
+ * does NOT need to re-set the cookie on resend.
+ */
+export interface TwoFactorResendResponse {
+  challenge: PublicTwoFactorChallenge;
+}
+
 /** Either signup-flow verification or login-flow verification. */
 export type ChallengePurpose = 'login' | 'signup';
 

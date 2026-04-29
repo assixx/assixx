@@ -13,10 +13,16 @@ import { Module, forwardRef } from '@nestjs/common';
 
 import { MailerService } from '../common/services/mailer.service.js';
 import { DomainsModule } from '../domains/domains.module.js';
-// 2FA email gate — Step 2.4 (ADR-054). One-way edge: AuthModule depends on
-// TwoFactorAuthModule (for `TwoFactorAuthService.issueChallenge` in
-// `AuthService.login`); TwoFactorAuthModule has no edge back, so no
-// `forwardRef` is needed here (in contrast to the OAuthModule cycle below).
+// 2FA email gate — Step 2.4 / 2.7 (ADR-054). Bidirectional cycle:
+//   - AuthModule → TwoFactorAuthModule: `TwoFactorAuthService.issueChallenge`
+//     in `AuthService.login` (Step 2.4).
+//   - TwoFactorAuthModule → AuthModule: `TwoFactorAuthController.verify`
+//     calls `AuthService.loginWithVerifiedUser` for token issuance and
+//     `OAuthHandoffService.mint` for the apex→subdomain handoff (Step 2.7).
+// Both edges use `forwardRef` per the canonical NestJS circular-dep pattern
+// (https://docs.nestjs.com/fundamentals/circular-dependency); mirrors the
+// `AuthModule ↔ OAuthModule` pair below.
+// eslint-disable-next-line import-x/no-cycle -- justified: canonical NestJS forwardRef pattern (Step 2.7)
 import { TwoFactorAuthModule } from '../two-factor-auth/two-factor-auth.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
@@ -31,9 +37,11 @@ import { OAuthModule } from './oauth/oauth.module.js';
 @Module({
   // DomainsModule provides `TenantVerificationService` — required by
   // `AuthService.createUser` per §2.9 + D33 Option (a) KISS gate.
-  // TwoFactorAuthModule provides `TwoFactorAuthService` — required by
-  // `AuthService.login` for the 2FA challenge issuance (Step 2.4).
-  imports: [forwardRef(() => OAuthModule), DomainsModule, TwoFactorAuthModule],
+  // TwoFactorAuthModule provides `TwoFactorAuthService` (issueChallenge in
+  // `AuthService.login`, Step 2.4) AND consumes AuthService back via the
+  // verify controller (Step 2.7) — `forwardRef` on both sides per the
+  // documented circular-dep pattern (see import comment above).
+  imports: [forwardRef(() => OAuthModule), DomainsModule, forwardRef(() => TwoFactorAuthModule)],
   controllers: [AuthController],
   providers: [AuthService, ConnectionTicketService, MailerService],
   exports: [AuthService, ConnectionTicketService],

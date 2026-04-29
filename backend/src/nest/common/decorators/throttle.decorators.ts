@@ -35,7 +35,7 @@ type ThrottleDecorator = MethodDecorator & ClassDecorator;
 /**
  * Auth endpoints: 10 requests per 5 minutes
  * Use for: login, signup, password reset
- * Skips: public, user, admin, upload, export, domain-verify throttlers
+ * Skips: public, user, admin, upload, export, domain-verify, 2fa-verify, 2fa-resend throttlers
  */
 export const AuthThrottle = (): ThrottleDecorator =>
   applyDecorators(
@@ -47,13 +47,15 @@ export const AuthThrottle = (): ThrottleDecorator =>
       upload: true,
       export: true,
       'domain-verify': true,
+      '2fa-verify': true,
+      '2fa-resend': true,
     }),
   );
 
 /**
  * User endpoints: 1000 requests per 15 minutes
  * Use for: standard authenticated endpoints
- * Skips: auth, public, admin, upload, export, domain-verify throttlers
+ * Skips: auth, public, admin, upload, export, domain-verify, 2fa-verify, 2fa-resend throttlers
  */
 export const UserThrottle = (): ThrottleDecorator =>
   applyDecorators(
@@ -65,13 +67,15 @@ export const UserThrottle = (): ThrottleDecorator =>
       upload: true,
       export: true,
       'domain-verify': true,
+      '2fa-verify': true,
+      '2fa-resend': true,
     }),
   );
 
 /**
  * Admin endpoints: 2000 requests per 15 minutes
  * Use for: admin dashboard, bulk operations
- * Skips: auth, public, user, upload, export, domain-verify throttlers
+ * Skips: auth, public, user, upload, export, domain-verify, 2fa-verify, 2fa-resend throttlers
  */
 export const AdminThrottle = (): ThrottleDecorator =>
   applyDecorators(
@@ -83,6 +87,8 @@ export const AdminThrottle = (): ThrottleDecorator =>
       upload: true,
       export: true,
       'domain-verify': true,
+      '2fa-verify': true,
+      '2fa-resend': true,
     }),
   );
 
@@ -90,7 +96,7 @@ export const AdminThrottle = (): ThrottleDecorator =>
  * Export endpoints: 1 request per minute
  * Use for: audit log export, bulk data export
  * Prevents DoS via large export operations
- * Skips: auth, public, user, admin, upload, domain-verify throttlers
+ * Skips: auth, public, user, admin, upload, domain-verify, 2fa-verify, 2fa-resend throttlers
  */
 export const ExportThrottle = (): ThrottleDecorator =>
   applyDecorators(
@@ -102,6 +108,8 @@ export const ExportThrottle = (): ThrottleDecorator =>
       admin: true,
       upload: true,
       'domain-verify': true,
+      '2fa-verify': true,
+      '2fa-resend': true,
     }),
   );
 
@@ -111,7 +119,7 @@ export const ExportThrottle = (): ThrottleDecorator =>
  * DNS (TXT-record lookup). Tight cap protects upstream resolvers and defends
  * R11 (Docker bridge DNS exhaustion). Tier registered in `AppThrottlerModule`.
  * Masterplan §2.7, ADR-048.
- * Skips: auth, public, user, admin, upload, export throttlers.
+ * Skips: auth, public, user, admin, upload, export, 2fa-verify, 2fa-resend throttlers.
  */
 export const DomainVerifyThrottle = (): ThrottleDecorator =>
   applyDecorators(
@@ -123,6 +131,8 @@ export const DomainVerifyThrottle = (): ThrottleDecorator =>
       admin: true,
       upload: true,
       export: true,
+      '2fa-verify': true,
+      '2fa-resend': true,
     }),
   );
 
@@ -145,5 +155,59 @@ export const FeedbackThrottle = (): ThrottleDecorator =>
       upload: true,
       export: true,
       'domain-verify': true,
+      '2fa-verify': true,
+      '2fa-resend': true,
+    }),
+  );
+
+/**
+ * 2FA verify endpoint: 5 requests per 10 minutes per challenge token.
+ * Use for: `POST /auth/2fa/verify` (Step 2.7).
+ *
+ * v0.5.0 P2-Fix (masterplan §2.8): keyed on `challengeToken` cookie via the
+ * tier's `getTracker` in `throttler.module.ts`, so industrial customers
+ * behind one NAT egress (50–500 users) are not blocked by their colleagues
+ * during shift-change login waves. Service-layer caps (`record.attemptCount`,
+ * `2fa:fail-streak:{userId}`) are the brute-force defence; this tier is
+ * anti-spam, not anti-brute-force.
+ * Skips: auth, public, user, admin, upload, export, domain-verify, 2fa-resend throttlers.
+ */
+export const TwoFaVerifyThrottle = (): ThrottleDecorator =>
+  applyDecorators(
+    Throttle({ '2fa-verify': { limit: 5, ttl: 10 * MS_MINUTE } }),
+    SkipThrottle({
+      auth: true,
+      public: true,
+      user: true,
+      admin: true,
+      upload: true,
+      export: true,
+      'domain-verify': true,
+      '2fa-resend': true,
+    }),
+  );
+
+/**
+ * 2FA resend endpoint: 1 request per 60 s per challenge token.
+ * Use for: `POST /auth/2fa/resend` (Step 2.7).
+ *
+ * Same NAT-fairness rationale as TwoFaVerifyThrottle. The 60 s window aligns
+ * with the user-facing resend cooldown (DD-9, `RESEND_COOLDOWN_SEC`) so the
+ * throttler and the service-layer cap converge on the same UX ("wait 60 s")
+ * instead of producing two divergent 429 paths.
+ * Skips: auth, public, user, admin, upload, export, domain-verify, 2fa-verify throttlers.
+ */
+export const TwoFaResendThrottle = (): ThrottleDecorator =>
+  applyDecorators(
+    Throttle({ '2fa-resend': { limit: 1, ttl: MS_MINUTE } }),
+    SkipThrottle({
+      auth: true,
+      public: true,
+      user: true,
+      admin: true,
+      upload: true,
+      export: true,
+      'domain-verify': true,
+      '2fa-verify': true,
     }),
   );
