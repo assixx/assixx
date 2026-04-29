@@ -3,12 +3,12 @@
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
 > **Version:** 0.6.0 (GREENFIELD-TRIM + DD-32 E-Mail-Change-2FA-Verify; R15 + Step 2.12 hinzugefügt; Bestandsuser-Cutover-Apparat als N/A markiert per CLAUDE.md Greenfield-Status seit 2026-04-19)
-> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.9 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
+> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
 > **Branch:** `feat/2fa-email`
 > **Spec:** This document
 > **Author:** Claude (proposed) · Simon Öztürk (decides)
 > **Estimated sessions:** 14 (v0.5.0) → ~12 (v0.6.0 nach Greenfield-Trim, Step 2.12 +1 Session)
-> **Actual sessions:** 5 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.9 erledigt)
+> **Actual sessions:** 6 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 erledigt)
 > **External dependencies added:** **ZERO** — every primitive (crypto, JWT, Redis via `ioredis`, legacy `email-service`, `CustomThrottlerGuard`, Zod, `audit_trail`) already exists.
 
 ---
@@ -37,6 +37,7 @@ Mandatory **email-based 2FA** at every password authentication entry point. Same
 | 0.3.1   | 2026-04-28 | DD-1 / DD-12 / DD-17 patched: code format changed from 6-digit numeric → 6-char alphanumeric uppercase, Crockford-Base32 subset (`A-HJKMNP-Z2-9`, 31 chars, ~887M permutations). R2 keyspace ~887× larger → probability lowered Medium → Low. DTO regex, generator, frontend `pattern`/`inputmode` updated. Phase 3+4 tests gain alphabet-conformance + lowercase-normalisation bullets. Status: ACCEPTED.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 0.4.0   | 2026-04-28 | **Plan-Perfektionierung** — 12 offene operative/technische Entscheidungen in 3 Batches via AskUserQuestion aufgelöst: T-Day-Strategie, SMTP_FROM-Bestätigung, DNS-/Cert-Modell, Dev-SMTP-Backend, Vorabmail-Empfänger/Sprache/Tonalität, Single-Root-Outreach-Timing, T-1 Hard-Block-Fallback (KEIN Telefon, NUR E-Mail), Reaper-Deployment-Topologie, HOW-TO-Recovery-Umfang, Cutover-Monitoring-Window. Neue DDs: DD-22 (Cutover-Strategie) + DD-23 (Per-Tenant-Flag NEIN in V1). Steps 0.3, 0.5.1, 0.5.2, 0.5.4, 0.5.5, 2.11 und Phase 6 Cutover-Runbook mit konkreten Werten befüllt. Plan stellt KEINE Fragen mehr. Status: ACCEPTED.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 0.5.0   | 2026-04-28 | **HARDENED auf User-Brutalehrlich-Audit:** (1) **DD-10 Flag KOMPLETT entfernt** per User-Vorgabe „kein Einstellung auszustellen" — 2FA hartcodiert, kein Soft-Rollout, T-Day = Deploy-Day. R5+R13 verschärft. (2) **P2-Fix:** Throttler `2fa-verify` von 5/10min-per-IP → 5/10min-per-challengeToken (Industriekunden hinter NAT würden sonst false-positive geblockt). (3) **NEW Step 0.5.6 Production-SMTP-Smoke** + **NEW Step 0.5.7 Sender-Warmup** — verhindert Spam-Filter-Flut am T-Day. (4) **NEW §0.1 Disaster-Recovery-Note** — SSH + Doppler-CLI als Out-of-Band-Pfade dokumentiert (User bestätigt vorhanden). (5) DD-7 OAuth-Exempt + DD-8 Lockout-Clear bestätigt unverändert. Status: ACCEPTED.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| 0.6.1   | 2026-04-29 | **Phase 2 Session 7 (partial) — Steps 2.7 + 2.8 DONE.** TwoFactorAuthController (`/auth/2fa/verify` + `/auth/2fa/resend`) + TwoFactorLockoutController (`/users/:id/2fa/clear-lockout`, separate file per `max-classes-per-file: 1`). Two new throttler tiers (`2fa-verify` 5/10min, `2fa-resend` 1/60s) keyed on `challengeToken` cookie via per-tier `getTracker` (NAT-fairness for industrial customers). Two new decorators (`TwoFaVerifyThrottle`, `TwoFaResendThrottle`); every existing decorator's `SkipThrottle` list extended with both tier names. `TwoFactorAuthService.markVerified()` added — single-purpose post-verify user-table write (`is_active=ACTIVE` for signup, `last_2fa_verified_at` + COALESCE-enroll for both). Verify endpoint delegates token issuance to `AuthService.loginWithVerifiedUser` and apex→subdomain handoff to `OAuthHandoffService.mint` (signup-flow only — login flow is on tenant subdomain so cookies set on same origin). DI-graph cycles resolved with `forwardRef` on AuthModule ↔ TwoFactorAuthModule + SignupModule → forwardRef(TwoFactorAuthModule). Verification: ESLint 0 errors, type-check 0 errors, 279 unit-test files / 7138 tests all green, backend `/health` 200, all 3 new routes return correct guards (401 unauth / 404 unknown). Steps 2.10 + 2.11 + 2.12 still PENDING. Status: ACCEPTED. |
 | 0.6.0   | 2026-04-28 | **GREENFIELD-TRIM + DD-32 E-Mail-Change-2FA:** (1) **CLAUDE.md-Greenfield-Status (seit 2026-04-19) angewendet:** keine Bestandsuser → Step 0.3 (Vorabmail), Step 0.5.1 (Single-Root-Detection), Step 0.5.7 (Sender-Warmup) als **N/A — GREENFIELD** markiert. DD-22 (Cutover-Strategie), DD-23 (Per-Tenant-Flag), DD-26/27/28 (Pre-Deploy-Mail), DD-31 (Post-Cutover-Window), R5 (Existing-user impact), DD-11 (Transparent enrollment) als N/A markiert. T-Day-Konzept = Public-Launch-Day. ~2 Sessions gespart. (2) **NEW DD-32 + R15 + Step 2.12: E-Mail-Change-Endpoint MUSS 2FA-verifiziert sein.** Two-code verify (alte + neue E-Mail). Begründung: ohne diesen Schutz ist das gesamte 2FA-Modell durch Session-Hijack umgehbar — Angreifer ändert E-Mail auf eigene Adresse → 2FA-Codes gehen an Angreifer. Identifiziert beim Brutal-Ehrlich-Audit gegen Redis-Cloud-MFA-Doku 2026-04-28. (3) **Step-Up-2FA für sensitive Aktionen** (Tenant-Delete, Root-Self-Termination, Permission-Grant) explizit als **V2 inkrementell** markiert — pro sensitive Aktion ein eigener PR mit `requireStepUp2fa()`-Decorator, kein eigener Masterplan. Status: ACCEPTED. |
 
 > **Versioning rule:** 0.x.0 = planning · 1.x.0 = implementation in progress · 2.0.0 = shipped · x.x.1 = patch within phase.
@@ -931,7 +932,29 @@ Add **comment-only** patches at each entry point that issues tokens, e.g. above 
 // challenge layer instead.
 ```
 
-### Step 2.7: `TwoFactorAuthController` endpoints [PENDING]
+### Step 2.7: `TwoFactorAuthController` endpoints [DONE — 2026-04-29]
+
+**Delivered (2026-04-29):**
+
+- `backend/src/nest/two-factor-auth/two-factor-auth.controller.ts` — NEW. Mounted at `@Controller('auth/2fa')`. Two endpoints: `POST /verify` + `POST /resend`. Both `@Public() @UseGuards(CustomThrottlerGuard) @TwoFa{Verify,Resend}Throttle() @HttpCode(HttpStatus.OK)`. Reads `challengeToken` from httpOnly cookie via local `readChallengeTokenOrThrow` helper (missing/empty → generic 401, R10-aligned). Verify orchestrates: `verifyChallenge` → `markVerified` → `loginWithVerifiedUser` (delegates token issuance to existing AuthService helper) → branch by `purpose`. Login branch: `setAuthCookies` (3-cookie triad on tenant subdomain) → `{ stage, user }`. Signup branch: `OAuthHandoffService.mint` for apex→subdomain handoff → `{ stage, user, handoff: { token, subdomain } }` — cookies NOT set on apex. Challenge cookie cleared on success regardless of branch. `loginMethod` in audit row distinguishes `'password+2fa-email'` (login) from `'password+2fa-email-signup'` (signup). Resend reuses the same Redis token (no cookie re-write); body strips `challengeToken` before responding (R8).
+- `backend/src/nest/two-factor-auth/two-factor-lockout.controller.ts` — NEW. Mounted at `@Controller('users')` with `POST :id/2fa/clear-lockout`. Separate file per `max-classes-per-file: 1`. Decorators: `@Roles('root') @UseGuards(CustomThrottlerGuard) @AdminThrottle() @HttpCode(HttpStatus.NO_CONTENT)`. Tenant-membership pre-check via `queryAsTenant('SELECT id FROM users WHERE id=$1 AND tenant_id=$2 LIMIT 1')` — non-existent target → 404, prevents cross-tenant lockout-clearing (Redis `2fa:lock:{userId}` key is global). Two-Root rule (target ≠ caller) + `(delete, 2fa-lockout)` audit emitted by `clearLockoutForUser`.
+- `backend/src/nest/two-factor-auth/two-factor-auth.service.ts` — `markVerified(userId, tenantId, purpose)` added between `verifyChallenge` and `resendChallenge`. Signup branch: `UPDATE users SET is_active=$IS_ACTIVE.ACTIVE, tfa_enrolled_at=NOW(), last_2fa_verified_at=NOW(), updated_at=NOW()`. Login branch: same minus the activation, with `tfa_enrolled_at = COALESCE(tfa_enrolled_at, NOW())` for DD-11 transparent enrollment on legacy accounts. `IS_ACTIVE` imported from `@assixx/shared/constants` per TYPESCRIPT-STANDARDS §7.4 (no magic numbers). `queryAsTenant` (not `tenantQuery`) because the verify controller is `@Public()` — explicit `tenantId` from the verified `ChallengeRecord` is the source of truth, not CLS.
+- `backend/src/nest/two-factor-auth/two-factor-auth.types.ts` — `TwoFactorVerifyResponse` (with optional `handoff` field — under `exactOptionalPropertyTypes` the field is literally absent on the login branch, present on signup) + `TwoFactorResendResponse` (challenge view stripped of token).
+- `backend/src/nest/two-factor-auth/two-factor-auth.module.ts` — registered both controllers; imports gain `forwardRef(() => AuthModule)` (for `AuthService.loginWithVerifiedUser`) and plain `OAuthModule` (for `OAuthHandoffService` — DD-7 means OAuthModule has no back-edge to 2FA, so no forwardRef on this edge).
+- `backend/src/nest/auth/auth.module.ts` — existing `TwoFactorAuthModule` import wrapped in `forwardRef` (cycle-pair with the new edge above; canonical NestJS resolution mirroring the AuthModule ↔ OAuthModule pair).
+- `backend/src/nest/signup/signup.module.ts` — existing `TwoFactorAuthModule` import wrapped in `forwardRef`. Indirect cycle `SignupModule → TwoFactorAuthModule → OAuthModule → SignupModule` (OAuthModule consumes `SignupService` for OAuth signup) emerged when the TwoFactorAuthModule → OAuthModule edge was added; one `forwardRef` on this edge breaks the loop without touching the established AuthModule ↔ OAuthModule pair. ESLint `import-x/no-cycle` exception added with justification comment.
+
+**Verification (2026-04-29):**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/two-factor-auth/ backend/src/nest/throttler/ backend/src/nest/common/decorators/throttle.decorators.ts backend/src/nest/auth/auth.module.ts backend/src/nest/signup/signup.module.ts` → 0 errors.
+- `docker exec assixx-backend pnpm exec tsc --noEmit -p backend` → exit 0, 0 lines.
+- `pnpm exec vitest run --project unit` (full unit suite) → **279 files / 7138 tests / all passed in 17.79 s** — no indirect breakage from the cycle-resolution forwardRef changes.
+- Backend hot-reloaded; `Nest application successfully started` in logs; `/health` → `{"status":"ok"}`. Initial reload crashed with `Cannot access 'TwoFactorAuthModule' before initialization` due to the indirect SignupModule cycle — resolved by the `forwardRef` wrapper noted above; second reload booted cleanly.
+- Route smoke test (no auth, no cookie): `POST /api/v2/auth/2fa/verify` → 401, `POST /api/v2/auth/2fa/resend` → 401, `POST /api/v2/users/1/2fa/clear-lockout` → 401, `POST /api/v2/auth/2fa/bogus` → 404. All three new routes mount at the expected paths and the guard chain runs in the correct order (auth before authz).
+
+**Test deferral (per Step 2.2 / 2.3 precedent):** unit tests for `markVerified` + the two controllers' happy paths and error branches deferred to Phase 3 mandatory-scenarios suite + Phase 4 API integration tests. The Phase 3 §"Mandatory scenarios — TwoFactorAuthService" checklist already includes "First successful verify sets `tfa_enrolled_at` AND `last_2fa_verified_at`" + "Subsequent verifies update only `last_2fa_verified_at`" + "Signup verify also sets `is_active = IS_ACTIVE.ACTIVE`" — these now resolve to `markVerified` directly.
+
+---
 
 **File:** `backend/src/nest/two-factor-auth/two-factor-auth.controller.ts`
 
@@ -949,7 +972,22 @@ Add **comment-only** patches at each entry point that issues tokens, e.g. above 
 - [ ] `@Public()` for verify/resend (run before `JwtAuthGuard` — user not yet authenticated)
 - [ ] Audit entry per request (success or fail)
 
-### Step 2.8: New throttler tiers + decorators [PENDING]
+### Step 2.8: New throttler tiers + decorators [DONE — 2026-04-29]
+
+**Delivered (2026-04-29):**
+
+- `backend/src/nest/throttler/throttler.module.ts` — added two new tiers: `2fa-verify` (5/10min) + `2fa-resend` (1/60s). Both use a per-tier `getTracker` (top-level `get2faTracker(req)` helper) keyed on the `challengeToken` cookie with IP fallback (`unknown` if neither — safe default). v0.5.0 P2-Fix: industrial customers behind one NAT egress (50–500 users on 1 IP) cannot block each other during shift-change login waves; brute-force defence remains in service-layer (`record.attemptCount` per challenge + `2fa:fail-streak:{userId}` per user). Per-tier `getTracker` is honored by `ThrottlerGuard.handleRequest` (`getTracker?.(req, context) ?? this.getTracker(...)`) — overrides `CustomThrottlerGuard.getTracker` (user|ip default) only for these two tiers; other tiers continue to use the guard's user|ip key.
+- `backend/src/nest/common/decorators/throttle.decorators.ts` — added `TwoFaVerifyThrottle()` + `TwoFaResendThrottle()` decorators (mirror existing `AuthThrottle`/etc. shape). Per the file's documented tier-isolation rule (lines 17–25), every existing decorator's `SkipThrottle` list (Auth/User/Admin/Export/DomainVerify/Feedback) was extended with `'2fa-verify': true, '2fa-resend': true`. The two new decorators skip every other tier (auth/public/user/admin/upload/export/domain-verify) plus the sibling 2fa tier — so a request to `/auth/2fa/verify` is counted against `2fa-verify` only, not also against `auth` or `public`.
+
+**Verification (2026-04-29):**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/throttler/ backend/src/nest/common/decorators/throttle.decorators.ts` → 0 errors.
+- `docker exec assixx-backend pnpm exec tsc --noEmit -p backend` → exit 0, 0 lines.
+- Route-mount smoke test confirmed both new tiers are accepted by `ThrottlerModule.forRootAsync` (no startup error from the per-tier `getTracker` typing).
+
+**Test deferral:** decorator factories are pure `applyDecorators` glue (no business logic); same exemption as the 6 existing decorators in the file. Throttler tier behaviour itself is exercised by the Phase 4 API integration tests (`POST /auth/2fa/{verify,resend}` → 429 expectations).
+
+---
 
 **File modified:** `backend/src/nest/throttler/throttler.module.ts`
 
@@ -1194,7 +1232,7 @@ RETURNING id, subdomain;
 
 - [ ] `TwoFactorAuthModule` registered in `app.module.ts` (alphabetical)
 - [ ] All 3 services implemented (Code, Auth, plus `send2faCode` extension to legacy `email-service.ts`)
-- [ ] Controller with 3 endpoints, all throttled with new decorators
+- [x] Controller with 3 endpoints, all throttled with new decorators (Step 2.7 + 2.8 — 2026-04-29)
 - [ ] `AuthService.login()` returns discriminated union (`LoginResult`)
 - [ ] `SignupService.signup()` issues challenge, no tokens
 - [x] OAuth handlers carry DD-7 comment, no behavior change (Step 2.6 — 2026-04-29)
@@ -1614,7 +1652,7 @@ export const MESSAGES = {
 | 4       | 2     | TwoFactorCodeService (crypto + Redis primitives via DI provider)                                                                                                               | PENDING                         |            |
 | 5       | 2     | TwoFactorAuthService (orchestration) · `send2faCode` + template                                                                                                                | PENDING                         |            |
 | 6       | 2     | Modify AuthService.login + SignupService (incl. tenant cleanup on SMTP fail per DD-14) · OAuth comment-only · **load-tests auf LoginResult umstellen** (v0.5.0 R13-Mitigation) | DONE (Steps 2.4 + 2.5 + 2.6)    | 2026-04-29 |
-| 7       | 2     | TwoFactorAuthController · throttler tiers + decorators · Pino redaction · audit hooks · stale-pending reaper cron (Step 2.11)                                                  | PENDING                         |            |
+| 7       | 2     | TwoFactorAuthController · throttler tiers + decorators · Pino redaction · audit hooks · stale-pending reaper cron (Step 2.11)                                                  | PARTIAL (Steps 2.7 + 2.8 DONE)  | 2026-04-29 |
 | 7b      | 2     | **Step 2.12 (DD-32 / R15, v0.6.0):** Email-Change-Endpoint two-code 2FA-Verify (request-change + verify-change) · Audit-Tuples · Tests · Throttler                             | PENDING                         |            |
 | 8       | 3     | Unit tests TwoFactorCodeService                                                                                                                                                | PENDING                         |            |
 | 9       | 3     | Unit tests TwoFactorAuthService + AuthService + SignupService modifications + reaper service + **Email-Change service (Step 2.12)**                                            | PENDING                         |            |

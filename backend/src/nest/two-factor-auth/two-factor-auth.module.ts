@@ -48,11 +48,12 @@ import { Redis } from 'ioredis';
 // eslint-disable-next-line import-x/no-cycle -- justified: canonical NestJS forwardRef pattern (Step 2.7); mirrors AuthModule ↔ OAuthModule.
 import { AuthModule } from '../auth/auth.module.js';
 // OAuthModule for `OAuthHandoffService` consumed by `TwoFactorAuthController.verify`
-// on the signup branch (apex → subdomain handoff per ADR-050). No back-dep
-// from OAuthModule to 2FA (DD-7 — OAuth is exempt from the 2FA gate), so
-// this edge is plain (no `forwardRef`). The chain
-// `TwoFactorAuthModule → OAuthModule → AuthModule → forwardRef(TwoFactorAuthModule)`
-// is broken at the last edge by the existing forwardRef.
+// on the signup branch (apex → subdomain handoff per ADR-050). The indirect
+// cycle TwoFactorAuthModule → OAuthModule → SignupModule → forwardRef(TwoFactorAuthModule)
+// is broken at the last edge by `signup.module.ts`'s `forwardRef` wrapper
+// (Step 2.7). DD-7 keeps OAuth itself off the 2FA path; this edge is purely
+// for the handoff primitive reuse.
+// eslint-disable-next-line import-x/no-cycle -- justified: canonical NestJS forwardRef pattern (Step 2.7); cycle broken by signup.module.ts forwardRef.
 import { OAuthModule } from '../auth/oauth/oauth.module.js';
 import { MailerService } from '../common/services/mailer.service.js';
 import { TwoFactorAuthController } from './two-factor-auth.controller.js';

@@ -64,10 +64,7 @@ import {
 import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import { ResendCodeDto, VerifyCodeDto } from './dto/index.js';
 import { TwoFactorAuthService } from './two-factor-auth.service.js';
-import type {
-  TwoFactorResendResponse,
-  TwoFactorVerifyResponse,
-} from './two-factor-auth.types.js';
+import type { TwoFactorResendResponse, TwoFactorVerifyResponse } from './two-factor-auth.types.js';
 
 /**
  * Pull `challengeToken` from the httpOnly cookie set by `/auth/login` or
@@ -157,7 +154,8 @@ export class TwoFactorAuthController {
     // Method string lands in the audit row's `new_values.login_method` —
     // distinct from plain `'password'` so audit queries can isolate
     // 2FA-gated logins from the (currently unreachable) bypass path.
-    const loginMethod = verified.purpose === 'signup' ? 'password+2fa-email-signup' : 'password+2fa-email';
+    const loginMethod =
+      verified.purpose === 'signup' ? 'password+2fa-email-signup' : 'password+2fa-email';
     const session = await this.authService.loginWithVerifiedUser(
       verified.userId,
       verified.tenantId,
