@@ -17,6 +17,7 @@ import {
   HttpException,
   InternalServerErrorException,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { JwtService } from '@nestjs/jwt';
@@ -368,6 +369,94 @@ describe('SECURITY: AuthService', () => {
 
       const emailParam = (mockDb.systemQuery.mock.calls[0]?.[1] as string[])?.[0];
       expect(emailParam).toBe('admin@test.de');
+    });
+
+    // ─── Phase 3 / Session 9 — additional new-branch coverage ────────────
+    //
+    // These pin the post-Step-2.4 contract: AuthService.login is now a
+    // thin shell over `TwoFactorAuthService.issueChallenge` for every
+    // authenticated password user. Token issuance, last-login, login-audit
+    // and subdomain lookup migrated to the verify endpoint (Step 2.7).
+
+    // Plan §3 row "User in 2FA lockout state → ForbiddenException with retry hint":
+    // the lockout pre-check lives inside `issueChallenge` (verified in
+    // `two-factor-auth.service.test.ts`); `AuthService.login` is purely a
+    // propagation point. Asserting that propagation is intact closes the
+    // regression risk that a future refactor wraps the throw in a 500.
+    it('propagates ForbiddenException raised by issueChallenge (DD-5/DD-6 lockout state)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]);
+      mockBcryptCompare.mockResolvedValueOnce(true);
+      mockTwoFactorAuth.issueChallenge.mockRejectedValueOnce(
+        new ForbiddenException('Konto ist vorübergehend gesperrt.'),
+      );
+
+      await expect(service.login(loginDto)).rejects.toBeInstanceOf(ForbiddenException);
+      // Tokens MUST NOT be minted for a locked user — `jwt.sign` is reached
+      // only via the verify endpoint, never via login() itself.
+      expect(mockJwt.sign).not.toHaveBeenCalled();
+    });
+
+    // DD-14 — SMTP failure inside issueChallenge surfaces as 503; AuthService
+    // does not catch and remap, so the contract is "let it propagate".
+    it('propagates ServiceUnavailableException when SMTP fails inside issueChallenge (DD-14)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]);
+      mockBcryptCompare.mockResolvedValueOnce(true);
+      mockTwoFactorAuth.issueChallenge.mockRejectedValueOnce(
+        new ServiceUnavailableException('Der Code konnte nicht gesendet werden.'),
+      );
+
+      await expect(service.login(loginDto)).rejects.toBeInstanceOf(ServiceUnavailableException);
+      expect(mockJwt.sign).not.toHaveBeenCalled();
+    });
+
+    // Step 2.4: token rotation (`jwt.sign` × 2) + `storeRefreshToken` migrate
+    // to the verify endpoint. login() must NOT touch any of them on the
+    // happy path either — guard against the natural-but-wrong refactor that
+    // restores token issuance "just to be safe" pre-2FA.
+    it('does NOT mint tokens or write refresh-token rows on the password-login path', async () => {
+      setupLoginMocks(mockDb, mockTwoFactorAuth);
+
+      await service.login(loginDto);
+
+      expect(mockJwt.sign).not.toHaveBeenCalled();
+      // setupLoginMocks queues exactly one systemQuery (findUserByEmail).
+      // If login() reached storeRefreshToken / updateLastLogin / logLoginAudit
+      // we would see additional systemQuery calls.
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
+    });
+
+    // R8 — challenge token flows ONLY via the httpOnly cookie set in the
+    // controller. The response body must carry the metadata view, not the
+    // token itself in any extra leaked field. The discriminated-union typing
+    // already nails this at the type level; this test pins it at runtime.
+    it('returns ONLY {stage, challenge} on the body (no token leakage in extra fields, R8)', async () => {
+      setupLoginMocks(mockDb, mockTwoFactorAuth);
+
+      const result = await service.login(loginDto);
+
+      expect(Object.keys(result).sort()).toEqual(['challenge', 'stage']);
+      // `challenge.challengeToken` is the SUT's internal handle — it travels
+      // via the cookie set by AuthController. The service-layer struct keeps
+      // the field for the controller's `setChallengeCookie` call (Step 2.4 SUT),
+      // so the type-level R8 stripping happens in the controller layer.
+      // Assert here that no DUPLICATE token appears at the body root.
+      expect(result).not.toHaveProperty('challengeToken');
+      expect(result).not.toHaveProperty('accessToken');
+      expect(result).not.toHaveProperty('refreshToken');
+    });
+
+    // DD-7 regression — `loginWithVerifiedUser` (OAuth path, ADR-046) MUST
+    // never invoke `issueChallenge`. The dedicated `describe('loginWithVerifiedUser')`
+    // block below covers OAuth state in depth; this one-liner pins the exact
+    // boundary condition: zero 2FA invocations on the OAuth path. Without
+    // this test, a refactor that "harmonises" the two methods could quietly
+    // start issuing 2FA codes on every Microsoft login (DD-7 violation).
+    it('loginWithVerifiedUser never invokes the 2FA layer (DD-7 OAuth-exempt regression guard)', async () => {
+      setupLoginWithVerifiedUserMocks(mockDb, mockJwt);
+
+      await service.loginWithVerifiedUser(1, 10, 'microsoft');
+
+      expect(mockTwoFactorAuth.issueChallenge).not.toHaveBeenCalled();
     });
   });
 

@@ -4,7 +4,12 @@
  * Tests for pure validation methods + DB-mocked public methods.
  * Private methods tested via bracket notation.
  */
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { IS_ACTIVE } from '@assixx/shared/constants';
+import {
+  BadRequestException,
+  ConflictException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CompleteSignupDto } from '../auth/oauth/dto/index.js';
@@ -487,6 +492,168 @@ describe('SignupService – registration', () => {
       // Step 2.5: response shape is the discriminated union; audit failure
       // does NOT block the 2FA challenge being returned to the user.
       expect(result.stage).toBe('challenge_required');
+    });
+
+    // ─── Phase 3 / Session 9 — Step 2.5 + DD-14 SMTP-failure cleanup ───
+    //
+    // Five tests that pin the post-Step-2.5 contract:
+    //   1. Pending users land at `is_active = IS_ACTIVE.INACTIVE` (Step 2.5).
+    //   2. SMTP failure surfaces as 503 (DD-14, fail-loud).
+    //   3. SMTP failure triggers tenant-erasure cleanup (DELETE FROM tenants
+    //      → cascade kills the pending user via FK ON DELETE CASCADE).
+    //   4. Audit row is NOT written when the challenge mail never left the
+    //      building (no orphan `register` audit pointing at a deleted tenant).
+    //   5. Cleanup-internal failure does NOT mask the original 503 (the
+    //      stale-pending reaper, Step 2.11, is the safety net).
+
+    it('inserts the pending root user with is_active = IS_ACTIVE.INACTIVE (Step 2.5)', async () => {
+      setupFullHappyPath();
+
+      await service.registerTenant(createValidDto());
+
+      // createRootUser INSERT is mockClient.query call index 1 (createTenant
+      // is index 0). `IS_ACTIVE.INACTIVE` is interpolated INTO the SQL string
+      // (see signup.service.ts:572) so it appears in the SQL text, not the
+      // parameter array. Asserting via the rendered template substring is
+      // robust against parameter-position drift.
+      const userInsertCall = mockClient.query.mock.calls[1] as unknown[];
+      const userInsertSql = userInsertCall[0] as string;
+      expect(userInsertSql).toContain('INSERT INTO users');
+      expect(userInsertSql).toContain(`true, ${IS_ACTIVE.INACTIVE}, $9, NOW())`);
+      // Belt-and-braces — IS_ACTIVE.ACTIVE must NOT appear on the pending-user
+      // path; only the verify endpoint flips the row to ACTIVE (markVerified).
+      expect(userInsertSql).not.toContain(`true, ${IS_ACTIVE.ACTIVE},`);
+    });
+
+    /**
+     * Helper: arm `mockClient.query` for the production-mode registration
+     * transaction (4 queries) followed by the SMTP-failure cleanup (2 queries).
+     *
+     * Query sequence (mockClient.query call indices):
+     *   0  createTenant INSERT          (tenants)
+     *   1  createRootUser INSERT        (users — IS_ACTIVE.INACTIVE)
+     *   2  createRootUser UPDATE        (users.employee_id)
+     *   3  seedPendingDomain INSERT     (tenant_domains, return value unused)
+     *   4  cleanup COUNT                (other users on tenant)
+     *   5  cleanup DELETE FROM tenants  (cascade kills pending user via FK)
+     *
+     * production mode skips activateTrialAddons (`is_core = false` early-
+     * returns when `isDevelopment === false`).
+     */
+    function setupRegistrationThenCleanupMocks(): void {
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] }); // 0 tenants
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // 1 users
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // 2 UPDATE employee_id
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // 3 seedPendingDomain
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] }); // 4 cleanup COUNT
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // 5 cleanup DELETE
+    }
+
+    it('propagates ServiceUnavailableException when issueChallenge fails (DD-14, fail-loud)', async () => {
+      // Two passes — the second `await expect(...)` re-runs the full flow,
+      // so mocks need to be re-armed for both attempts.
+      for (let pass = 0; pass < 2; pass++) {
+        mockDb.systemQuery.mockResolvedValueOnce([]); // subdomain check
+        mockDb.systemTransaction.mockImplementationOnce(
+          async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+        );
+        mockDb.systemTransaction.mockImplementationOnce(
+          async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+        );
+        setupRegistrationThenCleanupMocks();
+        // SMTP layer rejects with the canonical 503 — `issueChallenge` itself
+        // converts every send failure into ServiceUnavailableException per DD-14.
+        mockIssueChallenge.mockRejectedValueOnce(
+          new ServiceUnavailableException('Der Code konnte nicht gesendet werden.'),
+        );
+      }
+
+      await expect(service.registerTenant(createValidDto())).rejects.toBeInstanceOf(
+        ServiceUnavailableException,
+      );
+
+      // Hard contract — SMTP failure must NEVER collapse to BadRequestException.
+      // A fresh client retrying must see "503 retry" not "400 bad input".
+      await expect(service.registerTenant(createValidDto())).rejects.not.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('runs DELETE FROM tenants cleanup on SMTP failure (anti subdomain-squat, FK cascades user)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]); // subdomain check
+      mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
+      );
+      setupRegistrationThenCleanupMocks();
+      mockIssueChallenge.mockRejectedValueOnce(new ServiceUnavailableException('SMTP down'));
+
+      await expect(service.registerTenant(createValidDto())).rejects.toBeInstanceOf(
+        ServiceUnavailableException,
+      );
+
+      // The cleanup transaction is the SECOND systemTransaction call.
+      expect(mockDb.systemTransaction).toHaveBeenCalledTimes(2);
+
+      // mockClient.query call index 5 is the DELETE FROM tenants statement
+      // (registration: 0=tenants, 1=users, 2=UPDATE employee_id, 3=seedPendingDomain;
+      // cleanup: 4=COUNT, 5=DELETE FROM tenants).
+      const cleanupCall = mockClient.query.mock.calls[5] as unknown[];
+      expect(cleanupCall[0]).toContain('DELETE FROM tenants');
+      expect(cleanupCall[1]).toEqual([10]);
+      // ADR-020 / ADR-045 soft-delete rule — cleanup must NEVER write
+      // `DELETE FROM users` outside the tenant-deletion module. The tenant
+      // delete cascades the pending user via FK; no direct user delete.
+      const allCleanupSql = mockClient.query.mock.calls
+        .map((c: unknown[]) => c[0] as string)
+        .join('\n');
+      expect(allCleanupSql).not.toContain('DELETE FROM users');
+    });
+
+    it('does NOT write the registration audit row when SMTP fails (no orphan audit, DD-14)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]); // subdomain check (only)
+      mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
+      );
+      setupRegistrationThenCleanupMocks();
+      mockIssueChallenge.mockRejectedValueOnce(new ServiceUnavailableException('SMTP down'));
+
+      await expect(service.registerTenant(createValidDto())).rejects.toBeInstanceOf(
+        ServiceUnavailableException,
+      );
+
+      // Step 2.5: the audit (`createAuditLog` via systemQuery) fires AFTER
+      // `issueChallenge` returns successfully. On failure path, ONLY the
+      // subdomain check (mockDb.systemQuery call #0) should have run — no
+      // audit, no other system-pool reads/writes.
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
+    });
+
+    it('still throws the original 503 when cleanupFailedSignup itself fails (best-effort, reaper safety net)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+      // First call: registration tx. Second call: cleanup tx, which we
+      // reject — the SUT swallows cleanup errors per the "best-effort"
+      // contract on `cleanupFailedSignup`.
+      mockDb.systemTransaction
+        .mockImplementationOnce(async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient))
+        .mockImplementationOnce(() => {
+          throw new Error('Cleanup tx unavailable');
+        });
+      // Only the registration-tx queries are mocked (4 calls); the cleanup
+      // tx never reaches client.query because the systemTransaction stub
+      // throws before the callback fires.
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // seedPendingDomain
+      mockIssueChallenge.mockRejectedValueOnce(new ServiceUnavailableException('SMTP down'));
+
+      // The CALLER must see the original 503, NOT the cleanup error. The
+      // stale-pending reaper (Step 2.11, every 15 min) eventually catches
+      // anything cleanup leaves behind — Sentry receives the cleanup-error
+      // log line, no leak to the client.
+      await expect(service.registerTenant(createValidDto())).rejects.toBeInstanceOf(
+        ServiceUnavailableException,
+      );
     });
   });
 
