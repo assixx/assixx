@@ -12,6 +12,7 @@
 
   import { isDark } from '$lib/stores/theme.svelte';
 
+  import BetaBanner from './BetaBanner.svelte';
   import ThemeToggle from './ThemeToggle.svelte';
 
   interface Props {
@@ -34,6 +35,10 @@
   const securityHref = $derived(offLanding ? resolve('/') + '#security' : '#security');
   const pricingHref = $derived(offLanding ? resolve('/') + '#pricing' : '#pricing');
 </script>
+
+<!-- Beta-Banner immer oberhalb des Headers — siehe BetaBanner.svelte für
+     Begründung der Sichtbarkeit auf dem gesamten Public Surface. -->
+<BetaBanner />
 
 <header class="header">
   <nav class="nav">

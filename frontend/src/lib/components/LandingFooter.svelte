@@ -111,6 +111,7 @@
         <ul class="landing-footer__list">
           <li><a href={resolve('/impressum')}>Impressum</a></li>
           <li><a href={resolve('/datenschutz')}>Datenschutz</a></li>
+          <li><a href={resolve('/disclaimer')}>Disclaimer</a></li>
         </ul>
       </div>
     </div>
