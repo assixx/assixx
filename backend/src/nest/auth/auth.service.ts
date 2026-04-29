@@ -35,6 +35,13 @@ import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { MailerService } from '../common/services/mailer.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { TenantVerificationService } from '../domains/tenant-verification.service.js';
+// 2FA layer (Step 2.4 / ADR-054 — drafted Phase 6 of FEAT_2FA_EMAIL_MASTERPLAN).
+// Password login routes through `issueChallenge('login', ...)` instead of
+// minting tokens directly. v0.5.0 / DD-10 removed: 2FA is hardcoded; there is
+// no flag-OFF short-circuit. OAuth (`loginWithVerifiedUser()`) is exempt per
+// DD-7 — see comment block above that method.
+import { TwoFactorAuthService } from '../two-factor-auth/two-factor-auth.service.js';
+import type { LoginResult } from '../two-factor-auth/two-factor-auth.types.js';
 import type {
   ForgotPasswordDto,
   LoginDto,
@@ -172,6 +179,12 @@ export class AuthService {
     // `app.module.ts` ClsModule.forRoot setup; trusts `trustProxy: true` at
     // main.ts:284 so `req.ip` is the client (not Nginx egress).
     private readonly cls: ClsService,
+    // ADR-054 / FEAT_2FA_EMAIL_MASTERPLAN Step 2.4: 2FA challenge issuance for
+    // password login. AuthModule imports TwoFactorAuthModule one-way — no
+    // forwardRef needed because TwoFactorAuthModule does not depend on
+    // AuthModule (Step 2.7 verify endpoint will sit in TwoFactorAuthController
+    // and call back into AuthService via a separate mechanism).
+    private readonly twoFactorAuth: TwoFactorAuthService,
   ) {}
 
   // ============================================
@@ -179,9 +192,34 @@ export class AuthService {
   // ============================================
 
   /**
-   * Authenticate user with email and password
+   * Authenticate user with email + password and route into the 2FA email
+   * challenge gate (ADR-054 / FEAT_2FA_EMAIL_MASTERPLAN Step 2.4).
+   *
+   * Flow under v0.5.0 (DD-10 removed — 2FA hardcoded, no flag fallback):
+   *   1. Validate credentials (existing behaviour — fails 401 / 403).
+   *   2. Hand off to `TwoFactorAuthService.issueChallenge('login')`. That
+   *      service generates a 6-char code, persists the hash in Redis, sends
+   *      the email (DD-14 fail-loud → ServiceUnavailableException on SMTP
+   *      error), and returns a `TwoFactorChallenge` carrying the opaque
+   *      challenge token.
+   *   3. Return `{ stage: 'challenge_required', challenge }`. The controller
+   *      transcribes `challenge.challengeToken` into an httpOnly cookie
+   *      (R8 — token never in body) and redirects the user to `/login/verify`.
+   *
+   * Token issuance, last-login update, and the login-audit row all migrate
+   * to the verify endpoint (Step 2.7). They must NOT happen here — credentials
+   * being valid is necessary but not sufficient for an authenticated session
+   * under the 2FA model.
+   *
+   * `ipAddress` / `userAgent` were removed from the signature: under the new
+   * model `login()` does not write any IP/UA-bearing rows (no token storage,
+   * no audit). The audit row that used to fire here lives in
+   * `TwoFactorAuthService.handleVerifySuccess` (Step 2.3) once the user
+   * proves possession of the code.
+   *
+   * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §2.4 + §A8 (audit tuples)
    */
-  async login(dto: LoginDto, ipAddress?: string, userAgent?: string): Promise<LoginResponse> {
+  async login(dto: LoginDto): Promise<LoginResult> {
     const { email, password } = dto;
 
     // Find user by email
@@ -201,34 +239,17 @@ export class AuthService {
       throw new UnauthorizedException('E-Mail oder Passwort falsch');
     }
 
-    // Generate tokens with rotation
-    const tokens = await this.generateTokensWithRotation(
+    // 2FA gate — every successful credential validation issues a challenge
+    // (no flag, no bypass; DD-10 removed in masterplan v0.5.0). SMTP failure
+    // surfaces as ServiceUnavailableException (DD-14) — controller maps to
+    // 503 + retry UX. Lockout state surfaces as ForbiddenException (DD-6).
+    const challenge = await this.twoFactorAuth.issueChallenge(
       user.id,
       user.tenant_id,
-      user.role,
       user.email,
-      undefined, // New family on login
-      ipAddress,
-      userAgent,
+      'login',
     );
-
-    // Update last login
-    await this.updateLastLogin(user.id, user.tenant_id);
-
-    // Log login for audit (default method 'password')
-    await this.logLoginAudit(user, ipAddress, userAgent);
-
-    // Session 12c (ADR-050): include tenant subdomain so the frontend login
-    // action knows whether to redirect to a tenant-scoped origin (apex-login
-    // → handoff → subdomain). Separate query — avoids adding a JOIN on every
-    // user fetch when subdomain is only needed at login time.
-    const subdomain = await this.getSubdomainForTenant(user.tenant_id);
-
-    return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      user: this.buildSafeUserResponse(user, subdomain),
-    };
+    return { stage: 'challenge_required', challenge };
   }
 
   /**
@@ -243,6 +264,16 @@ export class AuthService {
    * audit row, updates the same `last_login` column. The only difference is
    * the `loginMethod` string that appears in the audit `new_values` JSON and
    * the absence of a bcrypt.compare step.
+   *
+   * **DD-7 (ADR-054 — drafted Phase 6 of FEAT_2FA_EMAIL_MASTERPLAN):**
+   * OAuth users are exempt from email-based 2FA. Microsoft / Google providers
+   * already enforce MFA upstream; layering an Assixx-side email code on top
+   * would force a double-prompt UX with no marginal security gain. This
+   * method therefore mints tokens directly — it MUST NOT be modified to
+   * route through `TwoFactorAuthService.issueChallenge()`. Password login
+   * (`login()` above) is the sole 2FA-gated path; any future provider that
+   * does NOT enforce MFA upstream must come through `login()` or its own
+   * 2FA-aware bridge, never through this method.
    */
   async loginWithVerifiedUser(
     userId: number,

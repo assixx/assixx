@@ -3,12 +3,12 @@
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
 > **Version:** 0.6.0 (GREENFIELD-TRIM + DD-32 E-Mail-Change-2FA-Verify; R15 + Step 2.12 hinzugefügt; Bestandsuser-Cutover-Apparat als N/A markiert per CLAUDE.md Greenfield-Status seit 2026-04-19)
-> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.9 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
+> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.9 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
 > **Branch:** `feat/2fa-email`
 > **Spec:** This document
 > **Author:** Claude (proposed) · Simon Öztürk (decides)
 > **Estimated sessions:** 14 (v0.5.0) → ~12 (v0.6.0 nach Greenfield-Trim, Step 2.12 +1 Session)
-> **Actual sessions:** 3 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.9 erledigt)
+> **Actual sessions:** 4 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.9 erledigt)
 > **External dependencies added:** **ZERO** — every primitive (crypto, JWT, Redis via `ioredis`, legacy `email-service`, `CustomThrottlerGuard`, Zod, `audit_trail`) already exists.
 
 ---
@@ -796,7 +796,43 @@ const TWO_FA_REDIS = Symbol('TWO_FA_REDIS');
 - All caught errors → `getErrorMessage()` per TYPESCRIPT-STANDARDS §7.3.
 - All DB writes via `tenantTransaction()` or `queryAsTenant()` — NEVER `query()` for tenant-scoped tables (ADR-019).
 
-### Step 2.4: Modify `AuthService.login()` [PENDING]
+### Step 2.4: Modify `AuthService.login()` [DONE — 2026-04-29]
+
+**Delivered (2026-04-29):**
+
+- `backend/src/nest/two-factor-auth/two-factor-auth.types.ts` — added `PublicTwoFactorChallenge = Omit<TwoFactorChallenge, 'challengeToken'>` and `LoginResultBody` (HTTP-shape mirror of service-layer `LoginResult`, with token stripped per R8). Forward-compat: the `'authenticated'` branch is preserved on both unions for a future per-tenant 2FA-skip flag (V2).
+- `backend/src/nest/auth/auth.service.ts` — `login()` signature changed to `Promise<LoginResult>`; body now validates credentials (existing behaviour) then hands off to `twoFactorAuth.issueChallenge('login', ...)`. The pre-2FA token-rotation / `updateLastLogin` / `logLoginAudit` / `getSubdomainForTenant` calls are removed from this code path (they migrate to the verify endpoint, Step 2.7). `ipAddress`/`userAgent` parameters removed — no IP/UA-bearing rows are written under the new model. DD-7 + ADR-054 comment block added above `loginWithVerifiedUser()` documenting the OAuth-exempt invariant. `TwoFactorAuthService` injected via constructor (6th positional argument).
+- `backend/src/nest/auth/auth.controller.ts` — `POST /auth/login` returns `LoginResultBody` instead of `LoginResponse`. New `CHALLENGE_COOKIE_OPTIONS` + `setChallengeCookie()` helper alongside the existing `setAuthCookies` pattern; `maxAge` imported from `CODE_TTL_SEC` so the cookie cannot outlive the Redis-side challenge record (single source of truth). On `stage === 'challenge_required'`: writes the challenge token to an httpOnly+Secure+SameSite=Lax cookie and returns `{ stage, challenge: { expiresAt, resendAvailableAt, resendsRemaining } }` (token never in body — R8). On `stage === 'authenticated'` (unreachable from `/auth/login` under v0.5.0): retains the legacy 3-cookie tokens-in-body shape for compile-time exhaustiveness. Dropped unused `@Req() req` parameter and the `getClientInfo(req)` destructure on this handler — `getClientInfo` stays for `logout` / `refresh` / `mintHandoff` consumers.
+- `backend/src/nest/auth/auth.module.ts` — `TwoFactorAuthModule` added to `imports` (one-way edge, no `forwardRef` — TwoFactorAuthModule does not depend on AuthModule).
+- `backend/src/nest/auth/auth.service.test.ts` — added `MockTwoFactorAuth` factory + `TwoFactorAuthService` constructor wiring; `setupLoginMocks()` refactored to drop the post-credential mocks (no longer reached) and seed the `issueChallenge` stub. The 10-test `describe('login', …)` block was rewritten to 5 tests: 1 happy path asserting `stage === 'challenge_required'` + `issueChallenge(userId, tenantId, email, 'login')` call shape, 4 credential-validation gates (unknown email / inactive user × 3 / wrong password / lowercase normalisation) — each now also asserts `issueChallenge` was NOT called when validation fails (anti-enumeration: invalid credentials must not leak into the 2FA layer or trigger spam mails). The 5 tests covering token-issuance / last-login / audit / IP-UA forwarding / JWT secret isolation were deleted — those side effects no longer live in `login()` (Phase 3 will rebuild full coverage via the Step 2.7 verify endpoint).
+
+**Critical patterns enforced:**
+
+- Discriminated union forces compile-time exhaustiveness (ADR-041).
+- `loginWithVerifiedUser()` UNCHANGED (DD-7 OAuth exempt) — only a comment block was added above it; functional behaviour byte-identical.
+- Challenge token is cookie-only on the wire (R8) — even though the service-layer `TwoFactorChallenge` carries it.
+- Validation gates run BEFORE `issueChallenge` — invalid credentials never reach the 2FA layer (R10 / anti-enumeration).
+- Cookie `maxAge` derived from `CODE_TTL_SEC` so cookie-vs-Redis-record divergence is impossible.
+
+**Deferred to later steps (intentionally NOT done in 2.4):**
+
+- Step 2.5 (signup flow modification) — separate file (`signup.service.ts`).
+- Step 2.6 OAuth-controller comments — separate files in `auth/oauth/`.
+- Phase 2 DoD load-test update (`load/lib/auth.ts`, `load/tests/baseline.ts`) — bundled into Session 6 per Session Tracking; load tests run via k6 (not part of `pnpm run test`), so this lands before Public-Launch but does not block intermediate Phase 2 work.
+
+**Verification (2026-04-29):**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/auth/ backend/src/nest/two-factor-auth/` → 0 errors
+- `docker exec assixx-backend pnpm exec tsc --noEmit -p backend` → exit 0, 0 lines
+- `pnpm exec vitest run --project unit backend/src/nest/auth/auth.service.test.ts` → 91 tests, all passed in 128 ms
+- `pnpm exec vitest run --project unit` (full unit suite) → 279 files, 7138 tests, all passed in 17.17 s — no indirect breakage
+- Backend hot-reloaded; `GET /health` → `{"status":"ok"}`; Nest application started successfully — DI graph resolved with new `TwoFactorAuthModule` import in `AuthModule`
+
+**Known interim state:**
+
+- Frontend `(public)/login/+page.server.ts` still expects the legacy `LoginResponse` shape. The user-facing login flow will break until Phase 5 (Step 5.1) adapts the SvelteKit form action to the discriminated union. This is the planned staging — backend contract lands now, frontend follows in Phase 5.
+
+---
 
 **File modified:** `backend/src/nest/auth/auth.service.ts:184` (`async login(dto, ipAddress?, userAgent?)`)
 

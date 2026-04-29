@@ -13,6 +13,11 @@ import { Module, forwardRef } from '@nestjs/common';
 
 import { MailerService } from '../common/services/mailer.service.js';
 import { DomainsModule } from '../domains/domains.module.js';
+// 2FA email gate — Step 2.4 (ADR-054). One-way edge: AuthModule depends on
+// TwoFactorAuthModule (for `TwoFactorAuthService.issueChallenge` in
+// `AuthService.login`); TwoFactorAuthModule has no edge back, so no
+// `forwardRef` is needed here (in contrast to the OAuthModule cycle below).
+import { TwoFactorAuthModule } from '../two-factor-auth/two-factor-auth.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { ConnectionTicketService } from './connection-ticket.service.js';
@@ -26,7 +31,9 @@ import { OAuthModule } from './oauth/oauth.module.js';
 @Module({
   // DomainsModule provides `TenantVerificationService` — required by
   // `AuthService.createUser` per §2.9 + D33 Option (a) KISS gate.
-  imports: [forwardRef(() => OAuthModule), DomainsModule],
+  // TwoFactorAuthModule provides `TwoFactorAuthService` — required by
+  // `AuthService.login` for the 2FA challenge issuance (Step 2.4).
+  imports: [forwardRef(() => OAuthModule), DomainsModule, TwoFactorAuthModule],
   controllers: [AuthController],
   providers: [AuthService, ConnectionTicketService, MailerService],
   exports: [AuthService, ConnectionTicketService],

@@ -29,6 +29,11 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { AuthThrottle } from '../common/decorators/throttle.decorators.js';
 import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+// 2FA challenge cookie config — Step 2.4 (ADR-054). `CODE_TTL_SEC` keeps the
+// cookie's `Max-Age` in lockstep with the Redis-side challenge TTL, so a
+// stale cookie can never outlive its underlying record.
+import { CODE_TTL_SEC } from '../two-factor-auth/two-factor-auth.constants.js';
+import type { LoginResultBody } from '../two-factor-auth/two-factor-auth.types.js';
 import { AuthService } from './auth.service.js';
 import { ConnectionTicketService } from './connection-ticket.service.js';
 import {
@@ -44,7 +49,6 @@ import type {
   ConnectionTicketResponse,
   ForgotPasswordResponse,
   HandoffMintResponse,
-  LoginResponse,
   RefreshResponse,
   ResetPasswordResponse,
 } from './dto/index.js';
@@ -190,6 +194,46 @@ export function clearAuthCookies(reply: FastifyReply): void {
 }
 
 /**
+ * 2FA challenge cookie configuration — Step 2.4 (ADR-054).
+ *
+ * Holds the opaque base64url challenge token (~43 chars from 32 random bytes,
+ * DD-4) between `POST /auth/login` and `POST /auth/2fa/verify`. R8 mitigation:
+ * the token NEVER appears in the response body — controllers read it from the
+ * cookie on verify. R14 mitigation: the cookie is set + read on the SAME
+ * origin (no cross-subdomain traversal) — apex login on apex, tenant login
+ * on tenant subdomain.
+ *
+ * `httpOnly: true` keeps the token out of JS reach (XSS can't lift it).
+ * `secure` mirrors the access-cookie pattern (HTTPS-only in prod).
+ * `sameSite: 'lax'` allows the cookie on the 303 redirect to /login/verify
+ * but blocks cross-site fetches (CSRF defence on top of the throttler).
+ * `path: '/'` so both /api/v2/auth/login (set) and /api/v2/auth/2fa/verify
+ * (read) paths receive it.
+ * `maxAge: CODE_TTL_SEC` keeps the cookie in lockstep with the Redis-side
+ * challenge record so a stale cookie can never outlive its backing state.
+ *
+ * Exported so a future apex-signup form action (Step 2.5 / 5.4) can write
+ * the same shape on its own success branch.
+ */
+export const CHALLENGE_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env['NODE_ENV'] === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: CODE_TTL_SEC,
+};
+
+/**
+ * Atomically write the challenge cookie. Single-call helper so any future
+ * caller (signup form action, e-mail-change flow per Step 2.12) writes the
+ * exact same shape — divergence here would leak the cookie across paths it
+ * shouldn't reach.
+ */
+export function setChallengeCookie(reply: FastifyReply, challengeToken: string): void {
+  reply.setCookie('challengeToken', challengeToken, CHALLENGE_COOKIE_OPTIONS);
+}
+
+/**
  * Rotate ONLY the access token + its exp-companion cookie. The refresh token
  * cookie is left untouched — the session identity is unchanged, only a JWT
  * claim (`activeRole`) is being updated.
@@ -285,13 +329,26 @@ export class AuthController {
 
   /**
    * POST /auth/login
-   * Authenticate user with email and password
+   * Authenticate user with email + password and route into the 2FA email gate
+   * (Step 2.4 / ADR-054).
    *
-   * Sets httpOnly cookies for SSR support:
-   * - accessToken: For API authentication
-   * - refreshToken: For token refresh
+   * Two response shapes via the `LoginResult` discriminated union:
    *
-   * Also returns tokens in body for backwards compatibility with SPA clients.
+   * - `stage: 'challenge_required'` (the only branch reachable today under
+   *   v0.5.0 / DD-10 removed): credentials valid → 2FA code emailed → an
+   *   httpOnly+Secure+SameSite=Lax cookie carries the opaque challenge token
+   *   to the verify endpoint. The token is intentionally stripped from the
+   *   response body (R8) — the body returns only the public challenge view
+   *   (`expiresAt`, `resendAvailableAt`, `resendsRemaining`).
+   *
+   * - `stage: 'authenticated'` (currently unreachable from `/auth/login`):
+   *   left as a compile-time exhaustiveness branch so a future per-tenant
+   *   2FA-skip flag (V2) can re-enter the legacy 3-cookie tokens-in-body
+   *   shape without re-typing the controller.
+   *
+   * The previous `setAuthCookies` call moves to the verify endpoint
+   * (Step 2.7) — only an authenticated user (post-2FA) gets the access /
+   * refresh / accessTokenExp triad written.
    */
   @Post('login')
   @Public()
@@ -300,16 +357,24 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
-    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<LoginResponse> {
-    const { ipAddress, userAgent } = getClientInfo(req);
-    const result = await this.authService.login(dto, ipAddress, userAgent);
+  ): Promise<LoginResultBody> {
+    const result = await this.authService.login(dto);
 
-    // Set access + refresh httpOnly cookies plus non-httpOnly accessTokenExp —
-    // see setAuthCookies for the 3-cookie invariant rationale.
+    if (result.stage === 'challenge_required') {
+      const { challengeToken, expiresAt, resendAvailableAt, resendsRemaining } = result.challenge;
+      setChallengeCookie(reply, challengeToken);
+      return {
+        stage: 'challenge_required',
+        challenge: { expiresAt, resendAvailableAt, resendsRemaining },
+      };
+    }
+
+    // 'authenticated' branch — unreachable from /auth/login under v0.5.0
+    // (every password login issues a challenge). Kept for compile-time
+    // exhaustiveness; if a future change re-introduces a 2FA-skip path,
+    // this branch writes the same 3-cookie triad as the legacy flow.
     setAuthCookies(reply, result.accessToken, result.refreshToken);
-
     return result;
   }
 

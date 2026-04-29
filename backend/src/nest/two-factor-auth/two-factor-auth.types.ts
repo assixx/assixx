@@ -49,6 +49,34 @@ export interface TwoFactorChallenge {
   resendsRemaining: number;
 }
 
+/**
+ * Public-facing challenge metadata — what travels in the HTTP response body.
+ *
+ * Strips `challengeToken` from `TwoFactorChallenge` (R8 mitigation — the
+ * token never appears in the response body; it travels exclusively via the
+ * httpOnly+Secure+SameSite=Lax cookie set by the controller). Controllers
+ * MUST return this shape, NEVER the raw `TwoFactorChallenge`.
+ */
+export type PublicTwoFactorChallenge = Omit<TwoFactorChallenge, 'challengeToken'>;
+
+/**
+ * HTTP response body shape for `POST /auth/login` (and `POST /signup` after
+ * Step 2.5). Mirrors `LoginResult` — the service-layer return — but with the
+ * challenge token stripped: the controller transcribes the token into the
+ * httpOnly challenge cookie before responding (R8 + R14 — same-origin set
+ * + verify, no token in JS-readable surface).
+ *
+ * Under v0.5.0 (DD-10 removed) the password-login path always emits
+ * `'challenge_required'`. The `'authenticated'` branch is reachable only via
+ * paths that bypass the 2FA layer (today: OAuth via `loginWithVerifiedUser()`,
+ * exempt per DD-7) and is preserved here for compile-time exhaustiveness so
+ * a future per-tenant skip flag (V2) can re-introduce a tokens-in-body shape
+ * without re-typing the controller.
+ */
+export type LoginResultBody =
+  | { stage: 'challenge_required'; challenge: PublicTwoFactorChallenge }
+  | ({ stage: 'authenticated' } & LoginResponse);
+
 /** Either signup-flow verification or login-flow verification. */
 export type ChallengePurpose = 'login' | 'signup';
 
