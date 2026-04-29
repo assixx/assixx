@@ -1,7 +1,7 @@
 /**
  * 2FA Email API Integration Tests — FEAT_2FA_EMAIL_MASTERPLAN Phase 4 / Session 10.
  *
- * Runs against the REAL backend (Docker must be running, Maildev wired into
+ * Runs against the REAL backend (Docker must be running, Mailpit wired into
  * Doppler dev SMTP — see Step 0.5.5 + HOW-TO-DEV-SMTP.md).
  *
  * Coverage matrix (Phase 4 DoD ≥35 assertions):
@@ -34,7 +34,7 @@ import {
   type JsonBody,
   authHeaders,
   clear2faStateForUser,
-  clearMaildev,
+  clearMailpit,
   extractCookieValue,
   fetchLatest2faCode,
   flushThrottleKeys,
@@ -117,7 +117,7 @@ async function resendRaw(challengeToken: string): Promise<{ res: Response; body:
 
 /**
  * Issue + verify a challenge in one shot for a freshly-credentialed user.
- * Pre-cleans Maildev + per-user 2FA state for determinism.
+ * Pre-cleans Mailpit + per-user 2FA state for determinism.
  */
 async function performTwoFactorLogin(
   email: string,
@@ -125,7 +125,7 @@ async function performTwoFactorLogin(
   userId: number,
 ): Promise<VerifyStepResult> {
   clear2faStateForUser(userId);
-  await clearMaildev();
+  await clearMailpit();
   const login = await loginRaw(email, password);
   if (login.challengeToken === null) {
     throw new Error(`Login did not issue challengeToken for ${email}`);
@@ -206,8 +206,8 @@ describe('POST /auth/login → 2FA challenge issuance', () => {
     clear2faStateForUser(APITEST_USER_ID);
   });
 
-  it('valid credentials → 200 + stage=challenge_required + Maildev mail', async () => {
-    await clearMaildev();
+  it('valid credentials → 200 + stage=challenge_required + Mailpit mail', async () => {
+    await clearMailpit();
     const { res, body, challengeToken } = await loginRaw(APITEST_EMAIL, APITEST_PASSWORD);
 
     expect(res.status).toBe(200);
@@ -216,13 +216,13 @@ describe('POST /auth/login → 2FA challenge issuance', () => {
     expect(body.data.challenge.resendsRemaining).toBe(3);
     expect(challengeToken).not.toBeNull();
 
-    // Maildev capture — generic subject (DD-13), no code in subject (DD-13).
+    // Mailpit capture — generic subject (DD-13), no code in subject (DD-13).
     const code = await fetchLatest2faCode(APITEST_EMAIL);
     expect(code).toMatch(/^[A-HJKMNP-Z2-9]{6}$/);
   });
 
   it('invalid password → 401 + NO challenge issued + NO email sent (R10)', async () => {
-    await clearMaildev();
+    await clearMailpit();
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -259,7 +259,7 @@ describe('POST /auth/2fa/verify — happy path + token issuance', () => {
 
   beforeAll(async () => {
     clear2faStateForUser(APITEST_USER_ID);
-    await clearMaildev();
+    await clearMailpit();
     const login = await loginRaw(APITEST_EMAIL, APITEST_PASSWORD);
     if (login.challengeToken === null) {
       throw new Error('beforeAll: login did not issue challengeToken');
@@ -328,7 +328,7 @@ describe('POST /auth/2fa/verify — input validation', () => {
 describe('POST /auth/2fa/verify — wrong code + lockout (R2, DD-5, DD-6)', () => {
   it('wrong code → 401 + challenge stays valid for next attempt', async () => {
     clear2faStateForUser(victimUserId);
-    await clearMaildev();
+    await clearMailpit();
     const login = await loginRaw(VICTIM_EMAIL, VICTIM_PASSWORD);
     expect(login.challengeToken).not.toBeNull();
     // Drain the issued mail so subsequent fetches start clean.
@@ -342,7 +342,7 @@ describe('POST /auth/2fa/verify — wrong code + lockout (R2, DD-5, DD-6)', () =
   it('5 wrong codes → service-layer lockout (DD-5/DD-6) — verify via Redis state', async () => {
     clear2faStateForUser(victimUserId);
     flushThrottleKeys();
-    await clearMaildev();
+    await clearMailpit();
     const login = await loginRaw(VICTIM_EMAIL, VICTIM_PASSWORD);
     expect(login.challengeToken).not.toBeNull();
     const challenge = login.challengeToken as string;
@@ -386,7 +386,7 @@ describe('POST /auth/2fa/verify — wrong code + lockout (R2, DD-5, DD-6)', () =
     expect(clearRes.status).toBe(204);
 
     // Login still goes through 2FA challenge — clear-lockout does NOT skip 2FA.
-    await clearMaildev();
+    await clearMailpit();
     const login = await loginRaw(VICTIM_EMAIL, VICTIM_PASSWORD);
     expect(login.res.status).toBe(200);
     expect(login.body.data.stage).toBe('challenge_required');
@@ -405,7 +405,7 @@ describe('POST /auth/2fa/verify — wrong code + lockout (R2, DD-5, DD-6)', () =
 describe('POST /auth/2fa/resend', () => {
   it('valid resend → 200 + new code (different from initial) + decremented resends', async () => {
     clear2faStateForUser(victimUserId);
-    await clearMaildev();
+    await clearMailpit();
 
     const login = await loginRaw(VICTIM_EMAIL, VICTIM_PASSWORD);
     expect(login.challengeToken).not.toBeNull();
@@ -423,7 +423,7 @@ describe('POST /auth/2fa/resend', () => {
     );
     flushThrottleKeys();
 
-    await clearMaildev();
+    await clearMailpit();
     const resend = await resendRaw(challenge);
     expect(resend.res.status).toBe(200);
     // Body shape: `{ challenge: PublicTwoFactorChallenge }` per
@@ -437,7 +437,7 @@ describe('POST /auth/2fa/resend', () => {
 
   it('resend before 60 s cooldown → 429', async () => {
     clear2faStateForUser(victimUserId);
-    await clearMaildev();
+    await clearMailpit();
     const login = await loginRaw(VICTIM_EMAIL, VICTIM_PASSWORD);
     expect(login.challengeToken).not.toBeNull();
     const challenge = login.challengeToken as string;
@@ -473,7 +473,7 @@ describe('POST /signup → 2FA challenge issuance', () => {
 
   beforeAll(async () => {
     flushThrottleKeys();
-    await clearMaildev();
+    await clearMailpit();
     signupRes = await fetch(`${BASE_URL}/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -527,7 +527,7 @@ describe('POST /signup → 2FA challenge issuance', () => {
     expect(out).toBe('0');
   });
 
-  it('verify with code from Maildev → user activates to is_active=ACTIVE + handoff ticket issued', async () => {
+  it('verify with code from Mailpit → user activates to is_active=ACTIVE + handoff ticket issued', async () => {
     expect(signupChallenge).not.toBeNull();
     const code = await fetchLatest2faCode(adminEmail);
     const verify = await verifyRaw(signupChallenge as string, code);
@@ -618,18 +618,18 @@ describe('POST /users/:id/2fa/clear-lockout — root-only, two-root rule', () =>
   });
 });
 
-// ─── F. Email-shape assertions via Maildev (DD-13, DD-20) ────────────────────
+// ─── F. Email-shape assertions via Mailpit (DD-13, DD-20) ────────────────────
 
 describe('Email content (DD-13 / DD-20)', () => {
   beforeEach(async () => {
     flushThrottleKeys();
     clear2faStateForUser(APITEST_USER_ID);
-    await clearMaildev();
+    await clearMailpit();
   });
 
   it('subject is generic — no code, no purpose differentiation (DD-13)', async () => {
     await loginRaw(APITEST_EMAIL, APITEST_PASSWORD);
-    // Wait briefly for SMTP delivery to land in Maildev.
+    // Wait briefly for SMTP delivery to land in Mailpit.
     await fetchLatest2faCode(APITEST_EMAIL);
     const mailbox = (await (await fetch('http://localhost:1080/email')).json()) as JsonBody[];
     expect(mailbox.length).toBeGreaterThanOrEqual(1);
@@ -645,7 +645,7 @@ describe('Email content (DD-13 / DD-20)', () => {
     const subdomain = `f2fa-mail-${RUN_SUFFIX}`;
     const adminEmail = `root-${RUN_SUFFIX}@${subdomain}.test`;
     flushThrottleKeys();
-    await clearMaildev();
+    await clearMailpit();
     const res = await fetch(`${BASE_URL}/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

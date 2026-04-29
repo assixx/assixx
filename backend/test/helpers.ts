@@ -54,52 +54,101 @@ export async function loginApitest(): Promise<AuthState> {
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2000;
 
-// ─── 2FA / Maildev helpers (FEAT_2FA_EMAIL_MASTERPLAN Session 10) ────────────
+// ─── 2FA / Mailpit helpers (FEAT_2FA_EMAIL_MASTERPLAN Session 10) ────────────
 //
 // Phase 2 hardcoded email-based 2FA on every password login (DD-10 removed —
 // no flag, no opt-out). Every test that needs an authenticated session now has
 // to: log in → capture `challengeToken` cookie → fetch the code mail from
-// Maildev → POST /auth/2fa/verify → extract access/refresh tokens from cookies.
+// Mailpit → POST /auth/2fa/verify → extract access/refresh tokens from cookies.
 //
 // `info@assixx.com` is the test-tenant root (users.id=1, verified via psql
 // probe 2026-04-29). `_performLogin` below caches the resulting token pair
 // once per suite run (`_cachedAuth`) — only the first call pays the 2FA cost.
 //
-// Maildev runs on `localhost:1080` (Web-UI + REST), SMTP on `maildev:1025`
-// (internal Docker network). Doppler `dev` SMTP_HOST/PORT point at maildev so
+// Mailpit runs on `localhost:8025` (Web-UI + REST), SMTP on `mailpit:1025`
+// (internal Docker network). Doppler `dev` SMTP_HOST/PORT point at mailpit so
 // the backend's nodemailer transport lands every dev mail in the catcher.
-// See docker-compose.yml `maildev` service + HOW-TO-DEV-SMTP.md (DD-25).
+// See docker-compose.yml `mailpit` service + HOW-TO-DEV-SMTP.md (DD-25).
+//
+// Migration 2026-04-29: replaces maildev (port 1080, GET /email, DELETE
+// /email/all). Mailpit's REST API uses an envelope shape (`{messages: [...]}`)
+// with PascalCase fields and requires a per-ID fetch for the message body —
+// the list endpoint returns metadata + truncated `Snippet` only.
 
-const MAILDEV_URL = 'http://localhost:1080';
+const MAILPIT_URL = 'http://localhost:8025';
 const MAIL_POLL_INTERVAL_MS = 200;
 const MAIL_POLL_TIMEOUT_MS = 10_000;
 /** Test root user id — `info@assixx.com` (verified 2026-04-29 via psql). */
 const APITEST_USER_ID = 1;
 const REDIS_AUTH = 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0';
 
-interface MaildevEmail {
-  id: string;
-  to: Array<{ address: string }>;
-  subject: string;
-  text: string;
-  time: string;
+interface MailpitMessageSummary {
+  ID: string;
+  To: Array<{ Address: string }>;
+  Subject: string;
+  Created: string;
+}
+
+interface MailpitMessagesEnvelope {
+  total: number;
+  messages: MailpitMessageSummary[];
+}
+
+interface MailpitMessageDetail {
+  ID: string;
+  Text: string;
 }
 
 /**
- * Wipe Maildev's mailbox. Idempotent; safe to call in `beforeEach` for tests
+ * Wipe Mailpit's mailbox. Idempotent; safe to call in `beforeEach` for tests
  * that read 2FA codes — keeps each test's email lookup deterministic.
  */
-export async function clearMaildev(): Promise<void> {
-  await fetch(`${MAILDEV_URL}/email/all`, { method: 'DELETE' });
+export async function clearMailpit(): Promise<void> {
+  await fetch(`${MAILPIT_URL}/api/v1/messages`, { method: 'DELETE' });
 }
 
 /**
- * Poll Maildev for the most recent 2FA code mail addressed to `recipient`.
+ * Read the 6-char Crockford-Base32 code from a Mailpit message detail.
+ * Anchored on the `Ihr Bestätigungscode:` prefix that the 2FA template
+ * (`2fa-code.template.ts:174`) writes on its own line — robust against
+ * future intro-copy tweaks. Returns `null` when the body is empty or the
+ * marker is absent.
+ */
+function _extract2faCode(detail: MailpitMessageDetail): string | null {
+  if (typeof detail.Text !== 'string') return null;
+  const m = /Ihr Bestätigungscode:\s*([A-HJKMNP-Z2-9]{6})/.exec(detail.Text);
+  return m?.[1] !== undefined && m[1] !== '' ? m[1] : null;
+}
+
+/**
+ * Walk one Mailpit list-snapshot looking for a 2FA code addressed to
+ * `lowerRecipient`. Per match: GET /api/v1/message/{ID} → regex against
+ * `Text`. Splitting this out keeps `fetchLatest2faCode` below the
+ * SonarJS cognitive-complexity-10 ceiling (`eslint.config.mjs`).
+ */
+async function _scanForCode(
+  envelope: MailpitMessagesEnvelope,
+  lowerRecipient: string,
+): Promise<string | null> {
+  for (const summary of envelope.messages) {
+    const matches = summary.To.some((t) => t.Address.toLowerCase() === lowerRecipient);
+    if (!matches) continue;
+    const detailRes = await fetch(`${MAILPIT_URL}/api/v1/message/${summary.ID}`);
+    const detail = (await detailRes.json()) as MailpitMessageDetail;
+    const code = _extract2faCode(detail);
+    if (code !== null) return code;
+  }
+  return null;
+}
+
+/**
+ * Poll Mailpit for the most recent 2FA code mail addressed to `recipient`.
  * Returns the 6-char Crockford-Base32 code from the plain-text body.
  *
- * The template (`build2faCodeTemplate`, `2fa-code.template.ts:174`) writes
- * `Ihr Bestätigungscode: ${code}` on its own line — anchor on that prefix to
- * stay robust against future intro-copy tweaks.
+ * Mailpit returns messages newest-first by default (verified via API probe
+ * 2026-04-29). The list endpoint omits the body, so for each candidate we
+ * GET /api/v1/message/{ID} to read `Text` — one extra round-trip per match,
+ * negligible at test-suite scale.
  *
  * @throws if no matching mail arrives within `timeoutMs`.
  */
@@ -110,17 +159,10 @@ export async function fetchLatest2faCode(
   const lower = recipient.toLowerCase();
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
-    const res = await fetch(`${MAILDEV_URL}/email`);
-    const all = (await res.json()) as MaildevEmail[];
-    // Maildev returns oldest-first — sort newest-first so resends/retries pick
-    // up the latest code (DD-9: resend overwrites the Redis record).
-    const sorted = [...all].sort((a, b) => Date.parse(b.time) - Date.parse(a.time));
-    for (const mail of sorted) {
-      const matches = mail.to.some((t) => t.address.toLowerCase() === lower);
-      if (!matches || typeof mail.text !== 'string') continue;
-      const m = /Ihr Bestätigungscode:\s*([A-HJKMNP-Z2-9]{6})/.exec(mail.text);
-      if (m?.[1] !== undefined && m[1] !== '') return m[1];
-    }
+    const res = await fetch(`${MAILPIT_URL}/api/v1/messages`);
+    const envelope = (await res.json()) as MailpitMessagesEnvelope;
+    const code = await _scanForCode(envelope, lower);
+    if (code !== null) return code;
     await new Promise((r) => setTimeout(r, MAIL_POLL_INTERVAL_MS));
   }
   throw new Error(`No 2FA code mail for ${recipient} within ${timeoutMs} ms`);
@@ -177,9 +219,9 @@ async function _runVerifyRequest(challengeToken: string, code: string): Promise<
 
 async function _performLogin(attempt = 1): Promise<AuthState> {
   // Pre-clean: wipe stale 2FA state from prior failed runs (lockouts /
-  // fail-streaks) and Maildev — both are idempotent and cheap.
+  // fail-streaks) and Mailpit — both are idempotent and cheap.
   clear2faStateForUser(APITEST_USER_ID);
-  await clearMaildev();
+  await clearMailpit();
 
   // Step 1: submit credentials → expect `stage: 'challenge_required'`.
   const loginRes = await _runLoginRequest();
@@ -207,7 +249,7 @@ async function _performLogin(attempt = 1): Promise<AuthState> {
     throw new Error('challengeToken cookie missing from /auth/login response');
   }
 
-  // Step 2: fetch the code from Maildev + verify.
+  // Step 2: fetch the code from Mailpit + verify.
   const code = await fetchLatest2faCode(APITEST_EMAIL);
   const verifyRes = await _runVerifyRequest(challengeToken, code);
   if (!verifyRes.ok) {

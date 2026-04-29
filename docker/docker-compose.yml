@@ -403,48 +403,64 @@ services:
     command: ["node", "backend/dist/workers/deletion-worker.js"]
 
   # ===========================================================================
-  # Maildev — Development SMTP capture (FEAT_2FA_EMAIL Step 0.5.5, DD-25)
+  # Mailpit — Development SMTP capture (FEAT_2FA_EMAIL Step 0.5.5, DD-25)
   # ===========================================================================
   # WHY: Phase 2 of the email-2FA masterplan needs a working dev SMTP target
-  # before any backend code is written. Maildev gives us zero external deps and
+  # before any backend code is written. Mailpit gives us zero external deps and
   # a Web-UI for visual verification that the email-service.ts pipeline reaches
   # an SMTP listener and serialises the mail correctly. Production paths (SPF,
   # DKIM, DMARC, real SMTP provider reputation) are tested separately in Step
-  # 0.5.2 / 0.5.6 / 0.5.7 — Maildev only validates the LOCAL network + code path.
+  # 0.5.2 / 0.5.6 / 0.5.7 — Mailpit only validates the LOCAL network + code path.
+  #
+  # MIGRATION 2026-04-29 (replaces maildev/maildev:2.2.1@sha256:180ef51f…a810):
+  # Maildev is no longer actively maintained — last release 2.2.1 from
+  # 2024-12-12, repo activity stagnant. Mailpit (Go-based, axllent/mailpit) is
+  # the modern equivalent: lower memory, persistent SQLite store, faster Web-UI,
+  # active release cadence. The DD-25 decision (v0.4.0) chose maildev "NICHT
+  # Mailpit" but that rationale predated the maintenance gap; superseded here.
   #
   # SCOPE: dev profile only. Default COMPOSE_PROFILES=dev,observability in
-  # docker/.env (ADR-027 Amendment 2026-04-28) → maildev starts automatically
+  # docker/.env (ADR-027 Amendment 2026-04-28) → mailpit starts automatically
   # for every developer. Production never sees this container.
   #
   # PORT POLICY (per masterplan §0.5.5):
-  #   - 1080 → Web-UI, exposed on host so the developer can browse received mail
+  #   - 8025 → Web-UI + REST API, exposed on host so the developer can browse
+  #     received mail and tests can drive the API (DELETE /api/v1/messages,
+  #     GET /api/v1/messages). Was 1080 under maildev — port changed.
   #   - 1025 → SMTP listener, NOT exposed externally; reachable only inside the
   #     `assixx-network` bridge so only sibling containers (backend, deletion-
   #     worker) can submit mail. Prevents accidental host-side mis-targeting.
   #
-  # DOPPLER WIRING: dev config sets SMTP_HOST=maildev, SMTP_PORT=1025,
+  # DOPPLER WIRING: dev config sets SMTP_HOST=mailpit, SMTP_PORT=1025,
   #   SMTP_USER/SMTP_PASS empty, SMTP_FROM=noreply@assixx.de.
   #   See docs/how-to/HOW-TO-DEV-SMTP.md for the secret-set commands and the
   #   smoke procedure.
   #
-  # IMAGE TAG: pinned to 2.2.1 + SHA256 digest (ADR-027 §"Image Pinning
-  # Discipline" — promoted from Stage 1 to Stage 2 for this single image).
-  # DD-25 in the masterplan originally specified `:latest`; this is hardened
-  # here because (a) the ADR-027 CI lint rejects rolling tags
-  # (`.github/workflows/code-quality-checks.yml` line ~226), and
-  # (b) Maildev's release cadence is slow — 2.2.1 from 2024-12-12 has been
-  # the head for ~16 months, so manual digest bumps are not a maintenance
-  # burden. `:latest` and `:2.2.1` resolve to byte-identical manifests today;
-  # the digest captures that snapshot deterministically.
+  # AUTH POSTURE: MP_SMTP_AUTH_ACCEPT_ANY + MP_SMTP_AUTH_ALLOW_INSECURE = 1.
+  # Mailpit requires AUTH or these flags by default; nodemailer with empty
+  # SMTP_USER/SMTP_PASS connects without AUTH so the "accept any" combo is
+  # mandatory for the maildev-equivalent UX. Internal-only SMTP port keeps
+  # this safe — no external attack surface.
+  #
+  # PERSISTENCE: MP_DATABASE=/data/mailpit.db on a named volume. Mail survives
+  # `docker-compose restart` (unlike maildev which lost everything in RAM). Tests
+  # explicitly clear via DELETE /api/v1/messages in `clearMailpit()` so this
+  # doesn't bleed cross-test state.
+  #
+  # IMAGE TAG: pinned to v1.29 + SHA256 digest (ADR-027 §"Image Pinning
+  # Discipline" — Stage 2). v1.29 is the current head (2026-04 release).
+  # Bump procedure: `docker pull axllent/mailpit:<new-tag>`, copy the digest
+  # from `docker image inspect axllent/mailpit:<new-tag>`, replace tag + digest
+  # here AND in masterplan §0.5.5 AND in HOW-TO-DEV-SMTP.md.
   #
   # @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §0.5.5 (Step + verification)
   # @see docs/how-to/HOW-TO-DEV-SMTP.md (setup, smoke, troubleshooting)
   # @see docs/infrastructure/adr/ADR-027-dockerfile-hardening.md §"Image Pinning"
   # ===========================================================================
-  maildev:
+  mailpit:
     profiles: [dev]
-    image: maildev/maildev:2.2.1@sha256:180ef51f65eefebb0e7122d8308813c1fd7bff164bc440ce5a3c2feee167a810
-    container_name: assixx-maildev
+    image: axllent/mailpit:v1.29@sha256:757f22b56c1da03570afdb3d259effe5091018008a81bbedc8158cee7e16fdbc
+    container_name: assixx-mailpit
     restart: unless-stopped
     deploy:
       resources:
@@ -454,15 +470,26 @@ services:
         reservations:
           cpus: "0.1"
           memory: 32M
+    environment:
+      # Persistent SQLite store — see PERSISTENCE comment above.
+      MP_DATABASE: /data/mailpit.db
+      # Cap stored mail to 5000 (default) so the volume can't grow unbounded.
+      MP_MAX_MESSAGES: 5000
+      # Allow nodemailer to submit without AUTH (matches maildev UX).
+      # Safe because port 1025 is internal-only on assixx-network.
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
     ports:
-      - "1080:1080" # Web-UI (http://localhost:1080)
+      - "8025:8025" # Web-UI + REST API (http://localhost:8025)
       # 1025 SMTP intentionally NOT published — internal traffic only.
+    volumes:
+      - mailpit-data:/data
     networks:
       - assixx-network
     healthcheck:
-      # Maildev exposes a JSON API on the same port as the Web-UI (/healthz on
-      # newer tags; fall back to the root index for portability across versions).
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:1080/ || exit 1"]
+      # Mailpit serves the Web-UI on the same port as the REST API. The root
+      # path returns 200 OK once the server is ready to accept SMTP.
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8025/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -1127,3 +1154,8 @@ volumes:
   # Tempo traces (ADR-048 — distributed tracing backend)
   tempo_data:
     name: assixx_tempo_data
+  # Mailpit dev SMTP capture (replaces maildev RAM-only store, 2026-04-29).
+  # Persists captured mail across `docker-compose restart` so dev sessions
+  # don't lose 2FA codes mid-debug. Tests still wipe via DELETE /api/v1/messages.
+  mailpit-data:
+    name: assixx_mailpit_data

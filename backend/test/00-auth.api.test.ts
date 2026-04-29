@@ -6,7 +6,7 @@
  *
  * NOTE: This file does NOT use helpers.ts loginApitest() for the auth-shape
  * assertions because it tests the login + 2FA verify endpoints directly.
- * Other test files use the cached helper. The shared 2FA / Maildev / Redis
+ * Other test files use the cached helper. The shared 2FA / Mailpit / Redis
  * cleanup utilities ARE imported from helpers.ts to keep the contract in one
  * place (FEAT_2FA_EMAIL_MASTERPLAN Session 10).
  *
@@ -26,7 +26,7 @@ import { execSync } from 'node:child_process';
 
 import {
   clear2faStateForUser,
-  clearMaildev,
+  clearMailpit,
   extractCookieValue,
   fetchLatest2faCode,
 } from './helpers.js';
@@ -145,7 +145,7 @@ async function performLoginStep(): Promise<{ res: Response; body: JsonBody }> {
 
 /**
  * Step 2: POST /auth/2fa/verify with the challenge cookie + the code parsed
- * from Maildev. Returns the raw response so `Auth: Step 2` assertions can
+ * from Mailpit. Returns the raw response so `Auth: Step 2` assertions can
  * inspect the body (`stage: 'authenticated'`, `user`) and the
  * accessToken/refreshToken cookies issued by `setAuthCookies`.
  */
@@ -169,7 +169,7 @@ async function performVerifyStep(
  * Composite helper: run BOTH steps end-to-end against `info@assixx.com`. Used
  * by `it()` blocks that just need authenticated state (logout, re-login).
  *
- * Pre-cleans Redis 2FA state and Maildev so failed prior runs cannot poison
+ * Pre-cleans Redis 2FA state and Mailpit so failed prior runs cannot poison
  * the lockout/fail-streak counters or leave stale codes in the inbox.
  */
 async function loginAndVerify(): Promise<{
@@ -182,7 +182,7 @@ async function loginAndVerify(): Promise<{
   refreshTokenValue: string;
 }> {
   clear2faStateForUser(APITEST_USER_ID);
-  await clearMaildev();
+  await clearMailpit();
 
   const { res: loginRes, body: loginBody } = await performLoginStep();
   if (loginBody.data?.stage !== 'challenge_required') {
@@ -228,12 +228,12 @@ describe('Setup: Apitest Tenant', () => {
   });
 
   it('should create tenant or confirm it already exists', async () => {
-    // Pre-clean Maildev so any signup-challenge mail this test produces is
+    // Pre-clean Mailpit so any signup-challenge mail this test produces is
     // unambiguous (DB might be fresh, in which case this signup is the FIRST
     // event and produces a `purpose=signup` 2FA mail — we MUST verify it,
     // otherwise the user stays at is_active=INACTIVE per Step 2.5 and every
     // subsequent test in the suite logs in as an inactive user → 403).
-    await clearMaildev();
+    await clearMailpit();
 
     const res = await fetch(`${BASE_URL}/signup`, {
       method: 'POST',
@@ -336,7 +336,7 @@ describe('Auth: Step 1 — POST /auth/login → challenge', () => {
     // Pre-clean lockout/fail-streak for the test root so a poisoned prior run
     // can't blow this test up with a 403 instead of the expected 200/challenge.
     clear2faStateForUser(APITEST_USER_ID);
-    await clearMaildev();
+    await clearMailpit();
     const result = await performLoginStep();
     loginRes = result.res;
     loginBody = result.body;
@@ -387,7 +387,7 @@ describe('Auth: Step 2 — POST /auth/2fa/verify → tokens', () => {
   let setCookies: string[];
 
   beforeAll(async () => {
-    // Run a fresh login → maildev → verify cycle so the assertions below
+    // Run a fresh login → mailpit → verify cycle so the assertions below
     // exercise live cookies (the prior block consumed the previous challenge).
     const result = await loginAndVerify();
     verifyRes = result.verifyRes;
