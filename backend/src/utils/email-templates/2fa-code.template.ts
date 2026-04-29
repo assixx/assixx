@@ -28,12 +28,26 @@
  * @see ADR-054 (drafted in Phase 6): Mandatory Email-Based 2FA.
  */
 
+/**
+ * Purposes the 2FA-code template renders intro copy for.
+ *
+ * Mirrors `ChallengePurpose` in `two-factor-auth.types.ts` — kept as a literal
+ * union here to keep this file backend-agnostic (no NestJS dependency drag).
+ * The two strings stay in sync via the exhaustive `buildIntro` switch below;
+ * adding a purpose to the union without a switch case is a TS compile error.
+ */
+export type TwoFactorCodeTemplatePurpose =
+  | 'login'
+  | 'signup'
+  | 'email-change-old'
+  | 'email-change-new';
+
 /** Inputs for the 2FA code template builder. */
 export interface TwoFactorCodeTemplateInput {
   /** 6-char Crockford-Base32 code (CODE_ALPHABET, DD-1). */
   code: string;
-  /** Whether this code authorises a login or completes a signup. */
-  purpose: 'login' | 'signup';
+  /** Which flow the code authorises. */
+  purpose: TwoFactorCodeTemplatePurpose;
   /** TTL in minutes (typically `CODE_TTL_SEC / 60` = 10). DD-2. */
   ttlMinutes: number;
 }
@@ -49,18 +63,41 @@ export interface TwoFactorCodeTemplate {
  * Per-purpose intro text. Centralised so the German wording stays consistent
  * between HTML and plain-text variants — divergence here produced support
  * tickets in past incidents (different wording made users suspect phishing).
+ *
+ * The exhaustive switch is intentional: `noFallthroughCasesInSwitch` + the
+ * literal-union parameter means adding a purpose to `ChallengePurpose`
+ * without adding a case here is a TS compile error (defense against drift
+ * when future plan revisions add purposes).
+ *
+ * For email-change purposes the intro deliberately does NOT name the new or
+ * old address — DD-13 generic-leak rule extends here: if a stranger reads the
+ * mail-list preview of a stolen mailbox, they should learn nothing beyond
+ * "Assixx requested a code". The body still names "alte" / "neue" Adresse,
+ * but the lead line stays neutral.
  */
-function buildIntro(purpose: 'login' | 'signup'): { greeting: string; lead: string } {
-  if (purpose === 'signup') {
-    return {
-      greeting: 'Willkommen bei Assixx!',
-      lead: 'Bitte bestätigen Sie Ihre E-Mail-Adresse, um die Registrierung abzuschließen. Geben Sie dazu den folgenden Code in der Anmeldemaske ein:',
-    };
+function buildIntro(purpose: TwoFactorCodeTemplatePurpose): { greeting: string; lead: string } {
+  switch (purpose) {
+    case 'signup':
+      return {
+        greeting: 'Willkommen bei Assixx!',
+        lead: 'Bitte bestätigen Sie Ihre E-Mail-Adresse, um die Registrierung abzuschließen. Geben Sie dazu den folgenden Code in der Anmeldemaske ein:',
+      };
+    case 'email-change-old':
+      return {
+        greeting: 'Hallo,',
+        lead: 'Sie haben eine Änderung Ihrer Anmelde-E-Mail-Adresse beantragt. Bitte bestätigen Sie die Anfrage mit dem folgenden Code an Ihrer aktuellen Adresse:',
+      };
+    case 'email-change-new':
+      return {
+        greeting: 'Hallo,',
+        lead: 'Diese Adresse wurde als neue Anmelde-E-Mail-Adresse für Ihr Assixx-Konto angegeben. Bitte bestätigen Sie die Anfrage mit dem folgenden Code:',
+      };
+    case 'login':
+      return {
+        greeting: 'Hallo,',
+        lead: 'Sie haben sich gerade bei Assixx angemeldet. Geben Sie zur Bestätigung den folgenden Code in der Anmeldemaske ein:',
+      };
   }
-  return {
-    greeting: 'Hallo,',
-    lead: 'Sie haben sich gerade bei Assixx angemeldet. Geben Sie zur Bestätigung den folgenden Code in der Anmeldemaske ein:',
-  };
 }
 
 /**

@@ -72,6 +72,7 @@ import {
 import type {
   ChallengePurpose,
   ChallengeRecord,
+  LoginChallengePurpose,
   TwoFactorChallenge,
 } from './two-factor-auth.types.js';
 import { TwoFactorCodeService } from './two-factor-code.service.js';
@@ -99,13 +100,54 @@ interface AuditEntry {
 /** Dummy 32-byte buffer for the R10 timing-safe equalization on user-not-found. */
 const TIMING_SAFE_DUMMY = Buffer.alloc(32);
 
-/** Resolved user info returned by a successful `verifyChallenge`. */
+/**
+ * Resolved user info returned by a successful `verifyChallenge` (login/signup
+ * flow only). Email-change purposes never reach this code path — they go
+ * through `verifyChallengePreCommit` (Step 2.12, DD-32) which returns the raw
+ * `ChallengeRecord` for the email-change service to commit atomically.
+ */
 export interface VerifyResult {
   userId: number;
   tenantId: number;
   email: string;
-  purpose: ChallengePurpose;
+  purpose: LoginChallengePurpose;
 }
+
+/**
+ * Login/signup are the ONLY purposes accepted by `verifyChallenge`. Email-
+ * change purposes are explicitly excluded — a stolen email-change-old token
+ * fed into `/auth/2fa/verify` returns a generic 401, same shape as an
+ * unknown-token failure (defense-in-depth, R10 timing-safe).
+ */
+const LOGIN_VERIFY_PURPOSES: readonly LoginChallengePurpose[] = ['login', 'signup'];
+
+/**
+ * Audit shape for the wrong-code branch of `runVerifyMitigations`. When set,
+ * the helper emits exactly one row on a wrong-code attempt:
+ *
+ *   `(action, resourceType, failure, { ...changesExtra, reason: 'wrong-code', attempt: N })`
+ *
+ * The login/signup path passes `LOGIN_WRONG_CODE_AUDIT` (per §A8 row "verify
+ * fail (wrong code)"); the email-change path (Step 2.12) passes
+ * `{ action: 'update', resourceType: 'user-email', changesExtra: { side } }`
+ * (per §A8 row "email-change verify fail"). Omit the param to suppress
+ * audit emission — used by callers that consolidate auditing higher up.
+ *
+ * Lockout-trigger audit (`(update, 2fa-lockout, success)`) is NOT routed
+ * through this — it is shape-identical for all flows and emitted unconditionally
+ * when the per-challenge attempt cap is hit.
+ */
+interface WrongCodeAudit {
+  action: 'login' | 'update';
+  resourceType: 'auth' | 'user-email';
+  changesExtra?: Record<string, unknown>;
+}
+
+const LOGIN_WRONG_CODE_AUDIT: WrongCodeAudit = {
+  action: 'login',
+  resourceType: 'auth',
+  changesExtra: {},
+};
 
 @Injectable()
 export class TwoFactorAuthService {
@@ -198,31 +240,60 @@ export class TwoFactorAuthService {
    * exists, the code expired, or the code was simply wrong (R10).
    */
   async verifyChallenge(token: string, code: string): Promise<VerifyResult> {
-    const record = await this.codes.loadChallenge(token);
-    if (record === null) {
-      // R10: dummy `timingSafeEqual` keeps the user-not-found path's response
-      // duration in the same ballpark as the user-found path. The boolean
-      // result is intentionally discarded via `void`.
-      void timingSafeEqual(TIMING_SAFE_DUMMY, TIMING_SAFE_DUMMY);
-      throw new UnauthorizedException('Ungültiger oder abgelaufener Code.');
-    }
+    const record = await this.runVerifyMitigations(
+      token,
+      code,
+      LOGIN_VERIFY_PURPOSES,
+      LOGIN_WRONG_CODE_AUDIT,
+    );
 
-    if (await this.codes.isLocked(record.userId)) {
-      throw new ForbiddenException('Konto ist vorübergehend gesperrt.');
-    }
+    // Success path for the login/signup flow: consume + clear fail-streak +
+    // emit `(login, auth, success, {method: '2fa-email'})` audit per §A8.
+    await this.handleVerifySuccess(token, record);
 
-    if (this.codes.verifyCode(record, code)) {
-      await this.handleVerifySuccess(token, record);
-      return {
-        userId: record.userId,
-        tenantId: record.tenantId,
-        email: record.email,
-        purpose: record.purpose,
-      };
-    }
+    // `runVerifyMitigations` validated `record.purpose ∈ LOGIN_VERIFY_PURPOSES`
+    // at runtime — narrow the type for the caller. The cast is sound because
+    // the helper throws if the purpose does not match.
+    return {
+      userId: record.userId,
+      tenantId: record.tenantId,
+      email: record.email,
+      purpose: record.purpose as LoginChallengePurpose,
+    };
+  }
 
-    await this.handleVerifyFailure(token, record);
-    throw new UnauthorizedException('Ungültiger oder abgelaufener Code.');
+  /**
+   * Pre-commit verify variant for multi-step flows that must verify multiple
+   * challenges atomically before applying any side effect (Step 2.12 / DD-32 /
+   * R15: email-change two-code verify). Same security mitigations as
+   * `verifyChallenge` (lockout, fail-streak, suspicious-activity mail on
+   * lockout-trigger), but does NOT consume the challenge and does NOT emit
+   * the success audit — the caller orchestrates a transaction-bounded commit
+   * (UPDATE + audit + `consumeChallenge`) and is responsible for emitting the
+   * per-flow failure audit (e.g. `(update, user-email, failure, {side})`)
+   * inside its own catch block.
+   *
+   * `expectedPurposes` is required: the caller MUST narrow the accepted set
+   * to the purpose(s) it issued (e.g. `['email-change-old']` for the old-
+   * mailbox code). A token whose purpose is not in the set is rejected with
+   * the same generic 401 used for unknown / expired tokens — defense-in-
+   * depth against cross-purpose token redemption.
+   *
+   * `wrongCodeAudit` is OPTIONAL: when provided, the wrong-code branch emits
+   * a `(action, resourceType, failure, {...changesExtra, reason: 'wrong-code',
+   * attempt: N})` row before throwing. Email-change passes
+   * `{ action: 'update', resourceType: 'user-email', changesExtra: { side } }`
+   * per §A8 row "email-change verify fail". Lockout-trigger audit
+   * (`(update, 2fa-lockout, success)`) fires unconditionally — same shape for
+   * every flow.
+   */
+  async verifyChallengePreCommit(
+    token: string,
+    code: string,
+    expectedPurposes: readonly ChallengePurpose[],
+    wrongCodeAudit?: WrongCodeAudit,
+  ): Promise<ChallengeRecord> {
+    return await this.runVerifyMitigations(token, code, expectedPurposes, wrongCodeAudit);
   }
 
   /**
@@ -252,7 +323,11 @@ export class TwoFactorAuthService {
    * @see masterplan §2.5 (signup post-condition), §2.7 caller contract,
    *      DD-11 (transparent enrollment), DD-15 (column semantics), §A8.
    */
-  async markVerified(userId: number, tenantId: number, purpose: ChallengePurpose): Promise<void> {
+  async markVerified(
+    userId: number,
+    tenantId: number,
+    purpose: LoginChallengePurpose,
+  ): Promise<void> {
     if (purpose === 'signup') {
       await this.db.queryAsTenant(
         `UPDATE users
@@ -417,33 +492,99 @@ export class TwoFactorAuthService {
   }
 
   /**
-   * Wrong-code path. Three things happen, in order:
+   * Common verify entry point. Both `verifyChallenge` (login/signup) and
+   * `verifyChallengePreCommit` (email-change two-code, Step 2.12) route
+   * through here so the security mitigations (lockout, fail-streak,
+   * suspicious-activity mail, cross-purpose rejection) live in exactly one
+   * place. Variation is parameterised:
+   *
+   *   - `expectedPurposes` narrows the accepted set; tokens issued for any
+   *     other purpose are rejected with the same generic 401 used for
+   *     unknown / expired tokens (R10 timing-safe).
+   *   - `wrongCodeAudit` (optional) controls per-flow failure-row shape — see
+   *     the `WrongCodeAudit` interface above.
+   *
+   * On success: returns the live `ChallengeRecord` WITHOUT consuming. Caller
+   * is responsible for `consumeChallenge` + the per-flow success audit (this
+   * keeps the email-change atomic-commit semantics clean — both codes verify
+   * before either is consumed).
+   */
+  private async runVerifyMitigations(
+    token: string,
+    code: string,
+    expectedPurposes: readonly ChallengePurpose[],
+    wrongCodeAudit?: WrongCodeAudit,
+  ): Promise<ChallengeRecord> {
+    const record = await this.codes.loadChallenge(token);
+    if (record === null) {
+      // R10: dummy `timingSafeEqual` keeps the user-not-found path's response
+      // duration in the same ballpark as the user-found path. The boolean
+      // result is intentionally discarded via `void`.
+      void timingSafeEqual(TIMING_SAFE_DUMMY, TIMING_SAFE_DUMMY);
+      throw new UnauthorizedException('Ungültiger oder abgelaufener Code.');
+    }
+
+    // Defense-in-depth (Step 2.12 / DD-32): cross-purpose token redemption is
+    // rejected with the same generic 401. Without this, a stolen email-change
+    // token could be fed into `/auth/2fa/verify` and inadvertently authenticate.
+    if (!expectedPurposes.includes(record.purpose)) {
+      void timingSafeEqual(TIMING_SAFE_DUMMY, TIMING_SAFE_DUMMY);
+      throw new UnauthorizedException('Ungültiger oder abgelaufener Code.');
+    }
+
+    if (await this.codes.isLocked(record.userId)) {
+      throw new ForbiddenException('Konto ist vorübergehend gesperrt.');
+    }
+
+    if (this.codes.verifyCode(record, code)) {
+      return record;
+    }
+
+    await this.applyWrongCodeMitigations(token, record, wrongCodeAudit);
+    throw new UnauthorizedException('Ungültiger oder abgelaufener Code.');
+  }
+
+  /**
+   * Wrong-code mitigations (extracted from the previous `handleVerifyFailure`).
+   * Three things happen, in order:
    *   1. Per-challenge `attemptCount` is incremented (KEEPTTL — does NOT
    *      extend the original 10-min TTL).
    *   2. Per-user fail-streak is incremented (24 h rolling, anchored to
    *      first failure — see TwoFactorCodeService.incrementFailStreak).
-   *   3. If the per-challenge cap is hit, set a 15-min lockout, audit it,
-   *      and fire-and-forget the suspicious-activity mail (DD-20).
-   *
-   * The `(login, auth, failure)` audit always fires, regardless of whether
-   * this attempt was the one that triggered lockout.
+   *   3. If `wrongCodeAudit` is provided, emit the per-flow failure row
+   *      (`(action, resourceType, failure, {...changesExtra, reason: 'wrong-code',
+   *      attempt: N})`).
+   *   4. If the per-challenge cap is hit, set a 15-min lockout, audit it as
+   *      `(update, 2fa-lockout, success)` (shape-identical for every flow),
+   *      consume the challenge (terminal), and fire-and-forget the
+   *      suspicious-activity mail (DD-20).
    */
-  private async handleVerifyFailure(token: string, record: ChallengeRecord): Promise<void> {
+  private async applyWrongCodeMitigations(
+    token: string,
+    record: ChallengeRecord,
+    wrongCodeAudit?: WrongCodeAudit,
+  ): Promise<void> {
     const newAttemptCount = record.attemptCount + 1;
     const updated: ChallengeRecord = { ...record, attemptCount: newAttemptCount };
     await this.codes.updateChallenge(token, updated, /* extendTtl */ false);
     await this.codes.incrementFailStreak(record.userId);
 
-    this.fireAudit({
-      tenantId: record.tenantId,
-      userId: record.userId,
-      userName: record.email,
-      action: 'login',
-      resourceType: 'auth',
-      resourceId: record.userId,
-      status: 'failure',
-      changes: { reason: 'wrong-code', attempt: newAttemptCount },
-    });
+    if (wrongCodeAudit !== undefined) {
+      this.fireAudit({
+        tenantId: record.tenantId,
+        userId: record.userId,
+        userName: record.email,
+        action: wrongCodeAudit.action,
+        resourceType: wrongCodeAudit.resourceType,
+        resourceId: record.userId,
+        status: 'failure',
+        changes: {
+          ...wrongCodeAudit.changesExtra,
+          reason: 'wrong-code',
+          attempt: newAttemptCount,
+        },
+      });
+    }
 
     if (newAttemptCount >= MAX_ATTEMPTS) {
       await this.codes.setLockout(record.userId);

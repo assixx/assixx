@@ -119,8 +119,27 @@ export interface TwoFactorResendResponse {
   challenge: PublicTwoFactorChallenge;
 }
 
-/** Either signup-flow verification or login-flow verification. */
-export type ChallengePurpose = 'login' | 'signup';
+/**
+ * Challenge purpose discriminator.
+ *
+ * - `'login'` / `'signup'`: password-auth path — verify completes via
+ *   `POST /auth/2fa/verify` and triggers `markVerified` (token mint + activate).
+ * - `'email-change-old'` / `'email-change-new'`: in-session email-change flow
+ *   (Step 2.12, DD-32 / R15). Two challenges issued in parallel, BOTH must
+ *   verify before `UPDATE users SET email = ...`. Verify path is the dedicated
+ *   `POST /users/me/email/verify-change` endpoint — these tokens MUST NOT be
+ *   redeemable at `/auth/2fa/verify` (defense-in-depth: `verifyChallenge`
+ *   defaults `expectedPurposes = ['login', 'signup']`, rejects email-change
+ *   purposes with the same generic 401 used for unknown tokens).
+ */
+export type ChallengePurpose = 'login' | 'signup' | 'email-change-old' | 'email-change-new';
+
+/**
+ * Subset of `ChallengePurpose` accepted by the login/signup verify path.
+ * `markVerified` and the auth controller's verify endpoint switch on this
+ * narrower type — email-change purposes never reach those code paths.
+ */
+export type LoginChallengePurpose = Extract<ChallengePurpose, 'login' | 'signup'>;
 
 /**
  * Internal record persisted at Redis key `2fa:challenge:{token}` with TTL

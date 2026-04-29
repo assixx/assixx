@@ -41,7 +41,13 @@ const MS_HOUR = 3_600_000;
  */
 function get2faTracker(req: Record<string, unknown>): string {
   const cookies = req['cookies'] as Record<string, string> | undefined;
-  const token = cookies?.['challengeToken'];
+  // Login/signup verify path sets `challengeToken`; email-change verify
+  // path (Step 2.12 / DD-32) sets `emailChangeOldChallenge` instead. Either
+  // is per-session — both restore NAT-fairness for the industrial customer
+  // shape. Falling through preserves the same independent-counter property:
+  // a login flow's challengeToken and an email-change flow's old-challenge
+  // cookie key into different counters even though they share the tier.
+  const token = cookies?.['challengeToken'] ?? cookies?.['emailChangeOldChallenge'];
   if (typeof token === 'string' && token !== '') {
     return `challenge:${token}`;
   }

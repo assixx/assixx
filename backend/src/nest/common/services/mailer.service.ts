@@ -16,6 +16,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import emailService from '../../../utils/email-service.js';
+import type { ChallengePurpose } from '../../two-factor-auth/two-factor-auth.types.js';
 import { getErrorMessage } from '../utils/error.utils.js';
 
 export interface PasswordResetRecipient {
@@ -307,7 +308,7 @@ export class MailerService {
   async sendTwoFactorCode(
     to: string,
     code: string,
-    purpose: 'login' | 'signup',
+    purpose: ChallengePurpose,
     ttlMinutes: number,
   ): Promise<void> {
     // Re-throw unchanged — caller (TwoFactorAuthService) needs the original

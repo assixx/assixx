@@ -8,7 +8,10 @@ import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import path from 'path';
 
 import { getErrorMessage } from '../nest/common/utils/error.utils.js';
-import { build2faCodeTemplate } from './email-templates/2fa-code.template.js';
+import {
+  type TwoFactorCodeTemplatePurpose,
+  build2faCodeTemplate,
+} from './email-templates/2fa-code.template.js';
 import { build2faSuspiciousActivityTemplate } from './email-templates/2fa-suspicious-activity.template.js';
 import { logger } from './logger.js';
 
@@ -644,7 +647,7 @@ async function sendBulkNotification(
 async function send2faCode(
   to: string,
   code: string,
-  purpose: 'login' | 'signup',
+  purpose: TwoFactorCodeTemplatePurpose,
   ttlMinutes: number,
 ): Promise<void> {
   const template = build2faCodeTemplate({ code, purpose, ttlMinutes });
