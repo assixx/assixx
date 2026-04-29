@@ -896,7 +896,22 @@ async login(dto: LoginDto, ipAddress?, userAgent?): Promise<LoginResult> {
 - Frontend `(public)/signup/+page.svelte` still POSTs client-side via `_lib/api.ts` and expects the legacy `SignupResponseData` shape. The user-facing signup flow is interim-broken until Phase 5 Step 5.4 lands (`+page.server.ts` form action + `<form method="POST" use:enhance>` switch). Documented per masterplan `## Scope-creep notice` and Step 2.4 precedent.
 - Step 2.7 (`TwoFactorAuthController.verify`) is the natural follow-up — it consumes the `'signup'` purpose, flips `is_active`, sets `tfa_enrolled_at` + `last_2fa_verified_at`, and mints tokens. Until Step 2.7 ships, a real signup will create a pending tenant + user but never have a route to verify (manual DB poke or the Step 2.11 reaper would clean up).
 
-### Step 2.6: OAuth: no-op per DD-7 [PENDING]
+### Step 2.6: OAuth: no-op per DD-7 [DONE — 2026-04-29]
+
+**Delivered (2026-04-29):**
+
+- Audited the 5 listed OAuth files for Assixx-token-issuing entry points. Found exactly two — both inside `oauth.controller.ts`: the `completeSignup()` auto-login at line 283 (post-OAuth-signup session mint) and the `routeLoginSuccess()` private helper at line 388 (OAuth callback `login-success` branch). The other 4 files carry NO Assixx-token issuance — `oauth.service.ts` orchestrates state + provider calls and returns a `CallbackResult` discriminated union; `oauth-handoff.controller.ts` + `oauth-handoff.service.ts` bridge already-minted tokens across origins (mint/consume the opaque handoff token, NOT session tokens); `providers/microsoft.provider.ts` exchanges authorization codes for **Microsoft** tokens and verifies id_tokens, never touching Assixx session tokens. Therefore those 4 files receive **no modifications**, matching the plan's "Files NOT modified" header.
+- `backend/src/nest/auth/oauth/oauth.controller.ts` — added DD-7 + ADR-054 comment block at both `loginWithVerifiedUser()` call sites, mirroring the canonical block above the method definition in `auth.service.ts:268-276` (Step 2.4 deliverable). Each block restates the OAuth-exempt invariant ("Microsoft already enforced MFA upstream during consent; layering an Assixx-side email code on top would force a double-prompt UX with zero marginal security gain") and points future readers back to the canonical comment in `auth.service.ts` so the source-of-truth stays in one place.
+- No logic changes. File grew from 437 → 452 lines (+15), well within the 900-line backend ceiling. Per-function `max-lines-per-function` (60) preserved on both methods.
+
+**Verification (2026-04-29):**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/auth/oauth/oauth.controller.ts` → 0 errors
+- `docker exec assixx-backend pnpm exec tsc --noEmit -p backend` → exit 0, 0 lines
+- `pnpm exec vitest run --project unit backend/src/nest/auth/oauth/` → 7 files, 125 tests, all passed in 1.75 s — no behavioural regression (comment-only edit, expected)
+- `curl http://localhost:3000/health` → `{"status":"ok"}`; backend hot-reloaded clean, no module-load errors in `docker logs assixx-backend`
+
+---
 
 OAuth users skip 2FA. **Files NOT modified:**
 
@@ -1182,7 +1197,7 @@ RETURNING id, subdomain;
 - [ ] Controller with 3 endpoints, all throttled with new decorators
 - [ ] `AuthService.login()` returns discriminated union (`LoginResult`)
 - [ ] `SignupService.signup()` issues challenge, no tokens
-- [ ] OAuth handlers carry DD-7 comment, no behavior change
+- [x] OAuth handlers carry DD-7 comment, no behavior change (Step 2.6 — 2026-04-29)
 - [ ] `email-service.ts` has `send2faCode()` + new German template (text + HTML)
 - [ ] All Zod DTOs use `createZodDto()` + central `IdParamDto` factory where applicable
 - [ ] Audit emitted using `(action, resource_type)` tuples per §A8 (NOT dotted strings)
@@ -1598,7 +1613,7 @@ export const MESSAGES = {
 | 3       | 2     | Module skeleton · types · DTOs · constants · register in app.module                                                                                                            | DONE                            | 2026-04-28 |
 | 4       | 2     | TwoFactorCodeService (crypto + Redis primitives via DI provider)                                                                                                               | PENDING                         |            |
 | 5       | 2     | TwoFactorAuthService (orchestration) · `send2faCode` + template                                                                                                                | PENDING                         |            |
-| 6       | 2     | Modify AuthService.login + SignupService (incl. tenant cleanup on SMTP fail per DD-14) · OAuth comment-only · **load-tests auf LoginResult umstellen** (v0.5.0 R13-Mitigation) | DONE (Steps 2.4 + 2.5)          | 2026-04-29 |
+| 6       | 2     | Modify AuthService.login + SignupService (incl. tenant cleanup on SMTP fail per DD-14) · OAuth comment-only · **load-tests auf LoginResult umstellen** (v0.5.0 R13-Mitigation) | DONE (Steps 2.4 + 2.5 + 2.6)    | 2026-04-29 |
 | 7       | 2     | TwoFactorAuthController · throttler tiers + decorators · Pino redaction · audit hooks · stale-pending reaper cron (Step 2.11)                                                  | PENDING                         |            |
 | 7b      | 2     | **Step 2.12 (DD-32 / R15, v0.6.0):** Email-Change-Endpoint two-code 2FA-Verify (request-change + verify-change) · Audit-Tuples · Tests · Throttler                             | PENDING                         |            |
 | 8       | 3     | Unit tests TwoFactorCodeService                                                                                                                                                | PENDING                         |            |
