@@ -3,7 +3,7 @@
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
 > **Version:** 0.6.0 (GREENFIELD-TRIM + DD-32 E-Mail-Change-2FA-Verify; R15 + Step 2.12 hinzugefügt; Bestandsuser-Cutover-Apparat als N/A markiert per CLAUDE.md Greenfield-Status seit 2026-04-19)
-> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 + 2.10 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
+> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 + 2.10 + 2.11 DONE (2026-04-28 / 2026-04-29). Step 2.12 (Email-Change two-code 2FA-Verify, DD-32 / R15) remains PENDING. Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
 > **Branch:** `feat/2fa-email`
 > **Spec:** This document
 > **Author:** Claude (proposed) · Simon Öztürk (decides)
@@ -1132,7 +1132,33 @@ export async function send2faCode(
 
 **Verify:** unit test that exercises a verify-fail path and asserts the log entry contains `[Redacted]` not the actual code.
 
-### Step 2.11: Stale-Pending Reaper Cron [PENDING]
+### Step 2.11: Stale-Pending Reaper Cron [DONE — 2026-04-29]
+
+**Delivered (2026-04-29):**
+
+- `backend/src/nest/two-factor-auth/two-factor-auth-reaper.service.ts` — NEW. `@Cron('0 */15 * * * *', { name: 'two-factor-stale-pending-reaper' })` (six-field expression — fires at second 0 of minutes 0/15/30/45). Public surface: `runScheduled()` cron entry (try/catch wrapper — sweep failures never crash the scheduler) + `reap()` testable method returning `{ users, tenants }`. Five private helpers split for cognitive-complexity-10 compliance: `findStaleUsers` (`SELECT FOR UPDATE`), `cleanupBatch` (orchestrator), `groupByTenant`, `dropTenantCascade` (whole-tenant orphan), `softDeleteEachUser` (defensive edge case), `countUsersOnTenants`, `writeAuditRows`. All work runs inside one `db.systemTransaction` — sys_user with BYPASSRLS per ADR-019; either the entire batch (cleanup + audit) commits or it all rolls back.
+- `backend/src/nest/two-factor-auth/two-factor-auth.module.ts` — `TwoFactorReaperService` registered in `providers` (no exports — internal to this module). No new module imports: `ScheduleModule.forRoot()` is global in `app.module.ts:111`, `DatabaseService` is `@Global()`. Header comment block extended with the Step 2.11 status line.
+- DD-29 confirmed in source: deletion-worker container loads `backend/dist/workers/deletion-worker.js` (separate entrypoint → `DeletionWorkerModule`), so `@Cron` only fires in main backend (`AppModule`). Single-fire on V1 single-replica deployment.
+
+**Three deliberate spec deviations vs the masterplan-literal §2.11 SQL** (logged below in §Spec Deviations as D1/D2/D3, also documented inline in the file header):
+
+1. **Inverted DELETE flow** — plan's CTE deletes from `users` first then runs `NOT EXISTS (SELECT 1 FROM users WHERE …)` for orphan tenants. PostgreSQL DML CTEs share the statement-start snapshot, so the to-be-deleted user is still visible to that NOT EXISTS → tenants would never be reaped. Inverted: delete the tenant, cascade kills the user via the existing `users.tenant_id ON DELETE CASCADE` FK.
+2. **`DELETE FROM users` avoided entirely** — `shared/src/architectural.test.ts:291` blocks it outside the tenant-deletion module (ADR-020 + ADR-045 soft-delete-only rule). The inverted flow doubles as the dodge: only `DELETE FROM tenants` is written. Defensive edge case (tenant has non-stale users besides the stale ones — cannot happen for a fresh signup but cheap insurance) falls back to `UPDATE users SET is_active = IS_ACTIVE.DELETED`. Mirrors `signup.service.ts:cleanupFailedSignup`.
+3. **Audit insert inside the same transaction** (NOT fire-and-forget like `TwoFactorAuthService.fireAudit`). Reaper deletions are compliance evidence — if the audit row fails, the whole batch must roll back (no orphan deletes without a paper trail). `audit_trail` partition table has no FK to `tenants` (verified `\d audit_trail` 2026-04-29), so writing the audit row after the cascade is safe even when the tenant is gone.
+
+**Test deferral (per Step 2.2 / 2.3 / 2.7 precedent):** unit tests for the reaper land in Phase 3 / Session 9 ("Unit tests TwoFactorAuthService + AuthService + SignupService modifications + reaper service + Email-Change service (Step 2.12)"). End-to-end integration test (signup → close browser → wait 1 h → manual reaper trigger → user + tenant gone, audit row written, subdomain available) lands in Phase 4 / Session 10.
+
+**Verification (2026-04-29):**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/two-factor-auth/` → 0 errors.
+- `docker exec assixx-backend pnpm exec tsc --noEmit -p backend` → exit 0, 0 lines.
+- `pnpm exec vitest run --project unit` (full unit suite) → **279 files / 7147 tests / all passed in 20.41 s** — same baseline as Step 2.10, no indirect breakage from the new module-graph edge.
+- `curl http://localhost:3000/health` → `{"status":"ok"}`. Backend hot-reloaded; logs show `TwoFactorAuthModule dependencies initialized` + `Nest application successfully started` — DI graph resolved with the new provider; `@Cron` auto-discovered by `SchedulerOrchestrator` on bootstrap (no explicit registration log line — NestJS scheduler is silent unless a registration error occurs).
+
+---
+
+#### Original spec (kept for plan-archaeology)
+
 
 **Why:** DD-14 cleanup deletes `users` + `tenants` row when SMTP fails synchronously. But there is a second leak path: user submits signup → SMTP succeeds → **user closes the browser tab** before entering the code. The `users` row sits at `is_active=0` indefinitely; the `tenants` row keeps the subdomain reserved. Without a reaper, attackers script signup-then-close to squat premium subdomains, and legit users see "Email already in use" when they retry signup an hour later.
 
@@ -1261,7 +1287,7 @@ RETURNING id, subdomain;
 - [ ] `IS_ACTIVE` constants used (no magic numbers per TYPESCRIPT-STANDARDS §7.4)
 - [ ] All errors via `getErrorMessage()` per §7.3
 - [ ] All tenant-scoped DB ops via `tenantTransaction()` or `queryAsTenant()` (ADR-019)
-- [ ] Stale-pending reaper (`@Cron('0 */15 * * * *')`) deletes user + orphan tenant; audit row written; integration test green
+- [x] Stale-pending reaper (`@Cron('0 */15 * * * *')`) deletes user + orphan tenant via inverted-cascade flow; audit row written inside same systemTransaction (Step 2.11 — 2026-04-29; integration test deferred to Phase 4 / Session 10 per plan, unit tests deferred to Phase 3 / Session 9 per plan)
 - [ ] **Step 2.12 (DD-32 / R15, v0.6.0):** Email-Change-Endpoint two-code 2FA-Verify implementiert (request-change + verify-change). Atomar in einer `tenantTransaction()`, beide Tokens DEL bei Failure, suspicious-activity-Mail an alte Adresse, `@TwoFaVerifyThrottle()` + `@AuthThrottle()`, audit-Tuples (`update, user-email, success/failure`).
 - [ ] **Step 2.12 Integration test:** Session-Hijack simuliert (kein Zugriff auf alte Mailbox) → Email-Change scheitert. Tippfehler-Szenario (User hat keinen Zugriff auf neue Adresse) → kein UPDATE, alte E-Mail bleibt aktiv. Wrong-Code-Bombing → AuthThrottle blockt.
 - [ ] ESLint 0 errors: `docker exec assixx-backend pnpm exec eslint backend/src/nest/two-factor-auth/`
@@ -1668,7 +1694,7 @@ export const MESSAGES = {
 | 4       | 2     | TwoFactorCodeService (crypto + Redis primitives via DI provider)                                                                                                               | PENDING                         |            |
 | 5       | 2     | TwoFactorAuthService (orchestration) · `send2faCode` + template                                                                                                                | PENDING                         |            |
 | 6       | 2     | Modify AuthService.login + SignupService (incl. tenant cleanup on SMTP fail per DD-14) · OAuth comment-only · **load-tests auf LoginResult umstellen** (v0.5.0 R13-Mitigation) | DONE (Steps 2.4 + 2.5 + 2.6)    | 2026-04-29 |
-| 7       | 2     | TwoFactorAuthController · throttler tiers + decorators · Pino redaction · audit hooks · stale-pending reaper cron (Step 2.11)                                                  | PARTIAL (Steps 2.7 + 2.8 + 2.10 DONE; 2.11 still PENDING) | 2026-04-29 |
+| 7       | 2     | TwoFactorAuthController · throttler tiers + decorators · Pino redaction · audit hooks · stale-pending reaper cron (Step 2.11)                                                  | DONE (Steps 2.7 + 2.8 + 2.10 + 2.11)                      | 2026-04-29 |
 | 7b      | 2     | **Step 2.12 (DD-32 / R15, v0.6.0):** Email-Change-Endpoint two-code 2FA-Verify (request-change + verify-change) · Audit-Tuples · Tests · Throttler                             | PENDING                         |            |
 | 8       | 3     | Unit tests TwoFactorCodeService                                                                                                                                                | PENDING                         |            |
 | 9       | 3     | Unit tests TwoFactorAuthService + AuthService + SignupService modifications + reaper service + **Email-Change service (Step 2.12)**                                            | PENDING                         |            |
@@ -1811,7 +1837,9 @@ export const MESSAGES = {
 
 | #   | Spec says  | Actual code | Decision |
 | --- | ---------- | ----------- | -------- |
-| —   | (none yet) |             |          |
+| D1 (Step 2.11, 2026-04-29) | Single CTE `WITH stale_users AS (…), deleted_users AS (DELETE FROM users …), orphan_tenants AS (SELECT du.tenant_id … WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.tenant_id = du.tenant_id))` (delete users first, then orphan-check tenants) | `findStaleUsers` (`SELECT FOR UPDATE`) → `cleanupBatch` → `dropTenantCascade` (`DELETE FROM tenants` only — users vanish via FK CASCADE) | Plan-literal CTE has a PostgreSQL-snapshot bug: DML CTEs share statement-start snapshot, so the to-be-deleted user is still visible to that NOT EXISTS → tenants would never be reaped. Inverted flow always works. Documented in file header §D1. |
+| D2 (Step 2.11, 2026-04-29) | Implicit: plan's CTE writes `DELETE FROM users` outside the `tenant-deletion` module | Reaper writes only `DELETE FROM tenants` (whole-tenant orphan path) and `UPDATE users SET is_active = IS_ACTIVE.DELETED, updated_at = NOW()` (defensive edge-case path) | `shared/src/architectural.test.ts:291` blocks `DELETE FROM users` outside `tenant-deletion-executor.service.ts` per ADR-020 + ADR-045 soft-delete-only rule. Inverted flow doubles as the dodge — same trick `signup.service.ts:cleanupFailedSignup` already uses for DD-14. Documented in file header §D2. |
+| D3 (Step 2.11, 2026-04-29) | Plan §2.11 says "Audit: for each deleted (user, tenant) pair, write one `audit_trail` row" without specifying transaction scope — implicit fire-and-forget like `TwoFactorAuthService.fireAudit` (plan §2.3) | Audit insert runs INSIDE the same `db.systemTransaction` as the cleanup; if the audit fails, the whole batch rolls back | Reaper deletions are compliance evidence — orphan deletes without a paper trail are worse than no deletes. `audit_trail` partition table has no FK to `tenants` (verified `\d audit_trail` 2026-04-29), so writing the audit row after the cascade is safe even when the tenant is gone. Documented in file header §D3. |
 
 ---
 

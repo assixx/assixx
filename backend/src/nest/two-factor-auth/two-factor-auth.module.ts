@@ -8,11 +8,17 @@
  *   - Step 2.3 shipped: `TwoFactorAuthService` (orchestration —
  *     issue / verify / resend / clearLockout) plus its dependencies
  *     (`MailerService` for SMTP transport — DD-14 fail-loud).
- *   - Step 2.7 (this commit): registers BOTH 2FA controllers
+ *   - Step 2.7 shipped: registers BOTH 2FA controllers
  *     (`TwoFactorAuthController` for `/auth/2fa/*` verify+resend,
  *     `TwoFactorLockoutController` for `/users/:id/2fa/clear-lockout`)
  *     and adds `TwoFactorAuthService.markVerified` for the post-verify
  *     user-table state write.
+ *   - Step 2.11 (this commit): registers `TwoFactorReaperService`
+ *     (`@Cron('0 *\/15 * * * *')` stale-pending sweep). No new module
+ *     imports — `ScheduleModule.forRoot()` is global in `app.module.ts`,
+ *     `DatabaseService` is `@Global()`. Cron only fires in main backend
+ *     (`AppModule`); the deletion-worker container loads
+ *     `DeletionWorkerModule`, so single-fire is guaranteed on V1.
  *
  * Why a dedicated ioredis client (not `@nestjs/cache-manager`):
  *   The project doesn't use cache-manager — the throttler module
@@ -56,6 +62,7 @@ import { AuthModule } from '../auth/auth.module.js';
 // eslint-disable-next-line import-x/no-cycle -- justified: canonical NestJS forwardRef pattern (Step 2.7); cycle broken by signup.module.ts forwardRef.
 import { OAuthModule } from '../auth/oauth/oauth.module.js';
 import { MailerService } from '../common/services/mailer.service.js';
+import { TwoFactorReaperService } from './two-factor-auth-reaper.service.js';
 import { TwoFactorAuthController } from './two-factor-auth.controller.js';
 import { TwoFactorAuthService } from './two-factor-auth.service.js';
 import { TWO_FA_REDIS } from './two-factor-auth.tokens.js';
@@ -93,6 +100,11 @@ export { TWO_FA_REDIS } from './two-factor-auth.tokens.js';
     },
     TwoFactorCodeService,
     TwoFactorAuthService,
+    // Step 2.11: stale-pending reaper. @Cron decorator is auto-discovered
+    // by `ScheduleModule.forRoot()` (global, registered in app.module.ts).
+    // No exports — the cron is internal to this module; nothing else calls
+    // `reap()` directly outside of unit/integration tests.
+    TwoFactorReaperService,
     MailerService,
   ],
   // Export TwoFactorAuthService so AuthModule (login) and SignupModule
