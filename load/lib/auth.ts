@@ -9,9 +9,19 @@
  * in the goja VM, not Node). `setup()` executes once before VUs start —
  * return value is passed to `default()`, so every VU reuses the same token
  * (no per-iteration login, avoids throttle pressure).
+ *
+ * Mandatory Email-2FA contract (ADR-054, FEAT_2FA_EMAIL_MASTERPLAN R13 +
+ * DD-10 Removal v0.5.0): `POST /auth/login` now returns the discriminated
+ * union `LoginResultBody`. With DD-10 removed (no flag, 2FA hard-coded), a
+ * password login from this rig will ALWAYS resolve to
+ * `stage === 'challenge_required'`. k6 cannot complete the email-code step
+ * from inside the goja VM, so this module fails-loud at that stage with a
+ * remediation pointer (OAuth-derived test account per DD-7, or a 2FA-exempt
+ * test fixture endpoint). Better than silently 401-storming every iteration.
  */
 import { check, fail } from 'k6';
 import http from 'k6/http';
+import type { Response } from 'k6/http';
 
 import { APITEST_EMAIL, APITEST_PASSWORD, BASE_URL } from './config.ts';
 
@@ -23,41 +33,102 @@ export interface AuthState {
 }
 
 /**
- * Login as assixx test-tenant admin. Call from `setup()` — once per test run.
- * Fails loud (aborts test) on non-200 to surface config issues immediately
- * rather than cascading into 401s on every subsequent request.
+ * HTTP-shape mirror of backend `LoginResultBody`
+ * (`backend/src/nest/two-factor-auth/two-factor-auth.types.ts`, Step 2.4).
+ *
+ * Mirrored locally rather than imported because k6 runs in goja under its
+ * own tsconfig (`load/tsconfig.json`); cross-package type imports would
+ * couple the load suite to backend module-graph rebuilds and break the
+ * minimal-surface load-runtime contract documented in ADR-018.
+ *
+ * The `'authenticated'` branch is intentionally retained — Step 2.4
+ * preserves it for a future per-tenant 2FA-skip flag (V2). Unreachable from
+ * `/auth/login` under v0.6.x, but kept for forward-compat exhaustiveness.
  */
-export function loginApitest(): AuthState {
-  const res = http.post(
-    `${BASE_URL}/auth/login`,
-    JSON.stringify({ email: APITEST_EMAIL, password: APITEST_PASSWORD }),
-    {
-      headers: { 'Content-Type': 'application/json' },
-      tags: { name: 'auth_login' },
-    },
-  );
+interface LoginResultAuthenticated {
+  stage: 'authenticated';
+  accessToken: string;
+  refreshToken: string;
+  user: { id: number; tenantId: number };
+}
 
+interface LoginResultChallenge {
+  stage: 'challenge_required';
+  challenge: {
+    expiresAt: string;
+    resendAvailableAt: string;
+    resendsRemaining: number;
+  };
+}
+
+type LoginResultBody = LoginResultAuthenticated | LoginResultChallenge;
+
+/**
+ * Validate 200 + extract tokens from a `/auth/login` response, fail-loud on
+ * the 2FA-challenge branch.
+ *
+ * R13 mitigation (FEAT_2FA_EMAIL_MASTERPLAN v0.5.0): with DD-10 removed and
+ * 2FA hard-coded ON, password login can never reach the 'authenticated'
+ * branch from a real backend. We surface that to the operator with a
+ * concrete remediation hint so the failure is actionable, not a 401-storm.
+ */
+function extractAuthState(res: Response, email: string): AuthState {
   const ok = check(res, {
     'login returns 200': (r) => r.status === 200,
   });
   if (!ok) {
-    fail(`Login failed: status=${res.status} body=${res.body as string}`);
+    fail(`Login failed for ${email}: status=${res.status} body=${res.body as string}`);
   }
 
-  const body = res.json() as {
-    data: {
-      accessToken: string;
-      refreshToken: string;
-      user: { id: number; tenantId: number };
-    };
-  };
+  // Cast via `unknown` — k6's `res.json()` is typed as `JSONValue`
+  // (string | number | boolean | JSONArray | JSONObject | null). The
+  // discriminated union's literal `stage` strings don't sufficiently overlap
+  // with `JSONObject` for a direct `as` cast in TS 6.x. Routing through
+  // `unknown` is the canonical TS idiom for this exact narrowing case.
+  const body = res.json() as unknown as { data: LoginResultBody };
 
+  if (body.data.stage === 'challenge_required') {
+    fail(
+      `Login for ${email} returned 'challenge_required': mandatory email-2FA ` +
+        `is live (ADR-054 / DD-10 Removal v0.5.0). k6 load tests cannot ` +
+        `complete the email-code step from goja. Pre-seed a 2FA-exempt ` +
+        `account (OAuth path per DD-7) or expose a test-only fixture and ` +
+        `update __ENV.LOGINS / loginApitest credentials accordingly.`,
+    );
+  }
+
+  // stage === 'authenticated' — currently unreachable from /auth/login but
+  // retained for forward-compat (Step 2.4 preserves the branch for a future
+  // per-tenant 2FA-skip flag in V2).
   return {
     authToken: body.data.accessToken,
     refreshToken: body.data.refreshToken,
     userId: body.data.user.id,
     tenantId: body.data.user.tenantId,
   };
+}
+
+/**
+ * Generic login for any tenant. Both `loginApitest()` and
+ * `baseline.ts:loginAll()` funnel through here so the discriminated-union
+ * branch lives in ONE place — when load tests gain a 2FA-exempt path
+ * (OAuth fixture, test endpoint, etc.), only this helper changes.
+ */
+export function loginGeneric(email: string, password: string): AuthState {
+  const res = http.post(`${BASE_URL}/auth/login`, JSON.stringify({ email, password }), {
+    headers: { 'Content-Type': 'application/json' },
+    tags: { name: 'auth_login' },
+  });
+  return extractAuthState(res, email);
+}
+
+/**
+ * Login as assixx test-tenant admin. Call from `setup()` — once per test run.
+ * Fails loud (aborts test) on non-200 to surface config issues immediately
+ * rather than cascading into 401s on every subsequent request.
+ */
+export function loginApitest(): AuthState {
+  return loginGeneric(APITEST_EMAIL, APITEST_PASSWORD);
 }
 
 /** Headers for POST/PUT/PATCH with JSON body. */

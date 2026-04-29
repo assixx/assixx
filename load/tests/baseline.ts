@@ -63,7 +63,7 @@ import { check, fail, group, sleep } from 'k6';
 import http from 'k6/http';
 import ws from 'k6/ws';
 
-import { type AuthState, authHeaders, authOnly, loginApitest } from '../lib/auth.ts';
+import { type AuthState, authHeaders, authOnly, loginGeneric } from '../lib/auth.ts';
 import { APITEST_EMAIL, APITEST_PASSWORD, BASE_URL, HEALTH_URL } from '../lib/config.ts';
 import { blackboardEntry, makeRunId } from '../lib/payloads.ts';
 
@@ -105,34 +105,17 @@ interface SetupData {
   wsUrl: string;
 }
 
-/** Login each pool entry once. setup() runs in a single goja VM before VUs spawn. */
+/**
+ * Login each pool entry once. setup() runs in a single goja VM before VUs spawn.
+ *
+ * Both the assixx fast-path and the generic multi-tenant path now funnel
+ * through `loginGeneric`, which owns the `LoginResultBody` discriminated-
+ * union check (R13 mitigation, FEAT_2FA_EMAIL_MASTERPLAN v0.5.0). The
+ * previous APITEST_EMAIL/PASSWORD short-circuit branch was redundant — both
+ * paths hit the same endpoint with the same shape contract.
+ */
 function loginAll(pool: Login[]): AuthState[] {
-  const out: AuthState[] = [];
-  for (const login of pool) {
-    if (login.email === APITEST_EMAIL && login.password === APITEST_PASSWORD) {
-      out.push(loginApitest());
-      continue;
-    }
-    // Generic login path for non-assixx test tenants. Mirrors loginApitest() shape (assixx tenant).
-    const res = http.post(
-      `${BASE_URL}/auth/login`,
-      JSON.stringify({ email: login.email, password: login.password }),
-      { headers: { 'Content-Type': 'application/json' }, tags: { name: 'auth_login' } },
-    );
-    if (res.status !== 200) {
-      fail(`Login failed for ${login.email}: status=${res.status} body=${res.body as string}`);
-    }
-    const body = res.json() as {
-      data: { accessToken: string; refreshToken: string; user: { id: number; tenantId: number } };
-    };
-    out.push({
-      authToken: body.data.accessToken,
-      refreshToken: body.data.refreshToken,
-      userId: body.data.user.id,
-      tenantId: body.data.user.tenantId,
-    });
-  }
-  return out;
+  return pool.map((login) => loginGeneric(login.email, login.password));
 }
 
 const ENABLE_WS = __ENV.WS === '1';
