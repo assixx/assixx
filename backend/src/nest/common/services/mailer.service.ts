@@ -294,6 +294,50 @@ export class MailerService {
     }
   }
 
+  /**
+   * Send a 2FA verification code via the legacy `email-service.ts` transport.
+   *
+   * FAIL-LOUD on transport failure (DD-14): the underlying `send2faCode()`
+   * throws, and this wrapper re-throws unchanged so `TwoFactorAuthService`
+   * can convert it to a `ServiceUnavailableException` and trigger the
+   * signup cleanup branch (delete pending user + tenant) when needed.
+   *
+   * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md (Phase 2 §2.9, DD-14)
+   */
+  async sendTwoFactorCode(
+    to: string,
+    code: string,
+    purpose: 'login' | 'signup',
+    ttlMinutes: number,
+  ): Promise<void> {
+    // Re-throw unchanged — caller (TwoFactorAuthService) needs the original
+    // error to decide login (503) vs signup (503 + cleanup) cleanup paths.
+    await emailService.send2faCode(to, code, purpose, ttlMinutes);
+  }
+
+  /**
+   * Notify a user that their account just hit the 5-wrong-codes lockout
+   * (DD-5/DD-6). DD-20 — recipient is the user only.
+   *
+   * SILENT-SWALLOW on transport failure: this is a paper-trail email, not a
+   * gating event. We never want a missing email to mask the underlying
+   * lockout-applied response from `verifyChallenge()`. The legacy
+   * `send2faSuspiciousActivity()` handles the warn-log internally so callers
+   * can `await` without try/catch.
+   *
+   * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md (Phase 2 §2.9, DD-20)
+   */
+  async sendTwoFactorSuspiciousActivity(to: string): Promise<void> {
+    try {
+      await emailService.send2faSuspiciousActivity(to);
+    } catch (error: unknown) {
+      // Belt-and-braces — the underlying function already swallows transport
+      // errors, so this catch only fires on unexpected programmer errors
+      // (e.g. template builder throws). Same silent-swallow contract.
+      this.logger.warn(`Suspicious-activity email failed for ${to}: ${getErrorMessage(error)}`);
+    }
+  }
+
   private buildBugReportHtml(payload: BugReportPayload): string {
     // Every user-supplied value is HTML-escaped here because the branded
     // sanitiser in `email-service.ts` strips only dangerous tags/handlers —

@@ -35,6 +35,7 @@ interface MockEnvVars {
   SMTP_PORT?: string;
   SMTP_USER?: string;
   SMTP_PASS?: string;
+  SMTP_FROM?: string;
 }
 
 /** Minimal valid env vars — only required fields */
@@ -209,6 +210,42 @@ describe('AppConfigService', () => {
       expect(service.jwtSecret).not.toBe(service.jwtRefreshSecret);
       expect(service.jwtSecret).toBe('a'.repeat(32));
       expect(service.jwtRefreshSecret).toBe('b'.repeat(32));
+    });
+  });
+
+  // =============================================================
+  // smtpFrom — 2FA mail sender (ADR-054 / FEAT_2FA_EMAIL_MASTERPLAN §2.9, DD-13)
+  //
+  // The 2FA flow MUST always have a sender address. The Zod default keeps
+  // dev/test green when Doppler hasn't supplied SMTP_FROM yet; production
+  // overrides via Doppler (FEAT_2FA_EMAIL_MASTERPLAN §0.5.2). Empty-string
+  // is rejected by `z.string().min(1)` — verified separately so a typo'd
+  // Doppler secret crashes startup loud (R11) instead of degrading silently.
+  // =============================================================
+
+  describe('smtpFrom', () => {
+    it('should default to noreply@assixx.de when SMTP_FROM is unset', () => {
+      const service = createService();
+
+      expect(service.smtpFrom).toBe('noreply@assixx.de');
+    });
+
+    it('should return the configured sender when SMTP_FROM is set', () => {
+      const service = createService({
+        ...VALID_ENV,
+        SMTP_FROM: 'security@example.com',
+      });
+
+      expect(service.smtpFrom).toBe('security@example.com');
+    });
+
+    it('should reject empty-string SMTP_FROM (fail-loud per R11)', () => {
+      expect(() =>
+        createService({
+          ...VALID_ENV,
+          SMTP_FROM: '',
+        }),
+      ).toThrow('Invalid environment configuration');
     });
   });
 });

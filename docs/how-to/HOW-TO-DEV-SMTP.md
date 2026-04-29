@@ -13,8 +13,8 @@
 
 ## 1. What you get
 
-| Container        | Image                                       | Profile | Host port | Internal port | Purpose          |
-| ---------------- | ------------------------------------------- | ------- | --------- | ------------- | ---------------- |
+| Container        | Image                                        | Profile | Host port | Internal port | Purpose          |
+| ---------------- | -------------------------------------------- | ------- | --------- | ------------- | ---------------- |
 | `assixx-maildev` | `maildev/maildev:2.2.1@sha256:180ef51f…a810` | `dev`   | `1080`    | `1025` (SMTP) | Dev SMTP capture |
 
 The SMTP port (1025) is **not** published to the host — only sibling containers on

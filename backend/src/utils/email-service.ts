@@ -8,6 +8,8 @@ import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import path from 'path';
 
 import { getErrorMessage } from '../nest/common/utils/error.utils.js';
+import { build2faCodeTemplate } from './email-templates/2fa-code.template.js';
+import { build2faSuspiciousActivityTemplate } from './email-templates/2fa-suspicious-activity.template.js';
 import { logger } from './logger.js';
 
 // Type definition for attachment (from nodemailer)
@@ -625,6 +627,67 @@ async function sendBulkNotification(
   }
 }
 
+/**
+ * Send a 2FA verification code email.
+ *
+ * Throws on transport failure — callers (TwoFactorAuthService.issueChallenge)
+ * convert the error to `ServiceUnavailableException` per DD-14 (login: plain
+ * 503; signup: 503 + caller-side cleanup of pending user/tenant rows). The
+ * `Promise<void>` return contract is intentional — we never want a "code sent
+ * but the user got nothing" silent-success path.
+ *
+ * Template payload is built by `build2faCodeTemplate` (typed inputs, fixed
+ * subject per DD-13, no code in the subject line).
+ *
+ * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md (Phase 2 §2.9)
+ */
+async function send2faCode(
+  to: string,
+  code: string,
+  purpose: 'login' | 'signup',
+  ttlMinutes: number,
+): Promise<void> {
+  const template = build2faCodeTemplate({ code, purpose, ttlMinutes });
+  const result = await sendEmail({
+    to,
+    subject: template.subject,
+    html: template.html,
+    text: template.text,
+  });
+  if (!result.success) {
+    // Fail-loud per DD-14 — caller catches and decides login vs signup cleanup.
+    throw new Error(`2FA code email transport failed: ${result.error ?? 'unknown error'}`);
+  }
+}
+
+/**
+ * Send the suspicious-activity notification to a user whose account just
+ * tripped the 5-wrong-codes lockout (DD-5/DD-6).
+ *
+ * DD-20: recipient is the user only (no tenant-admin cc — would create a
+ * user-enumeration side-channel).
+ *
+ * Silent-swallow on transport failure — this is a paper-trail email, not a
+ * gating event. If SMTP is down we still want the lockout to apply and the
+ * primary verify response to return; logging suffices for ops.
+ *
+ * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md (Phase 2 §2.9, DD-20)
+ */
+async function send2faSuspiciousActivity(to: string): Promise<void> {
+  const template = build2faSuspiciousActivityTemplate();
+  const result = await sendEmail({
+    to,
+    subject: template.subject,
+    html: template.html,
+    text: template.text,
+  });
+  if (!result.success) {
+    logger.warn(
+      `2FA suspicious-activity email transport failed for ${to}: ${result.error ?? 'unknown error'}`,
+    );
+  }
+}
+
 function generateUnsubscribeLink(email: string, type?: string): string {
   const jwtSecret = process.env['JWT_SECRET'];
   if (jwtSecret === undefined || jwtSecret === '') {
@@ -644,6 +707,13 @@ function generateUnsubscribeLink(email: string, type?: string): string {
 }
 
 // ES module exports
+
+// Named exports for callers that prefer direct imports (added with the
+// 2FA module — see FEAT_2FA_EMAIL_MASTERPLAN §2.9). The default export below
+// keeps every function reachable for legacy consumers that already use
+// `import emailService from '...'; emailService.foo(...)`.
+export { send2faCode, send2faSuspiciousActivity };
+
 // Default export
 export default {
   initializeTransporter,
@@ -651,6 +721,8 @@ export default {
   sendNewDocumentNotification,
   sendWelcomeEmail,
   sendBulkNotification,
+  send2faCode,
+  send2faSuspiciousActivity,
   addToQueue,
   processQueue,
   generateUnsubscribeLink,

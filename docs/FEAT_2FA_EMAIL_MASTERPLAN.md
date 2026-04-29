@@ -3,12 +3,12 @@
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
 > **Version:** 0.6.0 (GREENFIELD-TRIM + DD-32 E-Mail-Change-2FA-Verify; R15 + Step 2.12 hinzugefügt; Bestandsuser-Cutover-Apparat als N/A markiert per CLAUDE.md Greenfield-Status seit 2026-04-19)
-> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
+> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.9 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
 > **Branch:** `feat/2fa-email`
 > **Spec:** This document
 > **Author:** Claude (proposed) · Simon Öztürk (decides)
 > **Estimated sessions:** 14 (v0.5.0) → ~12 (v0.6.0 nach Greenfield-Trim, Step 2.12 +1 Session)
-> **Actual sessions:** 2 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 erledigt)
+> **Actual sessions:** 3 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.9 erledigt)
 > **External dependencies added:** **ZERO** — every primitive (crypto, JWT, Redis via `ioredis`, legacy `email-service`, `CustomThrottlerGuard`, Zod, `audit_trail`) already exists.
 
 ---
@@ -752,7 +752,25 @@ const TWO_FA_REDIS = Symbol('TWO_FA_REDIS');
 - All methods return promises (no sync Redis access)
 - All errors wrapped via `getErrorMessage()` per TYPESCRIPT-STANDARDS §7.3
 
-### Step 2.3: `TwoFactorAuthService` (orchestration) [PENDING]
+### Step 2.3: `TwoFactorAuthService` (orchestration) [DONE — 2026-04-29]
+
+**Delivered (2026-04-29):**
+
+- `backend/src/nest/two-factor-auth/two-factor-auth.service.ts` — 4 public methods per plan: `issueChallenge` / `verifyChallenge` / `resendChallenge` / `clearLockoutForUser`. Uses `@nestjs/common` `ServiceUnavailableException` for SMTP failures (DD-14), `ForbiddenException` for lockout + Two-Root rule, `UnauthorizedException` for generic verify failures (R10-friendly), `HttpException(429)` for DD-21 resend cap + DD-9 cooldown.
+- Private helpers: `generateCode()` (6× `crypto.randomInt(0, CODE_ALPHABET.length)` — rejection-sampled, no modulo bias), `handleVerifySuccess` / `handleVerifyFailure`, `toChallengeView` (computes `expiresAt` + `resendAvailableAt` ISO timestamps), `fireAudit` (fire-and-forget `INSERT INTO audit_trail` via `db.queryAsTenant` — never throws, mirrors `audit-trail.service.ts:631 createEntry`).
+- R10 timing-safe equalisation: dummy `crypto.timingSafeEqual` against a 32-byte zero buffer on user-not-found path (via `void` discard — matches the `@typescript-eslint/naming-convention` rule that rejects bare `_` variable names).
+- DD-14 rollback semantics: `issueChallenge` consumes the just-created challenge if the SMTP send throws — no zombie codes left in Redis after a failed delivery.
+- DD-20 silent paper-trail: lockout-trigger fires `mailer.sendTwoFactorSuspiciousActivity(...)` via `void` — paper-trail mail failure can never block the verify response.
+- §A8 audit tuples: every state transition writes one `audit_trail` row (`(create, 2fa-challenge)` issue + resend, `(login, auth)` verify success/failure, `(update, 2fa-lockout)` lockout-trigger, `(delete, 2fa-lockout)` clear).
+- `backend/src/nest/two-factor-auth/two-factor-auth.module.ts` — registered `TwoFactorAuthService` + provider-local `MailerService` (mirrors `auth.module.ts:31` pattern), exported `TwoFactorAuthService` so AuthModule (Step 2.4) and SignupModule (Step 2.5) can inject it.
+
+**Test deferral (per Step 2.2 precedent):** unit tests for orchestration deferred to Phase 3 mandatory-scenarios suite (≥ 25 tests covering R2/R7/R8/R10 + DD-5/DD-6/DD-9/DD-14/DD-21 contracts). Hook surfaced "no paired test" — confirmed exempt for this step, will land in Phase 3.
+
+**Verification (2026-04-29):**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/two-factor-auth/` → 0 errors (after one fix: `_` underscore variable name → `void` discard for the R10 timing call).
+- `docker exec assixx-backend pnpm exec tsc --noEmit -p backend` → exit 0, 0 lines.
+- Backend hot-reloaded; `GET /health` → 200 ok; `docker logs assixx-backend` showed no module-load errors.
 
 **File:** `backend/src/nest/two-factor-auth/two-factor-auth.service.ts`
 
@@ -911,7 +929,26 @@ export const TwoFaResendThrottle = (): ThrottleDecorator =>
   );
 ```
 
-### Step 2.9: `send2faCode()` + template + `SMTP_FROM` [PENDING]
+### Step 2.9: `send2faCode()` + template + `SMTP_FROM` [DONE — 2026-04-29]
+
+**Delivered (2026-04-29):**
+
+- `backend/src/nest/config/config.service.ts` — extended Zod `EnvSchema` with `SMTP_FROM: z.string().min(1).default('noreply@assixx.de')` (R11 fail-loud on empty string in prod, dev default keeps tests green); added `smtpFrom` getter; `safeParse({...})` arg-list updated to forward `SMTP_FROM`.
+- `backend/src/nest/config/config.service.test.ts` — +3 tests: default, configured, empty-string rejection. Total file: 17 tests, all green.
+- `backend/src/utils/email-templates/2fa-code.template.ts` — new TypeScript builder `build2faCodeTemplate({ code, purpose, ttlMinutes }) → { subject, html, text }`. DD-13 generic subject ("Ihr Bestätigungscode für Assixx", same for login + signup — never leaks code/purpose into mail-list previews). German HTML with inline styles only (mail-client compat), monospace 32-px code rendering with letter-spacing for factory-shop-floor readability (DD-1 confusable-character context). Plain-text fallback always present. No tracking pixels, no scripts, no remote URLs.
+- `backend/src/utils/email-templates/2fa-suspicious-activity.template.ts` — `build2faSuspiciousActivityTemplate() → { subject, html, text }`. Generic subject ("Sicherheitshinweis zu Ihrem Assixx-Konto"), 15-min lockout duration, two-branch "you did this?"/"you did not?" advisory, German plain-text fallback. DD-20 user-only, no tenant-admin cc.
+- `backend/src/utils/email-templates/2fa-code.template.test.ts` — 10 tests locking down DD-13 invariants (subject identical for login+signup, no code in subject, code in HTML+text, TTL in HTML+text, per-purpose copy, "Geben Sie diesen Code niemandem weiter" warning, plain-text fallback present, no `<img src="https?://"`, no `<script>`).
+- `backend/src/utils/email-templates/2fa-suspicious-activity.template.test.ts` — 7 tests for the suspicious-activity invariants (generic subject, 15-min mention, both advisories, plain-text fallback, no tracking pixels, no scripts, deterministic output).
+- `backend/src/utils/email-service.ts` — added top-level `send2faCode(to, code, purpose, ttlMinutes): Promise<void>` (DD-14 fail-loud — throws on transport failure) and `send2faSuspiciousActivity(to): Promise<void>` (DD-20 silent-swallow — logs warn on failure). Both also added to default export so legacy default-import callers get them. Plus a named-export line for direct named-import consumers.
+- `backend/src/nest/common/services/mailer.service.ts` — added `sendTwoFactorCode(to, code, purpose, ttlMinutes)` (re-throws DD-14) and `sendTwoFactorSuspiciousActivity(to)` (belt-and-braces silent-swallow — underlying function already swallows transport errors; this catch only fires on programmer errors like a template-builder throw). DI-friendly surface that `TwoFactorAuthService` consumes.
+- `backend/src/nest/common/services/mailer.service.test.ts` — extended `vi.hoisted` mock to cover `send2faCode` + `send2faSuspiciousActivity`; added 4 tests covering DD-14 fail-loud (forwards args, re-throws cause unchanged) + DD-20 silent (forwards args, does NOT throw on underlying error). Total file: 18 tests, all green.
+
+**Verification (2026-04-29):**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/two-factor-auth/ backend/src/utils/email-templates/ backend/src/utils/email-service.ts backend/src/nest/common/services/mailer.service.ts backend/src/nest/config/config.service.ts` → 0 errors.
+- `docker exec assixx-backend pnpm exec tsc --noEmit -p backend` → exit 0, 0 lines.
+- `pnpm exec vitest run --project unit backend/src/nest/config/config.service.test.ts backend/src/utils/email-templates/2fa-code.template.test.ts backend/src/utils/email-templates/2fa-suspicious-activity.template.test.ts backend/src/nest/common/services/mailer.service.test.ts` → 4 files, 52 tests, all passed in 646 ms.
+- Backend hot-reloaded; `GET /health` returns `{"status":"ok"}` post-edit; no module-load errors.
 
 **Files:**
 
