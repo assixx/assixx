@@ -2,13 +2,13 @@
 
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
-> **Version:** 0.6.3 (Phase 2 DoD final blocker closed: R13 load-test discriminated-union wiring; Phase 2 fully DONE — ready for Phase 3 unit tests)
-> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); **Phase 2 DONE** (2026-04-28 / 2026-04-29): Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 + 2.10 + 2.11 + 2.12 backend implementation + R13 load-test wiring (Session 7c, 2026-04-29). Ready for Phase 3 (unit tests, Sessions 8 + 9). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
+> **Version:** 0.6.4 (Phase 3 Session 8 DONE — `TwoFactorCodeService` unit tests landed; Session 9 next)
+> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); **Phase 2 DONE** (2026-04-28 / 2026-04-29): Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 + 2.10 + 2.11 + 2.12 backend implementation + R13 load-test wiring (Session 7c, 2026-04-29). **Phase 3 partial — Session 8 DONE (2026-04-29):** `two-factor-code.service.test.ts` shipped (48 tests, 100 % coverage on the SUT). Ready for Phase 3 Session 9 (`TwoFactorAuthService` orchestration tests + `auth.service.test.ts`/`signup.service.test.ts` additions). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
 > **Branch:** `feat/2fa-email`
 > **Spec:** This document
 > **Author:** Claude (proposed) · Simon Öztürk (decides)
 > **Estimated sessions:** 14 (v0.5.0) → ~12 (v0.6.0 nach Greenfield-Trim, Step 2.12 +1 Session)
-> **Actual sessions:** 7c / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 + 2.10 + 2.11 + 2.12 + R13 load-test wiring erledigt)
+> **Actual sessions:** 8 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 + 2.10 + 2.11 + 2.12 + R13 load-test wiring + Phase 3 Session 8 erledigt)
 > **External dependencies added:** **ZERO** — every primitive (crypto, JWT, Redis via `ioredis`, legacy `email-service`, `CustomThrottlerGuard`, Zod, `audit_trail`) already exists.
 
 ---
@@ -38,6 +38,7 @@ Mandatory **email-based 2FA** at every password authentication entry point. Same
 | 0.4.0   | 2026-04-28 | **Plan-Perfektionierung** — 12 offene operative/technische Entscheidungen in 3 Batches via AskUserQuestion aufgelöst: T-Day-Strategie, SMTP_FROM-Bestätigung, DNS-/Cert-Modell, Dev-SMTP-Backend, Vorabmail-Empfänger/Sprache/Tonalität, Single-Root-Outreach-Timing, T-1 Hard-Block-Fallback (KEIN Telefon, NUR E-Mail), Reaper-Deployment-Topologie, HOW-TO-Recovery-Umfang, Cutover-Monitoring-Window. Neue DDs: DD-22 (Cutover-Strategie) + DD-23 (Per-Tenant-Flag NEIN in V1). Steps 0.3, 0.5.1, 0.5.2, 0.5.4, 0.5.5, 2.11 und Phase 6 Cutover-Runbook mit konkreten Werten befüllt. Plan stellt KEINE Fragen mehr. Status: ACCEPTED.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 0.5.0   | 2026-04-28 | **HARDENED auf User-Brutalehrlich-Audit:** (1) **DD-10 Flag KOMPLETT entfernt** per User-Vorgabe „kein Einstellung auszustellen" — 2FA hartcodiert, kein Soft-Rollout, T-Day = Deploy-Day. R5+R13 verschärft. (2) **P2-Fix:** Throttler `2fa-verify` von 5/10min-per-IP → 5/10min-per-challengeToken (Industriekunden hinter NAT würden sonst false-positive geblockt). (3) **NEW Step 0.5.6 Production-SMTP-Smoke** + **NEW Step 0.5.7 Sender-Warmup** — verhindert Spam-Filter-Flut am T-Day. (4) **NEW §0.1 Disaster-Recovery-Note** — SSH + Doppler-CLI als Out-of-Band-Pfade dokumentiert (User bestätigt vorhanden). (5) DD-7 OAuth-Exempt + DD-8 Lockout-Clear bestätigt unverändert. Status: ACCEPTED.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | 0.6.1   | 2026-04-29 | **Phase 2 Session 7 (partial) — Steps 2.7 + 2.8 DONE.** TwoFactorAuthController (`/auth/2fa/verify` + `/auth/2fa/resend`) + TwoFactorLockoutController (`/users/:id/2fa/clear-lockout`, separate file per `max-classes-per-file: 1`). Two new throttler tiers (`2fa-verify` 5/10min, `2fa-resend` 1/60s) keyed on `challengeToken` cookie via per-tier `getTracker` (NAT-fairness for industrial customers). Two new decorators (`TwoFaVerifyThrottle`, `TwoFaResendThrottle`); every existing decorator's `SkipThrottle` list extended with both tier names. `TwoFactorAuthService.markVerified()` added — single-purpose post-verify user-table write (`is_active=ACTIVE` for signup, `last_2fa_verified_at` + COALESCE-enroll for both). Verify endpoint delegates token issuance to `AuthService.loginWithVerifiedUser` and apex→subdomain handoff to `OAuthHandoffService.mint` (signup-flow only — login flow is on tenant subdomain so cookies set on same origin). DI-graph cycles resolved with `forwardRef` on AuthModule ↔ TwoFactorAuthModule + SignupModule → forwardRef(TwoFactorAuthModule). Verification: ESLint 0 errors, type-check 0 errors, 279 unit-test files / 7138 tests all green, backend `/health` 200, all 3 new routes return correct guards (401 unauth / 404 unknown). Steps 2.10 + 2.11 + 2.12 still PENDING. Status: ACCEPTED.                                                                                                                                                                                                                                                                               |
+| 0.6.4   | 2026-04-29 | **Phase 3 Session 8 DONE — `TwoFactorCodeService` unit tests shipped.** New file `backend/src/nest/two-factor-auth/two-factor-code.service.test.ts` (48 tests, 638 ms wall-time) covers 20 of 21 plan-listed mandatory scenarios for `TwoFactorCodeService` + 6 supplementary edge-case tests. Scenario #20 (alphabet conformance over 10 000 samples) deferred to Session 9 because `generateCode()` is a private method on `TwoFactorAuthService` (`two-factor-auth.service.ts:471`), not on the SUT of this file — masterplan listed it under "TwoFactorCodeService" by association, not by SUT location. Mock pattern mirrors `oauth-state.service.test.ts` (Redis-via-DI-token, plain-object spies, `unknown as Redis` cast). Constant-time test (#10) uses generous statistical bound (mean ratio ∈ [0.4, 2.5]) with explicit caveat — primary defense is structural (impl imports + calls `crypto.timingSafeEqual`); the stat check guards against regressions like swapping in `===` or `Buffer.compare`. **Verification (2026-04-29):** `pnpm exec vitest run --project unit backend/src/nest/two-factor-auth/two-factor-code.service.test.ts` → 48/48 passing in 50 ms · ESLint exit 0 / 0 errors · `tsc --noEmit -p backend` exit 0 · `--coverage` on the SUT: 100 % statements (47/47), 100 % branches (12/12), 100 % functions (15/15), 100 % lines (47/47) · full `--project unit` suite: 280 files / **7195 tests passing in 31.34 s** (Δ vs. v0.6.3 baseline: +1 file, +48 tests, 0 regressions). Status: ACCEPTED. Phase 3 Session 9 unblocked (`TwoFactorAuthService` orchestration tests + `auth.service.test.ts` +10 + `signup.service.test.ts` +5). |
 | 0.6.3   | 2026-04-29 | **Phase 2 Session 7c — R13 load-test wiring DONE; Phase 2 DoD closed.** Refactored `load/lib/auth.ts` to type the `/auth/login` response as the discriminated union `LoginResultBody` (k6-local mirror of `backend/src/nest/two-factor-auth/two-factor-auth.types.ts:LoginResultBody`, kept local because k6 runs in goja under its own tsconfig per ADR-018). New private `extractAuthState(res, email)` validates 200, parses body, branches on `stage`: `'challenge_required'` → `fail()` with a remediation pointer (DD-7 OAuth or 2FA-exempt fixture); `'authenticated'` → token extraction (forward-compat per Step 2.4, currently unreachable from `/auth/login` under DD-10 Removal). New public `loginGeneric(email, password)` funnels both `loginApitest()` and `baseline.ts:loginAll()` through a single discriminated-union check. `baseline.ts:loginAll` collapsed from 23 lines (special-case branch + duplicated destructure) to one `pool.map(login => loginGeneric(...))`. **Verification (2026-04-29):** `pnpm exec tsc --noEmit -p load` exit 0 / 0 lines; `pnpm exec eslint load/ --no-warn-ignored` exit 0 / 0 lines. Status: ACCEPTED. Phase 2 fully DONE — Phase 3 (unit tests) unblocked.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 0.6.2   | 2026-04-29 | **Phase 2 Session 7+ — Step 2.12 DONE.** Email-Change two-code 2FA-Verify (DD-32 / R15) shipped as a fresh Greenfield endpoint pair (no prior self-service email-change route existed — `UserProfileService.PROFILE_FIELD_MAP` deliberately omits `email`). New `users/email-change.{controller,service}.ts`, new DTOs, two new cookies (`emailChangeOldChallenge` / `emailChangeNewChallenge`). Refactor: `verifyChallenge` body moved into a shared `runVerifyMitigations` primitive; new `verifyChallengePreCommit` returns the record without consuming, with the per-flow wrong-code audit shape parameterised via `WrongCodeAudit` (login emits `(login, auth, failure)`, email-change emits `(update, user-email, failure, { side })`). Defense-in-depth: a stolen email-change token cannot be redeemed at `/auth/2fa/verify` (purpose-set rejection inside the primitive). Throttler `2fa-verify` tracker fallback chain extended to also key on `emailChangeOldChallenge` (industrial-NAT fairness preserved across both flows). `ChallengePurpose` widened to four values; new `LoginChallengePurpose` narrows `markVerified`/`VerifyResult` so email-change purposes can't reach the login/signup state mutation. Verification: ESLint 0, type-check 0, **279 files / 7147 tests / 21.70 s** (same baseline as Step 2.11 — zero regression from the verifyChallenge refactor + purpose narrowing), `/health` 200, both new routes mount with correct guard order (401 unauth / 404 unknown). Tests deferred to Phase 3 (unit) / Phase 4 (integration: Session-Hijack, typo-on-new-address, wrong-code bombing). Status: ACCEPTED. |
 | 0.6.0   | 2026-04-28 | **GREENFIELD-TRIM + DD-32 E-Mail-Change-2FA:** (1) **CLAUDE.md-Greenfield-Status (seit 2026-04-19) angewendet:** keine Bestandsuser → Step 0.3 (Vorabmail), Step 0.5.1 (Single-Root-Detection), Step 0.5.7 (Sender-Warmup) als **N/A — GREENFIELD** markiert. DD-22 (Cutover-Strategie), DD-23 (Per-Tenant-Flag), DD-26/27/28 (Pre-Deploy-Mail), DD-31 (Post-Cutover-Window), R5 (Existing-user impact), DD-11 (Transparent enrollment) als N/A markiert. T-Day-Konzept = Public-Launch-Day. ~2 Sessions gespart. (2) **NEW DD-32 + R15 + Step 2.12: E-Mail-Change-Endpoint MUSS 2FA-verifiziert sein.** Two-code verify (alte + neue E-Mail). Begründung: ohne diesen Schutz ist das gesamte 2FA-Modell durch Session-Hijack umgehbar — Angreifer ändert E-Mail auf eigene Adresse → 2FA-Codes gehen an Angreifer. Identifiziert beim Brutal-Ehrlich-Audit gegen Redis-Cloud-MFA-Doku 2026-04-28. (3) **Step-Up-2FA für sensitive Aktionen** (Tenant-Delete, Root-Self-Termination, Permission-Grant) explizit als **V2 inkrementell** markiert — pro sensitive Aktion ein eigener PR mit `requireStepUp2fa()`-Decorator, kein eigener Masterplan. Status: ACCEPTED.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -1340,29 +1341,31 @@ backend/src/nest/signup/
     signup.service.test.ts                 # +5 tests for new signup branches (existing file)
 ```
 
-### Mandatory scenarios — `TwoFactorCodeService`
+### Mandatory scenarios — `TwoFactorCodeService` [Session 8 DONE — 2026-04-29]
 
-- [ ] `createChallenge` produces base64url token of expected length (~43 chars from 32 bytes)
-- [ ] Token is unique across calls (no collisions in 1 000 generations)
-- [ ] `loadChallenge` returns null for unknown token
-- [ ] `loadChallenge` returns null for expired token (mocked `EXPIRE`)
-- [ ] `consumeChallenge` deletes the key
-- [ ] `hashCode` is deterministic for same inputs
-- [ ] `hashCode` differs across purposes (`login` vs `signup` produce different hashes for same userId+code)
-- [ ] `verifyCode` true on match
-- [ ] `verifyCode` false on mismatch
-- [ ] `verifyCode` constant-time (timing test, 1 000 samples, std-dev within bounds)
-- [ ] `incrementFailStreak` increases counter
-- [ ] `incrementFailStreak` sets 24 h TTL on first hit
-- [ ] `getFailStreak` returns 0 if no key
-- [ ] `clearFailStreak` deletes counter
-- [ ] `setLockout` sets `LOCKOUT_SEC` TTL
-- [ ] `isLocked` true during lockout, false after expire
-- [ ] `setResendCooldown` + `isResendOnCooldown` 60 s TTL behavior
-- [ ] Concurrent `createChallenge` calls produce distinct tokens (no race)
-- [ ] `updateChallenge(extendTtl=true)` resets TTL to `CODE_TTL_SEC`
-- [ ] Generator output always matches `/^[A-HJKMNP-Z2-9]{6}$/` over 10 000 samples (no forbidden chars `0/1/I/L/O`, v0.3.1)
-- [ ] DTO normalises lowercase input via `.toUpperCase()` before regex check (lowercase `abc234` → uppercase `ABC234`, then alphabet check; v0.3.1)
+> **Session 8 status (v0.6.4):** 20 of 21 scenarios shipped in `two-factor-code.service.test.ts` (48 tests total — 6 supplementary edge-case tests on top of the plan list). Scenario #20 (alphabet conformance) is **moved to Session 9** because the generator is `TwoFactorAuthService.generateCode()` (`two-factor-auth.service.ts:471`), not a method on `TwoFactorCodeService` — the plan grouped it here by association, not by SUT location. Coverage on the SUT: 100 % statements / branches / functions / lines.
+
+- [x] `createChallenge` produces base64url token of expected length (~43 chars from 32 bytes)
+- [x] Token is unique across calls (no collisions in 1 000 generations)
+- [x] `loadChallenge` returns null for unknown token
+- [x] `loadChallenge` returns null for expired token (mocked `EXPIRE`)
+- [x] `consumeChallenge` deletes the key
+- [x] `hashCode` is deterministic for same inputs
+- [x] `hashCode` differs across purposes (`login` vs `signup` produce different hashes for same userId+code)
+- [x] `verifyCode` true on match
+- [x] `verifyCode` false on mismatch
+- [x] `verifyCode` constant-time (timing test, 1 000 samples, std-dev within bounds) — generous-bound stat check (ratio ∈ [0.4, 2.5]) + structural guarantee (impl uses `crypto.timingSafeEqual`)
+- [x] `incrementFailStreak` increases counter
+- [x] `incrementFailStreak` sets 24 h TTL on first hit
+- [x] `getFailStreak` returns 0 if no key
+- [x] `clearFailStreak` deletes counter
+- [x] `setLockout` sets `LOCKOUT_SEC` TTL
+- [x] `isLocked` true during lockout, false after expire
+- [x] `setResendCooldown` + `isResendOnCooldown` 60 s TTL behavior
+- [x] Concurrent `createChallenge` calls produce distinct tokens (no race)
+- [x] `updateChallenge(extendTtl=true)` resets TTL to `CODE_TTL_SEC`
+- [→] **Deferred to Session 9** — Generator output always matches `/^[A-HJKMNP-Z2-9]{6}$/` over 10 000 samples (no forbidden chars `0/1/I/L/O`, v0.3.1) — `generateCode()` lives on `TwoFactorAuthService`, not `TwoFactorCodeService` (verified `two-factor-auth.service.ts:471`)
+- [x] DTO normalises lowercase input via `.toUpperCase()` before regex check (lowercase `abc234` → uppercase `ABC234`, then alphabet check; v0.3.1)
 
 ### Mandatory scenarios — `TwoFactorAuthService`
 
@@ -1398,12 +1401,12 @@ backend/src/nest/signup/
 
 ### Phase 3 — Definition of Done
 
-- [ ] ≥ 65 unit tests, all green
-- [ ] Coverage of `TwoFactorCodeService` ≥ 90 %
-- [ ] Coverage of `TwoFactorAuthService` ≥ 90 %
-- [ ] Constant-time test passes
-- [ ] Race-condition test for concurrent challenges passes
-- [ ] All ConflictException / ForbiddenException / UnauthorizedException paths covered
+- [~] ≥ 65 unit tests, all green — **48 / ≥ 65 after Session 8** (remaining ≥ 17 ship in Session 9: ≥ 25 for `TwoFactorAuthService` + ≥ 10 for `AuthService` + ≥ 5 for `SignupService`)
+- [x] Coverage of `TwoFactorCodeService` ≥ 90 % — **100 %** (47/47 statements, 12/12 branches, 15/15 functions, 47/47 lines, verified 2026-04-29)
+- [ ] Coverage of `TwoFactorAuthService` ≥ 90 % (Session 9)
+- [x] Constant-time test passes (Session 8) — generous-bound stat check + structural guarantee via `crypto.timingSafeEqual`
+- [x] Race-condition test for concurrent challenges passes (Session 8) — 100 concurrent `createChallenge` calls, all tokens distinct
+- [~] All ConflictException / ForbiddenException / UnauthorizedException paths covered — **partial after Session 8** (Code-Service has no exception paths — pure data primitives; orchestration exceptions ship in Session 9)
 
 ---
 
