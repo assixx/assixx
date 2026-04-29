@@ -322,13 +322,13 @@ inject `MailerService` from `../common/services/mailer.service.js`.
 
 The existing `email-service.ts` (Nodemailer) was connected to SMTP via environment variables:
 
-| Env Var     | Source  | Example                  |
-| ----------- | ------- | ------------------------ |
-| `SMTP_HOST` | Doppler | `smtp.office365.com`     |
-| `SMTP_PORT` | Doppler | `587`                    |
-| `SMTP_USER` | Doppler | `info@assixx.com`        |
-| `SMTP_PASS` | Doppler | M365 App-Passwort        |
-| `SMTP_FROM` | Doppler | `info@assixx.com`        |
+| Env Var     | Source  | Example              |
+| ----------- | ------- | -------------------- |
+| `SMTP_HOST` | Doppler | `smtp.office365.com` |
+| `SMTP_PORT` | Doppler | `587`                |
+| `SMTP_USER` | Doppler | `info@assixx.com`    |
+| `SMTP_PASS` | Doppler | M365 App-Passwort    |
+| `SMTP_FROM` | Doppler | `info@assixx.com`    |
 
 > **Migration note (2026-04-29):** SMTP-Provider von Gmail auf Microsoft 365
 > umgestellt. Office365 enforced strict sender-match → `SMTP_FROM` muss

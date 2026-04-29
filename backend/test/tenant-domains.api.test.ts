@@ -33,7 +33,16 @@
 import { execSync } from 'node:child_process';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { BASE_URL, type JsonBody, authHeaders, authOnly, flushThrottleKeys } from './helpers.js';
+import {
+  BASE_URL,
+  type JsonBody,
+  authHeaders,
+  authOnly,
+  clear2faStateForUser,
+  extractCookieValue,
+  fetchLatest2faCode,
+  flushThrottleKeys,
+} from './helpers.js';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -59,18 +68,82 @@ let ROOT_TOKEN = '';
 let ADMIN_TOKEN = '';
 let EMPLOYEE_TOKEN = '';
 
+/**
+ * Lookup user-id by email via direct psql (assixx_user, BYPASSRLS). Returns
+ * `null` when the user does not exist — callers can treat that as a soft
+ * skip on lockout pre-clean.
+ */
+function queryUserIdByEmail(email: string): number | null {
+  const out = execSync(
+    `docker exec assixx-postgres psql -U assixx_user -d assixx -t -A -c "SELECT id FROM users WHERE email = '${email}' LIMIT 1"`,
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  ).trim();
+  if (out === '') return null;
+  const id = Number.parseInt(out, 10);
+  return Number.isFinite(id) ? id : null;
+}
+
+/**
+ * Lookup tenant-id by subdomain via direct psql. Used post-signup to
+ * recover the tenant_id that the legacy signup body used to expose
+ * (FEAT_2FA_EMAIL Step 2.5: signup body now carries `stage:
+ * 'challenge_required'` instead of `tenantId`).
+ */
+function queryTenantIdBySubdomain(subdomain: string): number | null {
+  const out = execSync(
+    `docker exec assixx-postgres psql -U assixx_user -d assixx -t -A -c "SELECT id FROM tenants WHERE subdomain = '${subdomain}' LIMIT 1"`,
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  ).trim();
+  if (out === '') return null;
+  const id = Number.parseInt(out, 10);
+  return Number.isFinite(id) ? id : null;
+}
+
+/**
+ * Run the full 2-step 2FA login dance and return the access-token cookie.
+ * Mirrors the canonical `00-auth.api.test.ts:loginAndVerify()` pattern
+ * (FEAT_2FA_EMAIL §Phase 4 / Session 10b — adapts pre-existing files broken
+ * by Step 2.4 token-shape change). Mailpit lookup is `since`-scoped so we
+ * never depend on Mailpit being globally clean (cross-worker race per
+ * §0.5.5 v0.7.2). Lockouts are pre-cleared via `2fa:lock:{userId}` DEL.
+ */
 async function loginAs(email: string, password: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}/auth/login`, {
+  const preLookupId = queryUserIdByEmail(email);
+  if (preLookupId !== null) clear2faStateForUser(preLookupId);
+
+  const loginStartedAt = new Date();
+  const loginRes = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Login failed for ${email}: HTTP ${String(res.status)} ${body}`);
+  if (!loginRes.ok) {
+    const errBody = await loginRes.text();
+    throw new Error(`Login failed for ${email}: HTTP ${String(loginRes.status)} ${errBody}`);
   }
-  const json = (await res.json()) as JsonBody;
-  return json.data.accessToken as string;
+  const loginBody = (await loginRes.json()) as JsonBody;
+  if (loginBody.data?.stage !== 'challenge_required') {
+    throw new Error(`unexpected login stage for ${email}: ${String(loginBody.data?.stage)}`);
+  }
+  const challengeToken = extractCookieValue(loginRes.headers.getSetCookie(), 'challengeToken');
+  if (challengeToken === null) {
+    throw new Error(`no challengeToken cookie for ${email}`);
+  }
+
+  const code = await fetchLatest2faCode(email, 10_000, loginStartedAt);
+  const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: `challengeToken=${challengeToken}` },
+    body: JSON.stringify({ code }),
+  });
+  if (!verifyRes.ok) {
+    throw new Error(`2fa verify failed for ${email}: HTTP ${String(verifyRes.status)}`);
+  }
+  const accessToken = extractCookieValue(verifyRes.headers.getSetCookie(), 'accessToken');
+  if (accessToken === null) {
+    throw new Error(`no accessToken cookie for ${email}`);
+  }
+  return accessToken;
 }
 
 // ─── Direct-DB helpers (bypass RLS via assixx_user for setup/asserts) ────────
@@ -169,6 +242,7 @@ async function createFreshTenant(
   const adminEmail = `root-${RUN_SUFFIX}@${domain}`;
   CREATED_SUBDOMAINS.push(subdomain);
 
+  const signupStartedAt = new Date();
   const signupRes = await fetch(`${BASE_URL}/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -194,9 +268,44 @@ async function createFreshTenant(
       `createFreshTenant[${label}] signup failed: HTTP ${String(signupRes.status)} ${body}`,
     );
   }
-  const signupJson = (await signupRes.json()) as JsonBody;
-  const tenantId = signupJson.data.tenantId as number;
-  const userId = signupJson.data.userId as number;
+
+  // Post-DD-10 signup contract (FEAT_2FA_EMAIL Step 2.5):
+  //   - Body: `{ stage: 'challenge_required', challenge }` — NO tenantId/userId.
+  //   - Cookie: `challengeToken` for the freshly-created INACTIVE root user.
+  //   - Mailpit: 2FA mail to `adminEmail`.
+  //
+  // We must:
+  //   1. Verify the signup challenge → flips user to is_active=ACTIVE
+  //      (otherwise the next /auth/login would hit JwtAuthGuard's is_active
+  //      check and 401 the user).
+  //   2. Recover the tenant_id + user_id via psql (signup-verify on apex
+  //      returns a `handoff` ticket, NOT the IDs the legacy body exposed).
+  //   3. Run a regular login + 2FA dance to get the access-token cookie.
+  const signupChallenge = extractCookieValue(signupRes.headers.getSetCookie(), 'challengeToken');
+  if (signupChallenge === null) {
+    throw new Error(`createFreshTenant[${label}]: signup did not issue challengeToken`);
+  }
+  const signupCode = await fetchLatest2faCode(adminEmail, 10_000, signupStartedAt);
+  const signupVerifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: `challengeToken=${signupChallenge}` },
+    body: JSON.stringify({ code: signupCode }),
+  });
+  if (!signupVerifyRes.ok) {
+    throw new Error(
+      `createFreshTenant[${label}]: signup-verify failed: HTTP ${String(signupVerifyRes.status)}`,
+    );
+  }
+
+  const tenantId = queryTenantIdBySubdomain(subdomain);
+  const userId = queryUserIdByEmail(adminEmail);
+  if (tenantId === null) {
+    throw new Error(`createFreshTenant[${label}]: tenant ${subdomain} missing post-signup`);
+  }
+  if (userId === null) {
+    throw new Error(`createFreshTenant[${label}]: user ${adminEmail} missing post-signup`);
+  }
+
   const token = await loginAs(adminEmail, TEST_PASSWORD);
   return { token, tenantId, userId, subdomain, domain };
 }
@@ -909,6 +1018,12 @@ describe('Graceful degradation on last-verified-domain removal (v0.3.4 D27)', ()
   });
 
   it('existing root user can still login after last-verified-domain removal', async () => {
+    // Post-DD-10: `/auth/login` issues a 2FA challenge instead of tokens
+    // (FEAT_2FA_EMAIL Step 2.4 + ADR-005). The credential check + challenge
+    // issuance is what proves the login path stays open through the
+    // graceful-degradation lock — we don't need to drive the verify step
+    // here because the test's intent is "auth still works after the last
+    // verified domain is gone".
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -919,7 +1034,7 @@ describe('Graceful degradation on last-verified-domain removal (v0.3.4 D27)', ()
     });
     expect(res.status).toBe(200);
     const json = (await res.json()) as JsonBody;
-    expect(json.data?.accessToken).toBeTypeOf('string');
+    expect(json.data.stage).toBe('challenge_required');
   });
 
   it('existing user can still GET /users/me after degradation', async () => {

@@ -65,8 +65,8 @@ import {
   authOnly,
   createDepartmentAndTeam,
   ensureTestEmployee,
-  fetchWithRetry,
   loginApitest,
+  loginNonRoot,
 } from './helpers.js';
 
 let auth: AuthState;
@@ -130,16 +130,9 @@ beforeAll(async () => {
   );
 
   await ensureTestEmployee(auth.authToken);
-  const empLoginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: 'employee@assixx.com',
-      password: APITEST_PASSWORD,
-    }),
-  });
-  const empLoginBody = (await empLoginRes.json()) as JsonBody;
-  employeeToken = empLoginBody.data.accessToken as string;
+  // Full 2-step 2FA dance per FEAT_2FA_EMAIL Step 2.4 — `loginNonRoot`
+  // consolidates the login → Mailpit → verify flow across api-test files.
+  employeeToken = await loginNonRoot('employee@assixx.com', APITEST_PASSWORD);
 });
 
 // ─── 1. Auth gate + my-permissions ─────────────────────────────────────────

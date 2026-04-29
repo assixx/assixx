@@ -142,38 +142,20 @@ function buildIntro(purpose: TwoFactorCodeTemplatePurpose): { greeting: string; 
  * announce "table with 6 columns". The cells use small horizontal gaps via
  * border-collapse + per-cell padding (mail-client compatible — `gap` is not).
  */
-function renderCodeBoxes(code: string): string {
-  // Array.from(code) (not `[...code]` / `code.split('')`) — the lint rule
-  // `@typescript-eslint/no-misused-spread` blocks the spread on strings
-  // because it produces UTF-16 code units that mis-handle surrogate pairs.
-  // Codes are 6 chars from the Crockford-Base32 subset (A-Z2-9), so emoji /
-  // surrogate concerns don't apply in practice — `Array.from` is the
-  // lint-clean form.
-  return Array.from(code)
-    .map(
-      (char: string): string => `<td
-                              align="center"
-                              valign="middle"
-                              bgcolor="#0b1220"
-                              style="
-                                width: 56px;
-                                height: 64px;
-                                background-color: #0b1220;
-                                border: 1px solid #1f2937;
-                                border-radius: 8px;
-                                padding: 0;
-                                font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-                                font-size: 28px;
-                                font-weight: 700;
-                                line-height: 64px;
-                                color: #f1f5f9;
-                                mso-line-height-rule: exactly;
-                              "
-                            >${char}</td>`,
-    )
-    .join(
-      '\n                            <td width="8" style="width: 8px; font-size: 0; line-height: 0">&nbsp;</td>\n                            ',
-    );
+function renderCode(code: string): string {
+  // §2.9b v4 (2026-04-29): the boxed rendering (v3) was reverted on user
+  // feedback — the code is now displayed as plain bold monospace text, no
+  // boxes, no borders, just centered. Copy-clean by construction (single
+  // text node), still letter-spacing-readable for shop-floor screens.
+  //
+  // Centering: handled by the parent `<td align="center"; text-align: center>`
+  // — this helper just produces the styled inner element.
+  //
+  // Color: light slate (`#f1f5f9`) matches the H1 in the same card.
+  // Letter-spacing: 8px so the 6 chars are clearly distinguishable but copy
+  // still yields the unbroken string (CSS letter-spacing doesn't insert
+  // characters into the text, only visual gaps).
+  return `<span class="code-text" style="display: inline-block; font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 24px; font-weight: 800; letter-spacing: 8px; color: #f1f5f9; mso-line-height-rule: exactly;">${code}</span>`;
 }
 
 /**
@@ -195,10 +177,10 @@ function renderCodeMailHtml(args: {
   subject: string;
   greeting: string;
   lead: string;
-  codeBoxes: string;
+  codeHtml: string;
   ttlMinutes: number;
 }): string {
-  const { subject, greeting, lead, codeBoxes, ttlMinutes } = args;
+  const { subject, greeting, lead, codeHtml, ttlMinutes } = args;
   return `<!DOCTYPE html>
 <html lang="de" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
@@ -229,6 +211,10 @@ function renderCodeMailHtml(args: {
     [data-ogsc] .text-body { color: #cbd5e1 !important; }
     [data-ogsc] .text-muted { color: #94a3b8 !important; }
     [data-ogsc] .code-cell { background-color: #0b1220 !important; color: #f1f5f9 !important; }
+    /* Explicit font-family on every text element so clients that strip
+       inheritance through nested tables (Gmail, Maildev iframe) still
+       render the same stack as the password-reset reference. */
+    body, table, td, p, h1, h2, h3 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
     @media screen and (max-width: 600px) {
       .container { width: 100% !important; max-width: 100% !important; }
       .px-32 { padding-right: 20px !important; padding-left: 20px !important; }
@@ -254,24 +240,33 @@ function renderCodeMailHtml(args: {
               <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000000" style="background-color: #000000; border-radius: 12px">
                 <tr>
                   <td class="px-32 py-32" style="padding: 36px 36px 32px 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-                    <h1 class="text-primary" style="margin: 0 0 8px 0; padding: 0; font-size: 22px; font-weight: 700; line-height: 1.3; color: #f1f5f9; text-align: center; mso-line-height-rule: exactly;">Ihr 6-stelliger Bestätigungscode</h1>
-                    <p class="text-muted" style="margin: 0 0 28px 0; padding: 0; font-size: 14px; line-height: 1.5; color: #94a3b8; text-align: center; mso-line-height-rule: exactly;">${greeting}</p>
-                    <p class="text-body" style="margin: 0 0 28px 0; padding: 0; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;">${lead}</p>
-                    <!-- 6 separate code boxes side-by-side (§2.9b) -->
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto 24px auto">
+                    <h1 class="text-primary" style="margin: 0 0 24px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 22px; font-weight: 700; line-height: 1.3; color: #f1f5f9; text-align: center; mso-line-height-rule: exactly;">Ihr 6-stelliger Bestätigungscode</h1>
+                    <!-- Greeting + Lead form ONE reading block: same color
+                         (#cbd5e1 / text-body), same line-height (1.6), and a
+                         tight 4px gap between them so they read as a single
+                         paragraph. The 24px above (under H1) and 28px below
+                         (above the code) anchor the block visually. -->
+                    <p class="text-body" style="margin: 0 0 4px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #cbd5e1; text-align: left; mso-line-height-rule: exactly;">${greeting}</p>
+                    <p class="text-body" style="margin: 0 0 28px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;">${lead}</p>
+                    <!-- Plain bold monospace token, centered (§2.9b v4 —
+                         user feedback 2026-04-29: boxes felt heavy, the
+                         token alone reads cleaner. Letter-spacing-only
+                         visual gap, copy-clean by construction (single
+                         text node). -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="100%" style="margin: 0 auto 24px auto">
                       <tr>
-                            ${codeBoxes}
+                        <td align="center" style="padding: 0; text-align: center;">${codeHtml}</td>
                       </tr>
                     </table>
-                    <p class="text-body" style="margin: 0 0 12px 0; padding: 0; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;">Verwenden Sie diesen Code, um den Vorgang in Assixx abzuschließen.</p>
-                    <p class="text-body" style="margin: 0 0 12px 0; padding: 0; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;"><strong style="color: #f1f5f9">Geben Sie diesen Code niemandem weiter.</strong> Mitarbeitende von Assixx werden Sie niemals telefonisch, per SMS oder E-Mail nach Ihrem Code fragen.</p>
-                    <p class="text-muted" style="margin: 0 0 24px 0; padding: 0; font-size: 13px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">Der Code ist <strong style="color: #cbd5e1">${ttlMinutes} Minuten</strong> gültig.</p>
+                    <p class="text-body" style="margin: 0 0 12px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;">Verwenden Sie diesen Code, um den Vorgang in Assixx abzuschließen.</p>
+                    <p class="text-body" style="margin: 0 0 12px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;"><strong style="color: #f1f5f9">Geben Sie diesen Code niemandem weiter.</strong> Mitarbeitende von Assixx werden Sie niemals telefonisch, per SMS oder E-Mail nach Ihrem Code fragen.</p>
+                    <p class="text-muted" style="margin: 0 0 24px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">Der Code ist <strong style="color: #cbd5e1">${ttlMinutes} Minuten</strong> gültig.</p>
                     <!-- Section divider + action-oriented closing block -->
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="border-top: 1px solid #1f2937; padding: 18px 0 0 0">
-                          <p class="text-muted" style="margin: 0 0 12px 0; padding: 0; font-size: 12px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">Betrüger geben sich möglicherweise als Assixx aus. Geben Sie niemals Ihre Anmeldedaten oder Codes weiter.</p>
-                          <p class="text-muted" style="margin: 0; padding: 0; font-size: 12px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;"><strong style="color: #cbd5e1">Sie haben keinen Code angefordert?</strong> Falls Sie vermuten, dass jemand anderes diesen Code angefordert hat, sperren Sie Ihr Konto umgehend und informieren Sie Ihre IT-Abteilung.</p>
+                          <p class="text-muted" style="margin: 0 0 12px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">Betrüger geben sich möglicherweise als Assixx aus. Geben Sie niemals Ihre Anmeldedaten oder Codes weiter.</p>
+                          <p class="text-muted" style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;"><strong style="color: #cbd5e1">Sie haben keinen Code angefordert?</strong> Falls Sie vermuten, dass jemand anderes diesen Code angefordert hat, sperren Sie Ihr Konto umgehend und informieren Sie Ihre IT-Abteilung.</p>
                         </td>
                       </tr>
                     </table>
@@ -283,8 +278,8 @@ function renderCodeMailHtml(args: {
           <!-- Footer -->
           <tr>
             <td align="center" style="padding: 24px 16px 0 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
-              <p class="text-muted" style="margin: 0 0 6px 0; padding: 0; font-size: 12px; line-height: 1.5; color: #64748b; mso-line-height-rule: exactly;">&copy; 2026 Assixx &mdash; Enterprise-Plattform f&uuml;r Industrieunternehmen</p>
-              <p class="text-muted" style="margin: 0; padding: 0; font-size: 12px; line-height: 1.5; color: #64748b; mso-line-height-rule: exactly;">Dies ist eine automatisierte Nachricht. Bitte antworten Sie nicht auf diese E-Mail.</p>
+              <p class="text-muted" style="margin: 0 0 6px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #64748b; mso-line-height-rule: exactly;">&copy; 2026 Assixx &mdash; Enterprise-Plattform f&uuml;r Industrieunternehmen</p>
+              <p class="text-muted" style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #64748b; mso-line-height-rule: exactly;">Dies ist eine automatisierte Nachricht. Bitte antworten Sie nicht auf diese E-Mail.</p>
             </td>
           </tr>
         </table>
@@ -350,8 +345,8 @@ export function build2faCodeTemplate(input: TwoFactorCodeTemplateInput): TwoFact
   // for every purpose so a mail-list view leaks nothing.
   const subject = 'Ihr Bestätigungscode für Assixx';
 
-  const codeBoxes = renderCodeBoxes(code);
-  const html = renderCodeMailHtml({ subject, greeting, lead, codeBoxes, ttlMinutes });
+  const codeHtml = renderCode(code);
+  const html = renderCodeMailHtml({ subject, greeting, lead, codeHtml, ttlMinutes });
   const text = renderCodeMailText({ greeting, lead, code, ttlMinutes });
 
   return { subject, html, text };

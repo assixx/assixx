@@ -22,9 +22,9 @@ import {
   authHeaders,
   authOnly,
   ensureTestEmployee,
-  fetchWithRetry,
   getDefaultPositionIds,
   loginApitest,
+  loginNonRoot,
 } from './helpers.js';
 
 let auth: AuthState;
@@ -65,18 +65,10 @@ beforeAll(async () => {
     testAdminId = existing.id;
   }
 
-  // Ensure test employee + login for 403 tests
+  // Ensure test employee + login for 403 tests. Full 2-step 2FA dance per
+  // FEAT_2FA_EMAIL Step 2.4 — `loginNonRoot` consolidates the pattern.
   await ensureTestEmployee(auth.authToken);
-  const empLoginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: 'employee@assixx.com',
-      password: APITEST_PASSWORD,
-    }),
-  });
-  const empLoginBody = (await empLoginRes.json()) as JsonBody;
-  employeeToken = empLoginBody.data.accessToken as string;
+  employeeToken = await loginNonRoot('employee@assixx.com', APITEST_PASSWORD);
 });
 
 // ─── GET /admin-permissions/my (seq: 1) ─────────────────────────────────────

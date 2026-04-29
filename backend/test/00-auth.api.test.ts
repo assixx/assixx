@@ -116,9 +116,19 @@ function flushThrottleKeys(): void {
 }
 
 /**
- * Step 1: POST /auth/login with 429 retry. Returns the raw response so
+ * Step 1: POST /auth/login with 429 recovery. Returns the raw response so
  * `Auth: Step 1` assertions can inspect the discriminated-union body
  * (`stage: 'challenge_required'`) and the `challengeToken` cookie directly.
+ *
+ * 429 handling: AuthThrottle is 10 req / 5 min (auth.controller.ts:356,
+ * throttle.decorators.ts:42, ADR-001 §"Manual Reset"). The earlier suite-wide
+ * Setup/Step1/Step2/Refresh/Logout tests in this file together drain the
+ * bucket by the time we reach the late "Auth: Logout > re-login" case.
+ * Sleep-and-retry was useless (TTL is 5 min, the loop slept 6 s total).
+ * Fix: flush `throttle:*` directly (Redis-side, idempotent — see ADR-001
+ * "Dev friction → Manual Reset") and retry once. Safe here because every
+ * 00-auth test that asserts ON 429 increments the bucket itself in-place
+ * (it() block) — they never route through this composite helper.
  */
 async function performLoginStep(): Promise<{ res: Response; body: JsonBody }> {
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -132,7 +142,7 @@ async function performLoginStep(): Promise<{ res: Response; body: JsonBody }> {
     });
 
     if (res.status === 429) {
-      await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+      flushThrottleKeys();
       continue;
     }
 

@@ -31,7 +31,10 @@ import {
   BASE_URL,
   type JsonBody,
   authHeaders,
+  clear2faStateForUser,
   ensureTestEmployee,
+  extractCookieValue,
+  fetchLatest2faCode,
   flushThrottleKeys,
   loginApitest,
 } from './helpers.js';
@@ -50,19 +53,79 @@ let employeeAuth: AuthState;
 let adminUserId: number;
 let employeeUserId: number;
 
+/**
+ * Lookup a user's id by email via direct psql (assixx_user, BYPASSRLS). Used
+ * by `loginAs` below to clear stale 2FA lockouts before the login attempt.
+ *
+ * Returns `null` if the user does not exist (caller can decide to skip the
+ * pre-clean — the next test will fail loudly with 401 anyway).
+ */
+function queryUserIdByEmail(email: string): number | null {
+  const out = execSync(
+    `docker exec assixx-postgres psql -U assixx_user -d assixx -t -A -c "SELECT id FROM users WHERE email = '${email}' LIMIT 1"`,
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  ).trim();
+  if (out === '') return null;
+  const id = Number.parseInt(out, 10);
+  return Number.isFinite(id) ? id : null;
+}
+
+/**
+ * Run the full 2-step 2FA login dance for a fixture user and return the
+ * resulting `AuthState` (access/refresh from Set-Cookie, user.id/tenantId from
+ * the verify body). Pre-cleans `2fa:lock:{userId}` + `2fa:fail-streak:{userId}`
+ * so a poisoned prior run cannot block this attempt.
+ *
+ * Mirrors `00-auth.api.test.ts:loginAndVerify()` (FEAT_2FA_EMAIL §Phase 4 /
+ * Session 10b — adapts pre-existing files broken by Step 2.4 token-shape
+ * change). Mailpit lookup is `since`-scoped — never call `clearMailpit()`
+ * here (cross-worker race per §0.5.5 v0.7.2).
+ */
 async function loginAs(email: string, password: string): Promise<AuthState> {
-  const res = await fetch(`${BASE_URL}/auth/login`, {
+  const preLookupId = queryUserIdByEmail(email);
+  if (preLookupId !== null) clear2faStateForUser(preLookupId);
+
+  const loginStartedAt = new Date();
+
+  const loginRes = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) throw new Error(`login failed for ${email}: ${res.status}`);
-  const body = (await res.json()) as JsonBody;
+  if (!loginRes.ok) {
+    throw new Error(`login failed for ${email}: ${String(loginRes.status)}`);
+  }
+  const loginBody = (await loginRes.json()) as JsonBody;
+  if (loginBody.data?.stage !== 'challenge_required') {
+    throw new Error(`unexpected login stage for ${email}: ${String(loginBody.data?.stage)}`);
+  }
+  const challengeToken = extractCookieValue(loginRes.headers.getSetCookie(), 'challengeToken');
+  if (challengeToken === null) {
+    throw new Error(`no challengeToken cookie for ${email}`);
+  }
+
+  const code = await fetchLatest2faCode(email, 10_000, loginStartedAt);
+  const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: `challengeToken=${challengeToken}` },
+    body: JSON.stringify({ code }),
+  });
+  if (!verifyRes.ok) {
+    throw new Error(`2fa verify failed for ${email}: ${String(verifyRes.status)}`);
+  }
+  const verifyBody = (await verifyRes.json()) as JsonBody;
+  const setCookies = verifyRes.headers.getSetCookie();
+  const accessToken = extractCookieValue(setCookies, 'accessToken');
+  const refreshToken = extractCookieValue(setCookies, 'refreshToken');
+  if (accessToken === null || refreshToken === null) {
+    throw new Error(`no token cookies for ${email}`);
+  }
+
   return {
-    authToken: body.data.accessToken,
-    refreshToken: body.data.refreshToken,
-    userId: body.data.user.id,
-    tenantId: body.data.user.tenantId,
+    authToken: accessToken,
+    refreshToken,
+    userId: verifyBody.data.user.id as number,
+    tenantId: verifyBody.data.user.tenantId as number,
   };
 }
 
@@ -442,13 +505,22 @@ describe('ADR-051 §2.8 — Admin-Initiated Token Redemption', () => {
     expect(body.data.message).toContain('erfolgreich');
 
     // Verify password actually changed — login with new password succeeds.
+    // Under the post-DD-10 contract `/auth/login` returns 200 +
+    // `stage: 'challenge_required'` for any user with valid credentials, so
+    // we assert on the discriminated-union shape rather than completing the
+    // 2FA dance (the credential check is what proves the password change
+    // worked; verifying the 2FA code adds Mailpit round-trips for no extra
+    // signal here).
     flushThrottleKeys();
+    clear2faStateForUser(adminUserId);
     const loginRes = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: ADMIN_EMAIL, password: newPassword }),
     });
+    const loginBody = (await loginRes.json()) as JsonBody;
     expect(loginRes.status).toBe(200);
+    expect(loginBody.data.stage).toBe('challenge_required');
 
     // Restore original password — also via admin-initiated token so we
     // don't need a separate bcrypt-hash fixture. resetTokensFor clears the

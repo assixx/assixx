@@ -424,3 +424,30 @@ die Wahrheit — naechster `apply.sh`-Run ueberschreibt UI-Edits.
 | Token-Rotation-Reminder (Calendar entry, 90d)                     | Operations  | T+90d nach Setup   |
 | Dashboards-as-Code (folgender ADR-Pass)                           | Engineering | Wenn 5+ Dashboards |
 | `grafanactl` evaluieren (ggf. Migration von curl-Script)          | Engineering | Wenn 10+ Rules     |
+
+---
+
+## Cleanup: Self-Hosted Monitoring Templates Removed (2026-04-29)
+
+**Action:** `docs/infrastructure/monitoring/` (gesamter Ordner) gelöscht.
+
+**Inhalt vor Löschung:**
+
+| Datei                   | Zweck (vor-Cloud-Stack)            | Aktiver Ersatz                                    |
+| ----------------------- | ---------------------------------- | ------------------------------------------------- |
+| `alertmanager.yml`      | Office365-SMTP Alert-Routing       | Grafana Cloud Notification Policies (offen, §5g)  |
+| `alerts.yml`            | Prometheus Alert-Rules             | `docker/grafana/alerts/*.json` (Phase 5g)         |
+| `prometheus.yml`        | Prometheus + Alertmanager-Targets  | `docker/prometheus/prometheus.yml` (live, §5e)    |
+| `loki-config.yml`       | Loki + alertmanager_url            | `docker/loki/loki-config.yml` (live, §5a)         |
+| `promtail-config.yml`   | Log-Shipping via Promtail          | `pino-loki` Transport (PINO-LOGGING-PLAN Phase 4) |
+| `grafana/provisioning/` | Lokale Grafana-Datasource-Snippets | Grafana Cloud + `docker/grafana/alerts/`          |
+
+**Begründung:** Templates stammen aus der prä-Grafana-Cloud-Phase (vor 2026-01-12, §5e),
+hatten **null externe Referenzen**, drifteten still gegen den Live-Stack (z. B. nutzte
+`promtail-config.yml` einen Log-Pipeline-Pfad, der mit Phase 4 obsolet wurde). Keeping
+"falls wir mal self-hosten"-Templates aktuell-zu-halten kostet Review-Zeit ohne Nutzen —
+KISS verlangt: was nicht läuft, wird gelöscht. Bei Bedarf rekonstruierbar aus Git-Historie.
+
+**Was bleibt offen (§"Open Items"):** Notification-Channel-Routing als Provisioning-JSONs
+(Contact Points + Notification Policies) parallel zu den Alert-Rules in
+`docker/grafana/alerts/`. Bis dahin feuern die 7 Rules ohne Email/Slack-Versand.

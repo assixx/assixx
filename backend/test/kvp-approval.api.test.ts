@@ -12,6 +12,7 @@ import {
   authHeaders,
   authOnly,
   loginApitest,
+  loginNonRoot,
 } from './helpers.js';
 
 let auth: AuthState;
@@ -20,14 +21,10 @@ let employeeToken: string;
 beforeAll(async () => {
   auth = await loginApitest();
 
-  // Login as employee (no canWrite for kvp-suggestions)
-  const empRes = await fetch(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: 'employee@assixx.com', password: APITEST_PASSWORD }),
-  });
-  const empBody = (await empRes.json()) as JsonBody;
-  employeeToken = empBody.data.accessToken as string;
+  // Login as employee (no canWrite for kvp-suggestions). Full 2-step 2FA
+  // dance per FEAT_2FA_EMAIL Step 2.4 — `loginNonRoot` consolidates the
+  // login → Mailpit → verify flow across ~7 api-test files.
+  employeeToken = await loginNonRoot('employee@assixx.com', APITEST_PASSWORD);
 });
 
 // ---- seq: 0 -- Approval Config Status ------------------------------------

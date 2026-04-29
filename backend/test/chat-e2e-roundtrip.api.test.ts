@@ -37,6 +37,7 @@ import {
   ensureTestEmployee,
   fetchWithRetry,
   loginApitest,
+  loginNonRoot,
 } from './helpers.js';
 
 // =============================================================================
@@ -158,16 +159,9 @@ beforeAll(async () => {
   adminAuth = await loginApitest();
   employeeId = await ensureTestEmployee(adminAuth.authToken);
 
-  const empLoginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: 'employee@assixx.com',
-      password: APITEST_PASSWORD,
-    }),
-  });
-  const empLoginBody = (await empLoginRes.json()) as JsonBody;
-  employeeToken = empLoginBody.data.accessToken as string;
+  // Full 2-step 2FA dance per FEAT_2FA_EMAIL Step 2.4 — `loginNonRoot`
+  // consolidates the login → Mailpit → verify flow across api-test files.
+  employeeToken = await loginNonRoot('employee@assixx.com', APITEST_PASSWORD);
 
   // ── Step 1b: Get employee UUID and grant chat permissions ─────────────────
   const usersRes = await fetch(`${BASE_URL}/users?limit=50`, {

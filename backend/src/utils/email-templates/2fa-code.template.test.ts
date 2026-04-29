@@ -59,30 +59,41 @@ describe('build2faCodeTemplate', () => {
   // Code rendering — body presence + 6 separate boxes (§2.9b)
   // ===========================================================================
 
-  // §2.9b: HTML renders the code as 6 separate boxes (see "renders the
-  // 6-char code as 6 separate <td> cells" below), so the unbroken string
-  // appears in plain-text only. Clipboard-copy works on text-only clients.
-  it('renders the code (unbroken) in the plain-text body', () => {
+  // §2.9b v4 (2026-04-29): HTML renders the code as a single bold-monospace
+  // text block, centered, no boxes. Unbroken code is in BOTH HTML and text
+  // bodies — clipboard-copy yields the unbroken string from either.
+  it('renders the code (unbroken) in both HTML and plain-text bodies (§2.9b v4)', () => {
     const result = build2faCodeTemplate({ code: 'K7PX3M', purpose: 'login', ttlMinutes: 10 });
 
+    expect(result.html).toContain('K7PX3M');
     expect(result.text).toContain('K7PX3M');
   });
 
-  // §2.9b: each char of the code appears in its own `<td>` cell, in order.
-  // We grab the cells whose inline-style fingerprints them as code boxes
-  // (font-family monospace + the per-cell width), then assert the inner
-  // text content equals the input code char-by-char.
-  it('renders the 6-char code as 6 separate <td> cells, one char each, in order (§2.9b)', () => {
+  // §2.9b v4 (2026-04-29): plain bold monospace token, no boxes. Single
+  // <span class="code-text"> wraps the unbroken code in the rendered card.
+  // Centering is handled by the parent <td align="center"; text-align: center>.
+  it('renders the code as a single bold monospace span with the unbroken code (§2.9b v4)', () => {
     const code = 'K7PX3M';
     const result = build2faCodeTemplate({ code, purpose: 'login', ttlMinutes: 10 });
 
-    // Match every code-cell <td>: width 56px (the only cells with that exact
-    // width in the template) + inner content of length exactly 1.
-    const cellPattern = /<td[^>]*width:\s*56px[^>]*>([A-Z2-9])<\/td>/g;
-    const matches = [...result.html.matchAll(cellPattern)];
+    const tokenPattern = /<span class="code-text"[^>]*>([A-Z2-9]{6})<\/span>/;
+    const match = result.html.match(tokenPattern);
 
-    expect(matches).toHaveLength(6);
-    expect(matches.map((m) => m[1]).join('')).toBe(code);
+    expect(match).not.toBeNull();
+    expect(match?.[1]).toBe(code);
+  });
+
+  it('styles the code as bold monospace with letter-spacing (§2.9b v4)', () => {
+    const result = build2faCodeTemplate({ code: 'K7PX3M', purpose: 'login', ttlMinutes: 10 });
+
+    const tokenPattern = /<span class="code-text"[^>]*>[A-Z2-9]{6}<\/span>/;
+    const match = result.html.match(tokenPattern);
+
+    expect(match).not.toBeNull();
+    const tag = match?.[0] ?? '';
+    expect(tag).toContain('font-weight: 800');
+    expect(tag).toContain('monospace');
+    expect(tag).toContain('letter-spacing');
   });
 
   it('renders the TTL in both HTML and text bodies', () => {

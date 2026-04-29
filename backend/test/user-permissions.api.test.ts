@@ -24,9 +24,9 @@ import {
   authHeaders,
   authOnly,
   ensureTestEmployee,
-  fetchWithRetry,
   getPositionIdsByName,
   loginApitest,
+  loginNonRoot,
 } from './helpers.js';
 
 let auth: AuthState;
@@ -53,17 +53,9 @@ beforeAll(async () => {
   }
   employeeUuid = employee.uuid;
 
-  // Login as employee for 403 test
-  const empLoginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: 'employee@assixx.com',
-      password: APITEST_PASSWORD,
-    }),
-  });
-  const empLoginBody = (await empLoginRes.json()) as JsonBody;
-  employeeToken = empLoginBody.data.accessToken as string;
+  // Login as employee for 403 test. Full 2-step 2FA dance per FEAT_2FA_EMAIL
+  // Step 2.4 — `loginNonRoot` consolidates the pattern across api-test files.
+  employeeToken = await loginNonRoot('employee@assixx.com', APITEST_PASSWORD);
 });
 
 // ─── GET Default Permissions (seq: 1) ─────────────────────────────────────────
@@ -547,14 +539,9 @@ describe('REGRESSION: manage-permissions self-grant trigger with deputy columns'
         ],
       });
 
-      // 5. Login as team lead
-      const loginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: leadEmail, password: APITEST_PASSWORD }),
-      });
-      const loginBody = (await loginRes.json()) as JsonBody;
-      teamLeadToken = loginBody.data.accessToken as string;
+      // 5. Login as team lead — full 2-step 2FA dance per FEAT_2FA_EMAIL
+      //    Step 2.4 (`loginNonRoot` does login → Mailpit → verify internally).
+      teamLeadToken = await loginNonRoot(leadEmail, APITEST_PASSWORD);
 
       setupOk = true;
     } catch {

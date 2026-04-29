@@ -100,6 +100,10 @@ function renderSuspiciousActivityHtml(subject: string): string {
     [data-ogsc] .text-body { color: #cbd5e1 !important; }
     [data-ogsc] .text-muted { color: #94a3b8 !important; }
     [data-ogsc] .text-danger { color: #f87171 !important; }
+    /* Explicit font-family on every text element so clients that strip
+       inheritance through nested tables (Gmail, Maildev iframe) still
+       render the same stack as the password-reset reference. */
+    body, table, td, p, h1, h2, h3 { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
     @media screen and (max-width: 600px) {
       .container { width: 100% !important; max-width: 100% !important; }
       .px-32 { padding-right: 20px !important; padding-left: 20px !important; }
@@ -126,22 +130,22 @@ function renderSuspiciousActivityHtml(subject: string): string {
               <table role="presentation" class="card" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000000" style="background-color: #000000; border-radius: 12px">
                 <tr>
                   <td class="px-32 py-32" style="padding: 36px 36px 32px 36px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-                    <h1 class="text-danger" style="margin: 0 0 8px 0; padding: 0; font-size: 22px; font-weight: 700; line-height: 1.3; color: #f87171; text-align: center; mso-line-height-rule: exactly;">Sicherheitshinweis</h1>
-                    <p class="text-muted" style="margin: 0 0 28px 0; padding: 0; font-size: 14px; line-height: 1.5; color: #94a3b8; text-align: center; mso-line-height-rule: exactly;">Ihr Konto wurde vorübergehend gesperrt.</p>
+                    <h1 class="text-danger" style="margin: 0 0 8px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 22px; font-weight: 700; line-height: 1.3; color: #f87171; text-align: center; mso-line-height-rule: exactly;">Sicherheitshinweis</h1>
+                    <p class="text-muted" style="margin: 0 0 28px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.5; color: #94a3b8; text-align: center; mso-line-height-rule: exactly;">Ihr Konto wurde vorübergehend gesperrt.</p>
 
-                    <p class="text-body" style="margin: 0 0 16px 0; padding: 0; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;">An Ihrem Assixx-Konto wurden mehrere fehlerhafte Bestätigungscodes hintereinander eingegeben. Aus Sicherheitsgründen haben wir Ihr Konto vorübergehend für <strong style="color: #f1f5f9">15 Minuten</strong> gesperrt.</p>
+                    <p class="text-body" style="margin: 0 0 16px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;">An Ihrem Assixx-Konto wurden mehrere fehlerhafte Bestätigungscodes hintereinander eingegeben. Aus Sicherheitsgründen haben wir Ihr Konto vorübergehend für <strong style="color: #f1f5f9">15 Minuten</strong> gesperrt.</p>
 
-                    <p class="text-muted" style="margin: 0 0 24px 0; padding: 0; font-size: 13px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">Während der Sperre können auch korrekte Codes nicht angenommen werden. Diese Maßnahme schützt Ihr Konto vor automatischen Angriffen.</p>
+                    <p class="text-muted" style="margin: 0 0 24px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">Während der Sperre können auch korrekte Codes nicht angenommen werden. Diese Maßnahme schützt Ihr Konto vor automatischen Angriffen.</p>
 
                     <!-- Two-branch advisory -->
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
                         <td style="border-top: 1px solid #1f2937; padding: 18px 0 8px 0">
-                          <p class="text-body" style="margin: 0 0 8px 0; padding: 0; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;"><strong style="color: #f1f5f9">Sie waren das selbst?</strong></p>
-                          <p class="text-muted" style="margin: 0 0 18px 0; padding: 0; font-size: 13px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">Warten Sie 15 Minuten und melden Sie sich erneut an. Achten Sie auf den Code in der zuletzt erhaltenen E-Mail.</p>
+                          <p class="text-body" style="margin: 0 0 8px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;"><strong style="color: #f1f5f9">Sie waren das selbst?</strong></p>
+                          <p class="text-muted" style="margin: 0 0 18px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">Warten Sie 15 Minuten und melden Sie sich erneut an. Achten Sie auf den Code in der zuletzt erhaltenen E-Mail.</p>
 
-                          <p class="text-body" style="margin: 0 0 8px 0; padding: 0; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;"><strong style="color: #f1f5f9">Sie waren das nicht?</strong></p>
-                          <p class="text-muted" style="margin: 0; padding: 0; font-size: 13px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">M&ouml;glicherweise versucht jemand, sich an Ihrem Konto anzumelden. Sperren Sie Ihr Konto umgehend, &auml;ndern Sie nach Ablauf der Sperre Ihr Passwort und informieren Sie umgehend Ihre IT-Abteilung.</p>
+                          <p class="text-body" style="margin: 0 0 8px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #cbd5e1; mso-line-height-rule: exactly;"><strong style="color: #f1f5f9">Sie waren das nicht?</strong></p>
+                          <p class="text-muted" style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #94a3b8; mso-line-height-rule: exactly;">M&ouml;glicherweise versucht jemand, sich an Ihrem Konto anzumelden. Sperren Sie Ihr Konto umgehend, &auml;ndern Sie nach Ablauf der Sperre Ihr Passwort und informieren Sie umgehend Ihre IT-Abteilung.</p>
                         </td>
                       </tr>
                     </table>
@@ -154,8 +158,8 @@ function renderSuspiciousActivityHtml(subject: string): string {
           <!-- Footer -->
           <tr>
             <td align="center" style="padding: 24px 16px 0 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
-              <p class="text-muted" style="margin: 0 0 6px 0; padding: 0; font-size: 12px; line-height: 1.5; color: #64748b; mso-line-height-rule: exactly;">&copy; 2026 Assixx &mdash; Enterprise-Plattform f&uuml;r Industrieunternehmen</p>
-              <p class="text-muted" style="margin: 0; padding: 0; font-size: 12px; line-height: 1.5; color: #64748b; mso-line-height-rule: exactly;">Dies ist eine automatisierte Nachricht. Bitte antworten Sie nicht auf diese E-Mail.</p>
+              <p class="text-muted" style="margin: 0 0 6px 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #64748b; mso-line-height-rule: exactly;">&copy; 2026 Assixx &mdash; Enterprise-Plattform f&uuml;r Industrieunternehmen</p>
+              <p class="text-muted" style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #64748b; mso-line-height-rule: exactly;">Dies ist eine automatisierte Nachricht. Bitte antworten Sie nicht auf diese E-Mail.</p>
             </td>
           </tr>
         </table>

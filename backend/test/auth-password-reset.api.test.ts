@@ -14,8 +14,36 @@ import {
   BASE_URL,
   type JsonBody,
   flushThrottleKeys,
+  invalidateAuthCache,
   loginApitest,
 } from './helpers.js';
+
+/**
+ * Pre-generated bcrypt hash of `ApiTest12345!` (12 rounds, $2b$).
+ *
+ * Used by the `afterAll` cleanup in 'Reset Password: Full E2E flow' to
+ * GUARANTEE the test-tenant root password is restored even if any prior
+ * `it()` in the describe block throws. The previous-generation cleanup
+ * was an `it('should restore original password')` block that skipped
+ * silently when an earlier `it()` threw, leaving the persisted hash on
+ * `NewApiTestPass123!` for the next suite run and breaking every
+ * downstream test with 401 "E-Mail oder Passwort falsch" (root cause
+ * traced 2026-04-30, see commit message). The `it` is retained as an
+ * API-level smoke test; the `afterAll` is the durable correctness guard.
+ *
+ * Why hardcoded vs computed at runtime:
+ *   - pgcrypto is NOT enabled on this DB (only `pg_partman`), so
+ *     `crypt() + gen_salt('bf')` is unavailable.
+ *   - bcrypt is not in the test's `package.json` runtime deps; pulling
+ *     it in just for cleanup would balloon the test surface.
+ *   - bcrypt salts are non-deterministic, but `bcrypt.compare()` extracts
+ *     the salt from the stored hash on every check — the exact bytes are
+ *     not security-relevant for a known-public test password.
+ *
+ * Regenerate with (any valid hash of the same password works):
+ *   python3 -c "import bcrypt; print(bcrypt.hashpw(b'ApiTest12345!', bcrypt.gensalt(rounds=12)).decode())"
+ */
+const APITEST_PASSWORD_HASH = '$2b$12$prrw1rbzjK7Z0cuYiu1Y7uNabZqGQPsVhNmgGyt7hQK66RZ79cLZK';
 
 let auth: AuthState;
 
@@ -184,6 +212,42 @@ describe('Reset Password: Weak password', () => {
 describe('Reset Password: Full E2E flow', () => {
   let resetToken: string;
 
+  // Defense-in-depth cleanup: even if an `it()` below throws (or the
+  // dedicated 'should restore original password' it() fails), this
+  // afterAll runs unconditionally and atomically restores the password
+  // hash via direct SQL UPDATE — no /reset-password API call, no token
+  // round-trip, no throttle dependency. See APITEST_PASSWORD_HASH JSDoc
+  // for the root-cause incident this guards against.
+  //
+  // CRITICAL: SQL is piped via STDIN, not embedded in the `-c` argument.
+  // bcrypt hashes contain literal `$2b$12$` sequences. When the SQL is
+  // embedded in a shell command-line argument, `execSync(cmd)` runs it
+  // through `/bin/sh -c <cmd>`; the inner shell then treats `$2`/`$12`
+  // as POSITIONAL PARAMETERS (empty) and silently mangles the hash to
+  // `'b$mangled-rest'`, corrupting the DB row. Symptoms: every login
+  // for `info@assixx.com` returns 401 across the entire next suite run
+  // until manual repair. The same pattern is used safely in
+  // `global-teardown.ts:209-213` — stdin avoids both layers of shell
+  // expansion. See git history for the 2026-04-30 incident.
+  afterAll(() => {
+    const sql = `UPDATE users SET password = '${APITEST_PASSWORD_HASH}', updated_at = NOW() WHERE email = 'info@assixx.com';`;
+    execSync('docker exec -i assixx-postgres psql -U assixx_user -d assixx -v ON_ERROR_STOP=1', {
+      input: sql,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    flushThrottleKeys();
+    // Drop the cached auth so the next file's `loginApitest()` rebuilds via
+    // a fresh login + 2FA verify against the just-restored password. The
+    // 'should restore original password (cleanup)' it() above writes
+    // `auth.authToken = verifyBody.data.accessToken` — but post-2FA that
+    // value is `undefined` (success-response now carries `data.stage`,
+    // see ADR-005). Without this nullification the cached `authToken`
+    // stays `undefined` for the rest of the suite → 401-cascade across
+    // ~47 downstream files. invalidateAuthCache() doc carries the full
+    // root-cause incident write-up.
+    invalidateAuthCache();
+  });
+
   it('should create a reset token in DB via forgot-password', async () => {
     flushThrottleKeys();
 
@@ -260,9 +324,15 @@ describe('Reset Password: Full E2E flow', () => {
     });
     const body = (await res.json()) as JsonBody;
 
+    // Post-DD-10: `/auth/login` issues a 2FA challenge instead of tokens
+    // (FEAT_2FA_EMAIL Step 2.4 + ADR-005). The credential check is what we
+    // care about here — `stage: 'challenge_required'` proves the password
+    // change worked. We deliberately don't run the 2FA verify step: an
+    // accepted credential is the signal under test, and the afterAll SQL
+    // restore cleans up the password without needing a fresh JWT here.
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
-    expect(body.data.accessToken).toBeTypeOf('string');
+    expect(body.data.stage).toBe('challenge_required');
   });
 
   it('should restore original password (cleanup)', async () => {
@@ -292,7 +362,15 @@ describe('Reset Password: Full E2E flow', () => {
     });
     expect(resetRes.status).toBe(200);
 
-    // Verify original password works
+    // Verify original password works.
+    // Post-DD-10: `/auth/login` returns `stage: 'challenge_required'` for any
+    // valid credentials — that 200 + challenge-shape IS the credential-check
+    // signal. Token refresh is handled by `invalidateAuthCache()` in
+    // afterAll: the next file's `loginApitest()` rebuilds via fresh
+    // login + 2FA verify. Direct mutation of `auth.authToken` (which used to
+    // happen here) silently wrote `undefined` into the shared cache and
+    // cascaded 401s across ~47 downstream files — see invalidateAuthCache()
+    // JSDoc + the 2026-04-30 incident write-up.
     flushThrottleKeys();
     const verifyRes = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
@@ -306,9 +384,6 @@ describe('Reset Password: Full E2E flow', () => {
 
     expect(verifyRes.status).toBe(200);
     expect(verifyBody.success).toBe(true);
-
-    // Refresh cached auth state for subsequent test files
-    auth.authToken = verifyBody.data.accessToken;
-    auth.refreshToken = verifyBody.data.refreshToken;
+    expect(verifyBody.data.stage).toBe('challenge_required');
   });
 });

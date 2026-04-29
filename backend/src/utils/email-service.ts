@@ -97,30 +97,66 @@ function sanitizeUrls(html: string): string {
   return sanitized;
 }
 
-function sanitizeStyles(html: string): string {
-  return html.replace(/style\s*=\s*["']([^"']*)["']/gi, (_match: string, styleContent: string) => {
-    let cleanedStyle = styleContent;
-    const dangerousCSS = [
-      /expression\s*\([^)]*\)/gi,
-      /javascript\s*:/gi,
-      /vbscript\s*:/gi,
-      /-moz-binding\s*:/gi,
-      /behavior\s*:/gi,
-      /@import/gi,
-      /import\s*\(/gi,
-    ];
-    dangerousCSS.forEach((pattern: RegExp) => {
-      cleanedStyle = cleanedStyle.replace(pattern, '');
-    });
-    cleanedStyle = cleanedStyle.replace(/url\s*\([^)]*\)/gi, (urlMatch: string) => {
-      if (/url\s*\(\s*["']?(javascript|vbscript|data:text)/i.test(urlMatch)) {
-        return '';
-      }
-      return urlMatch;
-    });
-    return cleanedStyle.trim() !== '' ? `style="${cleanedStyle}"` : '';
+/**
+ * Strips dangerous CSS from inline `style` attributes.
+ *
+ * BUG-HISTORY (2026-04-29): the previous regex `style\s*=\s*["']([^"']*)["']`
+ * was buggy — its `[^"']` character class forbids BOTH quote types inside
+ * the value. For an attribute like `style="font-family: 'Segoe UI', ..."`
+ * (a perfectly normal CSS value), the regex matched up to the first `'` of
+ * the inner quoted font name, then "closed" the style with a synthesised
+ * `"`, leaving the rest of the original value as garbage outside the
+ * attribute. Symptom: `style="display: inline-block; font-family: "` —
+ * font-size / font-weight / letter-spacing dropped → tokens rendered in
+ * UA-default size. Affected every transactional mail with a quoted font
+ * name in inline styles (FEAT_2FA_EMAIL §2.9b token, password-reset H1/P).
+ *
+ * Fix: process double-quoted and single-quoted style attributes in
+ * separate passes, each using `[^X]*` where X is the OUTER quote — so the
+ * other quote type is allowed inside the value.
+ */
+function sanitizeStyleContent(styleContent: string): string {
+  let cleaned = styleContent;
+  const dangerousCSS = [
+    /expression\s*\([^)]*\)/gi,
+    /javascript\s*:/gi,
+    /vbscript\s*:/gi,
+    /-moz-binding\s*:/gi,
+    /behavior\s*:/gi,
+    /@import/gi,
+    /import\s*\(/gi,
+  ];
+  dangerousCSS.forEach((pattern: RegExp) => {
+    cleaned = cleaned.replace(pattern, '');
   });
+  cleaned = cleaned.replace(/url\s*\([^)]*\)/gi, (urlMatch: string) => {
+    if (/url\s*\(\s*["']?(javascript|vbscript|data:text)/i.test(urlMatch)) {
+      return '';
+    }
+    return urlMatch;
+  });
+  return cleaned;
 }
+
+function sanitizeStyles(html: string): string {
+  // Pass 1: double-quoted style="..." (the common case in our templates).
+  // `[^"]*` allows ANY char except `"` inside — so single quotes for nested
+  // CSS string literals like 'Segoe UI' survive.
+  let result = html.replace(/style\s*=\s*"([^"]*)"/gi, (_match: string, content: string) => {
+    const cleaned = sanitizeStyleContent(content);
+    return cleaned.trim() !== '' ? `style="${cleaned}"` : '';
+  });
+  // Pass 2: single-quoted style='...' (rare but valid). Mirror logic.
+  result = result.replace(/style\s*=\s*'([^']*)'/gi, (_match: string, content: string) => {
+    const cleaned = sanitizeStyleContent(content);
+    return cleaned.trim() !== '' ? `style='${cleaned}'` : '';
+  });
+  return result;
+}
+
+// Exported for unit-testing the quote-handling regression (FEAT_2FA_EMAIL
+// §2.9b — see email-service.test.ts). Internal use only.
+export { sanitizeStyles as _sanitizeStylesForTest };
 
 /**
  * Sanitizes HTML content for safe email delivery.
@@ -167,7 +203,11 @@ interface EmailConfig {
   host: string;
   port: number;
   secure: boolean;
-  auth: {
+  // Optional: when omitted entirely, nodemailer connects anonymously.
+  // WHY: dev-SMTP capture (Mailpit) accepts only anonymous SMTP — sending
+  // `auth: { user: '', pass: '' }` makes nodemailer attempt AUTH PLAIN
+  // and throw `Missing credentials for "PLAIN"`. See FEAT_2FA_EMAIL §0.5.5.
+  auth?: {
     user: string;
     pass: string;
   };
@@ -228,21 +268,30 @@ const MAX_EMAILS_PER_BATCH = 50; // Maximum number of emails per batch
 let transporter: Transporter | null = null;
 
 function initializeTransporter(config: EmailConfig | null = null): Transporter {
+  const user = process.env['SMTP_USER'] ?? process.env['EMAIL_USER'] ?? '';
+  const pass = process.env['SMTP_PASS'] ?? process.env['EMAIL_PASSWORD'] ?? '';
+  // Tri-state credential decision (FEAT_2FA_EMAIL §0.5.5):
+  //   both set     → production SMTP (real provider, AUTH required)
+  //   both empty   → dev SMTP capture (Mailpit) — anonymous, omit auth block
+  //   partial      → misconfiguration → warn loudly, omit auth (fail-fast in prod)
+  // Nodemailer throws `Missing credentials for "PLAIN"` if `auth` is present
+  // with empty strings, so we MUST omit the block (not pass empties).
+  const hasFullCreds = user !== '' && pass !== '';
+  const partialCreds = (user !== '') !== (pass !== '');
+
   const defaultConfig: EmailConfig = {
     host: process.env['SMTP_HOST'] ?? process.env['EMAIL_HOST'] ?? 'smtp.example.com',
     port: Number.parseInt(process.env['SMTP_PORT'] ?? process.env['EMAIL_PORT'] ?? '587', 10),
     secure: process.env['SMTP_SECURE'] === 'true' || process.env['EMAIL_SECURE'] === 'true',
-    auth: {
-      user: process.env['SMTP_USER'] ?? process.env['EMAIL_USER'] ?? '',
-      pass: process.env['SMTP_PASS'] ?? process.env['EMAIL_PASSWORD'] ?? '',
-    },
+    ...(hasFullCreds ? { auth: { user, pass } } : {}),
   };
 
-  if (defaultConfig.auth.user === '') {
-    logger.warn('SMTP_USER not set — emails will likely fail to send');
-  }
-  if (defaultConfig.auth.pass === '') {
-    logger.warn('SMTP_PASS not set — emails will likely fail to send');
+  if (partialCreds) {
+    logger.warn(
+      'SMTP_USER and SMTP_PASS must both be set or both empty — partial config detected, treating as anonymous',
+    );
+  } else if (!hasFullCreds) {
+    logger.info('SMTP credentials empty — using anonymous SMTP (dev capture, e.g. Mailpit)');
   }
 
   const transportConfig: EmailConfig = config ?? defaultConfig;
