@@ -35,6 +35,14 @@ export const REDACT_PATHS: readonly string[] = [
   'res.body.data.accessToken',
   'res.body.data.refreshToken',
 
+  // 2FA fields (ADR-054 / DD-18) — 6-char Crockford-Base32 code + opaque challenge token.
+  // Pino redaction is silent-fail on path typos; the runtime test in logger.constants.test.ts
+  // exercises these paths against a real Pino instance to catch glob-syntax regressions.
+  'req.body.code',
+  'req.body.challengeToken',
+  'res.body.challengeToken',
+  'res.body.data.challengeToken',
+
   // General sensitive data - wildcards for nested objects
   // Level 1: { password: 'x' }
   'password',
@@ -49,6 +57,10 @@ export const REDACT_PATHS: readonly string[] = [
   '*.apiKey',
   '*.token',
   '*.authorization',
+  // 2FA fields (ADR-054 / DD-18) — Level 2 only per plan §2.10. NOT extended to Level 1
+  // (bare `code` would shadow Postgres/Node Error.code) or Level 3+ (out of plan scope).
+  '*.code',
+  '*.challengeToken',
 
   // Level 3: { data: { user: { password: 'x' } } }
   '*.*.password',

@@ -3,12 +3,12 @@
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
 > **Version:** 0.6.0 (GREENFIELD-TRIM + DD-32 E-Mail-Change-2FA-Verify; R15 + Step 2.12 hinzugefügt; Bestandsuser-Cutover-Apparat als N/A markiert per CLAUDE.md Greenfield-Status seit 2026-04-19)
-> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
+> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 + 2.10 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
 > **Branch:** `feat/2fa-email`
 > **Spec:** This document
 > **Author:** Claude (proposed) · Simon Öztürk (decides)
 > **Estimated sessions:** 14 (v0.5.0) → ~12 (v0.6.0 nach Greenfield-Trim, Step 2.12 +1 Session)
-> **Actual sessions:** 6 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 erledigt)
+> **Actual sessions:** 6 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.6 + 2.7 + 2.8 + 2.9 + 2.10 erledigt)
 > **External dependencies added:** **ZERO** — every primitive (crypto, JWT, Redis via `ioredis`, legacy `email-service`, `CustomThrottlerGuard`, Zod, `audit_trail`) already exists.
 
 ---
@@ -1098,9 +1098,25 @@ export async function send2faCode(
 
 **Suspicious-activity template** (separate file): notifies user only (DD-20) when their account hits the 5-wrong-attempts lockout.
 
-### Step 2.10: Pino redaction config [PENDING]
+### Step 2.10: Pino redaction config [DONE — 2026-04-29]
 
-**File modified:** `backend/src/nest/common/logger/logger.constants.ts`
+**Delivered (2026-04-29):**
+
+- `backend/src/nest/common/logger/logger.constants.ts` — six new entries appended to `REDACT_PATHS` (the actual constant name; the masterplan referred to it conceptually as `LOGGER_REDACT_PATHS`). Two grouped insertions, each tagged with a `// 2FA fields (ADR-054 / DD-18)` comment block so future maintainers can trace the entries to the spec: (a) `req.body.code` + `req.body.challengeToken` + `res.body.challengeToken` + `res.body.data.challengeToken` placed after the existing response-tokens block; (b) `*.code` + `*.challengeToken` placed inside the existing Level-2 wildcards block. **Plan-literal — six paths exactly.** Plan-deviation note inline in the file: Level 1 (bare `code` / `challengeToken`) and Level 3+ (`*.*.code`, …) deliberately NOT added — Level 1 would shadow Postgres `Error.code` / Node `Error.code` which need to remain debuggable in logs (DD-18 scope decision).
+- `backend/src/nest/common/logger/logger.constants.test.ts` — extended with **+9 tests** (file total: 20 → 29). One new structural assertion (`should contain 2FA code + challengeToken paths (DD-18)`) inside the existing `describe('REDACT_PATHS', …)` block, matching the file's existing `toContain()` style. New `describe('REDACT_PATHS — runtime redaction behavior (DD-18)', …)` block with eight behavioral tests that boot a real Pino instance configured exactly like `main.ts:337-340` (`{ paths: [...REDACT_PATHS], censor: REDACTED_VALUE }`), write to an in-memory `Writable` buffer, and assert raw-string properties: (a) the secret value (`'ZZ9PZ9'` for code, `'kZv-test-challenge-token-do-not-leak'` for token) does NOT appear in the output, (b) `[REDACTED]` DOES appear. Six positive tests cover each of the six new path positions; two negative tests lock in the deliberate scope: unrelated `email`/`msg` fields stay un-redacted, and bare `code` at log root (PG/Node `Error.code`) stays debuggable.
+- **Why behavioral on top of structural:** Pino redaction fails silently on path typos — a misspelled glob means the field is logged in plaintext with no error and no warning. The structural tests catch removal/typo of the 6 entries; the behavioral tests catch glob-syntax regressions where the entry exists but Pino doesn't match it at runtime. The Kaizen Manifest's "SQL Blindness / Premature Claims" pattern applies — verify, don't assume.
+
+**Verification (2026-04-29):**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/common/logger/` → exit 0, 0 errors.
+- `docker exec assixx-backend pnpm exec tsc --noEmit -p backend` → exit 0, 0 lines.
+- `pnpm exec vitest run --project unit backend/src/nest/common/logger/logger.constants.test.ts` → **29/29 passed in 18 ms**.
+- `pnpm exec vitest run --project unit` (full unit suite) → **279 files, 7147 tests, all passed in 17.02 s** — +9 vs Step 2.9 baseline of 7138, matches new tests exactly. No indirect breakage from the redaction-list expansion (3 consumers verified: `main.ts:338`, `common/logger/logger.module.ts:237`, `utils/logger.ts:195` — all spread `[...REDACT_PATHS]` without per-entry coupling).
+- `curl http://localhost:3000/health` → `{"status":"ok"}`. Backend hot-reloaded on the live container; no startup or module-load errors in `docker logs`.
+
+---
+
+**File modified (canonical spec, kept for plan-archaeology):** `backend/src/nest/common/logger/logger.constants.ts`
 
 **Add to `LOGGER_REDACT_PATHS`:**
 
@@ -1239,7 +1255,7 @@ RETURNING id, subdomain;
 - [ ] `email-service.ts` has `send2faCode()` + new German template (text + HTML)
 - [ ] All Zod DTOs use `createZodDto()` + central `IdParamDto` factory where applicable
 - [ ] Audit emitted using `(action, resource_type)` tuples per §A8 (NOT dotted strings)
-- [ ] Pino redaction list includes `code`, `challengeToken` in `logger.constants.ts`
+- [x] Pino redaction list includes `code`, `challengeToken` in `logger.constants.ts` (Step 2.10 — 2026-04-29; +9 unit tests, 29/29 passed; behavioral tests against real Pino instance lock both the entries and their runtime effect)
 - [ ] `SMTP_FROM` wired through `AppConfigService` Zod schema (fail-fast on missing in prod). v0.5.0: ~~`FEATURE_2FA_EMAIL_ENFORCED`~~ entfernt (DD-10 removal — 2FA hartcodiert).
 - [ ] **load tests** (`load/lib/auth.ts`, `load/tests/baseline.ts`) angepasst auf Discriminated-Union — fail-loud bei `stage === 'challenge_required'` (R13-Mitigation v0.5.0 — load smoke MUSS grün vor Public-Launch)
 - [ ] `IS_ACTIVE` constants used (no magic numbers per TYPESCRIPT-STANDARDS §7.4)
@@ -1652,7 +1668,7 @@ export const MESSAGES = {
 | 4       | 2     | TwoFactorCodeService (crypto + Redis primitives via DI provider)                                                                                                               | PENDING                         |            |
 | 5       | 2     | TwoFactorAuthService (orchestration) · `send2faCode` + template                                                                                                                | PENDING                         |            |
 | 6       | 2     | Modify AuthService.login + SignupService (incl. tenant cleanup on SMTP fail per DD-14) · OAuth comment-only · **load-tests auf LoginResult umstellen** (v0.5.0 R13-Mitigation) | DONE (Steps 2.4 + 2.5 + 2.6)    | 2026-04-29 |
-| 7       | 2     | TwoFactorAuthController · throttler tiers + decorators · Pino redaction · audit hooks · stale-pending reaper cron (Step 2.11)                                                  | PARTIAL (Steps 2.7 + 2.8 DONE)  | 2026-04-29 |
+| 7       | 2     | TwoFactorAuthController · throttler tiers + decorators · Pino redaction · audit hooks · stale-pending reaper cron (Step 2.11)                                                  | PARTIAL (Steps 2.7 + 2.8 + 2.10 DONE; 2.11 still PENDING) | 2026-04-29 |
 | 7b      | 2     | **Step 2.12 (DD-32 / R15, v0.6.0):** Email-Change-Endpoint two-code 2FA-Verify (request-change + verify-change) · Audit-Tuples · Tests · Throttler                             | PENDING                         |            |
 | 8       | 3     | Unit tests TwoFactorCodeService                                                                                                                                                | PENDING                         |            |
 | 9       | 3     | Unit tests TwoFactorAuthService + AuthService + SignupService modifications + reaper service + **Email-Change service (Step 2.12)**                                            | PENDING                         |            |
