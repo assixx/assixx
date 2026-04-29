@@ -101,8 +101,18 @@
     </p>
     <p>
       Verbindliche Zusagen zu Verfügbarkeit oder Wiederherstellungszeit (SLA) gibt es während der
-      Beta-Phase nicht. Tägliche Datenbank-Backups laufen automatisiert; das Wiederherstellungsziel
-      liegt bei <strong>RTO &le; 4 Stunden / RPO &le; 24 Stunden</strong>.
+      Beta-Phase nicht. Tägliche Datenbank-Backups laufen automatisiert; die Werte
+      <strong>RTO &le; 4 Stunden</strong> (maximale Wiederherstellungszeit) und
+      <strong>RPO &le; 24 Stunden</strong> (maximaler Datenverlust-Zeitraum) sind interne
+      <em>Zielwerte</em> &mdash; <strong>keine vertraglich zugesicherte Verfügbarkeit</strong>.
+    </p>
+    <p>
+      <strong>Verantwortung des Mandanten:</strong> Der Mandant entscheidet eigenverantwortlich,
+      welche Daten er auf Assixx speichert. Bei besonderen Kategorien personenbezogener Daten gemäß
+      <strong>Art. 9 DSGVO</strong> (z.&thinsp;B. Gesundheits-, Religions-, Gewerkschafts- oder
+      biometrische Daten) gelten verschärfte gesetzliche Pflichten. Solche Daten sollten während der
+      Beta-Phase grundsätzlich <strong>nicht ohne vorherige Rücksprache</strong> in Assixx verarbeitet
+      werden.
     </p>
   </section>
 
@@ -132,7 +142,145 @@
     </p>
   </section>
 
-  <p class="legal-updated">Stand: April 2026 &mdash; Version 0.1</p>
+  <!-- 5. Vertragliche Rahmenbedingungen ======================== -->
+  <section>
+    <h2>5. Vertragliche Rahmenbedingungen</h2>
+
+    <h3>Auftragsverarbeitung mit dem Mandanten (Art. 28 DSGVO)</h3>
+    <p>
+      Bei der Verarbeitung von Mitarbeiter- und Plattformdaten unserer Mandanten handeln wir als
+      <strong>Auftragsverarbeiter</strong> im Sinne von Art. 28 DSGVO. Mit jedem Mandanten wird vor Produktivnutzung
+      ein schriftlicher Vertrag zur Auftragsverarbeitung (AVV) geschlossen. Ein Mustervertrag inklusive
+      Anlage zu technisch-organisatorischen Maßnahmen (Art. 32 DSGVO) wird auf Anfrage zugesandt.
+    </p>
+
+    <h3>Eingesetzte Subunternehmer (Sub-Processors)</h3>
+    <p>Zur Erbringung des Dienstes setzen wir folgende Subunternehmer ein:</p>
+    <ul>
+      <li>
+        <strong>Hetzner Online GmbH</strong>, Industriestr. 25, 91710 Gunzenhausen, Deutschland
+        &mdash; Server-Hosting, Datenbank, Object Storage. Standort Falkenstein (Sachsen). Siehe
+        Abschnitt&nbsp;4.
+      </li>
+    </ul>
+    <p>
+      Änderungen am Subunternehmer-Verzeichnis werden mindestens <strong>30 Tage</strong> vor Wirksamwerden
+      angekündigt. Mandanten haben das Recht, einer Änderung aus berechtigten Gründen zu widersprechen;
+      in diesem Fall besteht ein außerordentliches Kündigungsrecht.
+    </p>
+
+    <h3>Haftungsbegrenzung</h3>
+    <p>
+      Soweit gesetzlich zulässig, haftet Assixx nur bei <strong
+        >Vorsatz und grober Fahrlässigkeit</strong
+      >
+      unbeschränkt. Bei einfacher Fahrlässigkeit haftet Assixx nur für die Verletzung wesentlicher Vertragspflichten
+      (Kardinalpflichten); die Haftung ist in diesem Fall auf den vertragstypischen, bei Vertragsschluss
+      vorhersehbaren Schaden begrenzt &mdash; höchstens jedoch auf die im laufenden Vertragsjahr gezahlte
+      Vergütung. Eine Haftung für mittelbare Schäden, entgangenen Gewinn und Folgeschäden ist &mdash;
+      soweit gesetzlich zulässig &mdash; ausgeschlossen.
+    </p>
+    <p>
+      Die zwingende gesetzliche Haftung (insbesondere nach dem Produkthaftungsgesetz, bei Verletzung
+      von Leben, Körper und Gesundheit sowie nach Art. 82 DSGVO) bleibt unberührt. Die konkreten
+      Bedingungen ergeben sich aus den Allgemeinen Geschäftsbedingungen (AGB) und dem AVV-Vertrag.
+    </p>
+
+    <h3>Anwendbares Recht und Gerichtsstand</h3>
+    <p>
+      Es gilt das Recht der <strong>Bundesrepublik Deutschland</strong> unter Ausschluss des
+      UN-Kaufrechts (CISG). Ausschließlicher Gerichtsstand für sämtliche Streitigkeiten aus oder im
+      Zusammenhang mit dem Vertragsverhältnis ist &mdash; soweit der Mandant Kaufmann, juristische
+      Person des öffentlichen Rechts oder öffentlich-rechtliches Sondervermögen ist &mdash; der Sitz
+      des Anbieters in <strong>Stadtlohn</strong>.
+    </p>
+  </section>
+
+  <!-- 6. Datenpannen, Kündigung & Datenexport ================= -->
+  <section>
+    <h2>6. Datenpannen, Kündigung &amp; Datenexport</h2>
+
+    <h3>Meldepflicht bei Datenpannen (Art. 33/34 DSGVO)</h3>
+    <p>
+      Bei einer Verletzung des Schutzes personenbezogener Daten informieren wir den verantwortlichen
+      Mandanten <strong>ohne schuldhaftes Zögern, spätestens innerhalb von 72 Stunden</strong> nach Kenntnisnahme.
+      Die Meldung enthält Art und Umfang der Verletzung, die betroffenen Datenkategorien, die voraussichtlichen
+      Folgen sowie die eingeleiteten Gegenmaßnahmen.
+    </p>
+
+    <h3>Datenexport bei Kündigung (Art. 20 DSGVO)</h3>
+    <p>
+      Nach Kündigung steht dem Mandanten eine Frist von <strong>30 Tagen</strong> zur Verfügung, um
+      seine Daten in einem strukturierten, gängigen und maschinenlesbaren Format (CSV/JSON)
+      herunterzuladen. Nach Ablauf dieser Frist werden sämtliche Mandantendaten gemäß Art. 17 DSGVO
+      <strong>unwiderruflich gelöscht</strong> &mdash; einschließlich Backups, sobald deren regulärer
+      Aufbewahrungszeitraum abgelaufen ist (max. 35 Tage).
+    </p>
+  </section>
+
+  <!-- 7. Beta-spezifische Bedingungen ========================== -->
+  <section>
+    <h2>7. Beta-spezifische Bedingungen</h2>
+
+    <h3>Test-Charakter</h3>
+    <p>
+      Mandanten erkennen ausdrücklich an, dass sich die Plattform in der Beta-Phase befindet und
+      <strong>unfertige, fehlerhafte oder veränderliche Funktionen</strong> enthalten kann. Beta-typische
+      Mängel begründen keine Mängelansprüche. Die Mitwirkung an der Erprobung (Bug-Reports, Feedback)
+      ist Teil des Beta-Charakters.
+    </p>
+
+    <h3>Beta-Beendigung durch Assixx</h3>
+    <p>
+      Wir behalten uns vor, die Beta-Phase, einzelne Funktionen oder den gesamten Dienst mit einer
+      Frist von mindestens <strong>60 Tagen</strong> zu beenden oder grundlegend zu verändern. Mandanten
+      erhalten in diesem Fall die Möglichkeit zum vollständigen Datenexport (siehe Abschnitt&nbsp;6) sowie
+      ggf. eine anteilige Rückerstattung gezahlter Beta-Gebühren.
+    </p>
+
+    <h3>Feedback und Verbesserungsvorschläge</h3>
+    <p>
+      Wenn Mandanten Bug-Reports, Feature-Wünsche oder sonstige Rückmeldungen einreichen, räumen sie
+      Assixx ein <strong
+        >einfaches, unentgeltliches, übertragbares und zeitlich unbegrenztes Nutzungsrecht</strong
+      >
+      zur Verwertung dieser Beiträge im Produkt ein. Persönliche Daten werden dabei nicht offengelegt.
+    </p>
+  </section>
+
+  <!-- 8. Schlussbestimmungen =================================== -->
+  <section>
+    <h2>8. Schlussbestimmungen</h2>
+
+    <h3>Salvatorische Klausel</h3>
+    <p>
+      Sollten einzelne Bestimmungen dieses Disclaimers oder der zugehörigen AGB ganz oder teilweise
+      unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt. An die
+      Stelle der unwirksamen Bestimmung tritt eine Regelung, die dem wirtschaftlichen Zweck der
+      unwirksamen Bestimmung am nächsten kommt.
+    </p>
+
+    <h3>Vertragshierarchie</h3>
+    <p>
+      Dieser Disclaimer dient der öffentlichen Information. Rechtsverbindlich gelten in dieser
+      Reihenfolge: <strong>(1) der mit dem Mandanten geschlossene AVV-Vertrag</strong>,
+      <strong>(2) die Allgemeinen Geschäftsbedingungen (AGB)</strong> und
+      <strong>(3) die Datenschutzerklärung</strong>. Bei Widersprüchen geht die jeweils speziellere
+      Regelung vor.
+    </p>
+
+    <h3>Kontakt für Datenschutzanfragen</h3>
+    <p>
+      Anfragen nach Art. 15 ff. DSGVO (Auskunft, Berichtigung, Löschung, Übertragbarkeit) sowie
+      Meldungen sicherheitsrelevanter Vorfälle richten Sie bitte an:
+      <a href="mailto:info@scs-technik.de">info@scs-technik.de</a>.
+    </p>
+  </section>
+
+  <p class="legal-updated">
+    Stand: April 2026 &mdash; Version 0.2 &mdash; ergänzt um vertragliche Rahmenbedingungen,
+    Datenpannen-Meldepflicht, Beta-spezifische Bedingungen und Schlussbestimmungen.
+  </p>
 </main>
 
 <LandingFooter />

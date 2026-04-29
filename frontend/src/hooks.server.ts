@@ -46,6 +46,7 @@ const PUBLIC_ROUTES = [
   '/impressum',
   '/datenschutz',
   '/disclaimer',
+  '/roadmap',
   '/tenant-deletion-approve',
   '/rate-limit',
   '/robots.txt',

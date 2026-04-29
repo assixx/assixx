@@ -59,6 +59,8 @@
       <a href={modulesHref}>Module</a>
       <a href={securityHref}>Sicherheit</a>
       <a href={pricingHref}>Preise</a>
+      <a href={resolve('/roadmap')}>Roadmap</a>
+      <a href={resolve('/disclaimer')}>Disclaimer</a>
       <a href={resolve('/login')}>Anmelden</a>
       <a
         href={resolve('/signup')}
