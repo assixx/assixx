@@ -651,11 +651,16 @@ async function send2faCode(
   ttlMinutes: number,
 ): Promise<void> {
   const template = build2faCodeTemplate({ code, purpose, ttlMinutes });
+  // §2.9b: template references `cid:assixx-logo` in the dark-mode shell —
+  // attach the branding logo so the CID resolves in every mail client.
+  // Same helper the password-reset path uses (single source of truth).
+  const logoAttachment = await getBrandingLogoAttachment();
   const result = await sendEmail({
     to,
     subject: template.subject,
     html: template.html,
     text: template.text,
+    attachments: [logoAttachment],
   });
   if (!result.success) {
     // Fail-loud per DD-14 — caller catches and decides login vs signup cleanup.
@@ -678,11 +683,15 @@ async function send2faCode(
  */
 async function send2faSuspiciousActivity(to: string): Promise<void> {
   const template = build2faSuspiciousActivityTemplate();
+  // §2.9b: template references `cid:assixx-logo` — attach the branding logo
+  // so the CID resolves. Same dark-mode shell as the code mail above.
+  const logoAttachment = await getBrandingLogoAttachment();
   const result = await sendEmail({
     to,
     subject: template.subject,
     html: template.html,
     text: template.text,
+    attachments: [logoAttachment],
   });
   if (!result.success) {
     logger.warn(

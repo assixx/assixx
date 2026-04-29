@@ -2,8 +2,12 @@
  * Unit tests for build2faSuspiciousActivityTemplate.
  *
  * Scope: pure-function template builder. Locks down the DD-13/DD-20
- * invariants — generic subject, no internal IDs / codes / tokens leaked
- * into the body, plain-text fallback always present.
+ * invariants (generic subject, no internal IDs / codes / tokens leaked
+ * into the body, plain-text fallback always present) AND the §2.9b
+ * redesign invariants (Klarna-style action-oriented advisory, dark-mode
+ * shell with cid:assixx-logo).
+ *
+ * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md (Phase 2 §2.9 + §2.9b, DD-20)
  */
 import { describe, expect, it } from 'vitest';
 
@@ -35,6 +39,17 @@ describe('build2faSuspiciousActivityTemplate', () => {
     expect(result.html).toContain('Sie waren das nicht?');
   });
 
+  // §2.9b — Klarna-style action-oriented advisory replaces the §2.9
+  // passive "Diese Maßnahme schützt …" closing.
+  it('contains action-oriented "Sperren Sie Ihr Konto" + "informieren Sie Ihre IT-Abteilung" (§2.9b)', () => {
+    const result = build2faSuspiciousActivityTemplate();
+
+    expect(result.html).toContain('Sperren Sie Ihr Konto');
+    expect(result.text).toContain('Sperren Sie Ihr Konto');
+    expect(result.html).toContain('IT-Abteilung');
+    expect(result.text).toContain('IT-Abteilung');
+  });
+
   it('always returns a non-empty plain-text fallback without HTML tags', () => {
     const result = build2faSuspiciousActivityTemplate();
 
@@ -52,6 +67,13 @@ describe('build2faSuspiciousActivityTemplate', () => {
     const result = build2faSuspiciousActivityTemplate();
 
     expect(result.html).not.toMatch(/<script\b/i);
+  });
+
+  // §2.9b: dark-mode shell mirrors password-reset.html — logo via CID.
+  it('references the branding logo via cid:assixx-logo (§2.9b)', () => {
+    const result = build2faSuspiciousActivityTemplate();
+
+    expect(result.html).toContain('src="cid:assixx-logo"');
   });
 
   it('returns deterministic output across invocations (pure function)', () => {
