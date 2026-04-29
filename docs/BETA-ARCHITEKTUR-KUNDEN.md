@@ -8,15 +8,15 @@
 
 ## Auf einen Blick
 
-| Frage | Antwort |
-|---|---|
-| **Wo liegen meine Daten?** | Ausschließlich in Deutschland — Rechenzentrum Falkenstein (Sachsen) |
-| **Wer ist der Anbieter?** | Hetzner Online GmbH — deutsche Aktiengesellschaft |
-| **DSGVO?** | AVV (Auftragsverarbeitungsvertrag nach Art. 28) liegt vor |
-| **CLOUD Act / US-Zugriff?** | Nicht anwendbar — Hetzner ist kein US-Unternehmen |
-| **Sind Daten verschlüsselt?** | Ja: bei Übertragung (TLS 1.3) und im Ruhezustand (AES-256) |
-| **Mandantentrennung?** | Datenbank-seitig erzwungen (PostgreSQL Row Level Security) |
-| **Wiederherstellung bei Ausfall?** | Maximal 4 Stunden, maximal 24 Stunden Datenverlust |
+| Frage                              | Antwort                                                             |
+| ---------------------------------- | ------------------------------------------------------------------- |
+| **Wo liegen meine Daten?**         | Ausschließlich in Deutschland — Rechenzentrum Falkenstein (Sachsen) |
+| **Wer ist der Anbieter?**          | Hetzner Online GmbH — deutsche Aktiengesellschaft                   |
+| **DSGVO?**                         | AVV (Auftragsverarbeitungsvertrag nach Art. 28) liegt vor           |
+| **CLOUD Act / US-Zugriff?**        | Nicht anwendbar — Hetzner ist kein US-Unternehmen                   |
+| **Sind Daten verschlüsselt?**      | Ja: bei Übertragung (TLS 1.3) und im Ruhezustand (AES-256)          |
+| **Mandantentrennung?**             | Datenbank-seitig erzwungen (PostgreSQL Row Level Security)          |
+| **Wiederherstellung bei Ausfall?** | Maximal 4 Stunden, maximal 24 Stunden Datenverlust                  |
 
 ---
 
@@ -139,22 +139,22 @@
 
 ### Was passiert bei einem kompletten Server-Ausfall?
 
-| Schritt | Was geschieht | Dauer |
-|---|---|---|
-| 1 | Neuen Server bei Hetzner bestellen | ~10 Min |
-| 2 | Software automatisch (über Skripte) installieren | ~20 Min |
-| 3 | Letzte Datenbank-Sicherung einspielen | ~30 Min |
-| 4 | DNS auf neuen Server umstellen | ~5 Min |
-| | **Garantierte maximale Wiederherstellungszeit (RTO):** | **4 Stunden** |
-| | **Maximaler möglicher Datenverlust (RPO):** | **24 Stunden** |
+| Schritt | Was geschieht                                          | Dauer          |
+| ------- | ------------------------------------------------------ | -------------- |
+| 1       | Neuen Server bei Hetzner bestellen                     | ~10 Min        |
+| 2       | Software automatisch (über Skripte) installieren       | ~20 Min        |
+| 3       | Letzte Datenbank-Sicherung einspielen                  | ~30 Min        |
+| 4       | DNS auf neuen Server umstellen                         | ~5 Min         |
+|         | **Garantierte maximale Wiederherstellungszeit (RTO):** | **4 Stunden**  |
+|         | **Maximaler möglicher Datenverlust (RPO):**            | **24 Stunden** |
 
 **Hinweis:** Diese Werte gelten für die **Beta-Phase**. Für die Produktion (Alpha/RC und später) reduzieren sich diese Zeiten erheblich:
 
-| Phase | RTO (Wiederherstellung) | RPO (Datenverlust) |
-|---|---|---|
-| **Beta** (jetzt) | <= 4 Stunden | <= 24 Stunden |
-| **Alpha** (später) | <= 5 Minuten | <= 1 Minute |
-| **Produktion** | ~ 0 Sekunden | ~ 0 Sekunden |
+| Phase              | RTO (Wiederherstellung) | RPO (Datenverlust) |
+| ------------------ | ----------------------- | ------------------ |
+| **Beta** (jetzt)   | <= 4 Stunden            | <= 24 Stunden      |
+| **Alpha** (später) | <= 5 Minuten            | <= 1 Minute        |
+| **Produktion**     | ~ 0 Sekunden            | ~ 0 Sekunden       |
 
 ---
 
@@ -184,12 +184,12 @@ Mehrere Firmen nutzen Assixx auf demselben Server. Die Trennung der Daten ist **
 
 ## 5. Was passiert nach der Beta?
 
-| Phase | Region | Hosting | Was sich ändert |
-|---|---|---|---|
-| **Beta** | DE | Hetzner Falkenstein, 1 Server | — |
-| **Alpha** | DACH (DE/AT/CH) | Hetzner DE, 2 Server (gespiegelt) | Automatisches Failover, kein Datenverlust |
-| **RC / Produktion** | EU | Hetzner DE + EU-Standby | Mehrere Standorte, Hochverfügbarkeit |
-| **International** | weltweit | Hetzner + EU-Provider | DE-Kunden bleiben in DE — explizit zugesichert |
+| Phase               | Region          | Hosting                           | Was sich ändert                                |
+| ------------------- | --------------- | --------------------------------- | ---------------------------------------------- |
+| **Beta**            | DE              | Hetzner Falkenstein, 1 Server     | —                                              |
+| **Alpha**           | DACH (DE/AT/CH) | Hetzner DE, 2 Server (gespiegelt) | Automatisches Failover, kein Datenverlust      |
+| **RC / Produktion** | EU              | Hetzner DE + EU-Standby           | Mehrere Standorte, Hochverfügbarkeit           |
+| **International**   | weltweit        | Hetzner + EU-Provider             | DE-Kunden bleiben in DE — explizit zugesichert |
 
 **Zusicherung:** Kunden, die in der Beta gestartet sind, bleiben **dauerhaft in Deutschland gehostet** — auch wenn Assixx später international skaliert.
 
@@ -199,16 +199,16 @@ Mehrere Firmen nutzen Assixx auf demselben Server. Die Trennung der Daten ist **
 
 > Pflichtangaben gem. Art. 30 DSGVO — Sie können diesen Block in Ihr Verarbeitungsverzeichnis übernehmen.
 
-| Auftragsverarbeiter | Hetzner Online GmbH |
-|---|---|
-| **Adresse** | Industriestr. 25, 91710 Gunzenhausen, Deutschland |
-| **Standort der Verarbeitung** | Falkenstein (Sachsen) und Nürnberg (Bayern) |
-| **Zweck** | Hosting der Anwendung, Speicherung von Datei-Uploads, Backups |
-| **AVV** | Vorhanden, nach Art. 28 DSGVO; Kopie auf Anfrage |
-| **Zertifizierungen** | ISO 27001, ISO 9001, ISO 14001 |
-| **Übermittlung in Drittländer** | Nein |
-| **Verschlüsselung im Ruhezustand** | AES-256 (Standard auf Hetzner Object Storage und Volumes) |
-| **Verschlüsselung bei Übertragung** | TLS 1.3 |
+| Auftragsverarbeiter                 | Hetzner Online GmbH                                           |
+| ----------------------------------- | ------------------------------------------------------------- |
+| **Adresse**                         | Industriestr. 25, 91710 Gunzenhausen, Deutschland             |
+| **Standort der Verarbeitung**       | Falkenstein (Sachsen) und Nürnberg (Bayern)                   |
+| **Zweck**                           | Hosting der Anwendung, Speicherung von Datei-Uploads, Backups |
+| **AVV**                             | Vorhanden, nach Art. 28 DSGVO; Kopie auf Anfrage              |
+| **Zertifizierungen**                | ISO 27001, ISO 9001, ISO 14001                                |
+| **Übermittlung in Drittländer**     | Nein                                                          |
+| **Verschlüsselung im Ruhezustand**  | AES-256 (Standard auf Hetzner Object Storage und Volumes)     |
+| **Verschlüsselung bei Übertragung** | TLS 1.3                                                       |
 
 ---
 

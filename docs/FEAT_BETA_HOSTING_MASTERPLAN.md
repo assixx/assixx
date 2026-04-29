@@ -32,9 +32,9 @@ Germany. Everything has a signed AVV. No US providers in the data path.
 
 ## Changelog
 
-| Version | Date       | Change                                          |
-| ------- | ---------- | ----------------------------------------------- |
-| 0.1.0   | 2026-04-29 | Initial draft — phases outlined                 |
+| Version | Date       | Change                          |
+| ------- | ---------- | ------------------------------- |
+| 0.1.0   | 2026-04-29 | Initial draft — phases outlined |
 
 > Versioning: 0.x = planning, 1.x = execution per phase, 2.0 = shipped.
 
@@ -56,31 +56,31 @@ Germany. Everything has a signed AVV. No US providers in the data path.
 
 ### 0.2 Risk register
 
-| #   | Risk                                                  | Impact | Probability | Mitigation                                                                  | Verification                                                |
-| --- | ----------------------------------------------------- | ------ | ----------- | --------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| R1  | Total VPS loss (hardware, account suspension)         | High   | Low         | Daily `pg_dump` to Object Storage (separate bucket) + daily VPS snapshot    | Probe-restore once per month from latest backup file        |
-| R2  | Backup files exist but are corrupt / not restorable   | High   | Low         | Probe-restore monthly + restore-time SLO ≤ 4 h documented                   | Calendar reminder; restore log committed to repo            |
-| R3  | TLS cert expiry → site down                           | High   | Low         | `certbot renew` cron + Grafana alert on cert expiry < 14 days               | Manual `certbot certificates` after first renewal cycle     |
-| R4  | SSH compromise → VPS rooted                           | High   | Low         | Public-key-only, fail2ban, ufw, Hetzner Cloud Firewall, port 22 IP-allowlist | `ssh -p 22 root@vps` from non-allowlisted IP must time out  |
+| #   | Risk                                                  | Impact | Probability | Mitigation                                                                      | Verification                                                     |
+| --- | ----------------------------------------------------- | ------ | ----------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| R1  | Total VPS loss (hardware, account suspension)         | High   | Low         | Daily `pg_dump` to Object Storage (separate bucket) + daily VPS snapshot        | Probe-restore once per month from latest backup file             |
+| R2  | Backup files exist but are corrupt / not restorable   | High   | Low         | Probe-restore monthly + restore-time SLO ≤ 4 h documented                       | Calendar reminder; restore log committed to repo                 |
+| R3  | TLS cert expiry → site down                           | High   | Low         | `certbot renew` cron + Grafana alert on cert expiry < 14 days                   | Manual `certbot certificates` after first renewal cycle          |
+| R4  | SSH compromise → VPS rooted                           | High   | Low         | Public-key-only, fail2ban, ufw, Hetzner Cloud Firewall, port 22 IP-allowlist    | `ssh -p 22 root@vps` from non-allowlisted IP must time out       |
 | R5  | Object Storage outage → uploads fail                  | Medium | Low         | Backend retries with exp-backoff; degraded-mode banner; backups on a 2nd bucket | Chaos test: block egress to `*.your-objectstorage.com` for 5 min |
-| R6  | DSGVO-violation by data leaving EU                    | High   | Low         | Hetzner-only (Falkenstein/Nürnberg); no US SDKs; AVV signed                 | Verarbeitungsverzeichnis lists every processor (DE only)    |
-| R7  | Beta tenant unhappy after 24 h data loss              | Medium | Medium      | Beta T&C explicitly states RTO 4 h / RPO 24 h; modal acceptance on signup   | T&C URL stored in `tenants.beta_terms_accepted_at`          |
-| R8  | Hardcoded `assixx.com` in code blocks `assixx.de` use | Medium | Medium      | Audit ADR-050 implementation for env-driven apex                            | Grep `assixx\.com` returns only docs / comments             |
-| R9  | Postgres data lost when VPS volume detaches           | High   | Low         | Postgres data on Hetzner Volume (separate from boot disk)                   | `df -h /var/lib/postgresql/data` shows volume mount         |
+| R6  | DSGVO-violation by data leaving EU                    | High   | Low         | Hetzner-only (Falkenstein/Nürnberg); no US SDKs; AVV signed                     | Verarbeitungsverzeichnis lists every processor (DE only)         |
+| R7  | Beta tenant unhappy after 24 h data loss              | Medium | Medium      | Beta T&C explicitly states RTO 4 h / RPO 24 h; modal acceptance on signup       | T&C URL stored in `tenants.beta_terms_accepted_at`               |
+| R8  | Hardcoded `assixx.com` in code blocks `assixx.de` use | Medium | Medium      | Audit ADR-050 implementation for env-driven apex                                | Grep `assixx\.com` returns only docs / comments                  |
+| R9  | Postgres data lost when VPS volume detaches           | High   | Low         | Postgres data on Hetzner Volume (separate from boot disk)                       | `df -h /var/lib/postgresql/data` shows volume mount              |
 
 > Rule: every risk has a concrete mitigation AND a verification. "Be careful"
 > is not a mitigation.
 
 ### 0.3 Ecosystem integration points
 
-| Existing system                                | Integration                                                       | Phase |
-| ---------------------------------------------- | ----------------------------------------------------------------- | ----- |
-| Documents module (ADR-042)                     | Switch upload pipeline from local FS to S3 pre-signed URLs        | 3     |
-| Audit-log (ADR-009)                            | Log every S3 upload/delete + every backup run                     | 3, 4  |
-| Doppler                                        | Production environment + Service-Token on VPS                     | 2     |
-| Grafana Cloud (Loki/Tempo, ADR-002, ADR-048)   | Promtail/OTel-Collector on VPS ship logs+traces to existing stack | 5     |
-| ADR-050 tenant-host-resolver                   | Wildcard `*.beta.assixx.de` resolves subdomain → tenant slug      | 6     |
-| `docker-compose.yml` (existing prod profile)   | Reuse `--profile production` from PRODUCTION-AND-DEVELOPMENT      | 5     |
+| Existing system                              | Integration                                                       | Phase |
+| -------------------------------------------- | ----------------------------------------------------------------- | ----- |
+| Documents module (ADR-042)                   | Switch upload pipeline from local FS to S3 pre-signed URLs        | 3     |
+| Audit-log (ADR-009)                          | Log every S3 upload/delete + every backup run                     | 3, 4  |
+| Doppler                                      | Production environment + Service-Token on VPS                     | 2     |
+| Grafana Cloud (Loki/Tempo, ADR-002, ADR-048) | Promtail/OTel-Collector on VPS ship logs+traces to existing stack | 5     |
+| ADR-050 tenant-host-resolver                 | Wildcard `*.beta.assixx.de` resolves subdomain → tenant slug      | 6     |
+| `docker-compose.yml` (existing prod profile) | Reuse `--profile production` from PRODUCTION-AND-DEVELOPMENT      | 5     |
 
 ---
 
@@ -336,8 +336,8 @@ Germany. Everything has a signed AVV. No US providers in the data path.
 
 - Move `assixx.de` nameservers from IONOS to Cloudflare (free plan)
 - Create records:
-  - `A    beta.assixx.de       → VPS-IP`           (Beta apex)
-  - `A    *.beta.assixx.de     → VPS-IP`           (Wildcard for tenants)
+  - `A    beta.assixx.de       → VPS-IP` (Beta apex)
+  - `A    *.beta.assixx.de     → VPS-IP` (Wildcard for tenants)
   - `MX/SPF/DMARC` for transactional mail (later — not blocking)
 - DNS-only mode (grey cloud, NOT proxied) per ADR-050 §"DNS & TLS Provider Decision"
 
@@ -429,16 +429,16 @@ Germany. Everything has a signed AVV. No US providers in the data path.
 
 ## Session Tracking
 
-| Session | Phase | Description                                       | Status  | Date       |
-| ------- | ----- | ------------------------------------------------- | ------- | ---------- |
-| 1       | 1     | Hetzner project, VPS, Volume, Object Storage      | pending |            |
-| 2       | 2     | Ubuntu hardening, Docker, Doppler, volume mount   | pending |            |
-| 3       | 3     | Object-storage service + Documents migration      | pending |            |
-| 4       | 3     | Avatars + Chat attachments + frontend Uppy        | pending |            |
-| 5       | 4     | Backup cron + restore runbook + probe restore     | pending |            |
-| 6       | 5     | GitHub Actions build/deploy + Grafana logs/traces | pending |            |
-| 7       | 6     | Cloudflare DNS, wildcard TLS, Nginx, ADR-050      | pending |            |
-| 8       | 7     | Beta T&C + smoke test + go-live                   | pending |            |
+| Session | Phase | Description                                       | Status  | Date |
+| ------- | ----- | ------------------------------------------------- | ------- | ---- |
+| 1       | 1     | Hetzner project, VPS, Volume, Object Storage      | pending |      |
+| 2       | 2     | Ubuntu hardening, Docker, Doppler, volume mount   | pending |      |
+| 3       | 3     | Object-storage service + Documents migration      | pending |      |
+| 4       | 3     | Avatars + Chat attachments + frontend Uppy        | pending |      |
+| 5       | 4     | Backup cron + restore runbook + probe restore     | pending |      |
+| 6       | 5     | GitHub Actions build/deploy + Grafana logs/traces | pending |      |
+| 7       | 6     | Cloudflare DNS, wildcard TLS, Nginx, ADR-050      | pending |      |
+| 8       | 7     | Beta T&C + smoke test + go-live                   | pending |      |
 
 ### Session log template
 
@@ -460,15 +460,15 @@ Germany. Everything has a signed AVV. No US providers in the data path.
 
 ### Hetzner sizing baseline (Beta, 1–3 tenants)
 
-| Resource              | Spec                              | Monthly cost (approx.) |
-| --------------------- | --------------------------------- | ---------------------- |
-| VPS (CX41)            | 4 vCPU shared, 16 GB RAM, 160 GB  | ~16 €                  |
-| Volume (50 GB)        | SSD, attached to VPS              | ~2 €                   |
-| Snapshots (auto)      | 7-day retention                   | ~3 €                   |
-| Object Storage        | 2 buckets (uploads + backups), je ~5,99 € Grundpauschale (1 TB Storage + 1 TB Traffic je Bucket inkl., über Inklusiv hinaus ~5 €/TB) | ~12 €                  |
-| Cloudflare Free       | DNS only                          | 0 €                    |
-| Grafana Cloud Free    | Logs + traces (existing)          | 0 €                    |
-| **Total**             |                                   | **~30–35 €/Monat**     |
+| Resource           | Spec                                                                                                                                 | Monthly cost (approx.) |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
+| VPS (CX41)         | 4 vCPU shared, 16 GB RAM, 160 GB                                                                                                     | ~16 €                  |
+| Volume (50 GB)     | SSD, attached to VPS                                                                                                                 | ~2 €                   |
+| Snapshots (auto)   | 7-day retention                                                                                                                      | ~3 €                   |
+| Object Storage     | 2 buckets (uploads + backups), je ~5,99 € Grundpauschale (1 TB Storage + 1 TB Traffic je Bucket inkl., über Inklusiv hinaus ~5 €/TB) | ~12 €                  |
+| Cloudflare Free    | DNS only                                                                                                                             | 0 €                    |
+| Grafana Cloud Free | Logs + traces (existing)                                                                                                             | 0 €                    |
+| **Total**          |                                                                                                                                      | **~30–35 €/Monat**     |
 
 ### Recovery objectives (Beta — written in T&C)
 
@@ -477,12 +477,12 @@ Germany. Everything has a signed AVV. No US providers in the data path.
 
 ### File / path conventions
 
-| Path on VPS                  | Purpose                         |
-| ---------------------------- | ------------------------------- |
-| `/opt/assixx/`               | App checkout (compose file)     |
-| `/mnt/postgres-data/`        | Postgres data (on volume)       |
-| `/var/log/assixx/`           | Application logs (Promtail)    |
-| `/etc/letsencrypt/live/...`  | TLS certs                       |
+| Path on VPS                 | Purpose                     |
+| --------------------------- | --------------------------- |
+| `/opt/assixx/`              | App checkout (compose file) |
+| `/mnt/postgres-data/`       | Postgres data (on volume)   |
+| `/var/log/assixx/`          | Application logs (Promtail) |
+| `/etc/letsencrypt/live/...` | TLS certs                   |
 
 ### S3 key conventions
 
@@ -499,9 +499,9 @@ tenants/{tenant_uuid}/chat/{conv_uuid}/{file_uuid}/{filename}
 > Document any case where the existing code/ADR contradicts the plan. Resolve
 > in code review, not in this document.
 
-| #   | Spec / ADR says                          | Reality                | Decision               |
-| --- | ---------------------------------------- | ---------------------- | ---------------------- |
-| D1  | _(empty until we hit one)_                |                        |                        |
+| #   | Spec / ADR says            | Reality | Decision |
+| --- | -------------------------- | ------- | -------- |
+| D1  | _(empty until we hit one)_ |         |          |
 
 ---
 
@@ -530,16 +530,16 @@ tenants/{tenant_uuid}/chat/{conv_uuid}/{file_uuid}/{filename}
 
 ### Metrics
 
-| Metric                                    | Planned | Actual |
-| ----------------------------------------- | ------- | ------ |
-| Sessions                                  | 8       |        |
-| Migration files                           | ~2      |        |
-| New backend files                         | ~5      |        |
-| New frontend files                        | ~3      |        |
-| Changed files                             | ~30     |        |
-| ESLint errors at release                  | 0       |        |
-| First time-to-restore (probe)             | ≤ 4 h   |        |
-| First-week beta-user issues (P1)          | 0       |        |
+| Metric                           | Planned | Actual |
+| -------------------------------- | ------- | ------ |
+| Sessions                         | 8       |        |
+| Migration files                  | ~2      |        |
+| New backend files                | ~5      |        |
+| New frontend files               | ~3      |        |
+| Changed files                    | ~30     |        |
+| ESLint errors at release         | 0       |        |
+| First time-to-restore (probe)    | ≤ 4 h   |        |
+| First-week beta-user issues (P1) | 0       |        |
 
 ---
 

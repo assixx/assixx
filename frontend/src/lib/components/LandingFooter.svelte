@@ -3,6 +3,17 @@
 
   import { isDark } from '$lib/stores/theme.svelte';
 
+  interface Props {
+    /**
+     * Hide the Roadmap link on pure legal pages (Impressum, Datenschutz)
+     * where marketing-product-links would feel out of place. Default: shown
+     * on Landing, Disclaimer, Roadmap itself, and any other public surface.
+     */
+    hideRoadmap?: boolean;
+  }
+
+  const { hideRoadmap = false }: Props = $props();
+
   const year = new Date().getFullYear();
 </script>
 
@@ -101,7 +112,9 @@
           <li><a href="#module">Module</a></li>
           <li><a href="#security">Sicherheit</a></li>
           <li><a href="#pricing">Preise</a></li>
-          <li><a href={resolve('/roadmap')}>Roadmap</a></li>
+          {#if !hideRoadmap}
+            <li><a href={resolve('/roadmap')}>Roadmap</a></li>
+          {/if}
           <li><a href={resolve('/login')}>Anmelden</a></li>
           <li><a href={resolve('/signup')}>Registrieren</a></li>
         </ul>

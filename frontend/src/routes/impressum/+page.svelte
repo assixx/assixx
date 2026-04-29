@@ -165,7 +165,7 @@
   <p class="legal-updated">Stand: April 2026</p>
 </main>
 
-<LandingFooter />
+<LandingFooter hideRoadmap />
 
 <style>
   /* Content */

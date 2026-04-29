@@ -158,7 +158,9 @@
       {#each phases as phase, i (phase.id)}
         <li
           class="rt-phase rt-phase--{phase.status}"
-          style="--accent: {phase.accent}; --phase-delay: {200 + i * 120}ms;"
+          style="
+
+--accent: {phase.accent}; --phase-delay: {200 + i * 120}ms;"
         >
           <!-- Indicator column (BTS-style) -->
           <div
@@ -405,24 +407,24 @@
     inset: -8px;
     border: 2px solid var(--accent);
     border-radius: 50%;
-    opacity: 0.4;
+    opacity: 40%;
     animation: rt-pulse 2s ease-out infinite;
   }
 
   @keyframes rt-pulse {
     0% {
       transform: scale(0.95);
-      opacity: 0.5;
+      opacity: 50%;
     }
 
     70% {
       transform: scale(1.15);
-      opacity: 0;
+      opacity: 0%;
     }
 
     100% {
       transform: scale(0.95);
-      opacity: 0;
+      opacity: 0%;
     }
   }
 
@@ -438,11 +440,11 @@
 
   /* Future phases — slightly de-emphasised so the eye reads in order. */
   .rt-phase--future .rt-indicator {
-    opacity: 0.7;
+    opacity: 70%;
   }
 
   .rt-phase--future .rt-card {
-    opacity: 0.85;
+    opacity: 85%;
   }
 
   /* ============================================================
@@ -648,12 +650,12 @@
   @keyframes rt-fade-in-up {
     from {
       transform: translateY(12px);
-      opacity: 0;
+      opacity: 0%;
     }
 
     to {
       transform: translateY(0);
-      opacity: 1;
+      opacity: 100%;
     }
   }
 </style>
