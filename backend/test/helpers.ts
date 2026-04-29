@@ -54,34 +54,181 @@ export async function loginApitest(): Promise<AuthState> {
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2000;
 
-async function _performLogin(attempt = 1): Promise<AuthState> {
-  const res = await fetch(`${BASE_URL}/auth/login`, {
+// ─── 2FA / Maildev helpers (FEAT_2FA_EMAIL_MASTERPLAN Session 10) ────────────
+//
+// Phase 2 hardcoded email-based 2FA on every password login (DD-10 removed —
+// no flag, no opt-out). Every test that needs an authenticated session now has
+// to: log in → capture `challengeToken` cookie → fetch the code mail from
+// Maildev → POST /auth/2fa/verify → extract access/refresh tokens from cookies.
+//
+// `info@assixx.com` is the test-tenant root (users.id=1, verified via psql
+// probe 2026-04-29). `_performLogin` below caches the resulting token pair
+// once per suite run (`_cachedAuth`) — only the first call pays the 2FA cost.
+//
+// Maildev runs on `localhost:1080` (Web-UI + REST), SMTP on `maildev:1025`
+// (internal Docker network). Doppler `dev` SMTP_HOST/PORT point at maildev so
+// the backend's nodemailer transport lands every dev mail in the catcher.
+// See docker-compose.yml `maildev` service + HOW-TO-DEV-SMTP.md (DD-25).
+
+const MAILDEV_URL = 'http://localhost:1080';
+const MAIL_POLL_INTERVAL_MS = 200;
+const MAIL_POLL_TIMEOUT_MS = 10_000;
+/** Test root user id — `info@assixx.com` (verified 2026-04-29 via psql). */
+const APITEST_USER_ID = 1;
+const REDIS_AUTH = 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0';
+
+interface MaildevEmail {
+  id: string;
+  to: Array<{ address: string }>;
+  subject: string;
+  text: string;
+  time: string;
+}
+
+/**
+ * Wipe Maildev's mailbox. Idempotent; safe to call in `beforeEach` for tests
+ * that read 2FA codes — keeps each test's email lookup deterministic.
+ */
+export async function clearMaildev(): Promise<void> {
+  await fetch(`${MAILDEV_URL}/email/all`, { method: 'DELETE' });
+}
+
+/**
+ * Poll Maildev for the most recent 2FA code mail addressed to `recipient`.
+ * Returns the 6-char Crockford-Base32 code from the plain-text body.
+ *
+ * The template (`build2faCodeTemplate`, `2fa-code.template.ts:174`) writes
+ * `Ihr Bestätigungscode: ${code}` on its own line — anchor on that prefix to
+ * stay robust against future intro-copy tweaks.
+ *
+ * @throws if no matching mail arrives within `timeoutMs`.
+ */
+export async function fetchLatest2faCode(
+  recipient: string,
+  timeoutMs = MAIL_POLL_TIMEOUT_MS,
+): Promise<string> {
+  const lower = recipient.toLowerCase();
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const res = await fetch(`${MAILDEV_URL}/email`);
+    const all = (await res.json()) as MaildevEmail[];
+    // Maildev returns oldest-first — sort newest-first so resends/retries pick
+    // up the latest code (DD-9: resend overwrites the Redis record).
+    const sorted = [...all].sort((a, b) => Date.parse(b.time) - Date.parse(a.time));
+    for (const mail of sorted) {
+      const matches = mail.to.some((t) => t.address.toLowerCase() === lower);
+      if (!matches || typeof mail.text !== 'string') continue;
+      const m = /Ihr Bestätigungscode:\s*([A-HJKMNP-Z2-9]{6})/.exec(mail.text);
+      if (m?.[1] !== undefined && m[1] !== '') return m[1];
+    }
+    await new Promise((r) => setTimeout(r, MAIL_POLL_INTERVAL_MS));
+  }
+  throw new Error(`No 2FA code mail for ${recipient} within ${timeoutMs} ms`);
+}
+
+/**
+ * DEL Redis keys that survive across suite runs and would otherwise poison
+ * subsequent tests:
+ *   - `2fa:lock:{userId}`         (15-min lockout from 5 wrong attempts, DD-6)
+ *   - `2fa:fail-streak:{userId}`  (24-h cumulative fail counter, DD-5)
+ *
+ * Keys carry the `2fa:` keyPrefix from `two-factor-auth.module.ts`. Run
+ * synchronously via `docker exec` — same pattern as `flushThrottleKeys()`.
+ */
+export function clear2faStateForUser(userId: number): void {
+  execSync(
+    `docker exec assixx-redis redis-cli -a '${REDIS_AUTH}' --no-auth-warning DEL '2fa:lock:${userId}' '2fa:fail-streak:${userId}'`,
+    { stdio: 'pipe' },
+  );
+}
+
+/**
+ * Extract a single cookie value from a `Set-Cookie` header array
+ * (`Headers.getSetCookie()`, Node 19.7+). Returns `null` if absent or empty
+ * (cleared cookies emit `name=; Max-Age=0` — the empty value counts as absent
+ * for our purposes).
+ */
+export function extractCookieValue(setCookies: string[], name: string): string | null {
+  for (const sc of setCookies) {
+    const m = new RegExp(`(?:^|;\\s*)${name}=([^;]*)`).exec(sc);
+    if (m && m[1] !== undefined && m[1] !== '') return m[1];
+  }
+  return null;
+}
+
+async function _runLoginRequest(): Promise<Response> {
+  return await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: APITEST_EMAIL,
-      password: APITEST_PASSWORD,
-    }),
+    body: JSON.stringify({ email: APITEST_EMAIL, password: APITEST_PASSWORD }),
   });
+}
 
-  // Rate limited -- wait and retry
-  if (res.status === 429 && attempt < MAX_RETRIES) {
+async function _runVerifyRequest(challengeToken: string, code: string): Promise<Response> {
+  return await fetch(`${BASE_URL}/auth/2fa/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+    },
+    body: JSON.stringify({ code }),
+  });
+}
+
+async function _performLogin(attempt = 1): Promise<AuthState> {
+  // Pre-clean: wipe stale 2FA state from prior failed runs (lockouts /
+  // fail-streaks) and Maildev — both are idempotent and cheap.
+  clear2faStateForUser(APITEST_USER_ID);
+  await clearMaildev();
+
+  // Step 1: submit credentials → expect `stage: 'challenge_required'`.
+  const loginRes = await _runLoginRequest();
+  if (loginRes.status === 429 && attempt < MAX_RETRIES) {
     _authPromise = null;
     await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
     return _performLogin(attempt + 1);
   }
-
-  if (!res.ok) {
+  if (!loginRes.ok) {
     _authPromise = null;
-    throw new Error(`Login failed: ${res.status} ${res.statusText}`);
+    throw new Error(`Login failed: ${loginRes.status} ${loginRes.statusText}`);
   }
 
-  const body = (await res.json()) as JsonBody;
+  const loginBody = (await loginRes.json()) as JsonBody;
+  if (loginBody.data.stage !== 'challenge_required') {
+    // Defensive: under v0.5.0 (DD-10 removed) `/auth/login` never returns
+    // `'authenticated'`. If it ever does, OAuth was misrouted — fail loud.
+    _authPromise = null;
+    throw new Error(`Unexpected login stage: ${String(loginBody.data.stage)}`);
+  }
+
+  const challengeToken = extractCookieValue(loginRes.headers.getSetCookie(), 'challengeToken');
+  if (challengeToken === null) {
+    _authPromise = null;
+    throw new Error('challengeToken cookie missing from /auth/login response');
+  }
+
+  // Step 2: fetch the code from Maildev + verify.
+  const code = await fetchLatest2faCode(APITEST_EMAIL);
+  const verifyRes = await _runVerifyRequest(challengeToken, code);
+  if (!verifyRes.ok) {
+    _authPromise = null;
+    throw new Error(`2FA verify failed: ${verifyRes.status} ${verifyRes.statusText}`);
+  }
+
+  const verifyBody = (await verifyRes.json()) as JsonBody;
+  const setCookies = verifyRes.headers.getSetCookie();
+  const accessToken = extractCookieValue(setCookies, 'accessToken');
+  const refreshToken = extractCookieValue(setCookies, 'refreshToken');
+  if (accessToken === null || refreshToken === null) {
+    _authPromise = null;
+    throw new Error('access/refresh token cookies missing from /auth/2fa/verify response');
+  }
+
   _cachedAuth = {
-    authToken: body.data.accessToken,
-    refreshToken: body.data.refreshToken,
-    userId: body.data.user.id,
-    tenantId: body.data.user.tenantId,
+    authToken: accessToken,
+    refreshToken,
+    userId: verifyBody.data.user.id as number,
+    tenantId: verifyBody.data.user.tenantId as number,
   };
   return _cachedAuth;
 }
