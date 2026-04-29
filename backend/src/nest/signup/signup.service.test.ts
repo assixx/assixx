@@ -12,6 +12,8 @@ import type { SignupTicket } from '../auth/oauth/oauth.types.js';
 import type { AppConfigService } from '../config/config.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { DomainVerificationService } from '../domains/domain-verification.service.js';
+import type { TwoFactorAuthService } from '../two-factor-auth/two-factor-auth.service.js';
+import type { TwoFactorChallenge } from '../two-factor-auth/two-factor-auth.types.js';
 import type { SignupDto } from './dto/index.js';
 import { SignupService } from './signup.service.js';
 
@@ -41,6 +43,25 @@ const mockDomainVerification = {
   generateToken: vi.fn().mockReturnValue('a'.repeat(64)),
 } as unknown as DomainVerificationService;
 
+// Step 2.5 (ADR-054) constructor arg #4: TwoFactorAuthService.
+// `issueChallenge` is the only method `SignupService.registerTenant` calls;
+// the OAuth path (`registerTenantWithOAuth`) bypasses 2FA per DD-7, so the
+// mock is unused on that path but must still be present in the constructor.
+//
+// The fake challenge mirrors the public-facing shape returned by the real
+// service (`TwoFactorChallenge` from `two-factor-auth.types.ts`). Tests that
+// inspect the response assert against `FAKE_CHALLENGE` directly.
+const FAKE_CHALLENGE: TwoFactorChallenge = {
+  challengeToken: 'fake-token-base64url-32bytes',
+  expiresAt: '2026-04-29T12:00:00.000Z',
+  resendAvailableAt: '2026-04-29T11:01:00.000Z',
+  resendsRemaining: 3,
+};
+const mockIssueChallenge = vi.fn();
+const mockTwoFactorAuth = {
+  issueChallenge: mockIssueChallenge,
+} as unknown as TwoFactorAuthService;
+
 function createServiceWithMock(): {
   service: SignupService;
   mockDb: {
@@ -56,6 +77,7 @@ function createServiceWithMock(): {
     mockDb as unknown as DatabaseService,
     mockConfig,
     mockDomainVerification,
+    mockTwoFactorAuth,
   );
   return { service, mockDb };
 }
@@ -288,6 +310,10 @@ describe('SignupService – registration', () => {
     vi.clearAllMocks();
     mockBcryptHash.mockResolvedValue('hashed-password');
     mockUuidV7.mockReturnValue('mock-uuid-v7');
+    // Step 2.5 (ADR-054): every registerTenant happy path issues a 2FA
+    // challenge AFTER the persistence transaction. Tests that exercise the
+    // failure path can override with `mockRejectedValueOnce` per-test.
+    mockIssueChallenge.mockResolvedValue(FAKE_CHALLENGE);
     const result = createServiceWithMock();
     service = result.service;
     mockDb = result.mockDb;
@@ -300,11 +326,21 @@ describe('SignupService – registration', () => {
 
       const result = await service.registerTenant(createValidDto(), '127.0.0.1', 'TestAgent');
 
-      expect(result.tenantId).toBe(10);
-      expect(result.userId).toBe(1);
-      expect(result.subdomain).toBe('test-gmbh');
-      expect(result.message).toContain('Registration successful');
-      expect(result.trialEndsAt).toBeDefined();
+      // Step 2.5: response is the LoginResult discriminated union — the
+      // tenant + pending user rows still exist (verifiable via DB), but the
+      // wire shape carries only the public challenge view.
+      // Asserting the full object in one call (instead of a typeguard branch)
+      // keeps `expect` out of conditionals — `vitest/no-conditional-expect`.
+      expect(result).toEqual({ stage: 'challenge_required', challenge: FAKE_CHALLENGE });
+
+      // issueChallenge was called with the freshly-minted (tenantId, userId)
+      // and the dto.adminEmail, with purpose='signup'.
+      expect(mockIssueChallenge).toHaveBeenCalledWith(
+        /* userId */ 1,
+        /* tenantId */ 10,
+        'admin@test-gmbh.de',
+        'signup',
+      );
     });
 
     it('should pass address to audit log when provided', async () => {
@@ -313,9 +349,12 @@ describe('SignupService – registration', () => {
 
       const result = await service.registerTenant(dto, '127.0.0.1', 'Agent');
 
-      expect(result.tenantId).toBe(10);
+      // Top-level shape sanity (Step 2.5).
+      expect(result.stage).toBe('challenge_required');
 
-      // Verify audit log contains structured address
+      // Verify audit log contains structured address — the audit row is
+      // still written after issueChallenge succeeds, at the same systemQuery
+      // index (1: subdomain check at 0, audit at 1).
       const auditCall = mockDb.systemQuery.mock.calls[1] as unknown[];
       const auditParams = auditCall[1] as unknown[];
       const newValues = JSON.parse(auditParams[6] as string) as Record<string, unknown>;
@@ -381,6 +420,7 @@ describe('SignupService – registration', () => {
         devDb as unknown as DatabaseService,
         devConfig,
         mockDomainVerification,
+        mockTwoFactorAuth,
       );
 
       // isSubdomainAvailable → available
@@ -414,7 +454,8 @@ describe('SignupService – registration', () => {
 
       const result = await devService.registerTenant(createValidDto());
 
-      expect(result.tenantId).toBe(10);
+      // Step 2.5: shape is now the LoginResult discriminated union.
+      expect(result.stage).toBe('challenge_required');
 
       // Dev-mode query selects purchasable addons (is_core = false) —
       // index shifts from 3 to 4 after Step 2.8's seedPendingDomain INSERT.
@@ -422,6 +463,7 @@ describe('SignupService – registration', () => {
       expect(addonSelectCall[0]).toContain('is_core = false');
 
       // 3 setup + 1 seed-pending-domain + 1 addon SELECT + 3 addon INSERTs = 8
+      // (issueChallenge is a separate dependency call, NOT a client.query.)
       expect(mockClient.query).toHaveBeenCalledTimes(8);
     });
 
@@ -437,12 +479,14 @@ describe('SignupService – registration', () => {
       // createRootUser UPDATE employee_id
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       // activateTrialAddons: production mode → returns early
-      // createAuditLog → fails
+      // createAuditLog → fails (audit is best-effort, swallowed by service)
       mockDb.systemQuery.mockRejectedValueOnce(new Error('Audit log failed'));
 
       const result = await service.registerTenant(createValidDto());
 
-      expect(result.tenantId).toBe(10);
+      // Step 2.5: response shape is the discriminated union; audit failure
+      // does NOT block the 2FA challenge being returned to the user.
+      expect(result.stage).toBe('challenge_required');
     });
   });
 

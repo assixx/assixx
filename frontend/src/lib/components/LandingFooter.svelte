@@ -101,6 +101,7 @@
           <li><a href="#module">Module</a></li>
           <li><a href="#security">Sicherheit</a></li>
           <li><a href="#pricing">Preise</a></li>
+          <li><a href={resolve('/roadmap')}>Roadmap</a></li>
           <li><a href={resolve('/login')}>Anmelden</a></li>
           <li><a href={resolve('/signup')}>Registrieren</a></li>
         </ul>

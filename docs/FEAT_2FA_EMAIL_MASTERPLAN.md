@@ -3,12 +3,12 @@
 > **Plan type:** FEATURE
 > **Created:** 2026-04-26
 > **Version:** 0.6.0 (GREENFIELD-TRIM + DD-32 E-Mail-Change-2FA-Verify; R15 + Step 2.12 hinzugefügt; Bestandsuser-Cutover-Apparat als N/A markiert per CLAUDE.md Greenfield-Status seit 2026-04-19)
-> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.9 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
+> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); Phase 2 in progress: Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.9 DONE (2026-04-28 / 2026-04-29). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
 > **Branch:** `feat/2fa-email`
 > **Spec:** This document
 > **Author:** Claude (proposed) · Simon Öztürk (decides)
 > **Estimated sessions:** 14 (v0.5.0) → ~12 (v0.6.0 nach Greenfield-Trim, Step 2.12 +1 Session)
-> **Actual sessions:** 4 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.9 erledigt)
+> **Actual sessions:** 5 / 12 (Phase 0.5.3 + 0.5.5 + Phase 1 + Phase 2 Steps 2.1 + 2.2 + 2.3 + 2.4 + 2.5 + 2.9 erledigt)
 > **External dependencies added:** **ZERO** — every primitive (crypto, JWT, Redis via `ioredis`, legacy `email-service`, `CustomThrottlerGuard`, Zod, `audit_trail`) already exists.
 
 ---
@@ -856,24 +856,45 @@ async login(dto: LoginDto, ipAddress?, userAgent?): Promise<LoginResult> {
 
 **`loginWithVerifiedUser()` (auth.service.ts:247) is UNCHANGED per DD-7.** Add a comment block above it referencing DD-7 + ADR-054.
 
-### Step 2.5: Modify signup flow [PENDING]
+### Step 2.5: Modify signup flow [DONE — 2026-04-29]
 
-**File modified:** `backend/src/nest/signup/signup.service.ts` (NOT in `auth/` — its own module).
+**Delivered (2026-04-29):**
 
-**Behavior change:**
+- `backend/src/nest/signup/signup.service.ts` — `registerTenant()` return type changed to `LoginResult` (discriminated union from `two-factor-auth.types.ts`). Constructor gains `TwoFactorAuthService` as the 4th positional argument. Body splits into two phases: (1) `executeRegistrationTransaction` — unchanged INSERTs (tenants → users `IS_ACTIVE.INACTIVE` → seedPendingDomain → activateTrialAddons), wrapped in a generic-error → `BadRequestException` envelope to preserve the legacy contract; (2) `twoFactorAuth.issueChallenge(userId, tenantId, adminEmail, 'signup')` — awaited, with `ServiceUnavailableException` (DD-14 SMTP fail-loud) and other `Error` thrown by `issueChallenge` triggering DD-14 cleanup before re-throwing. The registration audit (`root_logs`, `register` action) now fires AFTER the challenge mail leaves the building so a mid-flight cleanup never leaves an orphan audit row.
+- `createRootUser()` INSERT now writes `is_active = ${IS_ACTIVE.INACTIVE}` (was implicit DB default = ACTIVE). The OAuth path's `createOAuthRootUser` is byte-identical to before — DD-7 exempt.
+- New private `cleanupFailedSignup(tenantId, userId)` — runs in its own `systemTransaction`. **Tenant-erasure semantics** instead of direct `DELETE FROM users`: when no other users exist on the tenant (the practical case for a fresh signup), `DELETE FROM tenants` cascades to the pending user via the existing `users.tenant_id ON DELETE CASCADE` FK (also rolling back `tenant_domains` + `tenant_addons`). Edge case (defensive — no race exists in practice): if other users somehow live on the tenant, the orphaned pending user is soft-deleted (`UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()`). This keeps `signup.service.ts` outside the `users` hard-delete whitelist enforced by `shared/src/architectural.test.ts:290` (the ADR-020 + ADR-045 soft-delete-only rule), without weakening the rule.
+- Cleanup is best-effort: a failure inside cleanup is logged and swallowed so the original `ServiceUnavailableException` reaches the caller unchanged. The Step 2.11 stale-pending reaper is the final safety net.
+- `backend/src/nest/signup/signup.controller.ts` — `POST /signup` return type changed to `LoginResultBody` (token stripped per R8). Reuses `setChallengeCookie` + `setAuthCookies` helpers exported from `auth/auth.controller.ts` (same single-source-of-truth pattern OAuthController uses) so the 2FA challenge cookie shape is identical across login + signup paths. HTTP status remains 201 CREATED — tenant + user rows ARE created at this point; only the 2FA gate stands between the user and `is_active = 1`. `ipAddress` / `userAgent` still forwarded to the registration audit (separate from the 2FA audit).
+- `backend/src/nest/signup/signup.module.ts` — imports `TwoFactorAuthModule` (one-way edge, no `forwardRef` — TwoFactorAuthModule has no dep on SignupModule). Mirrors `auth.module.ts:36`.
+- `backend/src/nest/signup/signup.service.test.ts` — 4th constructor arg added to all `new SignupService(...)` instantiations (main factory + dev-mode inline). Top-level `mockIssueChallenge` + `FAKE_CHALLENGE` provide the default happy-path stub; registration `beforeEach` seeds `mockResolvedValue(FAKE_CHALLENGE)`. Three happy-path assertions flipped from `result.tenantId === 10` to either `result.stage === 'challenge_required'` (top-level) or full-shape `expect(result).toEqual({ stage, challenge: FAKE_CHALLENGE })` for the canonical happy path. The canonical happy path also now asserts `issueChallenge` was called with `(userId=1, tenantId=10, 'admin@test-gmbh.de', 'signup')`. OAuth tests + atomicity tests + business-email-gate tests are unchanged in body — only the constructor wiring picks up the new arg via the shared factory.
+
+**Behavior change (post-condition):**
 
 1. Existing validation (Zod, duplicate-email, subdomain check) — unchanged
-2. Tenant + user inserted via existing `tenantTransaction()` flow, BUT user with `is_active = IS_ACTIVE.INACTIVE` (pending) instead of `IS_ACTIVE.ACTIVE`
-3. Issue signup challenge: `twoFactorAuth.issueChallenge(user.id, tenant.id, user.email, 'signup')`
+2. Tenant + user inserted via existing `systemTransaction()` flow (signup doesn't have CLS context yet — uses `systemTransaction` not `tenantTransaction`), user with `is_active = IS_ACTIVE.INACTIVE` (pending)
+3. Issue signup challenge: `twoFactorAuth.issueChallenge(user.id, tenant.id, dto.adminEmail, 'signup')`
 4. Return `{ stage: 'challenge_required', challenge }` — NO tokens yet
 
-**On successful verify** (handled in `TwoFactorAuthController.verify` when `purpose === 'signup'`):
+**On successful verify** (handled in `TwoFactorAuthController.verify` when `purpose === 'signup'` — Step 2.7):
 
 - Set `users.is_active = ${IS_ACTIVE.ACTIVE}` via `queryAsTenant`
 - Set `tfa_enrolled_at` + `last_2fa_verified_at` to `NOW()`
 - Issue access + refresh tokens (delegate to existing `AuthService.issueTokens()` or equivalent helper)
 
-**Edge case:** if user abandons signup (challenge expires or DD-14 SMTP failure), the user row is DELETEd in the same transaction (not left with `is_active = 0`). Confirms by integration test in Phase 4.
+**DD-14 SMTP failure behaviour:** synchronous cleanup via `cleanupFailedSignup`. Tenant-erasure-with-cascade in the common case; soft-delete the orphaned user in the defensive edge case. The original `ServiceUnavailableException` always reaches the controller. Stale-pending reaper (Step 2.11) catches anything cleanup misses. Phase 4 integration test will simulate the full flow.
+
+**Verification (2026-04-29):**
+
+- `docker exec assixx-backend pnpm exec eslint backend/src/nest/signup/ backend/src/nest/auth/auth.controller.ts` → 0 errors
+- `docker exec assixx-backend pnpm exec tsc --noEmit -p backend` → exit 0, 0 lines
+- `pnpm exec vitest run --project unit backend/src/nest/signup/signup.service.test.ts` → 51/51 passed
+- `pnpm exec vitest run --project unit` (full unit suite) → **279 files, 7138 tests, all passed in 18.03 s** — including `shared/src/architectural.test.ts` (the soft-delete-only rule stays unweakened)
+- `curl http://localhost:3000/health` → `{"status":"ok"}`; backend hot-reloaded with the new `TwoFactorAuthModule` import in `SignupModule` — DI graph resolved cleanly, no module-load errors
+
+**Known interim state:**
+
+- Frontend `(public)/signup/+page.svelte` still POSTs client-side via `_lib/api.ts` and expects the legacy `SignupResponseData` shape. The user-facing signup flow is interim-broken until Phase 5 Step 5.4 lands (`+page.server.ts` form action + `<form method="POST" use:enhance>` switch). Documented per masterplan `## Scope-creep notice` and Step 2.4 precedent.
+- Step 2.7 (`TwoFactorAuthController.verify`) is the natural follow-up — it consumes the `'signup'` purpose, flips `is_active`, sets `tfa_enrolled_at` + `last_2fa_verified_at`, and mints tokens. Until Step 2.7 ships, a real signup will create a pending tenant + user but never have a route to verify (manual DB poke or the Step 2.11 reaper would clean up).
 
 ### Step 2.6: OAuth: no-op per DD-7 [PENDING]
 
@@ -1577,7 +1598,7 @@ export const MESSAGES = {
 | 3       | 2     | Module skeleton · types · DTOs · constants · register in app.module                                                                                                            | DONE                            | 2026-04-28 |
 | 4       | 2     | TwoFactorCodeService (crypto + Redis primitives via DI provider)                                                                                                               | PENDING                         |            |
 | 5       | 2     | TwoFactorAuthService (orchestration) · `send2faCode` + template                                                                                                                | PENDING                         |            |
-| 6       | 2     | Modify AuthService.login + SignupService (incl. tenant cleanup on SMTP fail per DD-14) · OAuth comment-only · **load-tests auf LoginResult umstellen** (v0.5.0 R13-Mitigation) | PENDING                         |            |
+| 6       | 2     | Modify AuthService.login + SignupService (incl. tenant cleanup on SMTP fail per DD-14) · OAuth comment-only · **load-tests auf LoginResult umstellen** (v0.5.0 R13-Mitigation) | DONE (Steps 2.4 + 2.5)          | 2026-04-29 |
 | 7       | 2     | TwoFactorAuthController · throttler tiers + decorators · Pino redaction · audit hooks · stale-pending reaper cron (Step 2.11)                                                  | PENDING                         |            |
 | 7b      | 2     | **Step 2.12 (DD-32 / R15, v0.6.0):** Email-Change-Endpoint two-code 2FA-Verify (request-change + verify-change) · Audit-Tuples · Tests · Throttler                             | PENDING                         |            |
 | 8       | 3     | Unit tests TwoFactorCodeService                                                                                                                                                | PENDING                         |            |

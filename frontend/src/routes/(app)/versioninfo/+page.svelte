@@ -69,10 +69,10 @@
         <i class="fas fa-bug"></i>
         Fehler melden
       </a>
-      <!-- Link to public roadmap & disclaimer page (Beta-Phase, Hosting, RTO/RPO).
+      <!-- Link to the standalone visual roadmap page (Beta → Alpha → RC → Stable).
            Surfaces the long-term plan to authenticated users on /versioninfo. -->
       <a
-        href="/disclaimer"
+        href="/roadmap"
         class="btn btn-cancel"
       >
         <i class="fas fa-route"></i>

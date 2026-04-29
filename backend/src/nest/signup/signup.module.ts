@@ -7,6 +7,13 @@
 import { Module } from '@nestjs/common';
 
 import { DomainsModule } from '../domains/domains.module.js';
+// 2FA email gate — Step 2.5 (ADR-054). One-way edge: SignupModule depends on
+// TwoFactorAuthModule (for `TwoFactorAuthService.issueChallenge` in
+// `SignupService.registerTenant`); TwoFactorAuthModule has no edge back, so
+// no `forwardRef` is needed here (mirrors `auth.module.ts:36`). OAuth signup
+// (`SignupService.registerTenantWithOAuth`) does NOT call into this service
+// — Azure AD is the trust boundary per DD-7.
+import { TwoFactorAuthModule } from '../two-factor-auth/two-factor-auth.module.js';
 import { SignupController } from './signup.controller.js';
 import { SignupService } from './signup.service.js';
 
@@ -15,7 +22,7 @@ import { SignupService } from './signup.service.js';
   // SignupService to generate the `verification_token` for the
   // `tenant_domains(pending)` seed on password signup (§2.8) and
   // `tenant_domains(verified)` seed on OAuth signup (§2.8b).
-  imports: [DomainsModule],
+  imports: [DomainsModule, TwoFactorAuthModule],
   controllers: [SignupController],
   providers: [SignupService],
   exports: [SignupService],
