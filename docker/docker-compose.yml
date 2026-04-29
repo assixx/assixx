@@ -1079,8 +1079,8 @@ services:
       GF_UNIFIED_ALERTING_ENABLED: true
       # SMTP for alert emails — reuses the same Doppler-managed SMTP as the
       # backend (SMTP_HOST/USER/PASS/FROM). STARTTLS is mandatory for port 587
-      # (Gmail and most providers). See HOW-TO-ALERTING.md for provider-specific
-      # notes (Gmail App Passwords, etc.).
+      # (Office365 and most providers). See HOW-TO-ALERTING.md for provider-
+      # specific notes (Microsoft 365 App Passwords / SMTP AUTH).
       GF_SMTP_ENABLED: "true"
       GF_SMTP_HOST: ${SMTP_HOST}:${SMTP_PORT:-587}
       GF_SMTP_USER: ${SMTP_USER}

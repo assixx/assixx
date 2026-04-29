@@ -322,13 +322,19 @@ inject `MailerService` from `../common/services/mailer.service.js`.
 
 The existing `email-service.ts` (Nodemailer) was connected to SMTP via environment variables:
 
-| Env Var     | Source  | Example              |
-| ----------- | ------- | -------------------- |
-| `SMTP_HOST` | .env    | `smtp.gmail.com`     |
-| `SMTP_PORT` | .env    | `587`                |
-| `SMTP_USER` | Doppler | `user@gmail.com`     |
-| `SMTP_PASS` | Doppler | App-Passwort         |
-| `SMTP_FROM` | .env    | `noreply@assixx.com` |
+| Env Var     | Source  | Example                  |
+| ----------- | ------- | ------------------------ |
+| `SMTP_HOST` | Doppler | `smtp.office365.com`     |
+| `SMTP_PORT` | Doppler | `587`                    |
+| `SMTP_USER` | Doppler | `info@assixx.com`        |
+| `SMTP_PASS` | Doppler | M365 App-Passwort        |
+| `SMTP_FROM` | Doppler | `info@assixx.com`        |
+
+> **Migration note (2026-04-29):** SMTP-Provider von Gmail auf Microsoft 365
+> umgestellt. Office365 enforced strict sender-match → `SMTP_FROM` muss
+> `SMTP_USER` matchen (oder ein konfigurierter Alias der Mailbox sein), sonst
+> `5.7.60 SenderNotAllowed`. Alle SMTP-Werte (inkl. HOST/PORT/FROM) liegen
+> jetzt in Doppler — `docker/.env` enthält keine SMTP-Konfiguration mehr.
 
 **Fix applied:** `email-service.ts` previously read `EMAIL_*` env vars, but `docker-compose.yml` injects `SMTP_*`. Aligned to `SMTP_*` as primary, `EMAIL_*` as fallback.
 

@@ -1,10 +1,18 @@
 global:
-  # E-Mail Konfiguration
-  smtp_from: "alerts@assixx.com"
-  smtp_smarthost: "smtp.gmail.com:587"
-  smtp_auth_username: "alerts@assixx.com"
-  smtp_auth_password: "YOUR_APP_PASSWORD" # Aus Environment Variable
-  smtp_auth_identity: "alerts@assixx.com"
+  # E-Mail Konfiguration (Microsoft 365 / Office365)
+  # Auth-User MUSS smtp_from matchen (oder Alias der info@-Mailbox in M365 sein) —
+  # Office365 enforced strict sender match (5.7.60 SenderNotAllowed sonst).
+  #
+  # Secret-Injection-Pipeline (siehe docs/how-to/HOW-TO-DOPPLER-GUIDE.md §12):
+  #   Doppler (SMTP_PASS) → ENV → envsubst → gerenderte alertmanager.yml → Container-Mount.
+  # Alertmanager interpretiert ${VAR} im YAML NICHT von selbst — die Substitution
+  # MUSS deploy-zeit passieren (envsubst), sonst landet der Literal-String als Passwort
+  # im SMTP-AUTH und Office365 antwortet mit 535 5.7.139.
+  smtp_from: "info@assixx.com"
+  smtp_smarthost: "smtp.office365.com:587"
+  smtp_auth_username: "info@assixx.com"
+  smtp_auth_password: "${SMTP_PASS}" # envsubst zur Deploy-Zeit; Doppler-Secret SMTP_PASS
+  smtp_auth_identity: "info@assixx.com"
 
 # Templates für Benachrichtigungen
 templates:
