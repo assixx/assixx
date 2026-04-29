@@ -412,7 +412,10 @@ All 21 DDs APPROVED on 2026-04-26 — see §0.4 table.
 
    ```yaml
    maildev:
-     image: maildev/maildev:latest
+     # ADR-027 §"Image Pinning Discipline" Stage 2: tag + digest.
+     # DD-25 wurde von `:latest` auf 2.2.1@sha256 hochgehärtet (CI-Lint
+     # `.github/workflows/code-quality-checks.yml` rejectet rolling tags).
+     image: maildev/maildev:2.2.1@sha256:180ef51f65eefebb0e7122d8308813c1fd7bff164bc440ce5a3c2feee167a810
      container_name: assixx-maildev
      profiles: [dev]
      ports:

@@ -427,17 +427,23 @@ services:
   #   See docs/how-to/HOW-TO-DEV-SMTP.md for the secret-set commands and the
   #   smoke procedure.
   #
-  # IMAGE TAG: `:latest` follows the masterplan literal value (DD-25). This is
-  # the only `:latest` image in this file — accepted because the container is
-  # dev-profile-only (never reaches CI/CD or production). Consider pinning to
-  # a SHA-tagged stable release if breakage from upstream tag movement bites.
+  # IMAGE TAG: pinned to 2.2.1 + SHA256 digest (ADR-027 §"Image Pinning
+  # Discipline" — promoted from Stage 1 to Stage 2 for this single image).
+  # DD-25 in the masterplan originally specified `:latest`; this is hardened
+  # here because (a) the ADR-027 CI lint rejects rolling tags
+  # (`.github/workflows/code-quality-checks.yml` line ~226), and
+  # (b) Maildev's release cadence is slow — 2.2.1 from 2024-12-12 has been
+  # the head for ~16 months, so manual digest bumps are not a maintenance
+  # burden. `:latest` and `:2.2.1` resolve to byte-identical manifests today;
+  # the digest captures that snapshot deterministically.
   #
   # @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §0.5.5 (Step + verification)
   # @see docs/how-to/HOW-TO-DEV-SMTP.md (setup, smoke, troubleshooting)
+  # @see docs/infrastructure/adr/ADR-027-dockerfile-hardening.md §"Image Pinning"
   # ===========================================================================
   maildev:
     profiles: [dev]
-    image: maildev/maildev:latest
+    image: maildev/maildev:2.2.1@sha256:180ef51f65eefebb0e7122d8308813c1fd7bff164bc440ce5a3c2feee167a810
     container_name: assixx-maildev
     restart: unless-stopped
     deploy:

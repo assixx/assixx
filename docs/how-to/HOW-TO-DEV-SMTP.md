@@ -13,9 +13,9 @@
 
 ## 1. What you get
 
-| Container        | Image                    | Profile | Host port | Internal port | Purpose          |
-| ---------------- | ------------------------ | ------- | --------- | ------------- | ---------------- |
-| `assixx-maildev` | `maildev/maildev:latest` | `dev`   | `1080`    | `1025` (SMTP) | Dev SMTP capture |
+| Container        | Image                                       | Profile | Host port | Internal port | Purpose          |
+| ---------------- | ------------------------------------------- | ------- | --------- | ------------- | ---------------- |
+| `assixx-maildev` | `maildev/maildev:2.2.1@sha256:180ef51f…a810` | `dev`   | `1080`    | `1025` (SMTP) | Dev SMTP capture |
 
 The SMTP port (1025) is **not** published to the host — only sibling containers on
 `assixx-network` can submit mail. The Web-UI (1080) is published so you can browse
@@ -135,10 +135,14 @@ doppler run -- docker-compose --profile dev up -d maildev
 
 ## 7. Notes & follow-ups
 
-- **Image pin:** `maildev/maildev:latest` is the only `:latest` image in
-  `docker-compose.yml` — accepted because the container is dev-profile-only. If
-  upstream tag movement breaks the smoke, pin to a specific release in
-  `docker-compose.yml` and update this guide.
+- **Image pin:** Stage-2-pinned to
+  `maildev/maildev:2.2.1@sha256:180ef51f65eefebb0e7122d8308813c1fd7bff164bc440ce5a3c2feee167a810`
+  (ADR-027 §"Image Pinning Discipline"). The CI lint
+  (`.github/workflows/code-quality-checks.yml`) rejects rolling `:latest` tags;
+  the digest captures the byte-stable 2.2.1 manifest from 2024-12-12. To bump:
+  pull the new tag, copy the new `RepoDigests` entry from
+  `docker image inspect maildev/maildev:<new-tag>`, replace tag + digest in
+  `docker-compose.yml` AND `FEAT_2FA_EMAIL_MASTERPLAN.md` §0.5.5 AND this table.
 - **`sendTestEmail` in masterplan §0.5.5:** the smoke command in the masterplan
   references a function that doesn't exist in `email-service.ts`. Phase 2
   Step 2.9 will add `send2faCode()` (and may incidentally add a `sendTestEmail`
