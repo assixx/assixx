@@ -247,7 +247,10 @@
 
     <!-- Right: Form -->
     <div class="signup-form-side">
-      <div class="signup-card">
+      <div
+        class="signup-card"
+        class:signup-card--verify-stage={isVerifyStage}
+      >
         {#if isVerifyStage}
           <!--
             Inline 2FA verify card content (FEAT_2FA_EMAIL_MASTERPLAN Step 5.3
@@ -476,8 +479,9 @@
                       class="tooltip__content tooltip__content--info tooltip__content--right"
                       role="tooltip"
                     >
-                      Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben,
-                      Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                      Min. 12 Zeichen, max. 72 Zeichen. Mindestens 1 Großbuchstabe, 1
+                      Kleinbuchstabe, 1 Zahl und 1 Sonderzeichen (!@#$%^&* () _ + - = [ ] &#123;
+                      &#125; ; &apos; &quot; \ | , . &lt; &gt; / ?)
                     </span>
                   </span>
                 </label>
@@ -691,7 +695,7 @@
   }
 
   .signup-hero__logo {
-    height: 160px;
+    height: 185px;
     margin-bottom: 36px;
   }
 
@@ -730,6 +734,25 @@
     flex-direction: column;
     width: 100%;
     max-width: 680px;
+  }
+
+  /*
+   * Verify-Stage centriert die Card vertikal innerhalb der `.signup-form-side`.
+   *
+   * WHY: `.signup-form-side` hat `align-items: flex-start` (gewollt für die
+   * 20-Felder-Credentials-Form, die nahe am oberen Rand starten soll, UX-
+   * Request 2026-04-16 „ein wenig hochziehen"). Die Verify-Card ist mit
+   * 6 OTP-Boxen + 2 Buttons + Back-Link aber kurz (~280 px) und hängt damit
+   * im oberen Drittel mit großer Leerfläche darunter — sieht wie ein Bug aus.
+   *
+   * `margin-block: auto` auf einem Flex-Item überschreibt `align-items` des
+   * Parents (CSS Flexbox §8.1) und konsumiert den verfügbaren Platz oben +
+   * unten symmetrisch → vertikal zentriert. Kein Eingriff in die Parent-Regel
+   * nötig, kein Cross-Stage-Side-Effect (Credentials-Stage hat den Modifier
+   * nicht und behält das Top-Aligned-Verhalten).
+   */
+  .signup-card--verify-stage {
+    margin-block: auto;
   }
 
   .signup-title {

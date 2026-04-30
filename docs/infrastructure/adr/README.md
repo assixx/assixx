@@ -83,6 +83,7 @@ ADRs document important architectural decisions:
 | [ADR-052](./ADR-052-shift-handover-protocol.md)                              | Shift Handover Protocol (Schichtübergabe)                    | Accepted   | 2026-04-23 |
 | [ADR-053](./ADR-053-navigation-map-pointer-injection.md)                     | Navigation Map Pointer Injection                             | Accepted   | 2026-04-23 |
 | [ADR-055](./ADR-055-root-account-lifecycle-protection.md)                    | Root Account Lifecycle Protection                            | Accepted   | 2026-04-28 |
+| [ADR-056](./ADR-056-password-validation-policy.md)                           | Password Validation Policy — Strict 4-of-4 + ASCII-only      | Accepted   | 2026-04-30 |
 
 > **Gap note:** ADR-054 is reserved by `FEAT_2FA_EMAIL_MASTERPLAN.md` for "Mandatory Email-Based 2FA" and will be added on completion of that feature.
 

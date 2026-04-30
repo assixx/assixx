@@ -93,6 +93,15 @@ export const MESSAGES = {
   BTN_BACK: 'Zurück zur Registrierung',
   HINT_SPAM: 'Keine E-Mail erhalten? Bitte auch den Spam-Ordner prüfen.',
   RESEND_SUCCESS: 'Neuer Code gesendet. Bitte E-Mail prüfen.',
+  // Post-verify success toast (signup-only). Login lands directly on the
+  // dashboard via same-origin redirect — no toast needed there. For signup
+  // the verify-success branch hops cross-origin to `<subdomain>.<apex>/
+  // signup/oauth-complete?token=…`; surfacing a 5 s acknowledgement before
+  // the hop matches the legacy pre-2FA UX (`showToast` + `SUCCESS_REDIRECT_DELAY`
+  // in the old `handleSubmit`) and gives the user a beat to register that the
+  // origin is about to change.
+  VERIFY_SUCCESS_TITLE: 'Registrierung abgeschlossen',
+  VERIFY_SUCCESS_MESSAGE: 'Sie werden zu Ihrem Dashboard weitergeleitet …',
   ERR_WRONG_CODE: (remaining: number) =>
     remaining > 0 ?
       `Falscher Code. Noch ${remaining} ${remaining === 1 ? 'Versuch' : 'Versuche'} übrig.`

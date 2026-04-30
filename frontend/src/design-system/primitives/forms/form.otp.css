@@ -33,10 +33,10 @@
   .form-field__control--otp {
     flex: 0 0 auto;
 
-    width: 3rem;        /* 48 px – passt in 320-px-Viewport (6×48 + 5×gap < 312) */
-    min-width: 0;       /* override base 100% – Box muss nicht volle Breite */
-    height: 3.25rem;    /* leicht höher als breit – wirkt visuell „Box" */
-    padding: 0;         /* Text mittig per text-align, kein extra padding */
+    width: 3rem; /* 48 px – passt in 320-px-Viewport (6×48 + 5×gap < 312) */
+    min-width: 0; /* override base 100% – Box muss nicht volle Breite */
+    height: 3.25rem; /* leicht höher als breit – wirkt visuell „Box" */
+    padding: 0; /* Text mittig per text-align, kein extra padding */
 
     text-align: center;
     text-transform: uppercase;
@@ -50,7 +50,7 @@
 
   /* Mobile: bei sehr schmalen Viewports etwas kompakter, damit kein
    * Wrap auf zwei Zeilen entsteht (sieht zerstückelt aus bei OTP). */
-  @media (max-width: 360px) {
+  @media (width <= 360px) {
     .form-field__control--otp {
       width: 2.5rem;
       height: 2.75rem;

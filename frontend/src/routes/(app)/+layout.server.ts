@@ -318,6 +318,38 @@ function clearAuthAndRedirect(
  */
 const SINGLE_ROOT_BANNER_DISMISS_COOKIE = 'assixx_single_root_banner_dismissed';
 
+/**
+ * Cookie name for the Unverified-Domain-Banner dismiss flag.
+ *
+ * WHY cookie (not sessionStorage, see commit 2026-04-30):
+ * Same FOUC story as SINGLE_ROOT_BANNER_DISMISS_COOKIE — sessionStorage is
+ * client-only, so SSR always emitted the banner and hydration removed it,
+ * producing a ~1s flash on hard reload. Routing dismiss state through a
+ * cookie lets the server decide *before* rendering whether to emit the
+ * banner at all. Same NOT-HttpOnly rationale (component must write it).
+ */
+const UNVERIFIED_DOMAIN_BANNER_DISMISS_COOKIE = 'assixx_unverified_domain_banner_dismissed';
+
+/**
+ * Cookie name prefix for the Role-Switch-Banner dismiss flag.
+ *
+ * Per-role keying (root/admin/employee/dummy) — mirrors the previous
+ * localStorage scheme `roleSwitchBannerDismissed_${role}`. Only the cookie
+ * matching the user's currently-active role is consulted at render time;
+ * RoleSwitch.svelte clears all of them on actual role switch (matches the
+ * legacy localStorage cleanup loop).
+ *
+ * WHY cookie (not localStorage, see commit 2026-04-30):
+ * Same FOUC story as the other two banners — localStorage is client-only,
+ * SSR rendered the banner blindly, hydration removed it → ~1s flash on
+ * hard reload. Cookie lets the server gate before render. NOT HttpOnly
+ * (component must write it). PERSISTENT (Max-Age=1y) instead of session
+ * cookie — matches the previous localStorage indefinite-persistence
+ * semantics 1:1, since `activeRole` itself is also localStorage-persistent
+ * across browser sessions.
+ */
+const ROLE_SWITCH_BANNER_DISMISS_COOKIE_PREFIX = 'assixx_role_switch_banner_dismissed_';
+
 /** Unauthenticated response */
 const UNAUTHENTICATED_RESPONSE = {
   user: null,
@@ -344,6 +376,12 @@ const UNAUTHENTICATED_RESPONSE = {
   // Drives SingleRootWarningBanner visibility. Default `false` on
   // unauthenticated paths — banner is gated by authentication anyway.
   singleRootBannerDismissed: false,
+  // Drives UnverifiedDomainBanner visibility. Default `false` on
+  // unauthenticated paths — banner is role-gated to root/admin anyway.
+  unverifiedDomainBannerDismissed: false,
+  // Drives RoleSwitchBanner visibility. Default `false` on unauthenticated
+  // paths — banner only renders when role-switched, which requires auth.
+  roleSwitchBannerDismissed: false,
 } as const;
 
 /** Build authenticated response from user data, counts, theme, addons, and labels */
@@ -359,6 +397,8 @@ async function buildAuthenticatedResponse(
   rootCount: number,
   tenantVerified: boolean,
   singleRootBannerDismissed: boolean,
+  unverifiedDomainBannerDismissed: boolean,
+  roleSwitchBannerDismissed: boolean,
 ) {
   return {
     user: mapUserData(userData),
@@ -380,6 +420,16 @@ async function buildAuthenticatedResponse(
     // SINGLE_ROOT_BANNER_DISMISS_COOKIE comment. When `true`, the banner
     // is never emitted into the SSR HTML → no flash on hydration.
     singleRootBannerDismissed,
+    // Server-read dismiss flag for the Unverified-Domain-Banner — see
+    // UNVERIFIED_DOMAIN_BANNER_DISMISS_COOKIE comment. Same rationale as
+    // singleRootBannerDismissed: SSR-suppression eliminates the hydration
+    // flash users saw on hard reload (commit 2026-04-30).
+    unverifiedDomainBannerDismissed,
+    // Server-read dismiss flag for the Role-Switch-Banner. Resolved per
+    // current activeRole — only the cookie matching the user's active role
+    // is consulted, mirroring the legacy localStorage per-role keying.
+    // See ROLE_SWITCH_BANNER_DISMISS_COOKIE_PREFIX comment.
+    roleSwitchBannerDismissed,
   };
 }
 
@@ -510,6 +560,19 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
   // dismissed it — no more 1-second Vite-hydration flash (see commit 2026-04-22).
   const singleRootBannerDismissed = cookies.get(SINGLE_ROOT_BANNER_DISMISS_COOKIE) === '1';
 
+  // Same SSR-suppression for the Unverified-Domain-Banner (commit 2026-04-30):
+  // user reported the same hard-reload flash; cookie pattern fixes it 1:1.
+  const unverifiedDomainBannerDismissed =
+    cookies.get(UNVERIFIED_DOMAIN_BANNER_DISMISS_COOKIE) === '1';
+
+  // Same SSR-suppression for the Role-Switch-Banner. Per-role keying:
+  // only the cookie matching the current activeRole matters at render time
+  // (banner only renders when userRole !== activeRole). When activeRole is
+  // null/unknown, default to `false` — banner won't render anyway.
+  const roleSwitchBannerDismissed =
+    activeRole !== null &&
+    cookies.get(`${ROLE_SWITCH_BANNER_DISMISS_COOKIE_PREFIX}${activeRole}`) === '1';
+
   // Check if RBAC hook already fetched user data (saves ~50-80ms!)
   const rbacUser = locals.user as UserData | undefined;
 
@@ -522,6 +585,8 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
       url.pathname,
       activeRole,
       singleRootBannerDismissed,
+      unverifiedDomainBannerDismissed,
+      roleSwitchBannerDismissed,
     );
   }
 
@@ -535,6 +600,8 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
     url,
     activeRole,
     singleRootBannerDismissed,
+    unverifiedDomainBannerDismissed,
+    roleSwitchBannerDismissed,
   );
 };
 
@@ -555,6 +622,8 @@ async function loadFastPath(
   pathname: string,
   activeRole: string | null,
   singleRootBannerDismissed: boolean,
+  unverifiedDomainBannerDismissed: boolean,
+  roleSwitchBannerDismissed: boolean,
 ) {
   const fetchStart = performance.now();
   const [
@@ -593,6 +662,8 @@ async function loadFastPath(
     rootCount,
     tenantVerified,
     singleRootBannerDismissed,
+    unverifiedDomainBannerDismissed,
+    roleSwitchBannerDismissed,
   );
 }
 
@@ -611,6 +682,8 @@ async function loadUserWithFetch(
   url: URL,
   activeRole: string | null,
   singleRootBannerDismissed: boolean,
+  unverifiedDomainBannerDismissed: boolean,
+  roleSwitchBannerDismissed: boolean,
 ) {
   const fetchStart = performance.now();
   const {
@@ -665,5 +738,7 @@ async function loadUserWithFetch(
     rootCount,
     tenantVerified,
     singleRootBannerDismissed,
+    unverifiedDomainBannerDismissed,
+    roleSwitchBannerDismissed,
   );
 }

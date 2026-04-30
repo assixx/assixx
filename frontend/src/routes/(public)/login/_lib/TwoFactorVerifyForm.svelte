@@ -21,7 +21,6 @@
   import { onMount } from 'svelte';
 
   import { enhance } from '$app/forms';
-  import { resolve } from '$app/paths';
 
   // Global toast store — same surface the parent login page uses for
   // success messages (e.g. `?logout=success`). Replaces a previous inline
@@ -411,6 +410,43 @@
       await update();
     };
   }
+
+  /**
+   * Cancel-action callback — handles "Zurück zur Anmeldung". Mirrors the
+   * signup twin's enhanceCancel: server action clears the apex challenge
+   * cookie + 303s to /login; we hard-nav so load() runs server-side with
+   * the cookie already gone (otherwise client router could short-circuit
+   * and re-render verify before the cookie state catches up).
+   *
+   * Bug discovered + fix mirrored from signup 2026-04-30 evening — the
+   * legacy `<a href={resolve('/login')} data-sveltekit-reload>` only
+   * navigated, never cleared the cookie, so load() re-rendered verify.
+   */
+  function enhanceCancel() {
+    return async ({
+      result,
+      update,
+    }: {
+      result: { type: string; data?: unknown; location?: string };
+      update: () => Promise<void>;
+    }): Promise<void> => {
+      if (result.type === 'redirect') {
+        if (typeof result.location === 'string' && result.location !== '') {
+          window.location.href = result.location;
+          return;
+        }
+        // Defensive fallback — shouldn't happen, but reload is a safe
+        // stage-reset (cookie was deleted server-side regardless).
+        window.location.reload();
+        return;
+      }
+      // Failure path — server-side never returns a failure for a no-arg
+      // cookie-delete, but be defensive: full reload guarantees the user
+      // escapes the verify stage one way or another.
+      await update();
+      window.location.reload();
+    };
+  }
 </script>
 
 <h1 class="verify-heading">{MESSAGES.HEADING}</h1>
@@ -511,11 +547,24 @@
   >
 </form>
 
-<a
-  href={resolve('/login')}
-  class="btn btn-link verify-back"
-  data-sveltekit-reload>{MESSAGES.BTN_BACK}</a
+<!--
+  "Zurück zur Anmeldung" — must POST to `?/cancel` (not just navigate to
+  /login) because the server-side load() reads the still-present
+  challengeToken cookie and renders the verify stage again. The cancel
+  action server-side deletes the cookie + 303s back, breaking the loop.
+  Bug discovered + fixed 2026-04-30 evening; same fix applied to signup twin.
+-->
+<form
+  method="POST"
+  action="?/cancel"
+  use:enhance={enhanceCancel}
+  class="cancel-form"
 >
+  <button
+    type="submit"
+    class="btn btn-link verify-back">{MESSAGES.BTN_BACK}</button
+  >
+</form>
 
 <style>
   .verify-heading {
@@ -559,9 +608,19 @@
     width: 100%;
   }
 
+  /* Cancel-form wraps the "Zurück zur Anmeldung" submit button (was
+     previously a plain <a>; converted to a form so the server action
+     `?/cancel` can clear the apex challenge cookie before the redirect —
+     see enhanceCancel). Spacing migrated from the former `.verify-back`
+     rule to keep layout pixel-identical to the pre-bugfix state. Mirrors
+     the `.resend-form` / `.verify-resend` split. */
+  .cancel-form {
+    margin-top: 0.25rem;
+  }
+
   .verify-back {
     display: block;
-    margin-top: 0.25rem;
+    width: 100%;
     text-align: center;
   }
 </style>

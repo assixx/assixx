@@ -26,12 +26,12 @@
   import { onMount } from 'svelte';
 
   import { enhance } from '$app/forms';
-  import { resolve } from '$app/paths';
 
   // Global toast store — same surface the parent signup page already uses
-  // for success/error alerts. Keeps the resend confirmation on the canonical
-  // UX layer (auto-dismiss + stacking).
-  import { showSuccessAlert } from '$lib/stores/toast';
+  // for success/error alerts. `showSuccessAlert` powers the resend
+  // confirmation; `showToast` (full-shape with progress bar) powers the
+  // post-verify success toast that precedes the cross-origin handoff hop.
+  import { showSuccessAlert, showToast } from '$lib/stores/toast';
 
   import {
     CODE_LENGTH,
@@ -41,6 +41,13 @@
     MESSAGES,
     RESEND_COOLDOWN_SEC,
   } from './2fa-constants';
+  // SUCCESS_REDIRECT_DELAY (5 s) lives in the existing signup-form constants
+  // file because it predates the 2FA refactor (legacy `handleSubmit` used
+  // the same delay before the apex-login redirect). Keeping it there avoids
+  // moving an exported constant and breaking nothing — `2fa-constants.ts`
+  // owns 2FA-specific UI strings, but the temporal-delay value is a
+  // signup-form concern that happens to apply to the post-verify branch.
+  import { SUCCESS_REDIRECT_DELAY } from './constants';
 
   // ---------------------------------------------------------------------------
   // Reactive state — Svelte 5 runes per CODE-OF-CONDUCT-SVELTE
@@ -274,9 +281,30 @@
       // origin and routes to the role-specific dashboard. Cross-origin
       // navigation REQUIRES `window.location.href` — SvelteKit's client
       // router cannot leave the current origin.
+      //
+      // UX delay (signup-only): the legacy `handleSubmit` flow showed a 5 s
+      // success toast with progress bar before redirecting. We restore it
+      // here on the post-verify branch — registration is a multi-step
+      // emotional milestone (form → mail → code → activation), so a brief
+      // celebratory acknowledgement matters more than the millisecond saved
+      // by an immediate hop. `submitting` stays `true` for the full delay
+      // so the verify button cannot re-fire (button is disabled while
+      // `!canSubmit`, and `canSubmit` requires `!submitting`). The login
+      // twin intentionally has NO delay — login is same-origin and the
+      // dashboard load handles the "you are logged in" surface.
       if (result.type === 'redirect') {
         if (typeof result.location === 'string' && result.location !== '') {
-          window.location.href = result.location;
+          showToast({
+            type: 'success',
+            title: MESSAGES.VERIFY_SUCCESS_TITLE,
+            message: MESSAGES.VERIFY_SUCCESS_MESSAGE,
+            duration: SUCCESS_REDIRECT_DELAY,
+            showProgress: true,
+          });
+          const redirectTarget = result.location;
+          setTimeout(() => {
+            window.location.href = redirectTarget;
+          }, SUCCESS_REDIRECT_DELAY);
           return;
         }
         // Defensive fallback — SvelteKit always sets `location` on redirect
@@ -318,6 +346,39 @@
   }
   function asResendSuccess(data: unknown): ResendSuccessShape {
     return typeof data === 'object' && data !== null ? data : {};
+  }
+
+  /**
+   * Cancel-action callback — handles the "Zurück zur Registrierung" submit.
+   * The server action clears the challenge cookie + 303s to /signup; we
+   * hard-nav so the next load() runs server-side with the cookie already
+   * gone (otherwise SvelteKit's client router could short-circuit and
+   * re-render verify before the cookie state catches up).
+   */
+  function enhanceCancel() {
+    return async ({
+      result,
+      update,
+    }: {
+      result: { type: string; data?: unknown; location?: string };
+      update: () => Promise<void>;
+    }): Promise<void> => {
+      if (result.type === 'redirect') {
+        if (typeof result.location === 'string' && result.location !== '') {
+          window.location.href = result.location;
+          return;
+        }
+        // Defensive fallback — shouldn't happen, but reload is a safe
+        // stage-reset (cookie was deleted server-side regardless).
+        window.location.reload();
+        return;
+      }
+      // Failure path — server-side never returns a failure for a no-arg
+      // cookie-delete, but be defensive: full reload guarantees the user
+      // escapes the verify stage one way or another.
+      await update();
+      window.location.reload();
+    };
   }
 
   function enhanceResend() {
@@ -449,11 +510,24 @@
   >
 </form>
 
-<a
-  href={resolve('/signup')}
-  class="btn btn-link verify-back"
-  data-sveltekit-reload>{MESSAGES.BTN_BACK}</a
+<!--
+  "Zurück zur Registrierung" — must POST to `?/cancel` (not just navigate to
+  /signup) because the server-side load() reads the still-present
+  challengeToken cookie and renders the verify stage again. The cancel
+  action server-side deletes the cookie + 303s back, breaking the loop.
+  Bug discovered 2026-04-30 evening; same fix applied to the login twin.
+-->
+<form
+  method="POST"
+  action="?/cancel"
+  use:enhance={enhanceCancel}
+  class="cancel-form"
 >
+  <button
+    type="submit"
+    class="btn btn-link verify-back">{MESSAGES.BTN_BACK}</button
+  >
+</form>
 
 <style>
   .verify-heading {
@@ -496,9 +570,19 @@
     width: 100%;
   }
 
+  /* Cancel-form is the wrapper around the "Zurück zur Registrierung" submit
+     button (was previously a plain <a>; converted to a form so the server
+     action `?/cancel` can clear the apex challenge cookie before the
+     redirect — see enhanceCancel above). Spacing migrated from the former
+     `.verify-back` rule to keep layout pixel-identical to the pre-bugfix
+     state (mirrors the `.resend-form` / `.verify-resend` split). */
+  .cancel-form {
+    margin-top: 0.25rem;
+  }
+
   .verify-back {
     display: block;
-    margin-top: 0.25rem;
+    width: 100%;
     text-align: center;
   }
 </style>

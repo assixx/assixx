@@ -11,32 +11,41 @@
   `invalidateAll()` per masterplan §5.1 / v0.3.0 S4). Parent gates render via
   {#if data.tenantVerified === false && ['root','admin'].includes(role)}.
 
-  Dismiss is session-scoped (sessionStorage): the X button hides the banner
-  for the current browser tab/session only. On next login it reappears while
-  the underlying condition persists — by design, mirrors SingleRootWarningBanner.
+  Dismiss is session-scoped via a session cookie (stirbt beim Browser-Close):
+  the X button writes the cookie and hides the banner locally. The gate in
+  +layout.svelte reads `data.unverifiedDomainBannerDismissed` (populated from
+  the same cookie in +layout.server.ts) — SSR therefore never emits the banner
+  after dismiss, eliminating the hydration flash we had with sessionStorage
+  (commit 2026-04-30, mirrors SingleRootWarningBanner-Migration 2026-04-22).
 
   CSS classes are component-scoped (unverified-domain-banner-*); CSS variables
   are shared with SingleRootWarningBanner / RoleSwitchBanner (--banner-warning-*)
   for visual parity with the existing warning-banner stack.
 
   @see masterplan §5.3 (banner spec), §0.2.5 #16 (Root + Admin readable),
-       SingleRootWarningBanner.svelte (pattern this mirrors)
+       SingleRootWarningBanner.svelte (cookie-pattern this mirrors)
 -->
 <script lang="ts">
   import { browser } from '$app/environment';
   import { resolve } from '$app/paths';
 
-  // sessionStorage key — namespaced to avoid collisions with other banners
-  const DISMISS_KEY = 'assixx.security.unverified-domain-banner.dismissed';
+  // Cookie name — MUST stay in sync with UNVERIFIED_DOMAIN_BANNER_DISMISS_COOKIE
+  // in `(app)/+layout.server.ts`. Session cookie (no Max-Age) so it dies on
+  // browser close, mirroring the previous sessionStorage semantics.
+  const DISMISS_COOKIE = 'assixx_unverified_domain_banner_dismissed';
 
-  // Read dismiss state only on the client; SSR always renders the banner so
-  // it is visible on first paint (brief flash if dismissed is acceptable —
-  // mirrors SingleRootWarningBanner's same-trade-off rationale).
-  let dismissed = $state(browser && sessionStorage.getItem(DISMISS_KEY) === '1');
+  // Local hide — parent gate already honors the cookie on next navigation/SSR.
+  // `false` here is always correct: if the cookie was already set, the parent
+  // gate would not have mounted us in the first place.
+  let dismissed = $state(false);
 
   function handleDismiss(): void {
     if (browser) {
-      sessionStorage.setItem(DISMISS_KEY, '1');
+      // Session cookie: SameSite=Lax survives the OAuth-redirect round-trip,
+      // Path=/ so every authenticated route sees it, no Secure flag so it
+      // works on http://*.localhost during dev (browser ignores Secure on
+      // localhost anyway, but omitting is explicit).
+      document.cookie = `${DISMISS_COOKIE}=1; Path=/; SameSite=Lax`;
     }
     dismissed = true;
   }

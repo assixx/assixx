@@ -554,4 +554,23 @@ export const actions: Actions = {
    * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §5.2
    */
   resend: handleResendAction,
+
+  /**
+   * 2FA cancel action — "Zurück zur Anmeldung" submit. Without this action
+   * a `<a href="/login">` would just hard-navigate to /login, where load()
+   * reads the still-present `challengeToken` cookie and re-renders the
+   * verify stage → user is stuck until the cookie's 10-min TTL expires.
+   *
+   * Cleanup scope (KISS, mirrors signup twin):
+   *   1. Apex `challengeToken` cookie deleted → next load() falls through
+   *      to `stage: 'credentials'`.
+   *   2. Backend Redis record self-expires after `CODE_TTL_SEC` (10 min).
+   *
+   * Bug discovered + fix mirrored from signup 2026-04-30 evening.
+   * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §5.2
+   */
+  cancel: ({ cookies }) => {
+    cookies.delete('challengeToken', { path: '/' });
+    redirect(303, '/login');
+  },
 };

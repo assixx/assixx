@@ -253,7 +253,9 @@
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip"
               >
-                Min. 12 Zeichen, max. 72 Zeichen. 3 von 4: Groß, Klein, Zahlen, Sonderzeichen
+                Min. 12 Zeichen, max. 72 Zeichen. Mindestens 1 Großbuchstabe, 1 Kleinbuchstabe, 1
+                Zahl und 1 Sonderzeichen (!@#$%^&* () _ + - = [ ] &#123; &#125; ; &apos; &quot; \ |
+                , . &lt; &gt; / ?)
               </span>
             </span>
           </label>

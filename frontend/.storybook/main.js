@@ -32,7 +32,8 @@ export default {
         // Point to our minimal Storybook-only Vite config.
         // Without this, Storybook resolves projectRoot=frontend/ and
         // loads frontend/vite.config.ts which has sveltekit() + sentry.
-        viteConfigPath: 'frontend/.storybook/vite.config.js',
+        // Path is resolved relative to cwd; pnpm --filter sets cwd=frontend/.
+        viteConfigPath: '.storybook/vite.config.js',
       },
     },
   },
@@ -43,12 +44,14 @@ export default {
     const tailwindcss = await import('@tailwindcss/vite');
     const path = await import('path');
 
-    // Force root to project root (Storybook sets it to configDir by default)
-    const projectRoot = process.cwd();
-    config.root = projectRoot;
+    // pnpm --filter assixx-frontend sets cwd=frontend/, which is the
+    // correct Vite root for Storybook (stories live under ./src/...).
+    // Storybook would otherwise default root to configDir (.storybook/).
+    const frontendRoot = process.cwd();
+    config.root = frontendRoot;
 
     // Absolute filesystem paths for aliases
-    const frontendSrc = path.resolve(projectRoot, 'frontend/src');
+    const frontendSrc = path.resolve(frontendRoot, 'src');
 
     return mergeConfig(config, {
       resolve: {

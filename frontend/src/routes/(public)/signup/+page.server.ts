@@ -361,4 +361,31 @@ export const actions: Actions = {
    * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §5.3
    */
   resend: handleResendAction,
+
+  /**
+   * 2FA cancel action — invoked from the verify card's "Zurück zur
+   * Registrierung" button. Without this action a `<a href="/signup">` link
+   * would just hard-navigate to /signup, where `load()` reads the still-
+   * present `challengeToken` cookie and returns `stage: 'verify'` again →
+   * the user is stuck in the verify stage until the cookie's 10-min TTL
+   * expires.
+   *
+   * Cleanup scope (KISS):
+   *   1. Apex `challengeToken` cookie deleted → next load() falls through
+   *      to `stage: 'credentials'`.
+   *   2. Backend Redis record (`2fa:challenge:{token}`) self-expires after
+   *      `CODE_TTL_SEC` (10 min) — no backend abort endpoint needed.
+   *   3. Pending tenant + user rows are reaped by the stale-pending-reaper
+   *      cron (Step 2.11) — no eager DELETE here.
+   *
+   * 303 to /signup so the browser's POST→GET cycle re-runs `load()` and
+   * surfaces `stage='credentials'` cleanly. SvelteKit's `redirect()` is a
+   * thrown sentinel; the `enhanceCancel` callback in TwoFactorVerifyForm
+   * hard-navs on `result.type === 'redirect'` to guarantee the load runs
+   * server-side with the cookie already cleared.
+   */
+  cancel: ({ cookies }) => {
+    cookies.delete('challengeToken', { path: '/' });
+    redirect(303, '/signup');
+  },
 };
