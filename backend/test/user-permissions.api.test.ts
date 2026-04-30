@@ -39,8 +39,12 @@ beforeAll(async () => {
   // Ensure test employee exists
   await ensureTestEmployee(auth.authToken);
 
-  // Get employee UUID from users list
-  const usersRes = await fetch(`${BASE_URL}/users?limit=50`, {
+  // Get employee UUID from users list.
+  // Filter by role + bump limit — matches the `helpers.ts` ensureTestEmployee
+  // pattern (lines 646-651). Test tenant fixtures grew past 50 users (kvp
+  // fixtures, 2fa victims), so unfiltered `?limit=50` no longer contains
+  // `employee@assixx.com` and `.find()` returned undefined → throw at line 52.
+  const usersRes = await fetch(`${BASE_URL}/users?role=employee&limit=100`, {
     headers: authOnly(auth.authToken),
   });
   const usersBody = (await usersRes.json()) as JsonBody;

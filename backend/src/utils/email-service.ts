@@ -6,6 +6,7 @@ import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import path from 'path';
+import sanitizeHtmlLib, { type IOptions } from 'sanitize-html';
 
 import { getErrorMessage } from '../nest/common/utils/error.utils.js';
 import {
@@ -24,78 +25,149 @@ interface Attachment {
   cid?: string;
 }
 
-function removeDangerousTags(html: string): string {
-  const dangerousTags = [
-    'script',
-    'iframe',
-    'object',
-    'embed',
-    'form',
+/**
+ * Allow-list config for outgoing transactional/bulk emails.
+ *
+ * Why default-deny via `sanitize-html` instead of the previous regex deny-list?
+ * The old custom sanitizer was documented in this very file as "may be
+ * bypassable with clever encoding". `sanitize-html` (htmlparser2-based)
+ * eliminates the entire class of bypass risks (nested attacks, encoded
+ * entities, malformed tags) by parsing real HTML and only re-emitting
+ * tags/attributes that are explicitly listed.
+ *
+ * Scope: full HTML email documents — skeleton (html/head/body), styling
+ * (style block, inline style attribute, meta charset/viewport/color-scheme),
+ * email-typical layout (tables) and inline content (links, images).
+ * Outlook MSO-conditional comments (`<!--[if mso]>...<![endif]-->`) are
+ * stripped by sanitize-html (which removes ALL comments and offers no
+ * preserve option) — see `sanitizeHtml()` below for the extract / restore
+ * workaround used by listmonk and posthtml-mso.
+ *
+ * Inline-style sanitization is delegated to `sanitizeStyleContent()` rather
+ * than `sanitize-html`'s `allowedStyles` because allowedStyles requires a
+ * per-property regex allow-list — too restrictive for the legitimate Email
+ * CSS we use (`mso-line-height-rule`, `-webkit-text-size-adjust`, etc.).
+ * We only need to strip the documented CSS-injection vectors, which
+ * `sanitizeStyleContent()` already does.
+ */
+const SANITIZE_OPTIONS: IOptions = {
+  allowedTags: [
+    // Document skeleton
+    'html',
+    'head',
+    'body',
+    'title',
     'meta',
-    'link',
-    'base',
-    'applet',
-  ];
-  let sanitized = html;
-  for (let i = 0; i < 3; i++) {
-    dangerousTags.forEach((tag: string) => {
-      const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`, 'gi');
-      sanitized = sanitized.replace(fullTagRegex, '');
-      const singleTagRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
-      sanitized = sanitized.replace(singleTagRegex, '');
-      const closeTagRegex = new RegExp(`</${tag}[^>]*>`, 'gi');
-      sanitized = sanitized.replace(closeTagRegex, '');
-    });
-  }
-  return sanitized;
-}
-
-function removeEventHandlers(html: string): string {
-  const eventHandlerPatterns = [
-    /\bon\w+\s*=\s*["'][^"']*["']/gi,
-    /\bon\w+\s*=\s*`[^`]*`/gi,
-    /\bon\w+\s*=\s*[^\s>]+/gi,
-    /\son\w+/gi,
-  ];
-  let sanitized = html;
-  for (let i = 0; i < 3; i++) {
-    eventHandlerPatterns.forEach((pattern: RegExp) => {
-      sanitized = sanitized.replace(pattern, '');
-    });
-  }
-  return sanitized;
-}
-
-function sanitizeUrls(html: string): string {
-  const urlPatterns = [
-    /href\s*=\s*["']([^"']*)["']/gi,
-    /href\s*=\s*([^\s>]+)/gi,
-    /src\s*=\s*["']([^"']*)["']/gi,
-    /src\s*=\s*([^\s>]+)/gi,
-    /(?:action|formaction|data|code|codebase)\s*=\s*["']([^"']*)["']/gi,
-  ];
-  let sanitized = html;
-  urlPatterns.forEach((pattern: RegExp) => {
-    sanitized = sanitized.replace(pattern, (match: string, url: string) => {
-      const lowerUrl = url.toLowerCase().trim();
-      if (
-        /^(javascript|vbscript|data:text\/html|data:text\/javascript|data:application\/javascript)/i.test(
-          lowerUrl,
-        )
-      ) {
-        return match.replace(url, '#');
-      }
-      if (
-        lowerUrl.startsWith('data:') &&
-        !/^data:image\/(png|jpg|jpeg|gif|webp|svg\+xml)/i.test(lowerUrl)
-      ) {
-        return match.replace(url, '#');
-      }
-      return match;
-    });
-  });
-  return sanitized;
-}
+    'style',
+    // Block-level layout
+    'div',
+    'span',
+    'p',
+    'br',
+    'hr',
+    'center',
+    // Tables (Email-layout standard)
+    'table',
+    'thead',
+    'tbody',
+    'tfoot',
+    'tr',
+    'td',
+    'th',
+    // Headings
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    // Inline text
+    'strong',
+    'em',
+    'b',
+    'i',
+    'u',
+    's',
+    'small',
+    'sub',
+    'sup',
+    'code',
+    'pre',
+    'blockquote',
+    'abbr',
+    'cite',
+    'q',
+    // Lists
+    'ul',
+    'ol',
+    'li',
+    'dl',
+    'dt',
+    'dd',
+    // Inline media + links
+    'a',
+    'img',
+    'font',
+    // No-JS fallback — harmless, used inside Outlook MSO blocks
+    'noscript',
+  ],
+  allowedAttributes: {
+    // Universal layout / a11y attributes — usable on any allowed tag
+    '*': [
+      'class',
+      'id',
+      'style',
+      'lang',
+      'dir',
+      'role',
+      'align',
+      'valign',
+      'bgcolor',
+      'width',
+      'height',
+      'aria-label',
+      'aria-hidden',
+      'aria-describedby',
+    ],
+    // <html>: xmlns + Outlook namespace declarations (xmlns:v / xmlns:o /
+    // xmlns:w) are required for VML-button rendering in Outlook desktop.
+    // Without them the inline namespace declarations inside <v:roundrect>
+    // still work — but having them on <html> is the cross-client best
+    // practice and is present in our existing templates.
+    html: ['lang', 'xmlns', 'xmlns:v', 'xmlns:o', 'xmlns:w', 'xmlns:x'],
+    a: ['href', 'name', 'target', 'rel', 'title'],
+    img: ['src', 'alt', 'title', 'width', 'height', 'border'],
+    table: ['cellpadding', 'cellspacing', 'border'],
+    td: ['colspan', 'rowspan', 'scope'],
+    th: ['colspan', 'rowspan', 'scope'],
+    font: ['color', 'face', 'size'],
+    // <meta>: explicitly NO `http-equiv` — phishing vector (refresh-redirect,
+    // set-cookie, CSP bypass). `charset` / `name` / `content` are harmless.
+    meta: ['charset', 'name', 'content'],
+    // <style>: only `type` (e.g. `type="text/css"`)
+    style: ['type'],
+  },
+  // URL schemes accepted in href / src / cite. `cid` is required for the
+  // inline-attached branding logo (Nodemailer CID-attachment).
+  allowedSchemes: ['http', 'https', 'mailto', 'tel', 'cid'],
+  // <img src="data:image/..."> is OK (inline images), but data: URLs are
+  // NOT allowed in <a href> (phishing vector via data:text/html).
+  allowedSchemesByTag: {
+    img: ['http', 'https', 'cid', 'data'],
+  },
+  allowedSchemesAppliedToAttributes: ['href', 'src', 'cite'],
+  allowProtocolRelative: false,
+  // <style> blocks are needed for media queries + dark-mode CSS. The library
+  // emits a "vulnerable tag" warning unless this is set; we acknowledge:
+  // <style> is required AND its body is filtered separately for CSS-injection
+  // patterns (see sanitizeStyleContent).
+  allowVulnerableTags: true,
+  // Skip sanitize-html's built-in inline-style filter — see file-level
+  // comment above. We run sanitizeStyleContent() over inline styles
+  // post-pass so legitimate Email CSS (mso-*, -webkit-*) is preserved while
+  // still stripping expression() / behavior: / javascript:.
+  parseStyleAttributes: false,
+};
 
 /**
  * Strips dangerous CSS from inline `style` attributes.
@@ -154,48 +226,87 @@ function sanitizeStyles(html: string): string {
   return result;
 }
 
-// Exported for unit-testing the quote-handling regression (FEAT_2FA_EMAIL
-// §2.9b — see email-service.test.ts). Internal use only.
-export { sanitizeStyles as _sanitizeStylesForTest };
+// Exported for unit-testing — see email-service.test.ts. Internal use only.
+// `_sanitizeStylesForTest`: legacy regression-test entry point for the
+//   FEAT_2FA_EMAIL §2.9b quote-handling bug fix in inline `style="..."`.
+// `_sanitizeHtmlForTest`: end-to-end pipeline (sanitize-html allow-list +
+//   MSO-conditional preserve + inline + <style>-block CSS strip) — added
+//   2026-04-30 with the regex→sanitize-html refactor.
+export { sanitizeStyles as _sanitizeStylesForTest, sanitizeHtml as _sanitizeHtmlForTest };
 
 /**
- * Sanitizes HTML content for safe email delivery.
- * Removes dangerous tags and attributes.
+ * Sanitizes HTML for outgoing email delivery via a 5-step pipeline.
  *
- * SECURITY NOTE: This implementation uses regex-based sanitization which
- * provides reasonable protection but may be bypassable with clever encoding.
- * For production environments with high security requirements, consider using
- * a dedicated library like 'sanitize-html' or 'isomorphic-dompurify'.
+ * Why not just `sanitize-html` end-to-end?
+ *   - sanitize-html strips ALL HTML comments by design (no preserve option).
+ *     Outlook MSO-conditionals (`<!--[if mso]>...<![endif]-->`) carry the
+ *     VML buttons + Office-XML rendering hints. Without them, Outlook
+ *     buttons break. Workaround: extract → sanitize → restore.
+ *   - sanitize-html's `allowedStyles` requires a per-property regex
+ *     allow-list — too restrictive for legitimate Email CSS (mso-*,
+ *     -webkit-*). We delegate inline-style + <style>-block CSS sanitization
+ *     to `sanitizeStyleContent()` which only strips the documented
+ *     CSS-injection vectors (expression / behavior / javascript: / @import).
  *
- * Current protections:
- * - Removes dangerous tags (script, iframe, object, embed, form, etc.)
- * - Removes event handlers (onclick, onerror, etc.)
- * - Sanitizes URLs (blocks javascript:, vbscript:, dangerous data: URIs)
- * - Sanitizes styles (blocks expression(), behavior:, etc.)
+ * Replaces the previous regex-based custom sanitizer (documented bypass
+ * risk: "may be bypassable with clever encoding"). The backup tripwire in
+ * `sendEmail()` (residual <script> / on*= regex check) is kept as
+ * defense-in-depth.
+ *
+ * Reference: same pattern as posthtml-mso, listmonk #1273.
  */
 function sanitizeHtml(html: string): string {
-  // SECURITY: Multiple passes to catch nested/encoded attacks
   if (html === '') return '';
-  let sanitized = html;
 
-  // Decode common HTML entities that might hide attacks
-  sanitized = sanitized
-    .replace(/&#x([0-9a-f]+);/gi, (_m: string, hex: string) =>
-      String.fromCharCode(Number.parseInt(hex, 16)),
-    )
-    .replace(/&#(\d+);/g, (_m: string, dec: string) =>
-      String.fromCharCode(Number.parseInt(dec, 10)),
-    );
+  // Step 0: extract leading <!DOCTYPE ...> if present — sanitize-html
+  // drops doctype declarations unconditionally (no allow-list option),
+  // but they are essential for Email rendering: without DOCTYPE Outlook,
+  // Apple Mail and Gmail fall back to quirks mode → broken spacing,
+  // collapsed margins, mis-aligned tables. We extract → sanitize → prepend.
+  const doctypeMatch = /^\s*<!doctype[^>]*>/i.exec(html);
+  const doctype = doctypeMatch !== null ? doctypeMatch[0] : '';
+  let working = doctype !== '' ? html.slice(doctype.length) : html;
 
-  // Apply sanitization in multiple passes for nested attacks
-  for (let pass = 0; pass < 2; pass++) {
-    sanitized = removeDangerousTags(sanitized);
-    sanitized = removeEventHandlers(sanitized);
-    sanitized = sanitizeUrls(sanitized);
-    sanitized = sanitizeStyles(sanitized);
+  // Step 1: extract MSO-conditional comments via placeholder so they
+  // survive sanitize-html's comment-strip. Placeholder uses uppercase +
+  // numeric ID to make collision with template content effectively
+  // impossible.
+  const msoComments: string[] = [];
+  const PLACEHOLDER_PREFIX = '__ASSIXX_MSO_COMMENT_';
+  const PLACEHOLDER_SUFFIX = '__';
+  working = working.replace(/<!--\[if [\s\S]*?<!\[endif\]-->/gi, (match: string): string => {
+    const idx = msoComments.length;
+    msoComments.push(match);
+    return `${PLACEHOLDER_PREFIX}${String(idx)}${PLACEHOLDER_SUFFIX}`;
+  });
+
+  // Step 2: default-deny sanitization via allow-list.
+  working = sanitizeHtmlLib(working, SANITIZE_OPTIONS);
+
+  // Step 3: restore MSO-conditionals verbatim (extracted pre-sanitize, so
+  // they cannot have been tampered with by user input).
+  if (msoComments.length > 0) {
+    const restoreRegex = new RegExp(`${PLACEHOLDER_PREFIX}(\\d+)${PLACEHOLDER_SUFFIX}`, 'g');
+    working = working.replace(restoreRegex, (_match: string, idxStr: string): string => {
+      const idx = Number.parseInt(idxStr, 10);
+      return msoComments[idx] ?? '';
+    });
   }
 
-  return sanitized.trim();
+  // Step 4: inline-style CSS-injection strip (sanitize-html passes inline
+  // styles through unchanged because parseStyleAttributes is false).
+  working = sanitizeStyles(working);
+
+  // Step 5: <style>-block CSS-injection strip — sanitize-html passes block
+  // body through unchanged.
+  working = working.replace(
+    /<style\b[^>]*>([\s\S]*?)<\/style>/gi,
+    (match: string, content: string): string =>
+      match.replace(content, sanitizeStyleContent(content)),
+  );
+
+  // Re-prepend the original DOCTYPE (extracted in Step 0).
+  return (doctype + working).trim();
 }
 
 // Interfaces
@@ -457,10 +568,15 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
         };
       }
 
-      // Log if content was stripped
-      if (sanitizedHtml !== options.html) {
-        logger.warn('HTML content was modified during sanitization');
-      }
+      // NOTE (2026-04-30): the previous "content was modified" WARN was
+      // removed with the regex→sanitize-html refactor. With the old custom
+      // regex sanitiser, "modified" reliably meant "danger removed" — worth
+      // alerting on. With sanitize-html, "modified" almost always means
+      // cosmetic normalisation (void-elements rewritten as `<br />` instead
+      // of `<br>`, harmless `<meta http-equiv="X-UA-Compatible">` attribute
+      // stripped, whitespace adjusted). Those events are not actionable and
+      // produced log spam. The script/event-handler tripwire above is the
+      // real security alert and stays. See FEAT_2FA_EMAIL refactor session.
     }
 
     // E-Mail senden

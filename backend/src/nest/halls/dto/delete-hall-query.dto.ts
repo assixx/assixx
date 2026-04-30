@@ -14,8 +14,14 @@ function coerceToBooleanOrPassthrough(val: unknown): unknown {
   return val;
 }
 
+/**
+ * `.optional()` MUST sit on the outer wrapper (after `z.preprocess`) — Zod 4.x
+ * broke the inner-`.optional()` form: `z.preprocess(fn, z.boolean().optional())`
+ * reports "expected nonoptional, received undefined" when the field is missing.
+ * Same regression that forced the PaginationSchema migration. See ADR-030 §4.
+ */
 export const DeleteHallQuerySchema = z.object({
-  force: z.preprocess(coerceToBooleanOrPassthrough, z.boolean().optional()),
+  force: z.preprocess(coerceToBooleanOrPassthrough, z.boolean()).optional(),
 });
 
 export class DeleteHallQueryDto extends createZodDto(DeleteHallQuerySchema) {}

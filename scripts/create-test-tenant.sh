@@ -1,14 +1,30 @@
 #!/bin/bash
 # =====================================================
-# Create Test Tenant for Development
+# Create Test Tenant for Development (Signup-API path)
 # =====================================================
 #
-# Erstellt den `assixx`-Test-Tenant über die Signup API.
-# Benutzt den offiziellen Signup-Flow — kein manuelles SQL.
+# Erstellt den `assixx`-Test-Tenant über `POST /api/v2/signup`.
+# Smoke-Test des live Signup-Flows — kein manuelles SQL.
 #
-# WHY: Migration weg von `apitest`/`apitest.de` (fremde reale Domain →
-# Catch-All-Risiko bei Password-Reset/Notification-Mails). `assixx.com` ist
-# projekt-eigene Domain, daher sicher.
+# === ALTERNATIVE (bevorzugt für Dev-Setup): ===
+#
+#   doppler run -- pnpm run db:seed
+#
+# Der Seed (`database/seeds/002_test-tenants-dev-only.sql`) legt 5 Dev-Tenants
+# atomar an (assixx + firma-a + firma-b + scs + unverified-e2e), mit fixed IDs
+# 1-5 (API-Tests verlassen sich darauf), `is_active=1` und verifizierten
+# Domains. Voraussetzung: leere `tenants`-Tabelle (TRUNCATE oder DROP SCHEMA).
+# Siehe docs/how-to/HOW-TO-CREATE-TEST-USER.md.
+#
+# === WANN DIESES SCRIPT VERWENDEN: ===
+#
+#   - Smoke-Test der Signup-API nach Backend-Refactor
+#   - Frontend-Dev ohne Cross-Tenant-Tests (firma-a/b nicht nötig)
+#   - Nach `db:seed` REDUNDANT — Script erkennt existierenden Tenant + exited
+#
+# WHY assixx (statt apitest): Migration 2026-04 weg von `apitest`/`apitest.de`
+# (fremde reale Domain → Catch-All-Risiko bei Password-Reset/Notification-Mails).
+# `assixx.com` ist projekt-eigene Domain.
 #
 # VORAUSSETZUNG: Backend muss laufen (http://localhost:3000/health)
 #
@@ -21,6 +37,12 @@
 #   Email:    info@assixx.com
 #   Passwort: ApiTest12345!
 #   Rolle:    Root (has_full_access = true)
+#
+# KNOWN QUIRK (feat/add-2FA, 2026-04-30): Signup legt User mit is_active=0 an,
+# 2FA-Verifikations-Mail erreicht Mailpit pending nicht zuverlässig. Quick-Fix:
+#   docker exec assixx-postgres psql -U assixx_user -d assixx \
+#     -c "UPDATE users SET is_active = 1 WHERE email = 'info@assixx.com';"
+# `pnpm run db:seed` umgeht dies komplett (setzt is_active=1 direkt).
 #
 # =====================================================
 

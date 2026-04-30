@@ -20,6 +20,11 @@
   import { mapOAuthErrorReason } from '$lib/utils/oauth';
   import { getTokenManager } from '$lib/utils/token-manager';
 
+  // Inline 2FA-verify card content — rendered when `load` returns
+  // `stage: 'verify'` (httpOnly challengeToken cookie present).
+  // FEAT_2FA_EMAIL_MASTERPLAN Step 5.2 v0.8.1 (inline-card revision).
+  import TwoFactorVerifyForm from './_lib/TwoFactorVerifyForm.svelte';
+
   const log = createLogger('LoginHandoff');
 
   import type { ActionData, PageData } from './$types';
@@ -36,7 +41,7 @@
   const publicEnv = env as Record<string, string | undefined>;
   const turnstileEnabled = (publicEnv.PUBLIC_TURNSTILE_SITE_KEY ?? '') !== '';
   let turnstileToken = $state('');
-  let turnstileRef: { reset: () => void } | undefined;
+  let turnstileRef = $state<{ reset: () => void } | undefined>(undefined);
 
   // =============================================================================
   // SVELTE 5 RUNES - Reactive State
@@ -49,7 +54,7 @@
   let error: string | null = $state(null);
   let showToast = $state(false);
   let isTimeout = $state(false);
-  let emailRef: HTMLInputElement | undefined;
+  let emailRef = $state<HTMLInputElement | undefined>(undefined);
 
   // Toast auto-dismiss configuration (1:1 like legacy)
   const TOAST_DURATION_SECONDS = 3;
@@ -150,6 +155,13 @@
 
   // Button text - computed from loading state
   const buttonText = $derived(loading ? 'Anmelden...' : 'Anmelden');
+
+  // FEAT_2FA_EMAIL_MASTERPLAN Step 5.2 v0.8.1 — `data.stage` is set by the
+  // `load` function based on the httpOnly `challengeToken` cookie. When a
+  // password login succeeds with `stage='challenge_required'`, the action
+  // mints the cookie and 303-redirects back to /login; load then returns
+  // `stage='verify'` and the card body swaps to the inline TwoFactorVerifyForm.
+  const isVerifyStage = $derived(data.stage === 'verify');
 
   // =============================================================================
   // Toast Helpers (1:1 like legacy login-form-controller.ts)
@@ -542,8 +554,13 @@
         </div>
       {/if}
 
-      <!-- Form Action Error (from server) -->
-      {#if form?.error}
+      <!--
+        Form Action Error (from server) — only shown on the credentials stage.
+        The verify stage's `TwoFactorVerifyForm` owns its own inline error
+        rendering via the enhance callback, so duplicating the toast here
+        would surface the same wrong-code message twice.
+      -->
+      {#if form?.error !== undefined && form.error !== '' && !isVerifyStage}
         <div
           class="toast toast--error"
           data-temp-toast="error"
@@ -558,138 +575,150 @@
         </div>
       {/if}
 
-      <form
-        method="POST"
-        use:enhance={() => {
-          loading = true;
-          return async ({ result, update }) => {
-            loading = false;
+      {#if isVerifyStage}
+        <!--
+          Inline 2FA verify card content (FEAT_2FA_EMAIL_MASTERPLAN Step 5.2
+          v0.8.1, inline-design revision). Component owns its own state +
+          server-action enhance callbacks (`?/verify`, `?/resend` on the
+          parent route). The credentials form, OAuth section, and footer
+          links are intentionally hidden in this stage — only the code-entry
+          card body is rendered, matching the user-requested single-card UX.
+        -->
+        <TwoFactorVerifyForm />
+      {:else}
+        <form
+          method="POST"
+          action="?/login"
+          use:enhance={() => {
+            loading = true;
+            return async ({ result, update }) => {
+              loading = false;
 
-            // Session 12c (ADR-050): handoff-redirect branch MUST come FIRST.
-            // Refresh tokens land on the subdomain origin via handleHandoff
-            // (we don't persist them here). We do use the short-lived access
-            // token client-side for ONE purpose: minting the ADR-022 escrow
-            // unlock ticket so the subdomain can recover the E2E private key
-            // without a password re-prompt (2026-04-22 amendment). See
-            // `mintUnlockTicketOrFallback` above for the full rationale +
-            // fail-closed semantics.
-            //
-            // We intentionally skip TokenManager.setTokens(), localStorage,
-            // setActiveRole(), setLoginPassword() etc. — the subdomain's own
-            // `/signup/oauth-complete` consumer sets all of that on its own
-            // origin via Session 12's handleHandoff(). The login-password
-            // bridge is moot because this is a cross-origin redirect; module
-            // memory dies at `window.location.href`.
-            if (result.type === 'success' && isHandoffRedirectData(result.data)) {
-              const { redirectTo, accessToken, user: handoffUser } = result.data;
-              const finalUrl = await mintUnlockTicketOrFallback(
-                redirectTo,
-                accessToken,
-                handoffUser.id,
-                password,
-              );
-              window.location.href = finalUrl;
-              return;
-            }
+              // Session 12c (ADR-050): handoff-redirect branch MUST come FIRST.
+              // Refresh tokens land on the subdomain origin via handleHandoff
+              // (we don't persist them here). We do use the short-lived access
+              // token client-side for ONE purpose: minting the ADR-022 escrow
+              // unlock ticket so the subdomain can recover the E2E private key
+              // without a password re-prompt (2026-04-22 amendment). See
+              // `mintUnlockTicketOrFallback` above for the full rationale +
+              // fail-closed semantics.
+              //
+              // We intentionally skip TokenManager.setTokens(), localStorage,
+              // setActiveRole(), setLoginPassword() etc. — the subdomain's own
+              // `/signup/oauth-complete` consumer sets all of that on its own
+              // origin via Session 12's handleHandoff(). The login-password
+              // bridge is moot because this is a cross-origin redirect; module
+              // memory dies at `window.location.href`.
+              if (result.type === 'success' && isHandoffRedirectData(result.data)) {
+                const { redirectTo, accessToken, user: handoffUser } = result.data;
+                const finalUrl = await mintUnlockTicketOrFallback(
+                  redirectTo,
+                  accessToken,
+                  handoffUser.id,
+                  password,
+                );
+                window.location.href = finalUrl;
+                return;
+              }
 
-            if (result.type === 'success' && isSuccessResultData(result.data)) {
-              const { accessToken, user, redirectTo } = result.data;
+              if (result.type === 'success' && isSuccessResultData(result.data)) {
+                const { accessToken, user, redirectTo } = result.data;
 
-              // Store tokens for client-side API calls
-              getTokenManager().setTokens(accessToken);
-              localStorage.setItem('token', accessToken); // Legacy compatibility
+                // Store tokens for client-side API calls
+                getTokenManager().setTokens(accessToken);
+                localStorage.setItem('token', accessToken); // Legacy compatibility
 
-              // Store user data
-              localStorage.setItem('user', JSON.stringify(user));
-              localStorage.setItem('userRole', user.role);
-              setActiveRole(user.role);
+                // Store user data
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('userRole', user.role);
+                setActiveRole(user.role);
 
-              // Bridge login password for E2E key escrow recovery (ADR-022)
-              // Must happen before redirect — consumed by e2e-state.initialize()
-              setLoginPassword(password);
+                // Bridge login password for E2E key escrow recovery (ADR-022)
+                // Must happen before redirect — consumed by e2e-state.initialize()
+                setLoginPassword(password);
 
-              // Full page load — login is a state boundary (unauthenticated → authenticated).
-              // Client-side goto() fails with Vite 8 SSR: when navigating from /login (outside
-              // (app) group) to dashboard (inside (app) group), the intermediate (app)-layout
-              // insertion doesn't clean up the old SSR-rendered login DOM nodes.
-              window.location.href = redirectTo ?? '/admin-dashboard';
-              return;
-            }
+                // Full page load — login is a state boundary (unauthenticated → authenticated).
+                // Client-side goto() fails with Vite 8 SSR: when navigating from /login (outside
+                // (app) group) to dashboard (inside (app) group), the intermediate (app)-layout
+                // insertion doesn't clean up the old SSR-rendered login DOM nodes.
+                window.location.href = redirectTo ?? '/admin-dashboard';
+                return;
+              }
 
-            // Reset Turnstile for retry (token is single-use)
-            turnstileRef?.reset();
+              // Reset Turnstile for retry (token is single-use)
+              turnstileRef?.reset();
 
-            // On error, update() will populate form.error
-            await update();
-          };
-        }}
-      >
-        <div class="form-field">
-          <label
-            class="form-field__label form-field__label--required"
-            for="email"
-          >
-            E-Mail
-          </label>
+              // On error, update() will populate form.error
+              await update();
+            };
+          }}
+        >
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="email"
+            >
+              E-Mail
+            </label>
+            <input
+              bind:this={emailRef}
+              type="email"
+              id="email"
+              name="email"
+              class="form-field__control"
+              required
+              autocomplete="email"
+              bind:value={email}
+              disabled={loading}
+            />
+          </div>
+
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="password"
+            >
+              Passwort
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-field__control"
+              required
+              autocomplete="current-password"
+              bind:value={password}
+              disabled={loading}
+            />
+          </div>
+
+          <!-- Cloudflare Turnstile -->
           <input
-            bind:this={emailRef}
-            type="email"
-            id="email"
-            name="email"
-            class="form-field__control"
-            required
-            autocomplete="email"
-            bind:value={email}
-            disabled={loading}
+            type="hidden"
+            name="turnstileToken"
+            value={turnstileToken}
           />
-        </div>
-
-        <div class="form-field">
-          <label
-            class="form-field__label form-field__label--required"
-            for="password"
-          >
-            Passwort
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            class="form-field__control"
-            required
-            autocomplete="current-password"
-            bind:value={password}
-            disabled={loading}
+          <Turnstile
+            bind:this={turnstileRef}
+            bind:token={turnstileToken}
+            action="login"
           />
-        </div>
 
-        <!-- Cloudflare Turnstile -->
-        <input
-          type="hidden"
-          name="turnstileToken"
-          value={turnstileToken}
-        />
-        <Turnstile
-          bind:this={turnstileRef}
-          bind:token={turnstileToken}
-          action="login"
-        />
+          <div class="mt-6">
+            <button
+              type="submit"
+              class="btn btn-primary w-full"
+              disabled={loading || !isFormValid}
+            >
+              {#if loading}
+                <span class="spinner-ring spinner-ring--sm"></span>
+              {/if}
+              {buttonText}
+            </button>
+          </div>
+        </form>
 
-        <div class="mt-6">
-          <button
-            type="submit"
-            class="btn btn-primary w-full"
-            disabled={loading || !isFormValid}
-          >
-            {#if loading}
-              <span class="spinner-ring spinner-ring--sm"></span>
-            {/if}
-            {buttonText}
-          </button>
-        </div>
-      </form>
-
-      <!--
+        <!--
         Microsoft OAuth entry point (UI swap — previously ABOVE the form).
         New reading order per UX request 2026-04-16: email/password is the
         primary path, OAuth is the alternative. Hence:
@@ -698,24 +727,25 @@
         `disabled` stays tied to `loading` so a password submit in flight
         cannot race with an OAuth redirect (same guarantee as §5.2 before).
       -->
-      <div class="oauth-section">
-        <OAuthDivider label="oder" />
-        <MicrosoftSignInButton
-          mode="login"
-          disabled={loading}
-        />
-      </div>
+        <div class="oauth-section">
+          <OAuthDivider label="oder" />
+          <MicrosoftSignInButton
+            mode="login"
+            disabled={loading}
+          />
+        </div>
 
-      <!-- svelte-ignore a11y_invalid_attribute -->
-      <div class="login-footer">
-        <a
-          href="#"
-          onclick={handlePasswordReset}>Passwort vergessen?</a
-        ><a
-          href="#"
-          onclick={handleRequestAccess}>Zugangsdaten beantragen</a
-        >
-      </div>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <div class="login-footer">
+          <a
+            href="#"
+            onclick={handlePasswordReset}>Passwort vergessen?</a
+          ><a
+            href="#"
+            onclick={handleRequestAccess}>Zugangsdaten beantragen</a
+          >
+        </div>
+      {/if}
     </div>
   </main>
 

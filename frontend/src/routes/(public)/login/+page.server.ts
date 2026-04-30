@@ -7,12 +7,14 @@
  *
  * This enables SSR pages to access the auth token via cookies.
  */
-import { fail, redirect, type ActionFailure } from '@sveltejs/kit';
+import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit';
 
 import { setAuthCookies, clearAuthCookies } from '$lib/server/auth-cookies';
 import { resilientFetch } from '$lib/server/resilient-fetch';
 import { verifyTurnstile } from '$lib/server/turnstile';
 import { createLogger } from '$lib/utils/logger';
+
+import { handleResendAction, handleVerifyAction } from './_lib/2fa-server-helpers';
 
 import type { Actions, PageServerLoad } from './$types';
 
@@ -23,7 +25,16 @@ const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
 type UserRole = 'root' | 'admin' | 'employee' | 'dummy';
 
+/**
+ * Authenticated login result — mirror of backend `LoginResultBody` authenticated
+ * branch (backend/src/nest/two-factor-auth/two-factor-auth.types.ts:LoginResultBody).
+ *
+ * Reachable today only via the OAuth `loginWithVerifiedUser()` exempt path
+ * (DD-7 in FEAT_2FA_EMAIL_MASTERPLAN). Password logins always emit
+ * `'challenge_required'` under v0.5.0 (DD-10 removed) — see Step 5.1.
+ */
 interface LoginResponseData {
+  stage: 'authenticated';
   accessToken: string;
   refreshToken: string;
   user: {
@@ -38,6 +49,31 @@ interface LoginResponseData {
     subdomain: string | null;
   };
 }
+
+/**
+ * 2FA challenge-required login result — emitted on every password login after
+ * Step 2.4 (DONE 2026-04-29). Mirror of backend `LoginResultBody`
+ * challenge_required branch.
+ *
+ * `challengeToken` is intentionally absent: R8 mitigation requires the token
+ * travel exclusively via the httpOnly Set-Cookie set by the backend
+ * (auth.controller.ts:setChallengeCookie), never via the JSON body.
+ */
+interface ChallengeRequiredData {
+  stage: 'challenge_required';
+  challenge: {
+    expiresAt: string;
+    resendAvailableAt: string;
+    resendsRemaining: number;
+  };
+}
+
+/**
+ * Discriminated union — narrow on `stage` before reading branch-specific
+ * fields. Mirrors backend `LoginResultBody` so the frontend cannot accidentally
+ * treat a challenge_required response as authenticated and skip the 2FA gate.
+ */
+type LoginResultData = LoginResponseData | ChallengeRequiredData;
 
 /**
  * Response shape of `POST /api/v2/auth/handoff/mint` (Session 12c).
@@ -62,7 +98,7 @@ interface HandoffMintEnvelope {
 
 interface LoginResponse {
   success: boolean;
-  data?: LoginResponseData;
+  data?: LoginResultData;
   error?: {
     message: string;
     code?: string;
@@ -99,21 +135,45 @@ function isRedirectError(err: unknown): boolean {
 }
 
 /**
- * Load function - redirects already-authenticated users to their dashboard
+ * Page-stage discriminator (FEAT_2FA_EMAIL_MASTERPLAN Step 5.2 v0.8.1
+ * inline-design revision). The login card swaps its body content based on
+ * this value:
+ *   - `'credentials'`: email + password form (default state)
+ *   - `'verify'`: 2FA code-entry form (after `actions.default` mints the
+ *     challenge cookie + redirects back to `/login` so this load runs again)
  *
- * This runs BEFORE the page renders, checking if user is already logged in.
- * If they have a valid token, they get redirected to their dashboard.
+ * The cookie — not the `form` prop — is the source of truth, so a refresh in
+ * the verify stage is idempotent (cookie persists, load returns the same stage).
  */
-// NOTE: We intentionally bypass SvelteKit's scoped `fetch` here. The target
-// `${API_BASE}/users/me` is cross-origin (backend :3000), so the enhancements
-// offered by the scoped fetch (same-origin cookie-forwarding, relative URL
-// resolution) add nothing. `resilientFetch` wraps the global fetch with
-// retry-on-ECONNRESET semantics that matter much more for this auth check.
+type LoginStage = 'credentials' | 'verify';
+
+/**
+ * Load — primary purpose: redirect already-authenticated users to their
+ * dashboard. Secondary purpose (Step 5.2): detect a pending 2FA challenge
+ * via the httpOnly `challengeToken` cookie and surface the stage to the
+ * page so the card body can swap to the verify form.
+ *
+ * NOTE: We intentionally bypass SvelteKit's scoped `fetch` here. The target
+ * `${API_BASE}/users/me` is cross-origin (backend :3000), so the enhancements
+ * offered by the scoped fetch (same-origin cookie-forwarding, relative URL
+ * resolution) add nothing. `resilientFetch` wraps the global fetch with
+ * retry-on-ECONNRESET semantics that matter much more for this auth check.
+ */
 export const load: PageServerLoad = async ({ cookies }) => {
+  // Fast path: pending 2FA challenge → verify stage. Checked BEFORE the
+  // /users/me probe because a user mid-2FA does NOT have an accessToken yet
+  // (tokens are minted only AFTER verify succeeds), so the probe would 401
+  // and clear cookies anyway. Short-circuiting is cheaper and preserves the
+  // challenge cookie for the verify action.
+  const challengeToken = cookies.get('challengeToken');
+  if (challengeToken !== undefined && challengeToken !== '') {
+    return { stage: 'verify' satisfies LoginStage };
+  }
+
   const token = cookies.get('accessToken');
 
   if (token === undefined || token === '') {
-    return {};
+    return { stage: 'credentials' satisfies LoginStage };
   }
 
   try {
@@ -131,7 +191,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
     if (!response.ok) {
       log.debug('Token invalid, clearing cookies');
       clearAuthCookies(cookies);
-      return {};
+      return { stage: 'credentials' satisfies LoginStage };
     }
 
     const result = (await response.json()) as MeResponse;
@@ -139,7 +199,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 
     if (role === null) {
       log.warn('No role in /users/me response');
-      return {};
+      return { stage: 'credentials' satisfies LoginStage };
     }
 
     log.debug({ role }, 'User already logged in, redirecting to dashboard');
@@ -147,7 +207,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
   } catch (err: unknown) {
     if (isRedirectError(err)) throw err;
     log.error({ err }, 'Error checking auth status');
-    return {};
+    return { stage: 'credentials' satisfies LoginStage };
   }
 };
 
@@ -156,11 +216,11 @@ function isValidStringField(value: FormDataEntryValue | null): value is string {
   return typeof value === 'string' && value !== '';
 }
 
-/** Check if login response indicates success with valid data */
+/** Check if login response indicates success with valid data (any stage). */
 function isSuccessfulLogin(
   response: Response,
   result: LoginResponse,
-): result is LoginResponse & { data: LoginResponseData } {
+): result is LoginResponse & { data: LoginResultData } {
   return response.ok && result.success && result.data !== undefined;
 }
 
@@ -176,6 +236,84 @@ function getLoginErrorResponse(response: Response, result: LoginResponse, email:
     error: result.error?.message ?? 'Login fehlgeschlagen',
     email,
   });
+}
+
+/**
+ * Extract `challengeToken` from the backend's `Set-Cookie` headers.
+ *
+ * **Why this is needed:** the backend (`auth.controller.ts:setChallengeCookie`)
+ * sets `challengeToken` as an httpOnly Set-Cookie on the `/auth/login` response.
+ * SvelteKit's server-side `fetch` to the backend is **cross-origin**
+ * (SvelteKit on :5173/:3001, backend on :3000), so the Set-Cookie header
+ * arrives at the SvelteKit fetch but is **NOT** auto-forwarded to the browser.
+ * We extract the value here and re-emit on the SvelteKit response so the
+ * browser stores the cookie on the same origin where `/login/verify` reads it.
+ *
+ * **R8 invariant preserved:** the token never crosses any JS-readable surface
+ * — body strips it (backend `LoginResultBody.challenge` is `PublicTwoFactorChallenge`
+ * which omits `challengeToken`), and both hops keep it httpOnly.
+ *
+ * @returns the raw `challengeToken` value, or `null` if no matching header is
+ *   present (defensive — the backend always sets it on `stage='challenge_required'`,
+ *   missing case is treated as a server error rather than silent retry).
+ */
+function extractChallengeTokenFromSetCookie(response: Response): string | null {
+  const setCookieHeaders = response.headers.getSetCookie();
+  for (const header of setCookieHeaders) {
+    const match = /^challengeToken=([^;]+)/.exec(header);
+    if (match?.[1] !== undefined) {
+      return decodeURIComponent(match[1]);
+    }
+  }
+  return null;
+}
+
+/**
+ * Handle the `stage='challenge_required'` branch: forward the backend's
+ * `challengeToken` Set-Cookie onto the SvelteKit response and 303-redirect to
+ * `/login/verify`.
+ *
+ * Extracted from `actions.default` to keep the action body under the
+ * cognitive-complexity / max-lines ceilings — Step 5.1 added one new branch
+ * which tipped the action over both limits.
+ *
+ * Return semantics:
+ *   - happy path: throws SvelteKit `redirect(303)` → never returns.
+ *   - failure path (no Set-Cookie despite stage=challenge_required): returns
+ *     `ActionFailure` so the caller can `return` it. `never` from `redirect()`
+ *     is assignable to `ActionFailure`, hence the union narrows to the
+ *     failure shape only.
+ */
+function handleChallengeRequiredOrFail(
+  response: Response,
+  cookies: Cookies,
+  url: URL,
+  email: string,
+): ActionFailure<{ error: string; email: string }> {
+  const challengeToken = extractChallengeTokenFromSetCookie(response);
+  if (challengeToken === null) {
+    log.error(
+      'Backend returned stage=challenge_required without a challengeToken Set-Cookie header — backend contract violation',
+    );
+    return fail(500, { error: 'Ein Serverfehler ist aufgetreten', email });
+  }
+  // Cookie attributes mirror backend `CHALLENGE_COOKIE_OPTIONS`
+  // (auth.controller.ts:CHALLENGE_COOKIE_OPTIONS) so the SvelteKit-side cookie
+  // cannot outlive its Redis-backed challenge record. `secure` derived from
+  // request URL protocol per ARCHITECTURE.md §1.2 — same pattern as
+  // `setAuthCookies` in `$lib/server/auth-cookies`.
+  cookies.set('challengeToken', challengeToken, {
+    httpOnly: true,
+    secure: url.protocol === 'https:',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 10, // CODE_TTL_SEC mirror — 10 min, matches backend
+  });
+  // Step 5.2 v0.8.1 (inline-card revision): redirect back to /login so the
+  // load function reads the freshly-set challengeToken cookie and returns
+  // `stage: 'verify'` — the card body then swaps to TwoFactorVerifyForm.
+  // No separate `/login/verify` route in this design.
+  redirect(303, '/login');
 }
 
 /** Verify Turnstile token from form data, return fail response on failure */
@@ -284,7 +422,13 @@ async function buildHandoffRedirect(
 }
 
 export const actions: Actions = {
-  default: async ({ request, cookies, fetch, locals, url }) => {
+  // Credentials submit. Renamed from `default` to a named action because
+  // SvelteKit forbids mixing `default` with named actions in the same
+  // `actions` object (`check_named_default_separate` in
+  // @sveltejs/kit/src/runtime/server/page/actions.js) — Step 5.2 added
+  // `verify` + `resend` named actions, so this one had to follow.
+  // The companion `<form action="?/login">` is in `+page.svelte`.
+  login: async ({ request, cookies, fetch, locals, url }) => {
     const formData = await request.formData();
     const email = formData.get('email');
     const password = formData.get('password');
@@ -314,6 +458,20 @@ export const actions: Actions = {
         return getLoginErrorResponse(response, result, email);
       }
 
+      // 2FA branch — Step 5.1, FEAT_2FA_EMAIL_MASTERPLAN v0.8.0. Backend Step
+      // 2.4 (DONE 2026-04-29) emits `stage: 'challenge_required'` on every
+      // password login under v0.5.0 (DD-10 removed). Helper forwards the
+      // httpOnly challengeToken cookie + 303s to /login/verify (Step 5.2). R8
+      // invariant: token never reaches JS-readable state (httpOnly on both hops).
+      if (result.data.stage === 'challenge_required') {
+        return handleChallengeRequiredOrFail(response, cookies, url, email);
+      }
+
+      // Authenticated branch — currently reachable only via OAuth bypass paths
+      // (`loginWithVerifiedUser`, DD-7 exempt). Password logins always hit the
+      // `'challenge_required'` branch above. Existing handoff + 3-cookie triad
+      // logic unchanged below.
+      //
       // Session 12c (ADR-050): origin-aware branch. If user's tenant has a
       // subdomain AND we're NOT on it, mint a handoff token so cookies land
       // on the correct subdomain. Otherwise fall through to apex-cookie flow.
@@ -361,8 +519,39 @@ export const actions: Actions = {
         redirectTo: getRedirectPath(result.data.user.role),
       };
     } catch (err: unknown) {
+      // Step 5.1: SvelteKit `redirect()` is implemented as a thrown sentinel
+      // (`{status, location}`). The challenge_required branch above relies on
+      // this throw to propagate; without the explicit rethrow the generic
+      // catch would swallow it and emit a 500. Mirrors the `load`-fn pattern
+      // at the top of this file.
+      if (isRedirectError(err)) throw err;
       log.error({ err }, 'Server error');
       return fail(500, { error: 'Ein Serverfehler ist aufgetreten', email });
     }
   },
+
+  /**
+   * 2FA verify action — invoked from the inline verify card after the user
+   * types the 6-character code. Implementation lives in
+   * `_lib/2fa-server-helpers.ts` to keep this file under the 800-line ceiling
+   * + each action under the 60-line / complexity-10 ceilings.
+   *
+   * Throws SvelteKit `redirect()` on the happy path (→ role-based dashboard);
+   * returns `ActionFailure<VerifyActionFailureData>` for typed UX errors
+   * (wrong code / lockout / throttle / expired challenge).
+   *
+   * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §5.2
+   */
+  verify: handleVerifyAction,
+
+  /**
+   * 2FA resend action — invoked from the inline verify card's "Code erneut
+   * senden" button. Backend overwrites the Redis challenge in place; the
+   * existing httpOnly `challengeToken` cookie keeps working unchanged.
+   * Returns `{ resent: true, resendsRemaining, resendAvailableAt }` on
+   * success or a typed `ActionFailure` for cooldown / cap / expired errors.
+   *
+   * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §5.2
+   */
+  resend: handleResendAction,
 };

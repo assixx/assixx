@@ -314,6 +314,28 @@ async function createFreshTenant(
 
 beforeAll(async () => {
   flushThrottleKeys();
+
+  // Defensive: an earlier file in the api suite may have flipped the apitest
+  // tenant's primary domain (assixx.com) out of the `(verified, primary, active)`
+  // state — `00-auth.api.test.ts:applyDbPrerequisites` runs ONCE at suite start,
+  // and any test between then and here that mutates `tenant_domains` for
+  // tenant 1 leaves the row broken for the verification-status / list /
+  // verify-idempotent tests below. Mirrors the exact SQL from `00-auth` so
+  // the contract is consistent: ON CONFLICT keeps the INSERT a no-op when the
+  // row exists; the conditional UPDATE re-verifies a soft-deleted or pending
+  // row (no-op when already in the canonical state). Uses `assixx_user`
+  // (BYPASSRLS) per ADR-019 — same pattern as the file's `psqlSingle`.
+  execSync(
+    `docker exec assixx-postgres psql -U assixx_user -d assixx -c "` +
+      `INSERT INTO tenant_domains (tenant_id, domain, status, verification_token, verified_at, is_primary, is_active) ` +
+      `VALUES (1, 'assixx.com', 'verified', substr(md5(random()::text) || md5(random()::text), 1, 64), NOW(), true, 1) ` +
+      `ON CONFLICT DO NOTHING; ` +
+      `UPDATE tenant_domains SET is_active = 1, status = 'verified', verified_at = COALESCE(verified_at, NOW()), is_primary = true ` +
+      `WHERE tenant_id = 1 AND domain = 'assixx.com' ` +
+      `AND NOT (is_active = 1 AND is_primary = true AND status = 'verified');"`,
+    { stdio: 'pipe' },
+  );
+
   [ROOT_TOKEN, ADMIN_TOKEN, EMPLOYEE_TOKEN] = await Promise.all([
     loginAs(APITEST_ROOT.email, APITEST_ROOT.password),
     loginAs(APITEST_ADMIN.email, APITEST_ADMIN.password),

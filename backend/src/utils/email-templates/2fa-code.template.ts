@@ -155,7 +155,15 @@ function renderCode(code: string): string {
   // Letter-spacing: 8px so the 6 chars are clearly distinguishable but copy
   // still yields the unbroken string (CSS letter-spacing doesn't insert
   // characters into the text, only visual gaps).
-  return `<span class="code-text" style="display: inline-block; font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 24px; font-weight: 800; letter-spacing: 8px; color: #f1f5f9; mso-line-height-rule: exactly;">${code}</span>`;
+  //
+  // No `display:` declaration (2026-04-30): an earlier `display: inline-block`
+  // here was the lone "partial-support" trigger in Outlook 2007–2019 / WEB.DE
+  // / GMX / Yahoo / AOL on Mailpit's HTML-check (caniemail `css-display`).
+  // The span has no explicit dimensions and inherits centering from the
+  // parent `<td align="center"; text-align: center>`, so removing it is a
+  // pixel-identical render in every client we support — and lifts the
+  // compatibility score from 87% to ~95% with zero visual cost.
+  return `<span class="code-text" style="font-family: 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; font-size: 24px; font-weight: 800; letter-spacing: 8px; color: #f1f5f9; mso-line-height-rule: exactly;">${code}</span>`;
 }
 
 /**
@@ -231,7 +239,12 @@ function renderCodeMailHtml(args: {
           <!-- Logo -->
           <tr>
             <td align="center" style="padding: 0 0 24px 0">
-              <img src="cid:assixx-logo" width="140" height="68" alt="Assixx" style="display: block; width: 140px; height: 68px; max-width: 140px" />
+              <!-- max-width omitted (2026-04-30): width===max-width on the
+                   same element is a no-op (caniemail css-max-width). The
+                   HTML width="140" attr + CSS width: 140px already cap the
+                   image; max-width: 140px just generated a Mailpit
+                   "partial-support" warning with zero rendering effect. -->
+              <img src="cid:assixx-logo" width="140" height="68" alt="Assixx" style="display: block; width: 140px; height: 68px" />
             </td>
           </tr>
           <!-- Card -->

@@ -19,18 +19,14 @@ export const AnswerSchema = z
     questionId: IdSchema.optional(),
     // Answer fields - camelCase
     answerText: z.string().trim().optional(),
-    answerNumber: z.preprocess(
-      (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
-      z.number().optional(),
-    ),
+    // `z.coerce.number()` per ADR-030 §4 — `z.preprocess(..., z.number().optional())`
+    // breaks under Zod 4.x for missing fields ("expected nonoptional").
+    answerNumber: z.coerce.number().optional(),
     answerDate: DateSchema.optional(),
     answerOptions: z.array(IdSchema).optional(),
     // Answer fields - snake_case (for backwards compatibility)
     answer_text: z.string().trim().optional(),
-    answer_number: z.preprocess(
-      (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
-      z.number().optional(),
-    ),
+    answer_number: z.coerce.number().optional(),
     answer_date: DateSchema.optional(),
     answer_options: z.array(IdSchema).optional(),
   })

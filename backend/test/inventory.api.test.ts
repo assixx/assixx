@@ -733,12 +733,25 @@ describe('Inventory: Tags CRUD', () => {
   });
 
   it('should reject creating list with non-existing tag IDs (400)', async () => {
+    // Per-run unique codePrefix: list create + tag attach is NOT transactional
+    // in `inventory-lists.service.ts:162-202` — the list INSERT commits before
+    // `replaceTagsForList` validates tag IDs. On a validation failure the
+    // partial list row persists, and the next run hits the
+    // `idx_inventory_lists_unique_prefix` partial unique index → 409 instead
+    // of the expected 400. Until the service is wrapped in `tenantTransaction()`
+    // (or tag IDs are pre-validated before the INSERT), generate a fresh
+    // 5-letter prefix per run (26^5 = 11.8M combinations) so we never collide
+    // with our own orphan rows from prior failed runs.
+    const codePrefix = Array.from({ length: 5 }, () =>
+      String.fromCharCode(65 + Math.floor(Math.random() * 26)),
+    ).join('');
+
     const res = await fetch(`${API}/lists`, {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
         title: 'Bad Tag List',
-        codePrefix: 'BTL',
+        codePrefix,
         codeSeparator: '-',
         codeDigits: 3,
         tagIds: ['00000000-0000-0000-0000-000000000000'],
@@ -917,7 +930,11 @@ describe('Inventory: Granular Permissions (ADR-020)', () => {
   beforeAll(async () => {
     await ensureTestEmployee(auth.authToken);
 
-    const usersRes = await fetch(`${BASE_URL}/users?limit=50`, {
+    // Filter by role + bump limit — matches the `helpers.ts` ensureTestEmployee
+    // pattern (lines 646-651). Test tenant fixtures grew past 50 users (kvp
+    // fixtures, 2fa victims), so unfiltered `?limit=50` no longer contains
+    // `employee@assixx.com` and `.find()` returned undefined → throw at line 928.
+    const usersRes = await fetch(`${BASE_URL}/users?role=employee&limit=100`, {
       headers: authOnly(auth.authToken),
     });
     const usersBody = (await usersRes.json()) as JsonBody;

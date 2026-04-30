@@ -115,6 +115,24 @@ beforeAll(async () => {
   entryTeamId = t2.teamId;
   entryDepartmentId = t2.departmentId;
 
+  // Seed shift_times for the canonical 3 slots (ADR-052 §Decision 1 / R13).
+  // `ActiveShiftResolverService.checkWriteWindow()` JOINs `shift_times` to
+  // compute the per-slot write-window. Without rows here, every entry-write
+  // attempt short-circuits to `{reason: 'shift_times_missing'}` and the
+  // controller maps that to 400 BEFORE the assignee check runs — masking the
+  // actual permission/state path we're testing. `shift_times` is intentionally
+  // NOT in `global-teardown.ts` `TRANSIENT_TABLES`, so a single inline seed
+  // here persists across runs; `ON CONFLICT` keeps it idempotent. Times use
+  // the canonical 3-shift wall-clock pattern (Frühschicht 06-14, Spätschicht
+  // 14-22, Nachtschicht 22-06).
+  sqlProbe(
+    `INSERT INTO shift_times (tenant_id, shift_key, label, start_time, end_time, sort_order, is_active) VALUES ` +
+      `(${auth.tenantId}, 'early', 'Frühschicht', '06:00', '14:00', 1, 1),` +
+      `(${auth.tenantId}, 'late',  'Spätschicht', '14:00', '22:00', 2, 1),` +
+      `(${auth.tenantId}, 'night', 'Nachtschicht', '22:00', '06:00', 3, 1)` +
+      ` ON CONFLICT (tenant_id, shift_key) WHERE is_active <> 4 DO NOTHING;`,
+  );
+
   // Seed one shift per slot for the apitest root user.
   // start_time gets a (teamId * 1µs) offset so the unique index
   // `(user_id, date, start_time)` does not collide across test reruns
@@ -649,12 +667,30 @@ describe('Shift Handover: Attachments', () => {
 
 describe('Shift Handover: Tenant isolation (RLS)', () => {
   it('cross-tenant template insert is invisible to tenant 1 GET', async () => {
+    // Ensure firma-a (tenant 2) has at least one team for the cross-tenant
+    // RLS probe. Pre-2026-04 this relied on the deleted `testfirma` (tenant 8)
+    // seed; the dev-tenant migration to assixx/firma-a/firma-b/scs/unverified-e2e
+    // (FEAT_TENANT_DOMAIN_VERIFICATION_MASTERPLAN §0.7 + database/seeds/002)
+    // left no non-1 tenant with `teams` rows, breaking the original probe.
+    // Idempotent NOT-EXISTS guards keep reruns from accumulating duplicates;
+    // `team_lead_id` is NULL so the `validate_team_lead_position` trigger is
+    // bypassed without needing a known fixture user in tenant 2.
+    sqlProbe(
+      `INSERT INTO departments (tenant_id, name, description, is_active, uuid, uuid_created_at) ` +
+        `SELECT 2, 'RLS Test Department', 'Auto-created for shift-handover RLS test', 1, gen_random_uuid()::char(36), NOW() ` +
+        `WHERE NOT EXISTS (SELECT 1 FROM departments WHERE tenant_id = 2 AND name = 'RLS Test Department');`,
+    );
+    sqlProbe(
+      `INSERT INTO teams (tenant_id, name, department_id, is_active, uuid, uuid_created_at) ` +
+        `SELECT 2, 'RLS Test Team', (SELECT id FROM departments WHERE tenant_id = 2 AND name = 'RLS Test Department' LIMIT 1), 1, gen_random_uuid()::char(36), NOW() ` +
+        `WHERE NOT EXISTS (SELECT 1 FROM teams WHERE tenant_id = 2 AND name = 'RLS Test Team');`,
+    );
+
     // Pick a real team in another tenant (FK on shift_handover_templates.team_id
-    // would reject a synthetic id). Tenant 8 (`testfirma`) is the only non-1
-    // tenant with `teams` rows in this dev DB. The strict-mode RLS policy on
+    // would reject a synthetic id). Strict-mode RLS policy on
     // shift_handover_templates filters by `app.tenant_id` — so the controller's
     // getTemplateForTeam (running with tenant_id=1 from JWT) cannot see the
-    // tenant-8 row and the controller synthesises the default-empty shape.
+    // foreign-tenant row and the controller synthesises the default-empty shape.
     const otherTenantRow = sqlProbe(
       "SELECT tenant_id || ',' || id FROM teams WHERE tenant_id <> 1 ORDER BY tenant_id, id LIMIT 1;",
     );

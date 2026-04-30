@@ -120,7 +120,12 @@ function renderSuspiciousActivityHtml(subject: string): string {
           <!-- Logo -->
           <tr>
             <td align="center" style="padding: 0 0 24px 0">
-              <img src="cid:assixx-logo" width="140" height="68" alt="Assixx" style="display: block; width: 140px; height: 68px; max-width: 140px" />
+              <!-- max-width omitted (2026-04-30): width===max-width on the
+                   same element is a no-op (caniemail css-max-width). The
+                   HTML width="140" attr + CSS width: 140px already cap the
+                   image; max-width: 140px just generated a Mailpit
+                   "partial-support" warning with zero rendering effect. -->
+              <img src="cid:assixx-logo" width="140" height="68" alt="Assixx" style="display: block; width: 140px; height: 68px" />
             </td>
           </tr>
 

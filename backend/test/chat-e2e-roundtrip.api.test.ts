@@ -164,7 +164,11 @@ beforeAll(async () => {
   employeeToken = await loginNonRoot('employee@assixx.com', APITEST_PASSWORD);
 
   // ── Step 1b: Get employee UUID and grant chat permissions ─────────────────
-  const usersRes = await fetch(`${BASE_URL}/users?limit=50`, {
+  // Filter by role + bump limit — matches the `helpers.ts` ensureTestEmployee
+  // pattern (lines 646-651). Test tenant fixtures grew past 50 users (kvp
+  // fixtures, 2fa victims), so unfiltered `?limit=50` no longer contains
+  // `employee@assixx.com` and `.find()` returned undefined → throw at line 176.
+  const usersRes = await fetch(`${BASE_URL}/users?role=employee&limit=100`, {
     headers: authOnly(adminAuth.authToken),
   });
   const usersBody = (await usersRes.json()) as JsonBody;

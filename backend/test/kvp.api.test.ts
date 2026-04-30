@@ -5,6 +5,8 @@
  *
  * @see vitest.config.api.ts
  */
+import { execSync } from 'node:child_process';
+
 import {
   type AuthState,
   BASE_URL,
@@ -13,7 +15,9 @@ import {
   authOnly,
   createDepartmentAndTeam,
   ensureTestEmployee,
+  getDefaultPositionIds,
   loginApitest,
+  queryUserIdByEmail,
 } from './helpers.js';
 
 let auth: AuthState;
@@ -26,6 +30,14 @@ let _createdKvpId: number;
 // Team setup — KVP requires team assignment
 let testTeamId: number;
 let testDepartmentId: number;
+
+// Soft-deleted fixture user — exercise §10 `/options excludes is_active=4` path.
+// Stable email so reruns return 409 (user already exists) and the SQL UPDATE
+// stays a no-op. Replaces the pre-2FA-email-fixture assumption that user id=11
+// was always soft-deleted (broke when the 2FA email-change tests claimed id=11
+// for the active `emailchange-sim@assixx.com` admin fixture).
+let softDeletedUserId: number;
+const SOFT_DELETED_FIXTURE_EMAIL = 'kvp-soft-deleted-fixture@assixx.com';
 
 beforeAll(async () => {
   auth = await loginApitest();
@@ -44,6 +56,38 @@ beforeAll(async () => {
   if (assignRes.status !== 201 && assignRes.status !== 409) {
     throw new Error(`Team member assignment failed: ${assignRes.status}`);
   }
+
+  // Provision a stable soft-deleted user so test §10 has a known is_active=4
+  // row to assert exclusion against. Hardcoded id=11 was fragile — see the
+  // SOFT_DELETED_FIXTURE_EMAIL declaration above for context.
+  const positionIds = await getDefaultPositionIds(auth.authToken);
+  const createSoftDeleteRes = await fetch(`${BASE_URL}/users`, {
+    method: 'POST',
+    headers: authHeaders(auth.authToken),
+    body: JSON.stringify({
+      email: SOFT_DELETED_FIXTURE_EMAIL,
+      password: 'KvpSoftDeleted12345!',
+      firstName: 'KvpSoft',
+      lastName: 'Deleted',
+      role: 'employee',
+      phone: '+49123456000',
+      positionIds,
+    }),
+  });
+  if (createSoftDeleteRes.status !== 201 && createSoftDeleteRes.status !== 409) {
+    throw new Error(`KVP soft-delete fixture create failed: ${String(createSoftDeleteRes.status)}`);
+  }
+  const lookedUp = queryUserIdByEmail(SOFT_DELETED_FIXTURE_EMAIL);
+  if (lookedUp === null) {
+    throw new Error('KVP soft-delete fixture: user not found post-create');
+  }
+  softDeletedUserId = lookedUp;
+  // Flip to is_active=4 (DELETED). assixx_user BYPASSRLS so RLS does not need
+  // a tenant context here. Idempotent — UPDATE is a no-op when already 4.
+  execSync(
+    `docker exec assixx-postgres psql -U assixx_user -d assixx -c "UPDATE users SET is_active=4 WHERE id=${String(softDeletedUserId)}"`,
+    { stdio: 'pipe' },
+  );
 });
 
 afterAll(async () => {
@@ -726,8 +770,12 @@ describe('KVP: Participants', () => {
   });
 
   // -- 10) Soft-deleted user not in /options ---------------------------------
-  // user id=11 is_active=4 (DELETED) per DB seed snapshot. Service-side
-  // SQL filter `is_active != IS_ACTIVE.DELETED` must keep them out.
+  // `softDeletedUserId` is the id of `kvp-soft-deleted-fixture@assixx.com` —
+  // created in beforeAll with `is_active=4` (DELETED). Service-side SQL filter
+  // `is_active != IS_ACTIVE.DELETED` must keep them out. Pre-2026-04 this
+  // hardcoded id=11; the 2FA email-change fixture (`emailchange-sim`, active)
+  // claimed id=11 after the apitest→assixx tenant rename, so the assertion
+  // is now keyed on a fixture this file owns end-to-end.
   it('GET /kvp/participants/options excludes soft-deleted users', async () => {
     const res = await fetch(`${BASE_URL}/kvp/participants/options?q=`, {
       headers: authOnly(auth.authToken),
@@ -736,7 +784,7 @@ describe('KVP: Participants', () => {
 
     expect(res.status).toBe(200);
     const users = body.data.users as Array<{ id: number }>;
-    expect(users.find((u) => u.id === 11)).toBeUndefined();
+    expect(users.find((u) => u.id === softDeletedUserId)).toBeUndefined();
   });
 
   // -- 11) /options caps each type at 50 (Phase 4 DoD pagination/cap) --------

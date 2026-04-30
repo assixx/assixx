@@ -643,8 +643,12 @@ export async function ensureTestEmployee(token: string): Promise<number> {
     return body.data.id as number;
   }
 
-  // Already exists -- find them in users list
-  const listRes = await fetch(`${BASE_URL}/users?limit=10`, {
+  // Already exists -- find them in users list. Use role filter + higher limit:
+  // the test-tenant carries 50+ users now (kvp fixtures, 2fa victims, ...),
+  // and `employee@assixx.com` no longer fits in the first 10 alphabetically.
+  // Mirrors the `?role=admin&limit=50` pattern already used by
+  // admin-permissions.api.test.ts (Step 2.4 fixture-growth survival rule).
+  const listRes = await fetch(`${BASE_URL}/users?role=employee&limit=100`, {
     headers: authOnly(token),
   });
   const listBody = (await listRes.json()) as JsonBody;

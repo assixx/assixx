@@ -4,7 +4,7 @@
 > **Created:** 2026-04-26
 > **Version:** 0.8.0 (**Phase 4 DONE — Session 10b shipped 2026-04-30.** Full `--project api` baseline restored: 13 pre-existing api-test files adapted to the post-Step-2.4 2-step-2FA login contract (6 masterplan-named + `tenant-domains` discovered 2026-04-29 + 7 more discovered during the full `--project api` run that the prior verification matrix had missed: `dummy-users`, `organigram`, `kvp-approval`, `admin-permissions`, `user-permissions`, `shift-handover`, `chat-e2e-roundtrip`). Consolidated the 50-line login dance into shared `loginNonRoot` + `loginNonRootFull` helpers in `helpers.ts` to stop the duplication bleeding across files. All 11 `it.todo` placeholders implemented (10 concrete + 1 documented `it.skip` for signup-503 — harness limitation, unit-level coverage exists). Stale `localhost:1080` (Maildev) refs migrated to Mailpit's REST API. Verification: `--project api` 55/55 files / 1050 passing / 5 skipped; `--project unit` 284/284 / 7277 passing; ESLint clean; `tsc -p backend` exit 0. Phase 4 fully DONE — Phase 5 (frontend) unblocked.)
 > **Version:** 0.7.2 (**Second hotfix during pre-Session-10b validation** — `_performLogin()` in `backend/test/helpers.ts` called `clearMailpit()` (global Mailpit DELETE) at the start of every cached login, racing across vitest workers: Worker B's clear nuked Worker A's freshly-arrived 2FA mail before A could read it → `Error: No 2FA code mail for info@assixx.com within 10000 ms` cascade across ~30 api-test files. Original Session 10a verification only ran 5 files in parallel — race window too small to surface; full `--project api` (50+ files) blew it up. Fix: drop the global clear; capture `loginStartedAt = new Date()` before login; new optional `since: Date` parameter on `fetchLatest2faCode()` filters Mailpit by `Created > sinceMs` so each worker only consumes mails landed after its own login request — works under any parallelism + any sibling-worker activity. Backward-compat: `since` defaults to epoch, all existing callers unchanged. Verified by 3-parallel-curl-login smoke: all 3 returned 200, 3 distinct mails coexisted in Mailpit (no clear, no race).)
-> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); **Phase 2 DONE** (2026-04-28 / 2026-04-29); **Phase 3 DONE** (2026-04-29); **Phase 4 DONE** (Session 10a 2026-04-29 + Session 10b 2026-04-30); **v0.7.1 + v0.7.2 hotfixes DONE** (2026-04-29). Ready for **Phase 5** frontend (Sessions 11–13). Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
+> **Status:** ACCEPTED — Phase 1 DONE (2026-04-28); **Phase 2 DONE** (2026-04-28 / 2026-04-29); **Phase 3 DONE** (2026-04-29); **Phase 4 DONE** (Session 10a 2026-04-29 + Session 10b 2026-04-30); **v0.7.1 + v0.7.2 hotfixes DONE** (2026-04-29). **Phase 5 IN PROGRESS** — Step 5.1 DONE (2026-04-30, login `+page.server.ts` discriminated-union branch + cross-origin Set-Cookie forwarding); **Step 5.2 DONE — v0.8.1 inline-card revision** (2026-04-30): superseded the original separate-route design (`/login/verify`) with a single-card UX per user direction — the existing `<form>` on `/login` swaps its body to code-entry when `data.stage === 'verify'`. Three new files under `(public)/login/_lib/`: `2fa-constants.ts` (German MESSAGES + invariants), `TwoFactorVerifyForm.svelte` (child component), `2fa-server-helpers.ts` (verify + resend action handlers). Login `+page.server.ts` `load` now returns `stage: 'credentials' | 'verify'` based on the `challengeToken` cookie; `actions.default` 303-redirects to `/login` (not `/login/verify`) so load surfaces the new stage; new `actions.verify` + `actions.resend` named actions delegate to the helpers. svelte-check 0 errors / ESLint 0 errors. The original `(public)/login/verify/` directory is retired (user removes via `rm`). Steps 5.3–5.5 PENDING. Cutover-Apparat (Bestandsuser-Vorabmail, Sender-Warmup, T-Day-Timeline) per Greenfield-Status entfallen — siehe CLAUDE.md Zeile 15 + ADR-050 §"Deployment Context: Greenfield Launch"
 > **Branch:** `feat/2fa-email`
 > **Spec:** This document
 > **Author:** Claude (proposed) · Simon Öztürk (decides)
@@ -1573,7 +1573,7 @@ frontend/src/routes/(public)/
             _lib/constants.ts      # NEW
 ```
 
-### Step 5.1: Modify login page [PENDING]
+### Step 5.1: Modify login page [DONE — 2026-04-30]
 
 **`+page.server.ts`** action receives the discriminated-union response from backend. Branches:
 
@@ -1593,7 +1593,40 @@ throw redirect(303, '/login/verify');
 
 **Critical:** `challengeToken` MUST NEVER be written to JavaScript-accessible state (no `localStorage`, no `sessionStorage`, no `$state`, never sent in response body). Same rule as the access-token cookie (ADR-005).
 
-### Step 5.2: New `/login/verify/+page.svelte` [PENDING]
+#### Implementation note (2026-04-30)
+
+The plan example above shows `result.data.challenge.challengeToken` for didactic clarity, but the **actual wire shape ships the token via `Set-Cookie`, not the JSON body** — backend `auth.controller.ts:setChallengeCookie` writes the httpOnly cookie on its `/auth/login` response, and `LoginResultBody.challenge` is the body-safe `PublicTwoFactorChallenge` (R8 mitigation, see `backend/src/nest/two-factor-auth/two-factor-auth.types.ts`).
+
+Because SvelteKit's server-side `fetch` to the backend is **cross-origin** (SvelteKit on :5173/:3001, backend on :3000), the backend's `Set-Cookie` is **not auto-forwarded** to the browser. The action extracts `challengeToken` from `response.headers.getSetCookie()` and re-emits it on the SvelteKit response via `cookies.set()`. R8 invariant preserved end-to-end (httpOnly on both hops, never in any JSON body, never in `$state`/`localStorage`).
+
+Cookie attributes mirror backend `CHALLENGE_COOKIE_OPTIONS` (`auth.controller.ts:CHALLENGE_COOKIE_OPTIONS`) so a stale frontend cookie cannot outlive its Redis-backed challenge record. `secure` is derived from `url.protocol === 'https:'` per ARCHITECTURE.md §1.2 — same convention as the existing `setAuthCookies` wrapper in `$lib/server/auth-cookies` (chosen over `!dev` because the project's auth-cookie standard is protocol-derived, not env-derived; behaviour is identical for production HTTPS / dev HTTP but more robust under HTTPS-in-dev or HTTP-in-test scenarios).
+
+The action's existing `catch` block was hardened with `if (isRedirectError(err)) throw err;` (mirroring the `load`-fn pattern) so the new `redirect(303)` propagates instead of being swallowed as a 500. The challenge-branch logic was extracted into `handleChallengeRequiredOrFail()` to keep `actions.default` under the project's cognitive-complexity / max-lines ceilings (ESLint complexity ≤ 10, max-lines-per-function ≤ 60, sonarjs/cognitive-complexity ≤ 10).
+
+**`+page.svelte`** required no changes for this step. The existing custom `use:enhance` callback falls through to `await update()` for non-success result types, and SvelteKit 2's `update()` handles `result.type === 'redirect'` by invoking `goto(result.location)` internally — so the 303 to `/login/verify` is followed without explicit handling.
+
+**Verification (2026-04-30):**
+
+- `pnpm exec svelte-check --tsconfig ./tsconfig.json` → 2585 files, 0 errors, 0 warnings
+- `pnpm exec eslint src/routes/(public)/login/+page.server.ts` → 0 errors
+- Unit-level smoke deferred: `/login/verify` endpoint does not exist yet (Step 5.2 PENDING). Hitting the verify URL after a `challenge_required` redirect will 404 until Step 5.2 ships — this is the expected next-step gap and does not block Step 5.1.
+
+**Files touched:**
+
+- `frontend/src/routes/(public)/login/+page.server.ts` — discriminated-union types, `extractChallengeTokenFromSetCookie` helper, `handleChallengeRequiredOrFail` helper, `actions.default` challenge branch, `catch` redirect rethrow.
+
+### Step 5.2: 2FA verify UI [DONE — 2026-04-30 — superseded design]
+
+> **v0.8.1 design revision (2026-04-30):** the original spec below describes a
+> separate `/login/verify` route. Per user direction this evening that approach
+> was retired in favour of an **inline single-card UX**: the existing `<form>`
+> on `/login` swaps its body to the code-entry form when the page-load detects
+> a `challengeToken` cookie. The original §5.2 markup spec, behavior bullets,
+> and state-management snippet still describe the verify-stage behaviour
+> faithfully — only the routing differs. Implementation note at the end of
+> this section documents the actual file layout shipped.
+
+**Original spec (separate-route design, retained for the behaviour reference):**
 
 **Layout:** centered card, glassmorphism, design-system primitives (`page-container--narrow`, `card`, `form-field`, `btn`, `alert`).
 
@@ -1652,6 +1685,46 @@ let resendsRemaining = $state(3);
 let errorMessage = $state<string | null>(null);
 let submitting = $state(false);
 ```
+
+#### Implementation note v0.8.1 (2026-04-30 evening — inline-card revision)
+
+> **Why the design changed:** user feedback on the v0.8.0 separate-route prototype: "die verify seite kannst du löschen — das 2fa code sollte dir in der login card eingegeben werden, [...] das ist best practice". The single-card UX matches the user's "best practice" expectation: a refresh stays on `/login` (no separate route to bookmark or back-button into); the card chrome (theme toggle, brand header, glass card, legal footer) is shared across both stages without duplicate boilerplate; SSR-idempotency is guaranteed because `data.stage` is derived purely from the httpOnly `challengeToken` cookie, not from the SvelteKit `form` prop.
+
+**Files shipped (final layout):**
+
+- `(public)/login/_lib/2fa-constants.ts` — German `MESSAGES` (verbatim §5.5) + `CODE_REGEX` (mirror of backend `VerifyCodeSchema`) + drift-checked mirrors of `MAX_ATTEMPTS` (DD-5), `RESEND_COOLDOWN_SEC` (DD-9), `MAX_RESENDS_PER_CHALLENGE` (DD-21), `LOCKOUT_REDIRECT_DELAY_MS` (5 s).
+- `(public)/login/_lib/TwoFactorVerifyForm.svelte` — child component rendered inside `card__body` when `data.stage === 'verify'`. Owns its own `$state` for code / cooldown / wrong-code-counter / lockout, two independent `<form>`s with `use:enhance` (verify → `?/verify`, resend → `?/resend`), `$effect`-based cooldown ticker + lockout-redirect timer (both with cleanup per CODE-OF-CONDUCT-SVELTE), input filter dropping disallowed chars + uppercasing on the client (mirrors backend Zod normalisation). Auto-submit on 6th character (DD-17) via `$effect` watching `code.length === CODE_LENGTH`; re-fire prevented by the `submitting` flag and post-failure `code = ''` reset.
+- `(public)/login/_lib/2fa-server-helpers.ts` — `handleVerifyAction` + `handleResendAction` extracted out of `+page.server.ts` to keep the parent file under the 800-line ceiling and each action under the 60-line / sonarjs-complexity-10 ceilings. Cross-origin Set-Cookie forwarding for backend `accessToken` / `refreshToken` (R8 — tokens never in body), single-use challenge cookie cleared on consume, fail-closed redirect to `/login` when the challenge cookie is missing, `setAuthCookies($lib/server/auth-cookies)` re-emits the 4-cookie session triad per ADR-046 §"3-cookie invariant". `parseCodeField`, `readVerifySuccess`, `mapVerifyError`, `mapResendError` helpers + `isActionFailure<T>()` type guard for clean discriminated-union returns. Login-purpose verifies that unexpectedly carry a `handoff` field are rejected as a backend contract violation. Resend errors distinguish `RESEND_LIMIT_EXCEEDED` vs. cooldown via `body.error.code` (per `two-factor-auth.service.ts:378-387`).
+
+**Files modified:**
+
+- `(public)/login/+page.server.ts` —
+  1. `load` now returns `stage: 'credentials' | 'verify'` based on the presence of the `challengeToken` cookie. The cookie check is done **before** the `accessToken` /users/me probe (a user mid-2FA has no access token yet, so probing first would 401 and clear the challenge cookie — fast-path keeps the cookie).
+  2. `actions.default` Step 5.1 redirect target changed from `/login/verify` → `/login` so the next `load` reads the freshly-set challenge cookie and surfaces `stage='verify'`.
+  3. New `actions.verify: handleVerifyAction` and `actions.resend: handleResendAction` named-action delegates.
+- `(public)/login/+page.svelte` —
+  1. New `import TwoFactorVerifyForm from './_lib/TwoFactorVerifyForm.svelte'`.
+  2. New `const isVerifyStage = $derived(data.stage === 'verify')` rune.
+  3. `card__body` content wrapped in `{#if isVerifyStage} <TwoFactorVerifyForm /> {:else} <existing-form-+-OAuth-+-footer> {/if}` — the credentials-stage UI is intentionally hidden during verify so the user only sees the code input.
+  4. The form-error toast (`{#if form?.error ...}`) gated on `!isVerifyStage` to avoid duplication with `TwoFactorVerifyForm`'s own inline alert.
+  5. **Drive-by Svelte-5-runes fix** (pre-existing warnings surfaced by `svelte-check` after the file was touched): `let turnstileRef` and `let emailRef` converted to `$state<T | undefined>(undefined)`. These `bind:this` refs were always reassigned but were declared as plain `let` — Svelte 5's analyzer flags this as non-reactive. Fix is a no-op for runtime behaviour and aligns with CODE-OF-CONDUCT-SVELTE.
+
+**Files retired (user removes via `rm -rf`):**
+
+- `(public)/login/verify/_lib/constants.ts`
+- `(public)/login/verify/+page.server.ts`
+- `(public)/login/verify/+page.svelte`
+- `(public)/login/verify/` (the directory itself)
+
+**ESLint exceptions:** one block-scoped `eslint-disable @typescript-eslint/naming-convention` in `_lib/2fa-constants.ts` around the `MESSAGES` object — UPPER_CASE convention is intentional for ALL keys (string and function-valued template helpers) per masterplan §5.5; mixing camelCase for the function keys would split a single record across two case styles. Justification comment present per CLAUDE.md ESLint policy.
+
+**Verification (2026-04-30 evening):**
+
+- `cd frontend && pnpm exec svelte-check --tsconfig ./tsconfig.json` → 2593 files / 0 errors / 0 warnings
+- `cd frontend && pnpm exec eslint 'src/routes/(public)/login'` → 0 errors / 0 warnings
+- ESLint complexity / max-lines / sonarjs-complexity-10 all within ceiling per the action-handler extraction into `2fa-server-helpers.ts`.
+
+**Smoke-test gap (deferred):** end-to-end smoke (real login → card swap → enter Mailpit code → dashboard) is not run as part of Step 5.2; user owns the manual verification cycle. The structural invariants (R8 token-never-in-body, single-use challenge cookie clear, `setAuthCookies` mirror of ADR-046 cookie matrix, fail-closed redirect on missing challenge cookie) are upheld by the helpers; mocked unit tests for the action are tracked under Step 5.5 / Phase 5 DoD.
 
 ### Step 5.3: New `/signup/verify/+page.svelte` [PENDING]
 

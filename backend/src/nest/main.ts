@@ -310,6 +310,10 @@ process.on('SIGHUP', () => void gracefulShutdown('SIGHUP'));
  * Bootstrap the NestJS application with Fastify
  */
 async function bootstrap(): Promise<void> {
+  // Boot-Duration für Cold-Start-Regression-Tracking. ADR-027 dokumentiert
+  // ~11s prod / ~60-120s dev als Soll. Ohne Logging merkt man 30%-Regression
+  // erst über User-Reports — `grep "ready on port" logs/` deckt's auf.
+  const bootstrapStart = process.hrtime.bigint();
   const bootstrapLogger = new NestLogger('Bootstrap');
   const isProduction = process.env['NODE_ENV'] === 'production';
 
@@ -383,19 +387,37 @@ async function bootstrap(): Promise<void> {
   await setupSecurity(app);
   app.useGlobalPipes(new ZodValidationPipe());
 
-  // Fastify v5: listen with object syntax, 0.0.0.0 for Docker
-  const port = Number.parseInt(process.env['PORT'] ?? '3000', 10);
-  await app.listen({ port, host: '0.0.0.0' });
-
-  // Setup WebSocket server for chat (attaches to the same HTTP server)
+  // Attach WebSocket upgrade handler to the underlying http.Server BEFORE
+  // app.listen() — `ws` registers `server.on('upgrade', …)` synchronously, so
+  // no upgrade event can fire before the handler is wired up. Fastify's
+  // raw http.Server is created during NestFactory.create() and exposed via
+  // app.getHttpServer(); listen() only flips it from "constructed" to
+  // "accepting connections".
+  //
+  // Race-Fix (2026-04-30): without this ordering there is a ~1-50 ms window
+  // between listen() and WS-init where a WebSocket upgrade request arrives
+  // without a handler → server replies 400 instead of 101 Switching Protocols.
+  // Frontend reconnect-logic masks this in prod, but fail-loud > fail-soft.
   const httpServer = app.getHttpServer();
   const dbService = app.get(DatabaseService);
   const presenceStore = app.get(PresenceStore);
   chatWsInstance = new ChatWebSocketServer(httpServer, dbService, presenceStore);
+
+  // Fastify v5: listen with object syntax, 0.0.0.0 for Docker
+  const port = Number.parseInt(process.env['PORT'] ?? '3000', 10);
+  await app.listen({ port, host: '0.0.0.0' });
+
+  // Heartbeat starts only after server is actively listening — pinging
+  // un-connected clients during the listen() async boundary is wasteful
+  // and shutdown-safe (heartbeatInterval guard in ChatWebSocketServer.shutdown
+  // handles the case where listen() throws after WS instance is assigned).
   chatWsInstance.startHeartbeat();
   bootstrapLogger.log('WebSocket server started on /chat-ws');
 
-  bootstrapLogger.log(`NestJS+Fastify application running on port ${port}`);
+  // Boot-Duration: ADR-027 baseline ~11s prod / ~60-120s dev. Greppable
+  // marker for Cold-Start-Regression: `grep "ready on port" logs/`.
+  const bootMs = Number((process.hrtime.bigint() - bootstrapStart) / 1_000_000n);
+  bootstrapLogger.log(`NestJS+Fastify ready on port ${port} in ${bootMs}ms`);
   bootstrapLogger.log(`Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
 }
 

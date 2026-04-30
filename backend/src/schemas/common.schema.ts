@@ -94,28 +94,26 @@ export const RoleSchema = z.enum(['admin', 'employee', 'root', 'dummy']);
 // ============================================================
 
 /**
- * Pagination query parameters with defaults
- * Transforms string inputs to numbers automatically
+ * Pagination query parameters with defaults.
+ *
+ * WHY z.coerce + .default (and not z.preprocess + .default):
+ * Zod 4.x changed semantics: `.default(N)` no longer triggers when the
+ * preprocess function returns `undefined` for a missing query param —
+ * the inner schema receives `undefined` and reports
+ * `"expected nonoptional, received undefined"`. ADR-030 §4 mandates
+ * `z.coerce.number()` over `z.preprocess` for exactly this reason.
+ * Migrated 2026-04-30 after the regression surfaced as 400 on
+ * `GET /api/v2/logs?limit=5` (root-dashboard SSR loader).
+ *
+ * Behavior contract (matches Zod-3 era expectations):
+ *   - page    → string|number coerced; missing → default 1
+ *   - limit   → string|number coerced; missing → default 10
+ *   - offset  → string|number coerced; missing → undefined (truly optional)
  */
 export const PaginationSchema = z.object({
-  page: z.preprocess((val: unknown) => {
-    if (typeof val === 'string' || typeof val === 'number') {
-      return Number.parseInt(val.toString(), 10);
-    }
-    return 1;
-  }, z.number().int().min(1).default(1)),
-  limit: z.preprocess((val: unknown) => {
-    if (typeof val === 'string' || typeof val === 'number') {
-      return Number.parseInt(val.toString(), 10);
-    }
-    return 10;
-  }, z.number().int().min(1).max(100).default(10)),
-  offset: z.preprocess((val: unknown) => {
-    if (typeof val === 'string' || typeof val === 'number') {
-      return Number.parseInt(val.toString(), 10);
-    }
-    return undefined;
-  }, z.number().int().min(0).optional()),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  offset: z.coerce.number().int().min(0).optional(),
 });
 
 /**

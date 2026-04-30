@@ -14,10 +14,10 @@ import { AreaTypeSchema } from './create-area.dto.js';
  */
 export const ListAreasQuerySchema = z.object({
   type: AreaTypeSchema.optional(),
-  isActive: z.preprocess(
-    (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
-    z.number().int().min(0).max(4).optional(),
-  ),
+  // `z.coerce.number()` per ADR-030 §4 — replaces broken `z.preprocess(...,
+  // z.number().optional())` form (Zod 4.x: inner `.optional()` reports
+  // "expected nonoptional, received undefined" when the field is missing).
+  isActive: z.coerce.number().int().min(0).max(4).optional(),
   search: z
     .string()
     .trim()
