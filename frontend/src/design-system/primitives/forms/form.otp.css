@@ -1,0 +1,64 @@
+/**
+ * Design System – OTP / Verification-Code Input
+ *
+ * 6-Box-Pattern für Bestätigungscodes (Email-2FA, SMS-OTP, Magic-Links).
+ * Folgt Base+Variants: jede Box ist ein `form-field__control` mit Modifier
+ * `--otp` (zentrierter, monospaced Single-Char-Eingang); der Container
+ * `.otp-input` ist nur Layout (Flex-Row + Gap), keine eigene Glass-Logik.
+ *
+ * Tokens-only — keine Hardcodes. Ergänzungen leben in tokens/forms.css.
+ *
+ * @see frontend/src/routes/(public)/login/_lib/TwoFactorVerifyForm.svelte
+ * @see frontend/src/routes/(public)/signup/_lib/TwoFactorVerifyForm.svelte
+ * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §5.2 / §5.3
+ */
+
+@layer components {
+  /* Container — reine Layout-Hülle, keine eigene Optik (die kommt von den
+   * inneren `form-field__control--otp` Boxen). `flex-wrap` schützt schmale
+   * Viewports (~320 px) vor horizontalem Overflow. */
+  .otp-input {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-2);
+    width: 100%;
+  }
+
+  /* Box-Variante des form-field__control —
+   * Single-Char-Eingang: quadratisch, mittig, Monospace, große Glyphe.
+   * `text-transform: uppercase` deckt den Fall ab, dass JS-Filter aus
+   * historischen Gründen mal nicht greift; backend normalisiert ohnehin
+   * via `.toUpperCase()` (VerifyCodeSchema). */
+  .form-field__control--otp {
+    flex: 0 0 auto;
+
+    width: 3rem;        /* 48 px – passt in 320-px-Viewport (6×48 + 5×gap < 312) */
+    min-width: 0;       /* override base 100% – Box muss nicht volle Breite */
+    height: 3.25rem;    /* leicht höher als breit – wirkt visuell „Box" */
+    padding: 0;         /* Text mittig per text-align, kein extra padding */
+
+    text-align: center;
+    text-transform: uppercase;
+    font-family: var(--font-family-mono, ui-monospace, monospace);
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-semibold);
+    line-height: 1;
+
+    caret-color: var(--color-primary);
+  }
+
+  /* Mobile: bei sehr schmalen Viewports etwas kompakter, damit kein
+   * Wrap auf zwei Zeilen entsteht (sieht zerstückelt aus bei OTP). */
+  @media (max-width: 360px) {
+    .form-field__control--otp {
+      width: 2.5rem;
+      height: 2.75rem;
+      font-size: 1.25rem;
+    }
+
+    .otp-input {
+      gap: var(--spacing-1);
+    }
+  }
+}

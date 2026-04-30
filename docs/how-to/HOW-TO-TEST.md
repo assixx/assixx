@@ -51,15 +51,21 @@ Setup: [HOW-TO-CREATE-TEST-USER.md](./HOW-TO-CREATE-TEST-USER.md)
 
 ### Database setup (one-off after a fresh install)
 
-```sql
--- Activate all addons for the assixx test tenant (otherwise KVP tests = 403)
-INSERT INTO tenant_addons (tenant_id, addon_id, status, activated_at)
-SELECT 1, id, 'active', NOW() FROM addons WHERE is_active = 1
-ON CONFLICT (tenant_id, addon_id) DO UPDATE SET status = 'active';
+```bash
+# Canonical: 5 dev tenants atomically (assixx id=1 + firma-a id=2 + firma-b id=3 +
+# scs id=4 + unverified-e2e id=5), all with `is_active=1`, verified domains
+# (except unverified-e2e by design), and all addons activated as trial.
+doppler run -- pnpm run db:seed
+```
 
--- assixx admin as team lead (KVP create requires this)
+```sql
+-- KVP-specific: assixx admin as team lead (KVP create requires this)
 UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1;
 ```
+
+> **Seed pre-condition:** `database/seeds/002_test-tenants-dev-only.sql` is **non-idempotent** (fail-loud on subdomain-conflict). On re-run: `TRUNCATE TABLE tenants RESTART IDENTITY CASCADE` first — see [HOW-TO-CREATE-TEST-USER.md](./HOW-TO-CREATE-TEST-USER.md).
+>
+> **Cross-tenant tests** (`tenant-domains`, `tenant-subdomain-routing`, `shift-handover` RLS) require tenant_ids 2/3 from the seed — `scripts/create-test-tenant.sh` alone (signup-API path, only creates `assixx`) is **insufficient** and these tests will fail with "missing fixture" / 401 cascades.
 
 ### Rate-limit reset (on 429)
 
@@ -702,7 +708,7 @@ Full reference: [Vitest Coverage Docs](https://vitest.dev/guide/coverage)
 | `400 Bad Request`                      | 2     | Validation error                   | Check the body format against the Zod schema                                             |
 | `403 Forbidden` (KVP)                  | 2     | User is not a team lead            | `UPDATE teams SET team_lead_id = 1 WHERE id = 2` (see Prerequisites)                     |
 | KVP `users.length === 50` fails        | 2     | <51 users in DB → cap untestable   | Run `00-auth.api.test.ts` once — it seeds 50 `kvp-fixture-NNN@assixx.com`                |
-| Login `perm-test-admin@assixx.com` 401 | 2     | Fixture setup is needed once       | As above — `00-auth.api.test.ts` creates the user idempotently                           |
+| Login `perm-test-admin@assixx.com` 401 | 2     | Fixture setup or stale 2FA-state   | (a) Fixture: `00-auth.api.test.ts` creates the user idempotently — runs first. (b) Stale Redis state from a prior failed 2FA verify: `flushThrottleKeys()` + `clear2faStateForUser(<id>)` — `loginAs` in tests already does this; on full-suite flake just `docker exec assixx-redis redis-cli ... FLUSHDB`. |
 | `403 Forbidden` (addon)                | 2     | Addon not activated                | `INSERT INTO tenant_addons …` (see Prerequisites)                                        |
 | `404 Not Found`                        | 2     | Resource does not exist            | Create `describe` must come BEFORE Get/Delete                                            |
 | `500 Internal Server Error`            | 2     | Backend bug                        | `docker logs assixx-backend --tail 100`                                                  |

@@ -1,20 +1,25 @@
 <!--
-  TwoFactorVerifyForm.svelte — inline 2FA-verify card content for the login
-  page (FEAT_2FA_EMAIL_MASTERPLAN Step 5.2 v0.8.1, inline-design revision).
+  TwoFactorVerifyForm.svelte — inline 2FA-verify card content for the signup
+  page (FEAT_2FA_EMAIL_MASTERPLAN Step 5.3 v0.8.2, inline-design revision).
 
-  Rendered inside `(public)/login/+page.svelte`'s `card__body` when the
-  parent's `data.stage === 'verify'`. Shares the existing card chrome
-  (theme toggle, brand header, glass card, legal footer) with the
-  credentials stage; only the body content differs.
+  Rendered inside `(public)/signup/+page.svelte`'s signup card body when the
+  parent's `data.stage === 'verify'`. Twin of the login-flow component at
+  `(public)/login/_lib/TwoFactorVerifyForm.svelte` — diverges only in:
+    - imports (signup-flavoured MESSAGES + constants)
+    - lockout-redirect target (`/signup` instead of apex `/login` via buildLoginUrl)
+    - "Zurück" link target (`/signup` instead of `/login`)
+    - shape of `result.location` on verify success (cross-origin
+      `https://<subdomain>.<apex>/signup/oauth-complete?token=…`, not a
+      same-origin dashboard path) — handled by the redirect branch passing
+      `result.location` straight to `window.location.href`, which works for
+      both same-origin and cross-origin URLs.
 
   Two server actions on the parent route handle submissions:
-    - `?/verify` (default of this child form) — POST { code } → 2FA verify
+    - `?/verify` (default of this child form) — POST { code } → signup verify
     - `?/resend` — empty body → resend code on the same challenge
 
-  Auto-submit fires on the 6th character (DD-17, no flag). Resend cooldown
-  uses a $state-driven 1 s ticker that cleans up via $effect's return value.
-
-  @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §5.2
+  @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §5.3
+  @see (public)/login/_lib/TwoFactorVerifyForm.svelte (login twin)
   @see docs/CODE-OF-CONDUCT-SVELTE.md (Svelte 5 runes / no on:event / cleanup)
 -->
 <script lang="ts">
@@ -23,12 +28,10 @@
   import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
 
-  // Global toast store — same surface the parent login page uses for
-  // success messages (e.g. `?logout=success`). Replaces a previous inline
-  // `<div class="alert alert--success">` so the resend confirmation lives
-  // on the same UX layer as every other success alert in the app.
+  // Global toast store — same surface the parent signup page already uses
+  // for success/error alerts. Keeps the resend confirmation on the canonical
+  // UX layer (auto-dismiss + stacking).
   import { showSuccessAlert } from '$lib/stores/toast';
-  import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
   import {
     CODE_LENGTH,
@@ -45,11 +48,7 @@
 
   // 6-Box-OTP-Pattern (Stripe/Apple-Style): digits[] hält die Einzelziffern,
   // `code` ist daraus abgeleitet und wird per hidden input an die ?/verify-
-  // Action übergeben. Single-Source-of-Truth bleibt das Array — nichts greift
-  // direkt auf den DOM-`.value` der Boxen zu außer dem oninput-Filter, der
-  // nur das Box-Display synchronisiert (z. B. nach Paste mit ungültigen
-  // Zeichen). Auto-Advance + Backspace-Back + Paste-Distribution ergeben sich
-  // aus den unten definierten Handlern.
+  // Action übergeben. Twin der Login-Variante; siehe dort für Rationale.
   /** Per-Box-Zustand. Mutationen einzelner Indizes werden durch $state getrackt. */
   let digits = $state<string[]>(['', '', '', '', '', '']);
   /** Concatenierter 6-Zeichen-Code für canSubmit-Gate + hidden form field. */
@@ -61,10 +60,7 @@
   /** Remaining resends on this challenge (mirror of backend `resendsRemaining`, DD-21). */
   let resendsRemaining = $state(INITIAL_RESENDS_REMAINING);
 
-  /**
-   * Local wrong-code counter — resets on page reload (acceptable: server-side
-   * lockout still triggers correctly after MAX_ATTEMPTS regardless of this).
-   */
+  /** Local wrong-code counter — resets on page reload. Server-side lockout still enforces. */
   let wrongCodeCount = $state(0);
 
   /** Last error message rendered in the alert; null hides the alert. */
@@ -76,17 +72,12 @@
   /** True while the resend request is in flight. Disables resend button. */
   let resending = $state(false);
 
-  /**
-   * True after the backend signalled lockout (5 wrong attempts → 15 min lockout
-   * per DD-5/DD-6). Triggers the 5 s redirect-to-/login $effect below.
-   */
+  /** True after the backend signalled lockout. Triggers the 5 s redirect $effect. */
   let locked = $state(false);
 
   // Refs auf alle 6 Boxen — bind:this innerhalb #each schreibt indexbasiert
-  // hier rein. `const` reicht: Svelte mutiert nur die Indizes, die Array-
-  // Referenz selbst bleibt stabil. Kein $state, weil das Array nicht in
-  // reaktive Render-Pfade fließt — einzige Konsumenten sind Handler
-  // (focus / select).
+  // hier rein. `const` reicht (Indizes mutieren, Array-Referenz nicht);
+  // siehe Login-Twin für Rationale.
   const inputRefs: HTMLInputElement[] = [];
 
   // ---------------------------------------------------------------------------
@@ -125,30 +116,20 @@
     };
   });
 
-  // Manual-submit only (per user request 2026-04-30): the user must click
-  // the "Bestätigen" button to send the code. Auto-submit on 6th character
-  // (originally DD-17 in FEAT_2FA_EMAIL_MASTERPLAN) was removed because it
-  // (a) felt jumpy in production testing and (b) tangled with the verify-
-  // redirect race that caused an early-2026-04-30 POST loop. `canSubmit`
-  // already gates the button at `code.length === 6`, so the UX delta is one
-  // click — and behaviour is now identical to the credentials form.
-
-  // Lockout-redirect timer — masterplan §5.2 "redirect to /login after 5 s".
-  // With the inline-card design /login is also where we are; the redirect
-  // serves as a stage-reset (load runs → no challenge cookie → credentials).
-  //
-  // Apex-hop via `window.location.href = buildLoginUrl()` (NOT `goto()`) per
-  // ADR-050 Amendment 2026-04-22: SvelteKit's client router is origin-bound
-  // and cannot leave the current host. The rule applies even when the user
-  // is already on the apex (defense-in-depth — moving the 2FA challenge
-  // behind a tenant subdomain later must not silently re-introduce the
-  // bug). No reason discriminator: the in-page ERR_LOCKED alert already
-  // conveys the lockout state, so a `?session=expired` toast on top would
-  // be redundant noise.
+  // Lockout-redirect timer. Twin of the login version, but the redirect
+  // target is `/signup` (same-origin reload — clears the apex challenge
+  // cookie via the load function's stage discriminator, swapping back to
+  // the credentials view). We use `window.location.href` rather than
+  // SvelteKit `goto()` because the load runs server-side on the next
+  // request, picking up the cleared cookie cleanly. Note: signup ALWAYS
+  // lives on the apex (`www.assixx.com/signup` — no tenant context yet)
+  // so a same-origin `/signup` reload is sufficient. No buildApexUrl()
+  // needed (the login twin uses `buildLoginUrl()` only because logout
+  // can fire from a tenant subdomain — signup never does).
   $effect(() => {
     if (!locked) return;
     const timer = setTimeout(() => {
-      window.location.href = buildLoginUrl();
+      window.location.href = '/signup';
     }, LOCKOUT_REDIRECT_DELAY_MS);
     return () => {
       clearTimeout(timer);
@@ -156,9 +137,8 @@
   });
 
   // Focus on mount — programmatic to avoid SvelteKit hydration race with
-  // HTML `autofocus` (same rationale as parent login page). Bei 6-Box-OTP
-  // ist „Box 1" der Einstieg; Browser-Autofill (autocomplete=one-time-code)
-  // ist ohnehin nur an Box 1 gebunden.
+  // HTML `autofocus` (same rationale as the login twin). Box 1 ist der
+  // Einstieg; autocomplete=one-time-code lebt nur an Box 1.
   onMount(() => {
     inputRefs[0]?.focus();
   });
@@ -167,12 +147,7 @@
   // Event handlers
   // ---------------------------------------------------------------------------
 
-  /**
-   * Crockford-Subset-Filter: streicht alles außer dem Backend-Alphabet
-   * `[A-HJKMNP-Z2-9]` (DD-1, Verwirrungs-Zeichen 0/1/I/L/O ausgeschlossen).
-   * Lokale Konstante statt Modul-RegExp, damit der State `lastIndex` bei
-   * `/g`-Flag nicht zwischen Aufrufen leakt.
-   */
+  /** Crockford-Subset-Filter — siehe Login-Twin für Rationale. */
   const ALPHABET_RE = /[^A-HJKMNP-Z2-9]/g;
 
   /** Reset aller Boxen + Fokus auf Box 1 (Wrong-Code-Branch / Lockout). */
@@ -182,11 +157,8 @@
   }
 
   /**
-   * Schreibt eine Zeichenkette ab `startIdx` in die Boxen, filtert vorher
-   * gegen das Alphabet. Genutzt von Paste UND von oninput, falls eine Box
-   * mehr als 1 Zeichen erhält (Autofill / programmatischer Paste, der
-   * `maxlength=1` ignoriert). Setzt den Fokus auf die Box NACH dem letzten
-   * geschriebenen Zeichen (oder die letzte Box, falls voll).
+   * Schreibt eine Zeichenkette ab `startIdx` in die Boxen (Paste oder
+   * Multi-Char-Input). Twin-Logik zur Login-Variante.
    */
   function setFromString(input: string, startIdx: number): void {
     const cleaned = input.toUpperCase().replace(ALPHABET_RE, '');
@@ -200,18 +172,10 @@
     inputRefs[focusIdx]?.select();
   }
 
-  /**
-   * oninput pro Box: Single-Char-Pfad (häufigster Fall) → Auto-Advance;
-   * Leer-Pfad → Box leeren (Backspace im handleDigitKeydown beendet); Multi-
-   * Char-Pfad → setFromString verteilt (Autofill-Sicherheitsnetz).
-   *
-   * Wir resyncen `target.value` nicht zwingend mit `digits[idx]` — Svelte
-   * propagiert den `value={digit}`-Binding-Pfad ohnehin im nächsten Tick.
-   */
+  /** Single-Char → Auto-Advance; Leer → Box leeren; Multi-Char → verteilen. */
   function handleDigitInput(idx: number, event: Event): void {
     const target = event.currentTarget as HTMLInputElement;
-    const raw = target.value;
-    const cleaned = raw.toUpperCase().replace(ALPHABET_RE, '');
+    const cleaned = target.value.toUpperCase().replace(ALPHABET_RE, '');
 
     if (cleaned.length === 0) {
       digits[idx] = '';
@@ -249,10 +213,8 @@
   }
 
   /**
-   * Tastatur-Navigation: Backspace auf leerer Box → vorherige Box leeren;
-   * Pfeiltasten → Boxen wechseln ohne Inhalt zu zerstören. Andere Tasten
-   * fallen durch (oninput übernimmt). Switch hält die Komplexität niedrig
-   * und macht die Tastenmatrix lesbar — pro Case eine Verantwortung.
+   * Tastatur-Navigation per Switch — pro Case eine Verantwortung, ESLint-
+   * Complexity bleibt gering, Pflege einfacher (siehe Login-Twin).
    */
   function handleDigitKeydown(idx: number, event: KeyboardEvent): void {
     switch (event.key) {
@@ -270,13 +232,7 @@
     }
   }
 
-  /**
-   * Paste: ein 6-Zeichen-Code aus der Zwischenablage soll auf alle Boxen
-   * verteilt werden — egal in welche Box der User klebt. preventDefault
-   * verhindert, dass der native Paste die Single-Box mit allen 6 Zeichen
-   * füllt (würde zwar via setFromString korrigiert, aber zuerst flackert
-   * der DOM-Wert auf — unschön).
-   */
+  /** Paste verteilt auf alle Boxen ab Klebe-Position. */
   function handlePaste(idx: number, event: ClipboardEvent): void {
     const pasted = event.clipboardData?.getData('text');
     if (typeof pasted !== 'string' || pasted.length === 0) return;
@@ -284,10 +240,7 @@
     setFromString(pasted, idx);
   }
 
-  /**
-   * Type guard for the action-failure payload from the parent `+page.server.ts`.
-   * Keeps the call sites readable while staying off `any`.
-   */
+  /** Type guard for the action-failure payload from the parent `+page.server.ts`. */
   interface FailureShape {
     error?: string;
     wrongCode?: true;
@@ -311,24 +264,17 @@
       update: () => Promise<void>;
     }): Promise<void> => {
       // CRITICAL: handle redirects BEFORE flipping `submitting = false`.
+      // Same race-prevention rationale as the login twin — a subsequent
+      // re-fire could race the in-flight cross-origin navigation.
       //
-      // Why: the auto-submit `$effect` (line ~115) re-fires `requestSubmit()`
-      // the moment `code.length === 6 && !submitting` is true again. If we
-      // reset `submitting` first and only THEN start the redirect navigation,
-      // the effect re-runs in the same microtask and POSTs a second verify.
-      // That second request has no `challengeToken` cookie (verify-action
-      // already cleared it on the first hit) → server fail-closes with
-      // `redirect(303, '/login')` → its callback overwrites our pending
-      // `window.location.href = '/root-dashboard'` with `/login` → user is
-      // stuck on /login bouncing between POSTs forever.
-      //
-      // Keeping `submitting = true` while the navigation is in flight blocks
-      // the `$effect` predicate (`!submitting`) and makes the redirect win.
+      // For signup the redirect target is the cross-origin handoff URL
+      // (`https://<subdomain>.<apex>/signup/oauth-complete?token=…`). The
+      // browser leaves the apex via this navigation; the receiving page
+      // (existing OAuth handoff consumer) sets cookies on the correct
+      // origin and routes to the role-specific dashboard. Cross-origin
+      // navigation REQUIRES `window.location.href` — SvelteKit's client
+      // router cannot leave the current origin.
       if (result.type === 'redirect') {
-        // Full page reload — login→dashboard is a state boundary
-        // (unauthenticated → authenticated). Client-side `update()` / `goto()`
-        // fails with NetworkError on this transition. Mirrors the credentials
-        // form's `window.location.href` approach (+page.svelte:639–643).
         if (typeof result.location === 'string' && result.location !== '') {
           window.location.href = result.location;
           return;
@@ -393,10 +339,6 @@
           if (typeof data.resendsRemaining === 'number') {
             resendsRemaining = data.resendsRemaining;
           }
-          // Use the global toast store — same channel the parent login page
-          // uses (e.g. logout-success). Replaces a previous inline
-          // `<div class="alert alert--success">` so positive feedback for the
-          // resend lives on the canonical UX layer (auto-dismiss + stacking).
           showSuccessAlert(MESSAGES.RESEND_SUCCESS);
           return;
         }
@@ -424,11 +366,8 @@
   novalidate
 >
   <div class="form-field">
-    <!-- Gruppen-Label: <span> + role="group" + aria-labelledby/-describedby
-         statt <label for>, weil das Steuerungselement keine einzelne <input>
-         mehr ist, sondern 6 zusammenhängende Boxen. Screenreader hören dann
-         „Bestätigungscode, Stelle 1 von 6 Editfeld" statt eines floatenden
-         Labels ohne Ziel. -->
+    <!-- Gruppen-Label-Pattern (siehe Login-Twin): role="group" + aria-* statt
+         <label for>, weil das Steuerungselement aus 6 Boxen besteht. -->
     <span
       id="code-label"
       class="form-field__label form-field__label--required">{MESSAGES.CODE_LABEL}</span
@@ -466,8 +405,7 @@
       {/each}
     </div>
     <!-- Hidden Field trägt den concatenierten Code an die ?/verify-Action.
-         Der Server liest weiterhin formData.get('code') — keine Backend-
-         Änderung nötig. -->
+         Backend liest weiterhin formData.get('code') — keine Änderung nötig. -->
     <input
       type="hidden"
       name="code"
@@ -512,7 +450,7 @@
 </form>
 
 <a
-  href={resolve('/login')}
+  href={resolve('/signup')}
   class="btn btn-link verify-back"
   data-sveltekit-reload>{MESSAGES.BTN_BACK}</a
 >
@@ -520,8 +458,7 @@
 <style>
   .verify-heading {
     /* Override base.css h1 (2.25rem) — page-level size is too large for a
-     * card-section heading. 1.5rem matches the h3 scale in base.css and
-     * keeps the verify card visually balanced with the surrounding card body. */
+     * card-section heading. 1.5rem matches the h3 scale in base.css. */
     margin-bottom: 0.5rem;
     font-size: 1.5rem;
     line-height: 2rem;
