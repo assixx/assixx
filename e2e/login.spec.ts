@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
 
+import { complete2faChallenge } from './helpers';
+
 /* Login-Tests nutzen KEINE gespeicherte Auth — sie testen den Login selbst */
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -20,11 +22,25 @@ test.describe('Login Flow', () => {
   });
 
   test('successful login redirects to dashboard', async ({ page }) => {
+    // Bumped from default 30 s — same budget breakdown as auth.setup.ts
+    // (Turnstile + 2FA dance + redirects). See FEAT_2FA_EMAIL_MASTERPLAN
+    // §Spec Deviations D5 for the audit-row-#4 miss this test had to absorb.
+    test.setTimeout(60_000);
+
     await page.goto('/login');
 
     await page.getByRole('textbox', { name: 'E-Mail' }).fill('info@assixx.com');
     await page.getByRole('textbox', { name: 'Passwort' }).fill('ApiTest12345!');
-    await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
+
+    const submitButton = page.getByRole('button', { name: 'Anmelden', exact: true });
+    await expect(submitButton).toBeEnabled({ timeout: 15_000 });
+
+    // Capture mail-poll lower bound BEFORE submit (Mailpit `since`-filter).
+    const loginStartedAt = new Date();
+    await submitButton.click();
+
+    // Mandatory email-based 2FA per ADR-054 — same dance as auth.setup.ts.
+    await complete2faChallenge(page, 'info@assixx.com', loginStartedAt);
 
     await page.waitForURL('**/root-dashboard');
     await expect(page.locator('#user-name')).toHaveText('Admin Test');
@@ -35,7 +51,15 @@ test.describe('Login Flow', () => {
 
     await page.getByRole('textbox', { name: 'E-Mail' }).fill('wrong@test.de');
     await page.getByRole('textbox', { name: 'Passwort' }).fill('WrongPass123!');
-    await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
+
+    // The submit button is gated by `isFormValid` which includes the Turnstile
+    // token (`turnstileEnabled && turnstileToken !== ''`). On a cold Vite +
+    // cold Turnstile-CDN handshake the token can take ~10 s to populate, well
+    // beyond the 5 s expect-timeout the test below uses for the error toast.
+    // Wait for the button explicitly with the same 15 s budget as auth.setup.ts.
+    const submitButton = page.getByRole('button', { name: 'Anmelden', exact: true });
+    await expect(submitButton).toBeEnabled({ timeout: 15_000 });
+    await submitButton.click();
 
     await expect(
       page.getByText(/fehlgeschlagen|ungültig|falsch|error|Anmeldung/i).first(),
