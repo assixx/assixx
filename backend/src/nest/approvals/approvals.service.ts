@@ -29,11 +29,17 @@ import type {
 import { mapApprovalRowToApi } from './approvals.types.js';
 import type { CreateApprovalDto } from './dto/index.js';
 
-/** Pagination parameters */
+/** Pagination + filter parameters */
 export interface ApprovalFilters {
   status?: ApprovalStatus | undefined;
   addonCode?: string | undefined;
   priority?: string | undefined;
+  /**
+   * Free-text search applied via ILIKE on `a.title OR a.description` (Phase 1.2b).
+   * Service treats `undefined` and empty string identically: no WHERE clause emitted.
+   * Backwards-compat invariant — same convention as work-orders/surveys/tpm in Stage B.
+   */
+  search?: string | undefined;
   page?: number | undefined;
   limit?: number | undefined;
 }
@@ -108,6 +114,15 @@ export class ApprovalsService {
         if (filters.priority !== undefined) {
           conditions.push(`a.priority = $${String(paramIdx)}`);
           params.push(filters.priority);
+          paramIdx++;
+        }
+        // Free-text search across title + description (single bound param reused).
+        // `undefined` OR empty string → no WHERE clause (backwards-compat, Phase 1.2b).
+        if (filters.search !== undefined && filters.search !== '') {
+          conditions.push(
+            `(a.title ILIKE $${String(paramIdx)} OR a.description ILIKE $${String(paramIdx)})`,
+          );
+          params.push(`%${filters.search}%`);
           paramIdx++;
         }
 
