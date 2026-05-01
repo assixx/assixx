@@ -319,11 +319,16 @@
 <style>
   /* Reset button styles for dropdown trigger */
 
-  /* Reset button styles for dropdown options */
+  /* Reset native <button> borders only on top/right/left — bottom is owned by the design
+     system (custom-dropdown.css: border-bottom on .dropdown__option as inter-item separator,
+     cleared on :last-child). A flat `border: none` here would override the layered DS rule
+     because scoped Svelte styles are unlayered and beat @layer components. */
   .dropdown__option {
     cursor: pointer;
     width: 100%;
-    border: none;
+    border-top: none;
+    border-right: none;
+    border-left: none;
     text-align: left;
     font-family: inherit;
   }

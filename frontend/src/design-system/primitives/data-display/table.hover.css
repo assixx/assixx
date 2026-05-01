@@ -21,3 +21,31 @@
 .data-table--hover tbody tr.is-active:hover {
   background: var(--color-primary-alpha-30);
 }
+
+/**
+ * Actions-Hover Modifier
+ *
+ * Reveals .action-icon buttons inside a row only on hover or keyboard focus.
+ * WHY: Reduces visual noise in dense tables (admin "manage-*" pages) where
+ * actions are secondary to the row data itself.
+ * HOW TO APPLY: <table class="data-table data-table--hover data-table--actions-hover">
+ *
+ * Guards:
+ * - @media (hover: hover): Mobile/touch devices keep buttons visible (no hover state exists).
+ * - :focus-within: Keyboard users tabbing into a button still see it (WCAG 2.4.7).
+ * - opacity (not display): Preserves column width — no layout shift on row hover.
+ * - pointer-events: Off when hidden, so clicks can't accidentally land on invisible icons.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .data-table--actions-hover tbody tr .action-icon {
+    opacity: 0%;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+  }
+
+  .data-table--actions-hover tbody tr:hover .action-icon,
+  .data-table--actions-hover tbody tr:focus-within .action-icon {
+    opacity: 100%;
+    pointer-events: auto;
+  }
+}

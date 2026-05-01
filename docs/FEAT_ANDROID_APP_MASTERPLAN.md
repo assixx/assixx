@@ -53,13 +53,13 @@ materially changes Phase 1 strategy.
 
 ### Ground Truth (verified 2026-05-02)
 
-| Artifact                                            | Count  | Implication                                                  |
-| --------------------------------------------------- | ------ | ------------------------------------------------------------ |
-| `+page.server.ts` total                             | **84** | Plan said 78 — slightly more, but pattern is uniform         |
-| `+page.ts` (universal load)                         | **0**  | No universal-load files exist yet — clean slate              |
-| `+layout.server.ts`                                 | **5**  | Central auth bootstrap (`(app)`, `(public)`, etc.)           |
-| Files with `actions = { ... }` (Form-Actions)       | **~9** | Login, Signup, Forgot/Reset Password, OAuth-Complete         |
-| Files using shared `apiFetch()` from `$lib/server/` | **70+**| **Token handling is already abstracted** → codemod-friendly  |
+| Artifact                                            | Count   | Implication                                                 |
+| --------------------------------------------------- | ------- | ----------------------------------------------------------- |
+| `+page.server.ts` total                             | **84**  | Plan said 78 — slightly more, but pattern is uniform        |
+| `+page.ts` (universal load)                         | **0**   | No universal-load files exist yet — clean slate             |
+| `+layout.server.ts`                                 | **5**   | Central auth bootstrap (`(app)`, `(public)`, etc.)          |
+| Files with `actions = { ... }` (Form-Actions)       | **~9**  | Login, Signup, Forgot/Reset Password, OAuth-Complete        |
+| Files using shared `apiFetch()` from `$lib/server/` | **70+** | **Token handling is already abstracted** → codemod-friendly |
 
 ### Pattern Uniformity (key insight)
 
@@ -85,13 +85,13 @@ estimated 5-7 sessions.
 
 **New plan (v0.2.0):** Three-track migration based on file shape:
 
-| Track                     | Files                                | Strategy                                                                      | Sessions |
-| ------------------------- | ------------------------------------ | ----------------------------------------------------------------------------- | -------- |
-| **Track A — Codemod**     | ~70 pure data-load files             | `ts-morph` script: rename `.server.ts`→`.ts`, swap types, strip auth, swap import | **0.5**  |
-| **Track B — Layout**      | 5 `+layout.server.ts`                | Manual restructure → `+layout.ts` with client-side auth gate                  | **1-2**  |
-| **Track C — Form Actions**| ~9 (Login, Signup, Forgot/Reset, OAuth) | Manual rewrite — SvelteKit `actions` don't exist in SPA mode → plain `fetch()` | **1-2**  |
-| **Track D — Universal apiFetch** | 1 new file: `$lib/api-fetch.ts` | Token from `TokenStore` (Web localStorage / Mobile Capacitor Preferences)     | **0.5**  |
-| **Σ Phase 1.2**           | 84 files + 1 new                     |                                                                               | **3-5**  |
+| Track                            | Files                                   | Strategy                                                                          | Sessions |
+| -------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------- | -------- |
+| **Track A — Codemod**            | ~70 pure data-load files                | `ts-morph` script: rename `.server.ts`→`.ts`, swap types, strip auth, swap import | **0.5**  |
+| **Track B — Layout**             | 5 `+layout.server.ts`                   | Manual restructure → `+layout.ts` with client-side auth gate                      | **1-2**  |
+| **Track C — Form Actions**       | ~9 (Login, Signup, Forgot/Reset, OAuth) | Manual rewrite — SvelteKit `actions` don't exist in SPA mode → plain `fetch()`    | **1-2**  |
+| **Track D — Universal apiFetch** | 1 new file: `$lib/api-fetch.ts`         | Token from `TokenStore` (Web localStorage / Mobile Capacitor Preferences)         | **0.5**  |
+| **Σ Phase 1.2**                  | 84 files + 1 new                        |                                                                                   | **3-5**  |
 
 ### New Step 1.2 (replaces v0.1.0 Step 1.2)
 
@@ -101,8 +101,9 @@ estimated 5-7 sessions.
 
 ```ts
 import { browser } from '$app/environment';
-import { TokenStore } from './utils/token-store';
+
 import { API_BASE } from './config';
+import { TokenStore } from './utils/token-store';
 
 export async function apiFetch<T>(path: string, fetchFn: typeof fetch = fetch): Promise<T> {
   const token = browser ? await TokenStore.get('accessToken') : null;
@@ -208,40 +209,40 @@ different across cookies vs. native token store.
 
 ### Revised Session Tracking (v0.2.0)
 
-| Old | New | Phase | Description                                           |
-| --- | --- | ----- | ----------------------------------------------------- |
-| 1   | 1   | 0     | **`continue with Assixx`** + Phase 1.1 adapter setup  |
-| 2   | 2   | 1     | Capacitor init + Android project + scripts            |
-| 3   | 3   | 1     | Step 1.2a — Universal apiFetch + Step 1.2b — Codemod  |
-| —   | 4   | 1     | Step 1.2c — Layout files manual restructure           |
-| —   | 5   | 1     | Step 1.2d — Form-Action rewrites (Login/Signup)       |
-| —   | 6   | 1     | CSP fixes + Phase 1 DoD verification                  |
-| 4   | 7   | 2     | Token store + platform detection                      |
-| 5   | 8   | 2     | Backend dual auth path (cookie + header)              |
-| 6   | 9   | 2     | API client adaptation + WebSocket hardening           |
-| 7   | 10  | 3     | StatusBar + SplashScreen + Keyboard                   |
-| 8   | 11  | 3     | Push Notifications (FCM setup + backend)              |
-| 9   | 12  | 3     | Push Notifications (backend dispatch + test)          |
-| 10  | 13  | 3     | Biometric auth + Deep links + App lifecycle           |
-| 11  | 14  | 4     | Offline cache architecture + service                  |
-| 12  | 15  | 4     | API client cache integration + indicators             |
-| 13  | 16  | 4     | Offline testing + edge cases                          |
-| 14  | 17  | 5     | Touch targets + pull-to-refresh                       |
-| 15  | 18  | 5     | Mobile layout + safe areas + navigation               |
-| 16  | 19  | 6     | App assets + signing + Gradle config                  |
-| 17  | 20  | 6     | Store listing + Sentry + CI/CD                        |
-| 18  | 21  | 6     | Performance audit + final testing + release           |
+| Old | New | Phase | Description                                          |
+| --- | --- | ----- | ---------------------------------------------------- |
+| 1   | 1   | 0     | **`continue with Assixx`** + Phase 1.1 adapter setup |
+| 2   | 2   | 1     | Capacitor init + Android project + scripts           |
+| 3   | 3   | 1     | Step 1.2a — Universal apiFetch + Step 1.2b — Codemod |
+| —   | 4   | 1     | Step 1.2c — Layout files manual restructure          |
+| —   | 5   | 1     | Step 1.2d — Form-Action rewrites (Login/Signup)      |
+| —   | 6   | 1     | CSP fixes + Phase 1 DoD verification                 |
+| 4   | 7   | 2     | Token store + platform detection                     |
+| 5   | 8   | 2     | Backend dual auth path (cookie + header)             |
+| 6   | 9   | 2     | API client adaptation + WebSocket hardening          |
+| 7   | 10  | 3     | StatusBar + SplashScreen + Keyboard                  |
+| 8   | 11  | 3     | Push Notifications (FCM setup + backend)             |
+| 9   | 12  | 3     | Push Notifications (backend dispatch + test)         |
+| 10  | 13  | 3     | Biometric auth + Deep links + App lifecycle          |
+| 11  | 14  | 4     | Offline cache architecture + service                 |
+| 12  | 15  | 4     | API client cache integration + indicators            |
+| 13  | 16  | 4     | Offline testing + edge cases                         |
+| 14  | 17  | 5     | Touch targets + pull-to-refresh                      |
+| 15  | 18  | 5     | Mobile layout + safe areas + navigation              |
+| 16  | 19  | 6     | App assets + signing + Gradle config                 |
+| 17  | 20  | 6     | Store listing + Sentry + CI/CD                       |
+| 18  | 21  | 6     | Performance audit + final testing + release          |
 
 **Estimated Sessions:** 18 → **21** (+3 for Phase 1 split into A/B/C/D tracks)
 **Actual Sessions:** 0 / 21
 
 ### Spec Deviations Added (Amendment)
 
-| #   | v0.1.0 Says                                  | v0.2.0 Decision                                       | Reason                                                                  |
-| --- | -------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------- |
-| D4  | "Evaluate dual-load vs `ssr = false`"        | **Codemod to `+page.ts` + universal `apiFetch`**      | Pattern uniformity (70/84 files identical) makes codemod fastest path   |
-| D5  | "78 +page.server.ts files"                   | **84 files (verified 2026-05-02)**                    | Ground-truth count; pattern still uniform                                |
-| D6  | "Backend dual auth path is small change"     | **Confirmed small — but Form-Actions are NOT small**  | ~1500+ LOC across 9 form-action files needs manual rewrite for mobile   |
+| #   | v0.1.0 Says                              | v0.2.0 Decision                                      | Reason                                                                |
+| --- | ---------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------- |
+| D4  | "Evaluate dual-load vs `ssr = false`"    | **Codemod to `+page.ts` + universal `apiFetch`**     | Pattern uniformity (70/84 files identical) makes codemod fastest path |
+| D5  | "78 +page.server.ts files"               | **84 files (verified 2026-05-02)**                   | Ground-truth count; pattern still uniform                             |
+| D6  | "Backend dual auth path is small change" | **Confirmed small — but Form-Actions are NOT small** | ~1500+ LOC across 9 form-action files needs manual rewrite for mobile |
 
 ---
 
@@ -258,12 +259,12 @@ standards. Part B closes them — no strategy changes, only added discipline.
 
 **The trade-off (must be acknowledged in the masterplan, not implicit):**
 
-| Security Property                    | Web SSR (current)         | Mobile SPA (post-migration)            |
-| ------------------------------------ | ------------------------- | -------------------------------------- |
-| Auth check before HTML emitted       | ✅ Server (cookie)        | ❌ Client (token from Preferences)     |
-| Role-gated route invisible to denied user | ✅ 302 from server   | ❌ Loads JS, then client-side redirect |
-| API mutations (real damage)          | ✅ Backend guards         | ✅ Backend guards (unchanged)          |
-| UI-existence info-leak (route names) | ✅ Hidden                 | ⚠ Visible in static bundle             |
+| Security Property                         | Web SSR (current)  | Mobile SPA (post-migration)            |
+| ----------------------------------------- | ------------------ | -------------------------------------- |
+| Auth check before HTML emitted            | ✅ Server (cookie) | ❌ Client (token from Preferences)     |
+| Role-gated route invisible to denied user | ✅ 302 from server | ❌ Loads JS, then client-side redirect |
+| API mutations (real damage)               | ✅ Backend guards  | ✅ Backend guards (unchanged)          |
+| UI-existence info-leak (route names)      | ✅ Hidden          | ⚠ Visible in static bundle             |
 
 **Conclusion:** The mobile SPA **leaks the UI tree structure** (route names, button labels, form
 shapes) to anyone who downloads the APK and decompiles `build-mobile/`. This is a **bounded
@@ -357,7 +358,7 @@ GRANT USAGE, SELECT ON SEQUENCE user_push_tokens_id_seq TO sys_user;
 - [ ] `pg_dump` backup created before applying migration (per HARD BLOCK rule 1)
 - [ ] `doppler run -- ./scripts/run-migrations.sh up --dry-run` passes before real run
 - [ ] RLS verified post-migration: `SELECT tablename, policyname FROM pg_policies WHERE
-      tablename = 'user_push_tokens';` — `tenant_isolation` policy present
+    tablename = 'user_push_tokens';` — `tenant_isolation` policy present
 - [ ] `app_user` GRANTs verified: `\dp user_push_tokens` shows `arwd/assixx_user` for app_user
 - [ ] Customer fresh-install synced: `./scripts/sync-customer-migrations.sh`
 
@@ -381,9 +382,11 @@ ESLint rules from `frontend/eslint.config.mjs` and `eslint.config.mjs`.
 
 ```typescript
 import { browser } from '$app/environment';
-import { TokenStore } from './utils/token-store';
-import { API_BASE } from './config';
+
 import type { ApiResponse } from '@assixx/shared/types';
+
+import { API_BASE } from './config';
+import { TokenStore } from './utils/token-store';
 
 /**
  * Universal API fetch — works in:
@@ -397,10 +400,7 @@ import type { ApiResponse } from '@assixx/shared/types';
  * @see ADR-045 (3-layer permission stack — Backend enforces)
  * @see ADR-005 (auth — Bearer header is canonical)
  */
-export async function apiFetch<T>(
-  path: string,
-  fetchFn: typeof fetch = fetch,
-): Promise<T> {
+export async function apiFetch<T>(path: string, fetchFn: typeof fetch = fetch): Promise<T> {
   const token = browser ? await TokenStore.get('accessToken') : null;
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token !== null && token !== '') {
@@ -460,15 +460,15 @@ import drift, but only if the fixer runs.
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
+// dto/push-token-id-param.dto.ts — use the factory, NOT inline z.coerce
+import { createIdParamSchema } from '../../common/dto/index.js';
+
 export const CreatePushTokenSchema = z.object({
-  fcmToken: z.string().min(1).max(4096),  // NOT fcm_token (camelCase!)
+  fcmToken: z.string().min(1).max(4096), // NOT fcm_token (camelCase!)
   platform: z.enum(['android', 'ios']),
 });
 
 export class CreatePushTokenDto extends createZodDto(CreatePushTokenSchema) {}
-
-// dto/push-token-id-param.dto.ts — use the factory, NOT inline z.coerce
-import { createIdParamSchema } from '../../common/dto/index.js';
 
 export const PushTokenIdParamSchema = createIdParamSchema('pushTokenId');
 export class PushTokenIdParamDto extends createZodDto(PushTokenIdParamSchema) {}
@@ -485,14 +485,14 @@ export class PushTokenIdParamDto extends createZodDto(PushTokenIdParamSchema) {}
 
 ### Part B Summary
 
-| # | Phase | Gap                                  | Compliance Source                                                  |
-| - | ----- | ------------------------------------ | ------------------------------------------------------------------ |
-| 1 | 1.2c  | Layout-security trade-off named      | ADR-012 (fail-closed RBAC) + ADR-045 (3-layer permission stack)    |
-| 2 | 1.2d  | Svelte 5 syntax + line limits        | CODE-OF-CONDUCT-SVELTE.md + frontend/eslint.config.mjs:439, 450    |
-| 3 | 3     | Migration hard-block + RLS template  | DATABASE-MIGRATION-GUIDE.md §HARD BLOCK + ADR-019                  |
-| 4 | 1.2a  | apiFetch ESLint compliance           | eslint.config.mjs (strict-everywhere) + ADR-041                    |
-| 5 | 1.2b  | Codemod post-step lint:fix           | ADR-041 §Build Tooling Pre-Step Discipline                         |
-| 6 | 3     | Push DTOs via createZodDto + idField | ADR-030 + TYPESCRIPT-STANDARDS §7.5 + architectural.test.ts        |
+| #   | Phase | Gap                                  | Compliance Source                                               |
+| --- | ----- | ------------------------------------ | --------------------------------------------------------------- |
+| 1   | 1.2c  | Layout-security trade-off named      | ADR-012 (fail-closed RBAC) + ADR-045 (3-layer permission stack) |
+| 2   | 1.2d  | Svelte 5 syntax + line limits        | CODE-OF-CONDUCT-SVELTE.md + frontend/eslint.config.mjs:439, 450 |
+| 3   | 3     | Migration hard-block + RLS template  | DATABASE-MIGRATION-GUIDE.md §HARD BLOCK + ADR-019               |
+| 4   | 1.2a  | apiFetch ESLint compliance           | eslint.config.mjs (strict-everywhere) + ADR-041                 |
+| 5   | 1.2b  | Codemod post-step lint:fix           | ADR-041 §Build Tooling Pre-Step Discipline                      |
+| 6   | 3     | Push DTOs via createZodDto + idField | ADR-030 + TYPESCRIPT-STANDARDS §7.5 + architectural.test.ts     |
 
 **Part B does not change strategy or session count.** It hardens the existing plan against
 silent rule violations that would surface as CI failures, ESLint blocks, or migration HARD-BLOCKs

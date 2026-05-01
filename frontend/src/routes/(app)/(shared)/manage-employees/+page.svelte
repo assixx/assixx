@@ -702,7 +702,7 @@
           <div id="employees-table-content">
             <div class="table-responsive">
               <table
-                class="data-table data-table--hover data-table--striped"
+                class="data-table data-table--hover data-table--striped data-table--actions-hover"
                 id="employees-table"
               >
                 <thead>
