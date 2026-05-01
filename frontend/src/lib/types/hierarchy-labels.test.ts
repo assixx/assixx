@@ -117,8 +117,8 @@ describe('resolvePositionDisplay — custom labels (ADR-034)', () => {
     areaLeadPrefix: 'Hallen',
     department: 'Segmente',
     departmentLeadPrefix: 'Segment',
-    team: 'Teams',
-    teamLeadPrefix: 'Team',
+    team: 'Crews',
+    teamLeadPrefix: 'Crew',
     asset: 'Maschinen',
   };
 
