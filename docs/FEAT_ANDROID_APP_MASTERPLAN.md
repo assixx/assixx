@@ -1,7 +1,7 @@
 # FEAT: Android App (Capacitor) — Execution Masterplan
 
 > **Created:** 2026-04-11
-> **Version:** 0.1.0 (Draft)
+> **Version:** 0.2.0 (Draft + Amendment 2026-05-02)
 > **Status:** DRAFT — Phase 0 (Planning)
 > **Branch:** `feat/android-app`
 > **Context:** [BRAINSTORMING_MOBILE_APP.md](./BRAINSTORMING_MOBILE_APP.md)
@@ -11,11 +11,30 @@
 
 ---
 
+## ⚠ Pre-Flight Trigger (read FIRST every session)
+
+**Before touching ANY step in this masterplan, the executing session MUST start with:**
+
+> **`continue with Assixx`**
+
+This triggers the mandatory checklist defined in [CLAUDE.md](../CLAUDE.md#mandatory-checklist):
+Docker check, KAIZEN-Manifest, TypeScript-Standards, Architecture-Map, Database-Migration-Guide,
+ESLint-configs, Code-of-Conduct, design-system, Zod-integration, HOW-TO catalog, ADRs, etc.
+
+**Rationale:** This plan touches Auth (ADR-005), Multi-Tenant Context (ADR-006), Permission Stack
+(ADR-045) and the SvelteKit route-security model (ADR-012). Skipping the checklist = skipping the
+ADR refresh = high risk of breaking invariants the web app depends on. **No exceptions.**
+
+After "Routine finished — ready." the session may proceed to the next unchecked step in this plan.
+
+---
+
 ## Changelog
 
-| Version | Date       | Change                             |
-| ------- | ---------- | ---------------------------------- |
-| 0.1.0   | 2026-04-11 | Initial Draft — Phases 1-6 planned |
+| Version | Date       | Change                                                                                            |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-04-11 | Initial Draft — Phases 1-6 planned                                                                |
+| 0.2.0   | 2026-05-02 | Amendment 2026-05-02 — Codemod-based SPA migration, Pre-Flight trigger, ground-truth file counts |
 
 > **Versioning Rule:**
 >
@@ -23,6 +42,205 @@
 > - `1.x.0` = Implementation in progress (Minor bump per phase)
 > - `2.0.0` = Feature fully complete
 > - Patch `x.x.1` = Hotfix/rework within a phase
+
+---
+
+## Amendment 2026-05-02 — SPA Migration via Codemod
+
+**Trigger:** Ground-truth analysis of `frontend/src/routes/**/+page.server.ts` — actual structure
+materially changes Phase 1 strategy.
+
+### Ground Truth (verified 2026-05-02)
+
+| Artifact                                            | Count  | Implication                                                  |
+| --------------------------------------------------- | ------ | ------------------------------------------------------------ |
+| `+page.server.ts` total                             | **84** | Plan said 78 — slightly more, but pattern is uniform         |
+| `+page.ts` (universal load)                         | **0**  | No universal-load files exist yet — clean slate              |
+| `+layout.server.ts`                                 | **5**  | Central auth bootstrap (`(app)`, `(public)`, etc.)           |
+| Files with `actions = { ... }` (Form-Actions)       | **~9** | Login, Signup, Forgot/Reset Password, OAuth-Complete         |
+| Files using shared `apiFetch()` from `$lib/server/` | **70+**| **Token handling is already abstracted** → codemod-friendly  |
+
+### Pattern Uniformity (key insight)
+
+70+ of 84 `+page.server.ts` files follow the **identical** pattern:
+
+```ts
+const token = cookies.get('accessToken');
+if (!token) redirect(302, buildLoginUrl(...));
+const [a, b] = await Promise.all([
+  apiFetch<T>('/endpoint', token, fetch),
+  apiFetch<T>('/other', token, fetch),
+]);
+return { a, b };
+```
+
+The auth-check is **already redundant** — `(app)/+layout.server.ts` (762 lines) enforces it
+centrally. → Per-page checks are dead code that the codemod can strip.
+
+### Revised Phase 1 Strategy
+
+**Old plan (v0.1.0):** Manual migration of 78 files OR `export const ssr = false` per-file —
+estimated 5-7 sessions.
+
+**New plan (v0.2.0):** Three-track migration based on file shape:
+
+| Track                     | Files                                | Strategy                                                                      | Sessions |
+| ------------------------- | ------------------------------------ | ----------------------------------------------------------------------------- | -------- |
+| **Track A — Codemod**     | ~70 pure data-load files             | `ts-morph` script: rename `.server.ts`→`.ts`, swap types, strip auth, swap import | **0.5**  |
+| **Track B — Layout**      | 5 `+layout.server.ts`                | Manual restructure → `+layout.ts` with client-side auth gate                  | **1-2**  |
+| **Track C — Form Actions**| ~9 (Login, Signup, Forgot/Reset, OAuth) | Manual rewrite — SvelteKit `actions` don't exist in SPA mode → plain `fetch()` | **1-2**  |
+| **Track D — Universal apiFetch** | 1 new file: `$lib/api-fetch.ts` | Token from `TokenStore` (Web localStorage / Mobile Capacitor Preferences)     | **0.5**  |
+| **Σ Phase 1.2**           | 84 files + 1 new                     |                                                                               | **3-5**  |
+
+### New Step 1.2 (replaces v0.1.0 Step 1.2)
+
+#### Step 1.2a: Universal `apiFetch` Helper [TODO]
+
+**New file:** `frontend/src/lib/api-fetch.ts` (universal — works on web SSR, web SPA, and mobile)
+
+```ts
+import { browser } from '$app/environment';
+import { TokenStore } from './utils/token-store';
+import { API_BASE } from './config';
+
+export async function apiFetch<T>(path: string, fetchFn: typeof fetch = fetch): Promise<T> {
+  const token = browser ? await TokenStore.get('accessToken') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token !== null) headers.Authorization = `Bearer ${token}`;
+  const res = await fetchFn(`${API_BASE}${path}`, { headers });
+  if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
+  return ((await res.json()) as { data: T }).data;
+}
+```
+
+**Why a new file (not edit `$lib/server/api-fetch.ts`):** The `$lib/server/` prefix is a SvelteKit
+convention — SvelteKit refuses to bundle `$lib/server/*` into the client. The new helper lives at
+`$lib/api-fetch.ts` (no `server/` prefix) so it works in both `+page.server.ts` (SSR web) and
+`+page.ts` (SPA web + mobile).
+
+#### Step 1.2b: Codemod for 70 Data-Load Files [TODO]
+
+**New file:** `scripts/codemod-spa-migration.ts`
+
+**Operations per file (in order):**
+
+1. **AST parse** with `ts-morph`
+2. **Rename file:** `+page.server.ts` → `+page.ts` (and `$types` import: `PageServerLoad` → `PageLoad`)
+3. **Strip auth-check block:**
+   - Remove `const token = cookies.get('accessToken');`
+   - Remove `if (!token) redirect(...)` statement
+4. **Rewrite apiFetch import:** `$lib/server/api-fetch` → `$lib/api-fetch`
+5. **Strip `token` argument:** `apiFetch<T>(path, token, fetch)` → `apiFetch<T>(path, fetch)`
+6. **Strip `cookies` from load destructure:** `({ cookies, fetch, url })` → `({ fetch, url })`
+7. **Run Prettier + ESLint --fix**
+
+**Verification per file:**
+
+- Type-check passes (no missing `cookies` references)
+- Build (web `adapter-node`) still passes — `+page.ts` works for SSR too
+- Build (mobile `BUILD_TARGET=mobile`) succeeds — no `+page.server.ts` left in SPA bundle
+
+#### Step 1.2c: Layout Files — Manual Restructure [TODO]
+
+**Files (5):**
+
+- `frontend/src/routes/(app)/+layout.server.ts` (762 lines — biggest)
+- `frontend/src/routes/(public)/+layout.server.ts`
+- `frontend/src/routes/(app)/(admin)/+layout.server.ts`
+- `frontend/src/routes/(app)/(root)/+layout.server.ts`
+- `frontend/src/routes/(app)/(shared)/+layout.server.ts`
+
+**Strategy:** Keep `+layout.server.ts` for web SSR. Add parallel `+layout.ts` (universal) that runs
+client-side. Use `BUILD_TARGET` env var at SvelteKit-config time to control which is bundled.
+
+**Auth-check migration:**
+
+- Web SSR: cookie-based check (existing) stays
+- SPA / Mobile: `+layout.ts` reads token from `TokenStore`, calls `goto('/login')` if absent
+- Token expiry: existing proactive-refresh timer (token-manager.ts) handles it on both
+
+#### Step 1.2d: Form Actions — Manual Rewrite [TODO]
+
+**Files with `export const actions` (~9):**
+
+- `(public)/login/+page.server.ts` (554 lines)
+- `(public)/signup/+page.server.ts` (397 lines)
+- `(public)/signup/oauth-complete/+page.server.ts` (407 lines)
+- `(public)/forgot-password/+page.server.ts`
+- `reset-password/+page.server.ts`
+- `tenant-deletion-approve/+page.server.ts`
+- (others as discovered during audit)
+
+**Why no codemod:** Form actions are server-only by design. SPA mode replaces them with
+`<form on:submit|preventDefault={handler}>` calling `fetch()` directly. The handler does:
+
+```ts
+async function handleLogin(event: SubmitEvent) {
+  const formData = new FormData(event.target as HTMLFormElement);
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'X-Client-Platform': IS_MOBILE ? 'mobile' : 'web' },
+    body: formData,
+  });
+  const { accessToken, refreshToken } = await res.json();
+  await TokenStore.set('accessToken', accessToken);
+  if (IS_MOBILE) await TokenStore.set('refreshToken', refreshToken);
+  await goto('/dashboard');
+}
+```
+
+**Web parity:** Web build keeps using `+page.server.ts` actions (HttpOnly cookie path). The new
+`+page.ts` handler is **mobile-only**. Two paths intentional — auth flow is fundamentally
+different across cookies vs. native token store.
+
+### Definition of Done — Phase 1.2 (Amendment)
+
+- [ ] `scripts/codemod-spa-migration.ts` exists, dry-run mode + apply mode
+- [ ] `$lib/api-fetch.ts` exists, type-checks, works for web SPA and mobile
+- [ ] Codemod converts ≥70 files clean (no manual fixup) — measure with `git diff --stat`
+- [ ] Web build (`adapter-node`) still passes — zero web regressions
+- [ ] Mobile build (`BUILD_TARGET=mobile`) produces `build-mobile/index.html` with no leftover
+      `+page.server.ts` or form-action references
+- [ ] Login flow works on Android emulator end-to-end (POST → token in Preferences → navigate)
+- [ ] All 5 layout files have working `+layout.ts` companions for SPA mode
+- [ ] ESLint 0 errors, Type-Check 0 errors on both build targets
+
+### Revised Session Tracking (v0.2.0)
+
+| Old | New | Phase | Description                                           |
+| --- | --- | ----- | ----------------------------------------------------- |
+| 1   | 1   | 0     | **`continue with Assixx`** + Phase 1.1 adapter setup  |
+| 2   | 2   | 1     | Capacitor init + Android project + scripts            |
+| 3   | 3   | 1     | Step 1.2a — Universal apiFetch + Step 1.2b — Codemod  |
+| —   | 4   | 1     | Step 1.2c — Layout files manual restructure           |
+| —   | 5   | 1     | Step 1.2d — Form-Action rewrites (Login/Signup)       |
+| —   | 6   | 1     | CSP fixes + Phase 1 DoD verification                  |
+| 4   | 7   | 2     | Token store + platform detection                      |
+| 5   | 8   | 2     | Backend dual auth path (cookie + header)              |
+| 6   | 9   | 2     | API client adaptation + WebSocket hardening           |
+| 7   | 10  | 3     | StatusBar + SplashScreen + Keyboard                   |
+| 8   | 11  | 3     | Push Notifications (FCM setup + backend)              |
+| 9   | 12  | 3     | Push Notifications (backend dispatch + test)          |
+| 10  | 13  | 3     | Biometric auth + Deep links + App lifecycle           |
+| 11  | 14  | 4     | Offline cache architecture + service                  |
+| 12  | 15  | 4     | API client cache integration + indicators             |
+| 13  | 16  | 4     | Offline testing + edge cases                          |
+| 14  | 17  | 5     | Touch targets + pull-to-refresh                       |
+| 15  | 18  | 5     | Mobile layout + safe areas + navigation               |
+| 16  | 19  | 6     | App assets + signing + Gradle config                  |
+| 17  | 20  | 6     | Store listing + Sentry + CI/CD                        |
+| 18  | 21  | 6     | Performance audit + final testing + release           |
+
+**Estimated Sessions:** 18 → **21** (+3 for Phase 1 split into A/B/C/D tracks)
+**Actual Sessions:** 0 / 21
+
+### Spec Deviations Added (Amendment)
+
+| #   | v0.1.0 Says                                  | v0.2.0 Decision                                       | Reason                                                                  |
+| --- | -------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| D4  | "Evaluate dual-load vs `ssr = false`"        | **Codemod to `+page.ts` + universal `apiFetch`**      | Pattern uniformity (70/84 files identical) makes codemod fastest path   |
+| D5  | "78 +page.server.ts files"                   | **84 files (verified 2026-05-02)**                    | Ground-truth count; pattern still uniform                                |
+| D6  | "Backend dual auth path is small change"     | **Confirmed small — but Form-Actions are NOT small**  | ~1500+ LOC across 9 form-action files needs manual rewrite for mobile   |
 
 ---
 
