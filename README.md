@@ -59,15 +59,15 @@ Development: `http://localhost:5173` | Production: `http://localhost`
 
 ## Tech Stack
 
-| Component  | Technology                         |
-| ---------- | ---------------------------------- |
-| Backend    | NestJS 11 + Fastify + TypeScript   |
-| Frontend   | SvelteKit 5 + Tailwind v4          |
-| Database   | PostgreSQL 18 + Row Level Security |
-| Cache      | Redis 7                            |
+| Component  | Technology                                      |
+| ---------- | ----------------------------------------------- |
+| Backend    | NestJS 11 + Fastify + TypeScript                |
+| Frontend   | SvelteKit 5 + Tailwind v4                       |
+| Database   | PostgreSQL 18 + Row Level Security              |
+| Cache      | Redis 7                                         |
 | Real-Time  | WebSocket (Chat) + SSE (Notifications, ADR-003) |
-| Validation | Zod                                |
-| Container  | Docker + Nginx (Reverse Proxy)     |
+| Validation | Zod                                             |
+| Container  | Docker + Nginx (Reverse Proxy)                  |
 
 ---
 
