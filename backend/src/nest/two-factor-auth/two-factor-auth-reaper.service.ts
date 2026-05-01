@@ -35,37 +35,19 @@
  *       "they cannot see one another's effects on the target tables"),
  *       so the to-be-deleted user is STILL visible to that NOT EXISTS
  *       and the orphan-check returns false → tenants would never be
- *       reaped. Inverted flow: delete the tenant first, on the
- *       assumption that an FK cascade would clean up the user row.
+ *       reaped. Inverted flow: delete the tenant first; the FK cascade
+ *       cleans up the user row in the same statement.
  *
- *       KNOWN PRODUCTION FAILURE — `dropTenantCascade` branch
- *       (Session 10b discovery, 2026-04-30, masterplan v0.8.0): the
- *       implementation of D1 was authored on the assumption that
- *       `users.tenant_id` has `ON DELETE CASCADE`. The live FK
- *       `fk_users_tenant` is in fact `ON DELETE RESTRICT`
- *       (`pg_constraint.confdeltype = 'r'`, verified via psql probe
- *       2026-04-30). Consequence: when the reaper picks the
- *       `dropTenantCascade` branch (i.e. the tenant has only stale
- *       users), the `DELETE FROM tenants` statement raises an FK
- *       violation, the surrounding `systemTransaction` rolls back,
- *       and the next 15-min `runScheduled()` tick retries with the
- *       same outcome — the stale tenant + user persist indefinitely
- *       and the abandoned subdomain stays squatted.
- *
- *       Why classified non-blocking (per Session 10b SCOPE NOTE):
- *         (a) `runScheduled()`'s try/catch contains the failure to
- *             a single sweep — no scheduler crash, no cascading damage.
- *         (b) The `softDeleteEachUser` branch is correct as documented
- *             and handles every signup variant where the abandoned
- *             tenant has at least one additional non-stale user.
- *             Greenfield-Status (CLAUDE.md §"Greenfield-Production"):
- *             no live tenants today, so no observable user impact.
- *         (c) The proper fix is a node-pg-migrate migration that flips
- *             `fk_users_tenant` to `ON DELETE CASCADE`; that work is
- *             queued for Phase 6 (masterplan Spec Deviations + Phase 6
- *             checklist) and intentionally NOT done here because
- *             Step 2.11's scope was the cron itself, not schema
- *             changes — see CLAUDE.md DB-migration HARD BLOCK rules.
+ *       FK-CASCADE FIX SHIPPED 2026-05-01 (masterplan §Spec Deviations
+ *       D4 / v0.8.4 → v0.8.13): node-pg-migrate
+ *       `20260501012903758_flip-fk-users-tenant-on-delete-cascade`
+ *       flipped `fk_users_tenant` from `ON DELETE RESTRICT` to
+ *       `ON DELETE CASCADE` (verified `pg_constraint.confdeltype='c'`).
+ *       The `dropTenantCascade` branch is now correct end-to-end and
+ *       the §0.4 / DD-14 anti-subdomain-squatting guarantee is
+ *       restored. Earlier comment iterations (v0.8.0–v0.8.3) carried
+ *       a "KNOWN PRODUCTION FAILURE" warning describing the pre-fix
+ *       RESTRICT behaviour — superseded by this note.
  *   D2. `shared/src/architectural.test.ts:291` blocks `DELETE FROM
  *       users` outside the tenant-deletion module (ADR-020 + ADR-045
  *       soft-delete-only rule). The inverted flow doubles as the
@@ -247,18 +229,11 @@ export class TwoFactorReaperService {
    * tenants` and stays within `architectural.test.ts:291` (no
    * `DELETE FROM users`).
    *
-   * CURRENT PRODUCTION BEHAVIOUR (Session 10b discovery, masterplan
-   * v0.8.0 → v0.8.3): the live FK `fk_users_tenant` is `ON DELETE
-   * RESTRICT`, NOT `CASCADE`. The `DELETE FROM tenants` therefore
-   * raises a foreign-key violation and the surrounding
-   * `systemTransaction` rolls back. Classified non-blocking under
-   * Greenfield (no live tenants); the proper fix — a node-pg-migrate
-   * migration flipping the FK to `ON DELETE CASCADE` — is queued for
-   * Phase 6 (see masterplan Spec Deviations). Until that migration
-   * ships, this branch should not fire in any production-meaningful
-   * scenario; if it does (a tenant whose ONLY user is the abandoned
-   * stale signer), the next 15-min sweep will retry with the same
-   * outcome and the abandoned subdomain will remain squatted.
+   * FK CASCADE shipped 2026-05-01 via node-pg-migrate
+   * `20260501012903758_flip-fk-users-tenant-on-delete-cascade`
+   * (masterplan §Spec Deviations D4). This branch is correct
+   * end-to-end and the §0.4 / DD-14 anti-subdomain-squatting
+   * guarantee is restored.
    */
   private async dropTenantCascade(
     client: PoolClient,
@@ -321,12 +296,11 @@ export class TwoFactorReaperService {
   /**
    * One audit_trail row per cleaned-up user. tenant_id references the
    * tenant that owned the user; in the soft-delete branch the tenant
-   * still exists, in the (currently broken — see header WARNING)
-   * `dropTenantCascade` branch the tenant would be gone once the
-   * Phase 6 FK migration ships. The audit_trail partition table has
-   * no FK to `tenants` (verified `\d audit_trail` 2026-04-29) so the
-   * insert
-   * succeeds. Inside the same transaction — if this fails, the whole
+   * still exists, in the `dropTenantCascade` branch the tenant has
+   * already been cascaded away (FK migration 2026-05-01, §D4). The
+   * audit_trail partition table has no FK to `tenants` (verified
+   * `\d audit_trail` 2026-04-29) so the insert succeeds in either
+   * branch. Inside the same transaction — if this fails, the whole
    * sweep rolls back (no orphan deletes without compliance evidence).
    *
    * Schema-correct §A8 tuple: `(action='delete', resource_type='2fa-stale-signup', …)`.
