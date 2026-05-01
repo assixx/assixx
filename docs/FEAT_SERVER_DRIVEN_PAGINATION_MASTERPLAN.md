@@ -2,14 +2,14 @@
 
 > **Plan type:** FEATURE (refactor-as-feature: existing pages migrate to a canonical server-driven pagination pattern)
 > **Created:** 2026-05-01
-> **Version:** 0.1.0 (Draft — awaiting sign-off)
-> **Status:** DRAFT — Phase 0
+> **Version:** 1.0.0 (APPROVED — Phase 0 sign-off 2026-05-01)
+> **Status:** APPROVED — ready for Phase 1
 > **Branch:** `feat/server-driven-pagination`
 > **Spec:** [HOW-TO-FIX-MANAGE-PAGINATION.md §"Phase 2 — Server-Driven Pagination"](./how-to/HOW-TO-FIX-MANAGE-PAGINATION.md)
-> **Reference impl:** `frontend/src/routes/(app)/(root)/manage-dummies/` (already server-paginated per HOW-TO triage table, row 91)
+> **Reference impl:** `frontend/src/routes/(app)/(root)/manage-dummies/` — currently NOT truly server-paginated (page=1 hardcoded, non-envelope response shape). Phase 3 makes it canonical first; only THEN is it the reference for Phase 4.
 > **Author:** SCS Technik
-> **Estimated sessions:** 13
-> **Actual sessions:** 0 / 13
+> **Estimated sessions:** 17
+> **Actual sessions:** 1 / 17 (Session 1 + Session 2a closed 2026-05-01)
 > **Beta-Ready Criterion:** Every list page in the app correctly displays >100 records of its type without silent truncation, and every filter/search operation spans all pages, not just the loaded subset.
 
 ---
@@ -22,9 +22,11 @@ Beta launch imminent. The current Phase-1 fix (`?limit=100`) is a hard ceiling: 
 
 ## Changelog
 
-| Version | Date       | Change                                             |
-| ------- | ---------- | -------------------------------------------------- |
-| 0.1.0   | 2026-05-01 | Initial draft — phases outlined, awaiting sign-off |
+| Version | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-05-01 | Initial draft — phases outlined, awaiting sign-off                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 1.0.0   | 2026-05-01 | **Phase-0 Sign-off.** Decisions recorded: (1) Branch = `feat/server-driven-pagination` (already checked out). (2) `manage-dummies` Reference-Impl ist NICHT echt server-paginiert (`page=1` hardcoded in `+page.server.ts:39`, non-envelope response shape `{ items, total, pageSize }`). Phase 3 erweitert sich von "polish" zu "rebuild backend dummy-users to ADR-007 envelope + frontend to URL-state" — +1 Session. (3) Phase 1.3 `&limit=100` Band-aid für Lead-Picker entfällt. Stattdessen Phase 4.12 expandiert zu unifiziertem Typeahead-Component für alle 6 Picker (5 Lead + 1 Employee) — +1 Session. (4) `manage-halls/areas/departments/teams` bleiben Out of scope V1 (Known Limitation #1). Sessions 13 → 15. Zusätzliche Beobachtung aus HOW-TO-FIX-MANAGE-PAGINATION Triage row 92: `manage-approvals` "mirrors manage-dummies" — Phase 4.3 muss verifizieren ob auch broken-by-mirror. PaginationMeta `hasNext`/`hasPrev` sind FE-derived (`page < totalPages` / `page > 1`), NICHT von Backend erwartet — ADR-007 spec ist `{ page, limit, total, totalPages }`. |
+| 1.1.0   | 2026-05-01 | **Phase 1.1 + Phase 1.2a Stage A complete.** Phase 1.1 audit liefert `docs/Phase-1-audit.md` (12 Endpoints + 6 Picker). Audit splittet Phase 1.2 in 2 Sessions (1.2a + 1.2b). Phase 1.2a wird intern weiter gesplittet in Stage A (4 simple DTO-Refactors, kein Service-Touch) + Stage B (4 NEEDS-SEARCH Endpoints — DTO + Controller + Service + SQL atomar). **Stage A DONE:** assets/inventory-items/documents/dummy-users DTOs extends PaginationSchema, D3 search-Konvention (`.trim().max(100).optional()`), 224/224 tests pass. Sessions 15 → 17 (Phase 1.2 = 1.2a-A + 1.2a-B + 1.2b = 3 Sessions statt 2). Audit-Befund §6: TPM `PageSchema`/`LimitSchema` lokal in `tpm/dto/common.dto.ts` werden auch von 3 OUT-OF-SCOPE DTOs genutzt (executions, revisions, board) — Stage B refactored nur die 2 in-scope (plans, cards) auf PaginationSchema. TPM-locals-Cleanup als Phase-5.2 Task vermerkt.                                                                                                                                                                           |
 
 ---
 
@@ -32,12 +34,12 @@ Beta launch imminent. The current Phase-1 fix (`?limit=100`) is a hard ceiling: 
 
 ### 0.1 Must be true before starting
 
-- [ ] Docker stack running, all containers healthy
-- [ ] DB backup taken (no schema changes planned, but standard hygiene)
-- [ ] Branch `feat/server-driven-pagination` checked out
-- [ ] `manage-dummies` implementation reviewed by author — confirms it actually uses `?page=N` server-side
-- [ ] Beta-launch date confirmed — drives session pace
-- [ ] Sign-off from user on this masterplan (sets `Status: APPROVED`)
+- [x] Docker stack running, all containers healthy (verified 2026-05-01: backend up 2h, postgres healthy, redis healthy, full observability stack)
+- [ ] DB backup taken — **DEFERRED** (no schema changes planned in this plan; backup hygiene only useful if Phase 1 audit surfaces a backend extension that touches DB. Re-evaluate at Phase 1.2 close.)
+- [x] Branch `feat/server-driven-pagination` checked out (user-confirmed 2026-05-01)
+- [x] `manage-dummies` implementation reviewed — **FINDING:** NOT actually server-paginated (`+page.server.ts:39` hardcodes `?page=1`, response shape `PaginatedDummies { items, total, pageSize }` violates ADR-007 envelope `meta.pagination`). Phase 3 reframed: rebuild backend response + FE URL-state instead of "polish".
+- [ ] Beta-launch date confirmed — **DEFERRED** (does not affect correctness, only session pace; user can answer during execution)
+- [x] Sign-off from user on this masterplan (Phase 0 Decisions Q1–Q4 answered 2026-05-01, status APPROVED, version 1.0.0)
 
 ### 0.2 Risk Register
 
@@ -83,39 +85,67 @@ Backend `/users` query, when called WITHOUT `isActive` param, returns `is_active
 > **Dependency:** Phase 0 sign-off complete.
 > **Goal:** Every list endpoint in scope supports server-side `?search=` AND every filter the FE currently performs client-side.
 
-### Step 1.1: Per-endpoint audit [PENDING]
+### Step 1.1: Per-endpoint audit ✅ DONE (2026-05-01)
 
 For each endpoint in the migration scope (Phase 4 list):
 
-- [ ] Inspect query DTO — does it extend `PaginationSchema`?
-- [ ] Inspect service — does it accept `search`, status, role, team_id, etc. as filter params?
-- [ ] Inspect controller — does it pass query params to the service?
-- [ ] Document gap → Step 1.2 backlog row
+- [x] Inspect query DTO — does it extend `PaginationSchema`?
+- [x] Inspect service — does it accept `search`, status, role, team_id, etc. as filter params?
+- [x] Inspect controller — does it pass query params to the service?
+- [x] Document gap → Step 1.2 backlog row
 
-**Output:** `Phase-1-audit.md` (working file, deleted after Phase 1 close) listing one row per endpoint with status `OK | NEEDS-SEARCH | NEEDS-FILTER:<name>`.
+**Output:** [`docs/Phase-1-audit.md`](./Phase-1-audit.md) — 12 Endpoints + 6 Picker auditiert. Status pro Endpoint: `OK` (3) | `NEEDS-SEARCH` (5) | `NEEDS-PAGINATION` (7) | `NEEDS-DTO` (1, /approvals). Audit identifiziert: (a) 5 Endpoints brauchen `search`-Feld, (b) 7 Endpoints duplizieren page/limit statt PaginationSchema zu extenden, (c) `/approvals` ist inline TS interface ohne Zod, (d) `/users` (Picker-Backend) ist OK — Phase 4.12 PickerTypeahead kann sofort `?search=` nutzen ohne Backend-Arbeit, (e) `/dummy-users` Shape-Anomalie für Phase 3 bestätigt. **Audit empfiehlt Phase 1.2 → 2 Sessions splitten** (1.2a: search + PaginationSchema-Refactor für 7 Endpoints | 1.2b: `/approvals` DTO-Migration eigenständig). Sessions-Count müsste ggf. 15 → 16 wenn akzeptiert.
 
-### Step 1.2: Close audit gaps [PENDING]
+### Step 1.2: Close audit gaps — split per audit empfehlung (3 Sub-Steps)
 
-Per gap from 1.1:
+Audit `Phase-1-audit.md` §6 empfahl ursprünglich Phase 1.2 → 2 Sessions (1.2a + 1.2b). Bei tieferer Code-Inspektion wurde 1.2a weiter gesplittet in Stage A (simple DTO-Only) + Stage B (DTO + Service + SQL atomar). Begründung: TPM `listPlans(tenantId, page, pageSize, user)` und work-orders `buildPaginatedList`-Helper sind unterschiedliche Service-Signaturen — atomare per-Endpoint-Edits (DTO + Controller + Service + SQL) verhindern Halb-Zustände.
 
-- [ ] Extend Zod query DTO with the missing field (e.g. `search: z.string().trim().min(1).optional()`)
-- [ ] Add WHERE clause in service (`ILIKE '%' || $N || '%'` for search; standard `=` for filters)
-- [ ] Update unit test
-- [ ] Update API integration test
+#### Step 1.2a Stage A — DTO-Refactor (4 simple Endpoints) ✅ DONE 2026-05-01
 
-### Step 1.3: Fix B2 — lead-picker `&limit=100` one-liners [PENDING]
+Endpoints mit `search` BEREITS server-seitig implementiert — nur DTO-Konsolidierung nötig, kein Service-Touch:
 
-> **Why in Phase 1, not Phase 4:** independent FE one-liner that closes a current Beta-blocker (only 10 lead candidates render) without waiting for the full pagination refactor. Decoupled from §0.2.1 B1/B3.
+- [x] `/assets` — `backend/src/nest/assets/dto/list-assets-query.dto.ts`: extends `PaginationSchema` mit `.extend({ limit: default(20), search: trim().max(100).optional(), ... })`
+- [x] `/inventory/items` — `backend/src/nest/inventory/dto/common.dto.ts:43` `ItemsQuerySchema`: extends `PaginationSchema` mit `limit: default(50)`, search tightened 255 → 100
+- [x] `/documents` — `backend/src/nest/documents/dto/query-documents.dto.ts`: extends `PaginationSchema`, schema renamed PascalCase + exported (`ListDocumentsQuerySchema`), search tightened 200 → 100
+- [x] `/dummy-users` — `backend/src/nest/dummy-users/dto/list-dummy-users-query.dto.ts`: extends `PaginationSchema`, search now `.trim().max(100)`
+- [x] D1 angewandt: per-Endpoint limit-Defaults via `.extend()` Override (assets/documents/dummy-users=20, inventory=50)
+- [x] D3 angewandt: search-Konvention `.trim().max(100).optional()` einheitlich
+- [x] Type-check: 0 errors
+- [x] Lint: 0 errors
+- [x] Tests: **224/224 pass** (5 test files: assets DTO 46, inventory DTO 112, documents DTO 20, dummy-users service 29, dummy-users helpers 17)
 
-Add `&limit=100` to these 5 frontend calls:
+#### Step 1.2a Stage B — search WHERE addition (4 NEEDS-SEARCH Endpoints) [PENDING]
 
-- [ ] `frontend/src/routes/(app)/(shared)/manage-areas/+page.server.ts:45` (`?role=admin&isActive=1&position=area_lead`)
-- [ ] `frontend/src/routes/(app)/(shared)/manage-areas/+page.server.ts:46` (`?role=root&isActive=1&position=area_lead`)
-- [ ] `frontend/src/routes/(app)/(shared)/manage-departments/+page.server.ts:49` (`?role=admin&isActive=1&position=department_lead`)
-- [ ] `frontend/src/routes/(app)/(shared)/manage-departments/+page.server.ts:50` (`?role=root&isActive=1&position=department_lead`)
-- [ ] `frontend/src/routes/(app)/(shared)/manage-teams/+page.server.ts:49` (`?isActive=1&position=team_lead`)
-- [ ] Mirror the constants in `_lib/constants.ts` of each page (3 files)
-- [ ] Manual smoke: seed 12 area_leads → all visible in modal dropdown
+Endpoints brauchen NEU `search` Field PLUS Service-WHERE-Klausel atomar:
+
+| #   | Endpoint       | Files to touch                                                                                                                                                                                      | SQL ILIKE-Targets (proposed) |
+| --- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| B-1 | `/surveys`     | `query-survey.dto.ts` (add search) + `surveys.service.ts:61` listSurveys (query type) + `survey-access.service.ts:136` fetchSurveysByAccessLevel (signature + ILIKE WHERE)                          | s.title, s.description       |
+| B-2 | `/work-orders` | `list-work-orders-query.dto.ts` (extend PaginationSchema, override limit=20 max=100 [D2: 500→100], add search) + `work-orders.service.ts:625` buildPaginatedList (signature + ILIKE WHERE)          | wo.title, wo.description     |
+| B-3 | `/tpm/plans`   | `list-plans-query.dto.ts` (extend PaginationSchema, override limit=20, add search) + `tpm/tpm-plans.service.ts:212` listPlans (signature `(tenantId, page, pageSize, user, search?)` + ILIKE WHERE) | p.title (oder name)          |
+| B-4 | `/tpm/cards`   | `list-cards-query.dto.ts` (extend PaginationSchema, override limit=20, add search) + tpm-cards service list method + ILIKE WHERE                                                                    | c.title                      |
+
+- [ ] Pro Endpoint: DTO-Edit + Controller-Edit (forward search arg) + Service-Signature + SQL ILIKE
+- [ ] Type-check + Lint + Touched Tests grün pro Endpoint
+- [ ] Backwards-compat: query.search undefined ⇒ kein WHERE clause (kein Verhaltens-Wechsel ohne search-Param)
+
+#### Step 1.2b — `/approvals` inline interface → Zod DTO migration [PENDING]
+
+Größter Single-Endpoint-Refactor. Eigene Session weil DTO/Service-Contract sich ändert.
+
+- [ ] `approvals.controller.ts:52` inline `ListApprovalsQuery` interface löschen
+- [ ] Neue Zod DTO `backend/src/nest/approvals/dto/list-approvals-query.dto.ts` erstellen, extends `PaginationSchema` + add search (D3) + bestehende Filter (status, addonCode, priority)
+- [ ] Controller: `@Query() query: ListApprovalsQueryDto` statt inline-typed param
+- [ ] Service `findAll`: Signatur an DTO anpassen, ILIKE WHERE hinzufügen für search
+- [ ] Tests aktualisieren
+
+### Step 1.3: ~~Fix B2 — lead-picker `&limit=100` one-liners~~ **REMOVED** (Decision Q3, 2026-05-01)
+
+> **Why removed:** `&limit=100` ist ein Band-aid, das beim 101. aktiven Lead silently truncated. Direkter Widerspruch zur "no quick fix"-Regel. Phase 4.12 expandiert stattdessen zu einem unifizierten debounced typeahead-Component, der ALLE 6 Picker-Endpoints bedient (5 Lead + 1 Employee). Single source of truth, kein structural ceiling, langfristig sauber.
+
+**Backend-Vorbereitung in Phase 1:** verifiziere im Audit (1.1), dass `/users` Endpoint bereits `?search=` unterstützt. Wenn ja → keine Backend-Änderung nötig; alle 6 Picker konsumieren denselben Endpoint via Phase 4.12 Component. Wenn nein → Search-Param via Step 1.2 ergänzen.
+
+**Mitigation während Phase 1–3 läuft (vor Phase 4.12):** die 6 Picker bleiben bei Backend-Default `limit=10`. Tenants mit >10 Lead-Kandidaten sehen nur die ersten 10 — bekanntes Issue, aber strukturell unter Beta-Schwelle (typischerweise 5–20 Area-Leads, 10–50 Dept-Leads, 20–50 Team-Leads). Risiko akzeptiert für ~12 Sessions Übergangszeit. **Wenn ein Beta-Tenant vor Phase 4.12 das Problem trifft:** Phase 4.12 priorisieren statt Band-aid.
 
 ### Phase 1 — Definition of Done
 
@@ -138,12 +168,14 @@ Add `&limit=100` to these 5 frontend calls:
 
 ```typescript
 export interface PaginationMeta {
+  // From backend (ADR-007 envelope `meta.pagination`):
   page: number;
   limit: number;
   total: number;
   totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
+  // FE-derived (NOT from backend — backend ADR-007 spec doesn't include these):
+  hasNext: boolean; // = page < totalPages
+  hasPrev: boolean; // = page > 1
 }
 
 export interface PaginatedResult<T> {
@@ -191,26 +223,47 @@ Single source of truth for URL ↔ state mapping. Only emits non-default values 
 
 ---
 
-## Phase 3: Reference Implementation Polish
+## Phase 3: Reference Implementation — REBUILD (not polish)
 
 > **Dependency:** Phase 2 complete.
-> **Goal:** Lift `manage-dummies` to use the new helpers (currently uses inline pattern). It then becomes the canonical reference every other migration copies.
+> **Goal:** Make `manage-dummies` truly canonical. **Status today (verified 2026-05-01):** `+page.server.ts:39` hardcodes `?page=1`; response shape `PaginatedDummies { items, total, pageSize }` violates ADR-007 envelope `meta.pagination`. This is NOT a "polish" step — both backend AND frontend need real changes. After this phase, `manage-dummies` becomes the binding reference every Phase-4 migration copies verbatim.
 
-### Step 3.1: Migrate `manage-dummies` to new helpers [PENDING]
+### Step 3.1: Backend — `dummy-users` to ADR-007 envelope [PENDING]
 
-- [ ] Replace inline pagination logic in `+page.server.ts` with `apiFetchPaginated` + `readPageFromUrl`
-- [ ] Replace inline pagination markup in `+page.svelte` with the canonical pattern (URL-driven `<a href>` links, NOT button click handlers)
-- [ ] Manual smoke: create dummies past page boundary, verify all visible, verify search works across pages
+> **Why first:** the FE refactor (Step 3.2) depends on `meta.pagination` being present. Backend must ship envelope first.
 
-### Step 3.2: Document the pattern in HOW-TO [PENDING]
+- [ ] Inspect `backend/src/nest/dummy-users/dummy-users.controller.ts` — verify it returns `{ items, total, pageSize }` shape
+- [ ] Refactor controller to return `data: T[]` directly. `ResponseInterceptor` (ADR-007) will wrap it as `{ success, data, meta: { pagination: { page, limit, total, totalPages } }, timestamp }`
+- [ ] Service: ensure pagination metadata is computed and attached via the standard interceptor signal (check existing pattern in another paginated endpoint, e.g. `/users` paginated query)
+- [ ] Update affected DTOs / response types
+- [ ] API integration test: `GET /dummy-users?page=2&limit=10` returns canonical envelope with correct `meta.pagination.totalPages`
+- [ ] Backwards-compat consideration: greenfield (CLAUDE.md) — break the shape, no shim needed
 
-- [ ] Update `docs/how-to/HOW-TO-FIX-MANAGE-PAGINATION.md` §"Phase 2 — Server-Driven Pagination" with a copy-paste-ready snippet of the migrated `manage-dummies` (replaces the current 3-step abstract description with a concrete reference)
+### Step 3.2: Frontend — `manage-dummies` to URL-state + new helpers [PENDING]
+
+- [ ] Remove `extractDummies()` helper in `+page.server.ts` (was a workaround for non-canonical shape — no longer needed)
+- [ ] Remove `PaginatedDummies` type from `_lib/types.ts` (replace with `PaginatedResult<DummyUser>` from `api-fetch.ts`)
+- [ ] Replace `apiFetch<PaginatedDummies>('/dummy-users?page=1&limit=20', token, fetch)` with `apiFetchPaginated<DummyUser>('/dummy-users?' + new URLSearchParams({...}).toString(), token, fetch)`
+- [ ] Read `?page` via `readPageFromUrl(url)`, `?search` via `readSearchFromUrl(url)`
+- [ ] `+page.svelte`: pagination UI uses URL-driven `<a href={resolve(buildPaginatedHref(...))}>` links, NOT button-onclick state mutation
+- [ ] Search input → `goto()` with debounced URL update (not local filter)
+- [ ] Verify `invalidateAll()` after create/delete keeps current page
+- [ ] Manual smoke: create 30 dummies, navigate page 1→2→3, verify search "abc" finds match on page 3, verify back-button restores
+
+### Step 3.3: Document the pattern in HOW-TO [PENDING]
+
+- [ ] Update `docs/how-to/HOW-TO-FIX-MANAGE-PAGINATION.md` §"Phase 2 — Server-Driven Pagination" with copy-paste-ready snippets of the migrated `manage-dummies` (replaces the 3-step abstract description)
+- [ ] Correct triage table row 91 — was claiming `manage-dummies` is server-paginated; document the rebuild
+- [ ] Add note to row 92 (`manage-approvals` "mirrors manage-dummies"): re-verify in Phase 4.3
 
 ### Phase 3 — Definition of Done
 
-- [ ] `manage-dummies` works identically to before (smoke-tested manually with >25 dummies)
-- [ ] Doc updated with copy-paste reference
-- [ ] svelte-check + lint clean for `manage-dummies`
+- [ ] `dummy-users` backend ships ADR-007 envelope (verified by API integration test)
+- [ ] `manage-dummies` FE reads URL state, page navigation = URL update, search spans all pages
+- [ ] Manual smoke with >30 dummies passes all 4 cases (page nav, cross-page search, filter reset, browser back)
+- [ ] `cd frontend && pnpm run check` 0 errors for the page
+- [ ] `docker exec assixx-backend pnpm run lint && pnpm run type-check` 0 errors for backend changes
+- [ ] HOW-TO doc updated with concrete snippets
 
 ---
 
@@ -221,20 +274,20 @@ Single source of truth for URL ↔ state mapping. Only emits non-default values 
 
 ### Migration order (priority by Beta blast radius)
 
-| #    | Page                  | Endpoint                                                          | Notes                                                                                                                                                                                                              | Status  |
-| ---- | --------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
-| 4.1  | `manage-employees`    | `/users?role=employee`                                            | Largest typical tenant volume — start here                                                                                                                                                                         | PENDING |
-| 4.2  | `manage-admins`       | `/users?role=admin`                                               | Critical role, low data — fast win after 4.1 sets pattern                                                                                                                                                          | PENDING |
-| 4.3  | `manage-approvals`    | `/approvals`                                                      | Already server-paginated — verify alignment with new pattern                                                                                                                                                       | PENDING |
-| 4.4  | `manage-assets`       | `/assets`                                                         | Currently `&limit=100` Phase-1 hack                                                                                                                                                                                | PENDING |
-| 4.5  | KVP suggestions       | `/kvp-suggestions` (or equivalent)                                | Could grow large per tenant                                                                                                                                                                                        | PENDING |
-| 4.6  | blackboard entries    | `/blackboard/entries`                                             | Could grow large                                                                                                                                                                                                   | PENDING |
-| 4.7  | work-orders           | `/work-orders`                                                    | Could grow large                                                                                                                                                                                                   | PENDING |
-| 4.8  | inventory items       | `/inventory/items`                                                | Designed for huge inventories — biggest scaling risk                                                                                                                                                               | PENDING |
-| 4.9  | documents-explorer    | `/documents`                                                      | File lists per folder                                                                                                                                                                                              | PENDING |
-| 4.10 | `manage-surveys`      | `/surveys`                                                        | THREE card sections — apply per-section pagination per HOW-TO note                                                                                                                                                 | PENDING |
-| 4.11 | TPM plans + cards     | `/tpm/plans`, `/tpm/cards`                                        | Two endpoints, can do in one session                                                                                                                                                                               | PENDING |
-| 4.12 | Employee-picker modal | `/users?role=employee` (team-member assignment in `manage-teams`) | Currently `&limit=100` — HARD BUG: tenant with >100 employees can only assign first 100 to teams. Refactor dropdown → typeahead (search-as-you-type, debounced `?search=` request, no client-side full-list cache) | PENDING |
+| #    | Page                                          | Endpoint                                                                | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Status  |
+| ---- | --------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| 4.1  | `manage-employees`                            | `/users?role=employee`                                                  | Largest typical tenant volume — start here                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | PENDING |
+| 4.2  | `manage-admins`                               | `/users?role=admin`                                                     | Critical role, low data — fast win after 4.1 sets pattern                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | PENDING |
+| 4.3  | `manage-approvals`                            | `/approvals`                                                            | HOW-TO triage row 92 claims "server-paginated, mirrors manage-dummies". Da `manage-dummies` nachweislich broken war (page=1 hardcoded), MUSS hier verifiziert werden ob auch broken-by-mirror. Wenn ja: gleicher Rebuild wie Phase 3 statt einfacher Migration                                                                                                                                                                                                                                                                                                         | PENDING |
+| 4.4  | `manage-assets`                               | `/assets`                                                               | Currently `&limit=100` Phase-1 hack                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | PENDING |
+| 4.5  | KVP suggestions                               | `/kvp-suggestions` (or equivalent)                                      | Could grow large per tenant                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | PENDING |
+| 4.6  | blackboard entries                            | `/blackboard/entries`                                                   | Could grow large                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | PENDING |
+| 4.7  | work-orders                                   | `/work-orders`                                                          | Could grow large                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | PENDING |
+| 4.8  | inventory items                               | `/inventory/items`                                                      | Designed for huge inventories — biggest scaling risk                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | PENDING |
+| 4.9  | documents-explorer                            | `/documents`                                                            | File lists per folder                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | PENDING |
+| 4.10 | `manage-surveys`                              | `/surveys`                                                              | THREE card sections — apply per-section pagination per HOW-TO note                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | PENDING |
+| 4.11 | TPM plans + cards                             | `/tpm/plans`, `/tpm/cards`                                              | Two endpoints, can do in one session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | PENDING |
+| 4.12 | **Picker-Typeahead-Component (alle 6 Sites)** | `/users?role=...` mit verschiedenen `position`/`isActive`-Kombinationen | **Decision Q3 (2026-05-01):** EIN unifiziertes debounced typeahead-Component (`PickerTypeahead.svelte`), 6 Konsumenten: 5 Lead-Picker (manage-areas Admin+Root, manage-departments Admin+Root, manage-teams Team-Lead) + 1 Employee-Picker (manage-teams Team-Member-Assignment). Eliminiert `&limit=100` Band-aid komplett. Pattern: `?search=<term>&limit=20` debounced 250ms, ohne client-side full-list-cache. Schätzung: 1 Session Component + 1 Session 6-Site-Wirings = 2 Sessions. Backend: `/users` muss `?search=` unterstützen (Step 1.1 Audit verifiziert) | PENDING |
 
 ### Per-Page Definition of Done
 
@@ -305,21 +358,25 @@ For each migrated endpoint, add to `backend/test/<feature>.api.test.ts`:
 
 ## Session Tracking
 
-| Session | Phase | Description                                                | Status | Date |
-| ------- | ----- | ---------------------------------------------------------- | ------ | ---- |
-| 1       | 0+1   | Audit endpoints, document gaps in `Phase-1-audit.md`       |        |      |
-| 2       | 1     | Close backend gaps (search/filter params) + tests          |        |      |
-| 3       | 2     | `apiFetchPaginated` + `url-pagination` helpers + tests     |        |      |
-| 4       | 3     | Migrate `manage-dummies` to canonical pattern + doc update |        |      |
-| 5       | 4     | `manage-employees` (sets pattern reference)                |        |      |
-| 6       | 4     | `manage-admins` + `manage-approvals` + `manage-assets`     |        |      |
-| 7       | 4     | KVP + blackboard                                           |        |      |
-| 8       | 4     | work-orders + inventory                                    |        |      |
-| 9       | 4     | documents-explorer + `manage-surveys`                      |        |      |
-| 10      | 4     | TPM plans + cards                                          |        |      |
-| 11      | 4     | Employee-picker typeahead refactor (4.12)                  |        |      |
-| 12      | 5     | API integration tests                                      |        |      |
-| 13      | 5     | ADR + HOW-TO update + Phase-1 hack cleanup                 |        |      |
+| Session | Phase  | Description                                                                                                                                         | Status  | Date       |
+| ------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ---------- |
+| 1       | 0+1    | Audit endpoints, document gaps in `Phase-1-audit.md`                                                                                                | ✅ DONE | 2026-05-01 |
+| 2a      | 1.2a-A | DTO-Refactor 4 simple Endpoints (assets, inventory/items, documents, dummy-users) — extends `PaginationSchema`, D1+D3 angewandt, 224/224 tests pass | ✅ DONE | 2026-05-01 |
+| 2b      | 1.2a-B | search WHERE addition (surveys, work-orders, tpm/plans, tpm/cards) — DTO + Controller + Service + SQL atomar                                        |         |            |
+| 2c      | 1.2b   | `/approvals` inline interface → Zod DTO migration                                                                                                   |         |            |
+| 3       | 2      | `apiFetchPaginated` + `url-pagination` helpers + tests                                                                                              |         |            |
+| 4       | 3.1    | **NEW** Backend `dummy-users` → ADR-007 envelope + API tests                                                                                        |         |            |
+| 5       | 3.2-3  | **NEW** Frontend `manage-dummies` URL-state + HOW-TO doc rewrite                                                                                    |         |            |
+| 6       | 4.1    | `manage-employees` (sets pattern reference for all subsequent migrations)                                                                           |         |            |
+| 7       | 4.2-4  | `manage-admins` + `manage-approvals` (verify nicht broken-by-mirror) + `manage-assets`                                                              |         |            |
+| 8       | 4.5-6  | KVP + blackboard                                                                                                                                    |         |            |
+| 9       | 4.7-8  | work-orders + inventory                                                                                                                             |         |            |
+| 10      | 4.9-10 | documents-explorer + `manage-surveys`                                                                                                               |         |            |
+| 11      | 4.11   | TPM plans + cards                                                                                                                                   |         |            |
+| 12      | 4.12a  | **EXPANDED** `PickerTypeahead.svelte` component + unit tests                                                                                        |         |            |
+| 13      | 4.12b  | **EXPANDED** Wire all 6 picker sites (5 Lead + 1 Employee) to component + smoke tests                                                               |         |            |
+| 14      | 5.1    | API integration tests across all migrated endpoints                                                                                                 |         |            |
+| 15      | 5.2-4  | ADR + HOW-TO update + `?limit=100` Phase-1 hack cleanup                                                                                             |         |            |
 
 ### Session log template
 
@@ -386,14 +443,14 @@ For each migrated endpoint, add to `backend/test/<feature>.api.test.ts`:
 
 | Metric                   | Planned | Actual |
 | ------------------------ | ------- | ------ |
-| Sessions                 | 12      | —      |
-| Backend files changed    | ~10     | —      |
+| Sessions                 | 17      | 1 + 2a |
+| Backend files changed    | ~12     | —      |
 | New backend files        | 0       | —      |
-| New frontend files       | 2       | —      |
-| Frontend files changed   | ~22     | —      |
+| New frontend files       | 3       | —      |
+| Frontend files changed   | ~28     | —      |
 | Migration files          | 0       | —      |
-| Unit tests               | ~10     | —      |
-| API tests                | ~30     | —      |
+| Unit tests               | ~12     | —      |
+| API tests                | ~32     | —      |
 | ESLint errors at release | 0       | —      |
 | Spec deviations          | 0       | —      |
 
