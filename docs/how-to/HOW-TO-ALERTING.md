@@ -145,6 +145,77 @@ Loki shows > 50 errors in 5 min. Real incident.
 
 ---
 
+## 5b. 2FA Saved Loki Queries (ADR-054)
+
+Ad-hoc investigation queries for the mandatory email-2FA layer. Paste into
+Grafana **Explore → Loki** (`grafanacloud-logs` for prod, `loki` for dev).
+
+> **Why a doc, not "saved queries" in Grafana UI?** Grafana Explore stars are
+> UI-only and disappear with browser state — not IaC. Library Panels would be
+> overkill for ad-hoc snippets. Code-tracked here = single source of truth +
+> pasteable + survives Cloud-account migration. Once a query graduates to
+> regular use, promote it to a dashboard panel (`docker/grafana/dashboards/cloud/`).
+
+### Canonical query — all 2FA gating events
+
+```logql
+{service="backend"} | json | resource_type="2fa-challenge" or resource_type="2fa-lockout"
+```
+
+Returns every 2FA challenge issuance, verify success, verify fail, and
+lockout-trip. Driven by the `audit_trail` rows that the audit-trail
+interceptor emits as Pino structured logs (Plan §A8).
+
+### Lockout-only (DD-5/DD-6 — 5-wrong-codes → 15-min lockout)
+
+```logql
+{service="backend"} | json | resource_type="2fa-lockout"
+```
+
+Spike here = brute-force attempt or a UX bug producing wrong codes. Cross-check
+with the SMTP-failure-rate alert (`assixx-smtp-failure-rate`) — high lockout
+volume + low SMTP-fail-rate = brute-force; lockouts + high fail-rate = users
+locked out because mail never arrived (transport bug, not attack).
+
+### Production-only filter (cuts dev-noise)
+
+```logql
+{app="assixx", service="backend", env="production"} | json
+  | resource_type="2fa-challenge" or resource_type="2fa-lockout"
+```
+
+Use this when investigating from Grafana Cloud (`grafanacloud-logs`).
+
+### Per-tenant breakdown
+
+```logql
+sum by (tenant_id) (
+  count_over_time(
+    {service="backend"} | json
+      | resource_type="2fa-challenge" or resource_type="2fa-lockout"
+    [5m]
+  )
+)
+```
+
+Identify which tenant drives 2FA traffic — useful when one tenant onboards
+and floods the SMTP queue.
+
+### Click-through to Tempo (ADR-048)
+
+Every log line carries `trace_id` (Pino otelTraceMixin). In Grafana Loki the
+derived-field for `trace_id` opens the corresponding Tempo trace — handy when
+a 2FA verify failure has a non-obvious upstream cause (DB latency, Redis
+eviction, etc.). See [ADR-048](../infrastructure/adr/ADR-048-distributed-tracing-tempo-otel.md)
+Phase 3 for the wiring.
+
+**Cross-references:** [ADR-054](../infrastructure/adr/ADR-054-mandatory-email-2fa.md) §A8 audit tuples ·
+`docker/grafana/alerts/08-smtp-failure-rate.json` (the SMTP-fail-rate alert
+that complements these queries) · masterplan
+[`docs/FEAT_2FA_EMAIL_MASTERPLAN.md`](../FEAT_2FA_EMAIL_MASTERPLAN.md) Phase 6.
+
+---
+
 ## 6. Threshold Tuning
 
 All thresholds are conservative first-pass values. After two weeks of
