@@ -207,12 +207,22 @@ grafanactl resources pull --kind dashboard --path ./docker/grafana/dashboards/cl
 
 ### 6.2 Push local resource definitions
 
+> **Syntax note (verified 2026-05-01 against v0.1.9):** kind selection is
+> **positional**, NOT a `--kind` flag. The flag was removed (or never existed
+> in this binary release). Use the resource selector form below.
+
 ```bash
 # Push all YAML/JSON files from ./resources/ to the active stack
 grafanactl resources push
 
-# Push only dashboards from a specific path
-grafanactl resources push --path ./docker/grafana/dashboards/cloud --kind dashboard
+# Push only dashboards from a specific path (positional selector)
+grafanactl resources push --path ./docker/grafana/dashboards/cloud dashboards
+
+# Push a SINGLE dashboard by metadata.name (preferred — idempotent + minimal blast radius)
+grafanactl resources push --path ./docker/grafana/dashboards/cloud dashboards/assixx-2fa
+
+# Dry-run any push to preview without writing
+grafanactl resources push --path ./docker/grafana/dashboards/cloud dashboards/assixx-2fa --dry-run
 ```
 
 ### 6.3 Migrate between stacks (e.g. Dev → Prod)
@@ -280,8 +290,8 @@ grafanactl resources list
 # Today (curl, v1 stable):
 doppler run -- ./docker/grafana/alerts/apply.sh
 
-# Future (grafanactl, once v1):
-grafanactl resources push --path ./docker/grafana/alerts --kind alertrule
+# Future (grafanactl, once v1) — positional selector, not --kind flag:
+grafanactl resources push --path ./docker/grafana/alerts alertrules
 ```
 
 The JSON files in `docker/grafana/alerts/` would then need to be rewritten to

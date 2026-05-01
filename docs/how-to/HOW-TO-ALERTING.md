@@ -282,19 +282,41 @@ ORDER BY challenges DESC;
 Capacity-planning + early SMTP-cost signal. A tenant with `challenges >>
 verified_logins` is leaking codes (mail bounces, user retypes).
 
-### Verify-failure rate — derive lockout precursors
+### Verify-outcome rate — derive lockout precursors
+
+> **Schema note (ADR-054 §A8):** verify-success and verify-fail rows live under
+> `resource_type='auth', action='login'` (NOT `2fa-challenge`, which is only
+> for challenge issuance + resend + email-change). Distinguish 2FA verify
+> from credential-fail via `changes->>'method'='2fa-email'` (success path) and
+> `changes->>'reason' IN ('wrong-code','expired-challenge')` (fail path).
 
 ```sql
 SELECT date_trunc('hour', created_at) AS hour,
-       COUNT(*) FILTER (WHERE changes->>'outcome' = 'fail')    AS fails,
-       COUNT(*) FILTER (WHERE changes->>'outcome' = 'success') AS successes,
+       COUNT(*) FILTER (
+         WHERE status = 'success' AND changes->>'method' = '2fa-email'
+       ) AS verified,
+       COUNT(*) FILTER (
+         WHERE status = 'failure'
+           AND changes->>'reason' IN ('wrong-code', 'expired-challenge')
+       ) AS verify_fails,
        ROUND(
-         100.0 * COUNT(*) FILTER (WHERE changes->>'outcome' = 'fail')
-              / NULLIF(COUNT(*), 0),
+         100.0 * COUNT(*) FILTER (
+           WHERE status = 'failure'
+             AND changes->>'reason' IN ('wrong-code', 'expired-challenge')
+         )
+         / NULLIF(
+             COUNT(*) FILTER (
+               WHERE (status = 'success' AND changes->>'method' = '2fa-email')
+                  OR (status = 'failure'
+                      AND changes->>'reason' IN ('wrong-code', 'expired-challenge'))
+             ),
+             0
+           ),
          2
        ) AS fail_pct
 FROM audit_trail
-WHERE resource_type = '2fa-challenge'
+WHERE action = 'login'
+  AND resource_type = 'auth'
   AND created_at > NOW() - INTERVAL '24 hours'
 GROUP BY hour
 ORDER BY hour DESC;
