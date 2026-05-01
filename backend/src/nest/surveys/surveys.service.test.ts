@@ -668,6 +668,7 @@ describe('SurveysService', () => {
         0, // offset for page 1
         true, // hasUnrestrictedAccess
         false, // manage
+        undefined, // search (Phase 1.2a-B)
       );
     });
 
@@ -688,6 +689,24 @@ describe('SurveysService', () => {
         20, // offset = (3-1) * 10
         true,
         false,
+        undefined, // search (Phase 1.2a-B)
+      );
+    });
+
+    it('forwards search query to access service (Phase 1.2a-B)', async () => {
+      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce([]);
+
+      await mocks.service.listSurveys(1, 5, 'admin', { search: 'safety' });
+
+      expect(mocks.mockAccessService.fetchSurveysByAccessLevel).toHaveBeenCalledWith(
+        1,
+        5,
+        undefined,
+        20,
+        0,
+        true,
+        false,
+        'safety', // search threaded through
       );
     });
 

@@ -132,7 +132,14 @@ export class SurveyAccessService {
   // SURVEY LISTING QUERIES
   // ==========================================================================
 
-  /** Fetches surveys based on user's access level */
+  /**
+   * Fetches surveys based on user's access level.
+   *
+   * Phase 1.2a-B (2026-05-01): `search` is optional — when defined and
+   * non-empty it adds an ILIKE WHERE on `s.title OR s.description` (case-
+   * insensitive substring match). When undefined or empty, no filter is
+   * emitted (backwards-compat invariant).
+   */
   async fetchSurveysByAccessLevel(
     tenantId: number,
     userId: number,
@@ -141,14 +148,15 @@ export class SurveyAccessService {
     offset: number,
     hasUnrestrictedAccess: boolean,
     isManageMode: boolean,
+    search?: string,
   ): Promise<DbSurvey[]> {
     if (hasUnrestrictedAccess) {
-      return await this.getAllSurveysUnrestricted(tenantId, status, limit, offset);
+      return await this.getAllSurveysUnrestricted(tenantId, status, limit, offset, search);
     }
     if (isManageMode) {
-      return await this.getAllSurveysManageable(tenantId, userId, status, limit, offset);
+      return await this.getAllSurveysManageable(tenantId, userId, status, limit, offset, search);
     }
-    return await this.getAllSurveysWithVisibility(tenantId, userId, status, limit, offset);
+    return await this.getAllSurveysWithVisibility(tenantId, userId, status, limit, offset, search);
   }
 
   /**
@@ -389,12 +397,20 @@ export class SurveyAccessService {
     status: string | undefined,
     limit: number,
     offset: number,
+    search?: string,
   ): Promise<DbSurvey[]> {
     const params: unknown[] = [tenantId];
     let statusClause = '';
     if (status !== undefined) {
-      statusClause = ' AND s.status = $2';
+      statusClause = ` AND s.status = $${params.length + 1}`;
       params.push(status);
+    }
+    // Phase 1.2a-B: case-insensitive title/description substring search.
+    let searchClause = '';
+    if (search !== undefined && search !== '') {
+      const idx = params.length + 1;
+      searchClause = ` AND (s.title ILIKE $${idx} OR s.description ILIKE $${idx})`;
+      params.push(`%${search}%`);
     }
     const limitIdx = params.length + 1;
     const offsetIdx = params.length + 2;
@@ -406,7 +422,7 @@ export class SurveyAccessService {
        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
        FROM surveys s LEFT JOIN users u ON s.created_by = u.id
        LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-       WHERE s.tenant_id = $1${statusClause}
+       WHERE s.tenant_id = $1${statusClause}${searchClause}
        GROUP BY s.id
        ORDER BY s.created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
       params,
@@ -423,12 +439,20 @@ export class SurveyAccessService {
     status: string | undefined,
     limit: number,
     offset: number,
+    search?: string,
   ): Promise<DbSurvey[]> {
     const params: unknown[] = [tenantId, userId];
     let statusClause = '';
     if (status !== undefined) {
       statusClause = ` AND s.status = $${params.length + 1}`;
       params.push(status);
+    }
+    // Phase 1.2a-B: case-insensitive title/description substring search.
+    let searchClause = '';
+    if (search !== undefined && search !== '') {
+      const idx = params.length + 1;
+      searchClause = ` AND (s.title ILIKE $${idx} OR s.description ILIKE $${idx})`;
+      params.push(`%${search}%`);
     }
     const limitIdx = params.length + 1;
     const offsetIdx = params.length + 2;
@@ -444,7 +468,7 @@ export class SurveyAccessService {
        LEFT JOIN users u ON s.created_by = u.id
        LEFT JOIN survey_responses sr ON s.id = sr.survey_id
        WHERE s.tenant_id = $1
-       AND ${visibilityClause}${statusClause}
+       AND ${visibilityClause}${statusClause}${searchClause}
        GROUP BY s.id
        ORDER BY s.created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
       params,
@@ -461,12 +485,20 @@ export class SurveyAccessService {
     status: string | undefined,
     limit: number,
     offset: number,
+    search?: string,
   ): Promise<DbSurvey[]> {
     const params: unknown[] = [tenantId, userId];
     let statusClause = '';
     if (status !== undefined) {
       statusClause = ` AND s.status = $${params.length + 1}`;
       params.push(status);
+    }
+    // Phase 1.2a-B: case-insensitive title/description substring search.
+    let searchClause = '';
+    if (search !== undefined && search !== '') {
+      const idx = params.length + 1;
+      searchClause = ` AND (s.title ILIKE $${idx} OR s.description ILIKE $${idx})`;
+      params.push(`%${search}%`);
     }
     const limitIdx = params.length + 1;
     const offsetIdx = params.length + 2;
@@ -482,7 +514,7 @@ export class SurveyAccessService {
        LEFT JOIN users u ON s.created_by = u.id
        LEFT JOIN survey_responses sr ON s.id = sr.survey_id
        WHERE s.tenant_id = $1
-       AND ${managementClause}${statusClause}
+       AND ${managementClause}${statusClause}${searchClause}
        GROUP BY s.id
        ORDER BY s.created_at DESC LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
       params,

@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { CreateCardSchema } from './create-card.dto.js';
+import { ListCardsQuerySchema } from './list-cards-query.dto.js';
 import { UpdateCardSchema } from './update-card.dto.js';
 
 // =============================================================
@@ -407,5 +408,64 @@ describe('UpdateCardSchema', () => {
 
   it('should reject invalid intervalType', () => {
     expect(UpdateCardSchema.safeParse({ intervalType: 'hourly' }).success).toBe(false);
+  });
+});
+
+// =============================================================
+// ListCardsQuerySchema (Phase 1.2a-B, 2026-05-01)
+// Pagination via PaginationSchema (default page=1, limit=20, max=100 — D2).
+// Search field: D3 convention .trim().max(100).optional().
+// (cardCategory coverage lives in tpm-card-categories.dto.test.ts.)
+// =============================================================
+
+describe('ListCardsQuerySchema (pagination + search)', () => {
+  it('should accept empty query and apply defaults (limit=20 override, D2 max=100)', () => {
+    const result = ListCardsQuerySchema.parse({});
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.search).toBeUndefined();
+  });
+
+  it('should coerce page + limit from strings (HTTP query params)', () => {
+    const result = ListCardsQuerySchema.parse({ page: '2', limit: '75' });
+    expect(result.page).toBe(2);
+    expect(result.limit).toBe(75);
+  });
+
+  it('should accept limit=100 (boundary)', () => {
+    const result = ListCardsQuerySchema.parse({ limit: '100' });
+    expect(result.limit).toBe(100);
+  });
+
+  it('should reject limit=101 (D2 cap, was 500 in local LimitSchema)', () => {
+    expect(ListCardsQuerySchema.safeParse({ limit: '101' }).success).toBe(false);
+  });
+
+  it('should reject page=0', () => {
+    expect(ListCardsQuerySchema.safeParse({ page: '0' }).success).toBe(false);
+  });
+
+  // ----- search field (D3 convention) -----
+
+  it('should accept search string', () => {
+    const result = ListCardsQuerySchema.parse({ search: 'Sichtprüfung' });
+    expect(result.search).toBe('Sichtprüfung');
+  });
+
+  it('should trim whitespace from search', () => {
+    const result = ListCardsQuerySchema.parse({ search: '  trimmed  ' });
+    expect(result.search).toBe('trimmed');
+  });
+
+  it('should accept search at exactly 100 chars (boundary)', () => {
+    expect(ListCardsQuerySchema.safeParse({ search: 'A'.repeat(100) }).success).toBe(true);
+  });
+
+  it('should reject search longer than 100 chars', () => {
+    expect(ListCardsQuerySchema.safeParse({ search: 'A'.repeat(101) }).success).toBe(false);
+  });
+
+  it('should accept empty search string (service treats as no filter)', () => {
+    expect(ListCardsQuerySchema.safeParse({ search: '' }).success).toBe(true);
   });
 });

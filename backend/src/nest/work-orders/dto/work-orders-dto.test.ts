@@ -737,6 +737,7 @@ describe('ListWorkOrdersQuerySchema', () => {
     expect(result.sourceType).toBeUndefined();
     expect(result.sourceUuid).toBeUndefined();
     expect(result.assigneeUuid).toBeUndefined();
+    expect(result.search).toBeUndefined();
   });
 
   it('should accept sourceUuid filter', () => {
@@ -839,8 +840,44 @@ describe('ListWorkOrdersQuerySchema', () => {
     expect(ListWorkOrdersQuerySchema.safeParse({ page: '0' }).success).toBe(false);
   });
 
-  it('should reject limit=501', () => {
+  it('should accept limit=100 (boundary, Phase 1.2a-B D2 cap)', () => {
+    const result = ListWorkOrdersQuerySchema.parse({ limit: '100' });
+    expect(result.limit).toBe(100);
+  });
+
+  it('should reject limit=101 (Phase 1.2a-B D2: max=100, was 500 in local LimitSchema)', () => {
+    expect(ListWorkOrdersQuerySchema.safeParse({ limit: '101' }).success).toBe(false);
+  });
+
+  it('should reject limit=501 (already over the new max=100)', () => {
     expect(ListWorkOrdersQuerySchema.safeParse({ limit: '501' }).success).toBe(false);
+  });
+
+  // -----------------------------------------------------------
+  // search filter (Phase 1.2a-B, D3 convention)
+  // -----------------------------------------------------------
+
+  it('should accept search string', () => {
+    const result = ListWorkOrdersQuerySchema.parse({ search: 'Wartung' });
+    expect(result.search).toBe('Wartung');
+  });
+
+  it('should trim whitespace from search', () => {
+    const result = ListWorkOrdersQuerySchema.parse({ search: '  trimmed  ' });
+    expect(result.search).toBe('trimmed');
+  });
+
+  it('should accept search at exactly 100 chars (boundary)', () => {
+    expect(ListWorkOrdersQuerySchema.safeParse({ search: 'A'.repeat(100) }).success).toBe(true);
+  });
+
+  it('should reject search longer than 100 chars', () => {
+    expect(ListWorkOrdersQuerySchema.safeParse({ search: 'A'.repeat(101) }).success).toBe(false);
+  });
+
+  it('should accept empty search string (service treats as no filter)', () => {
+    // Backwards-compat invariant: schema accepts '', service drops it.
+    expect(ListWorkOrdersQuerySchema.safeParse({ search: '' }).success).toBe(true);
   });
 });
 

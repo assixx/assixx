@@ -87,6 +87,7 @@ export class SurveysController {
   ): Promise<unknown[]> {
     return await this.surveysService.listSurveys(tenantId, user.id, user.role, {
       status: query.status,
+      search: query.search,
       page: query.page,
       limit: query.limit,
       manage: query.manage,
