@@ -24,6 +24,22 @@ export const APITEST_EMAIL = __ENV.EMAIL ?? 'info@assixx.com';
 export const APITEST_PASSWORD = __ENV.PASSWORD ?? 'ApiTest12345!';
 
 /**
+ * Mailpit dev-SMTP capture base URL — required for k6's 2FA bridge
+ * (`load/lib/2fa-helper.ts`).
+ *
+ * ADR-054 / FEAT_2FA_EMAIL_MASTERPLAN: every password login emits a 2FA
+ * challenge mail. k6 cannot read the inbox from goja, so the bridge polls
+ * Mailpit's HTTP API for the freshly-issued code. With `--network=host`
+ * the k6 container reaches Mailpit's host-bound port directly — see
+ * `docker/docker-compose.yml` (`assixx-mailpit` exposes 8025) +
+ * HOW-TO-DEV-SMTP.md (Mailpit is the dev-SMTP standard, ADR-027).
+ *
+ * Override via `-e MAILPIT_URL=http://other-host:8025` for runs that
+ * target a non-default capture target (rare).
+ */
+export const MAILPIT_URL = __ENV.MAILPIT_URL ?? 'http://localhost:8025';
+
+/**
  * Smoke thresholds — initial baseline.
  * Tighten once 3-5 runs establish realistic p95 range per endpoint.
  *

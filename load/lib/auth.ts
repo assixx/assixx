@@ -13,16 +13,24 @@
  * Mandatory Email-2FA contract (ADR-054, FEAT_2FA_EMAIL_MASTERPLAN R13 +
  * DD-10 Removal v0.5.0): `POST /auth/login` now returns the discriminated
  * union `LoginResultBody`. With DD-10 removed (no flag, 2FA hard-coded), a
- * password login from this rig will ALWAYS resolve to
- * `stage === 'challenge_required'`. k6 cannot complete the email-code step
- * from inside the goja VM, so this module fails-loud at that stage with a
- * remediation pointer (OAuth-derived test account per DD-7, or a 2FA-exempt
- * test fixture endpoint). Better than silently 401-storming every iteration.
+ * password login from this rig ALWAYS resolves to `stage === 'challenge_required'`.
+ *
+ * Resolution (v0.8.16 — Phase 7 follow-up to R13): the `challenge_required`
+ * branch is completed via `completeChallengeViaMailpit` (`./2fa-helper.ts`)
+ * which polls Mailpit for the freshly-issued code mail, extracts the 6-char
+ * code from the plain-text body, and submits to `/auth/2fa/verify`. Same
+ * `AuthState` shape returned, so `smoke.ts` + `baseline.ts` callers stay
+ * unchanged. Validates the SMTP pipeline as a side-effect — a broken
+ * `send2faCode` path manifests as a 15 s setup-time abort, not a silent skip.
+ *
+ * The `'authenticated'` branch is preserved for forward-compat (V2 per-tenant
+ * 2FA-skip flag); under v0.5.0+ it is unreachable from `/auth/login`.
  */
 import { check, fail } from 'k6';
 import http from 'k6/http';
 import type { Response } from 'k6/http';
 
+import { completeChallengeViaMailpit } from './2fa-helper.ts';
 import { APITEST_EMAIL, APITEST_PASSWORD, BASE_URL } from './config.ts';
 
 export interface AuthState {
@@ -64,15 +72,16 @@ interface LoginResultChallenge {
 type LoginResultBody = LoginResultAuthenticated | LoginResultChallenge;
 
 /**
- * Validate 200 + extract tokens from a `/auth/login` response, fail-loud on
- * the 2FA-challenge branch.
+ * Validate 200 + branch on the `LoginResultBody` discriminator. The
+ * `'challenge_required'` branch is the live path under v0.5.0+ (DD-10
+ * removed) and routes through `completeChallengeViaMailpit` to finish the
+ * 2FA roundtrip. The `'authenticated'` branch is preserved for forward-compat.
  *
- * R13 mitigation (FEAT_2FA_EMAIL_MASTERPLAN v0.5.0): with DD-10 removed and
- * 2FA hard-coded ON, password login can never reach the 'authenticated'
- * branch from a real backend. We surface that to the operator with a
- * concrete remediation hint so the failure is actionable, not a 401-storm.
+ * `issuedAtMs` MUST be captured by the caller BEFORE the `/auth/login`
+ * POST — used to filter stale mails from prior runs (Mailpit persists
+ * `mailpit.db` across container restarts; see HOW-TO-DEV-SMTP §5).
  */
-function extractAuthState(res: Response, email: string): AuthState {
+function extractAuthState(res: Response, email: string, issuedAtMs: number): AuthState {
   const ok = check(res, {
     'login returns 200': (r) => r.status === 200,
   });
@@ -88,18 +97,17 @@ function extractAuthState(res: Response, email: string): AuthState {
   const body = res.json() as unknown as { data: LoginResultBody };
 
   if (body.data.stage === 'challenge_required') {
-    fail(
-      `Login for ${email} returned 'challenge_required': mandatory email-2FA ` +
-        `is live (ADR-054 / DD-10 Removal v0.5.0). k6 load tests cannot ` +
-        `complete the email-code step from goja. Pre-seed a 2FA-exempt ` +
-        `account (OAuth path per DD-7) or expose a test-only fixture and ` +
-        `update __ENV.LOGINS / loginApitest credentials accordingly.`,
-    );
+    // Live path under ADR-054 v0.5.0+. Mailpit-bridge polls for the freshly-
+    // issued code (filtered by `issuedAtMs - CLOCK_SKEW_MS`), submits to
+    // `/auth/2fa/verify`, and extracts tokens from the response cookies
+    // (R8 — tokens never in body). See `./2fa-helper.ts` header for the
+    // architectural rationale (zero new backend surface).
+    return completeChallengeViaMailpit(email, issuedAtMs);
   }
 
   // stage === 'authenticated' — currently unreachable from /auth/login but
   // retained for forward-compat (Step 2.4 preserves the branch for a future
-  // per-tenant 2FA-skip flag in V2).
+  // per-tenant 2FA-skip flag in V2, where the body would carry tokens).
   return {
     authToken: body.data.accessToken,
     refreshToken: body.data.refreshToken,
@@ -111,15 +119,22 @@ function extractAuthState(res: Response, email: string): AuthState {
 /**
  * Generic login for any tenant. Both `loginApitest()` and
  * `baseline.ts:loginAll()` funnel through here so the discriminated-union
- * branch lives in ONE place — when load tests gain a 2FA-exempt path
- * (OAuth fixture, test endpoint, etc.), only this helper changes.
+ * branch lives in ONE place. The Mailpit-bridge for the 2FA stage is
+ * isolated in `./2fa-helper.ts`; swapping in a different test-account
+ * mechanism (e.g. a future OAuth-fixture or out-of-band token-mint per
+ * FEAT_2FA_EMAIL_MASTERPLAN §Phase 7) only touches that helper.
+ *
+ * `issuedAtMs` is captured BEFORE the POST so the helper's Mailpit poll
+ * filters out stale mails from prior runs (Mailpit retains its mailbox
+ * in `assixx_mailpit_data` across container restarts).
  */
 export function loginGeneric(email: string, password: string): AuthState {
+  const issuedAtMs = Date.now();
   const res = http.post(`${BASE_URL}/auth/login`, JSON.stringify({ email, password }), {
     headers: { 'Content-Type': 'application/json' },
     tags: { name: 'auth_login' },
   });
-  return extractAuthState(res, email);
+  return extractAuthState(res, email, issuedAtMs);
 }
 
 /**

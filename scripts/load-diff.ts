@@ -40,28 +40,44 @@
 import { readFileSync } from 'node:fs';
 import { argv, exit } from 'node:process';
 
-interface TrendValues {
-  // k6 emits a wide trend struct — only fields we actually compare are typed.
+/**
+ * k6 ≥ 1.x `--summary-export` emits each metric as a FLAT struct: trend
+ * percentiles (`'p(95)'`, `'avg'`, …) and rate fields (`'value'`, `'passes'`,
+ * `'fails'`) sit directly on the metric — there is NO `{ type, values: { … } }`
+ * wrapper anymore. The earlier shape was dropped between k6 0.55 and 1.x;
+ * this script's prior wrapper-based types were a latent bug from before that
+ * change ever exercised the diff path end-to-end (verified 2026-05-01:
+ * both `load/baselines/baseline-light.json` and `load/results/baseline-latest.json`
+ * carry the flat shape — neither side has ever conformed to the old wrapper).
+ *
+ * Verified shape (excerpt from `baseline-latest.json`):
+ *   "http_req_duration":          { "avg": 17.42, "p(95)": 35.74, … }
+ *   "http_req_duration{op:read}": { "p(95)": 28.38, "thresholds": {…}, … }
+ *   "http_req_failed":            { "passes": 0, "fails": 987, "value": 0 }
+ *
+ * `MetricCheck.field` keeps the call-site convention `'rate'`; `getValue`
+ * maps it to the JSON key `'value'` (the computed rate). Trend percentile
+ * fields pass through unchanged.
+ */
+interface TrendMetric {
   avg: number;
   med: number;
+  min: number;
   max: number;
+  'p(90)'?: number;
   'p(95)'?: number;
   'p(99)'?: number;
 }
 
-interface RateValues {
-  rate: number;
-  passes?: number;
-  fails?: number;
+interface RateMetric {
+  passes: number;
+  fails: number;
+  /** k6 emits the computed rate under `value`, NOT `rate`. */
+  value: number;
+  thresholds?: Record<string, boolean>;
 }
 
-type MetricValues = TrendValues | RateValues;
-
-interface K6Metric {
-  type: 'trend' | 'rate' | 'counter' | 'gauge';
-  contains?: string;
-  values: MetricValues;
-}
+type K6Metric = TrendMetric | RateMetric;
 
 interface K6Summary {
   metrics: Record<string, K6Metric>;
@@ -71,7 +87,7 @@ interface MetricCheck {
   /** k6 metric name (incl. tag-suffix like `{op:read}`). */
   key: string;
   /** Trend percentile field, or 'rate' for rate metrics. */
-  field: keyof TrendValues | 'rate';
+  field: keyof TrendMetric | 'rate';
   /** Comparison mode: relative-% for trends, absolute pp for failure rates. */
   mode: 'relative' | 'absolute-pp';
   /** Human-readable label for the report. */
@@ -120,12 +136,17 @@ function loadSummary(path: string): K6Summary {
 function getValue(summary: K6Summary, check: MetricCheck): number | null {
   const metric = summary.metrics[check.key];
   if (metric === undefined) return null;
-  // Field access guarded by the union-narrowed `mode` — TS can't infer it,
-  // so we check at runtime.
-  if (check.field === 'rate') {
-    return (metric.values as RateValues).rate;
-  }
-  const v = (metric.values as TrendValues)[check.field];
+  // k6 ≥ 1.x summary-export: values flat on the metric (see TrendMetric/
+  // RateMetric header above). The call-site field `'rate'` maps to the JSON
+  // key `'value'` (computed rate = passes / (passes + fails)); trend
+  // percentile keys (`'p(95)'`, `'avg'`, …) pass through unchanged.
+  const jsonField = check.field === 'rate' ? 'value' : check.field;
+  // `as unknown as Record<...>` — `K6Metric` is a discriminated union of
+  // structurally-distinct interfaces; TS rejects the direct cast under
+  // ADR-041 strict mode. Routing through `unknown` is the canonical idiom
+  // for "I know better than the type system" runtime indexing (same
+  // pattern used in `load/lib/auth.ts:88` for k6's `JSONValue` narrowing).
+  const v = (metric as unknown as Record<string, unknown>)[jsonField];
   return typeof v === 'number' ? v : null;
 }
 
