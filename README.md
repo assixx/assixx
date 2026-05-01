@@ -65,7 +65,7 @@ Development: `http://localhost:5173` | Production: `http://localhost`
 | Frontend   | SvelteKit 5 + Tailwind v4          |
 | Database   | PostgreSQL 18 + Row Level Security |
 | Cache      | Redis 7                            |
-| Real-Time  | WebSocket (Chat & Notifications)   |
+| Real-Time  | WebSocket (Chat) + SSE (Notifications, ADR-003) |
 | Validation | Zod                                |
 | Container  | Docker + Nginx (Reverse Proxy)     |
 
@@ -73,7 +73,7 @@ Development: `http://localhost:5173` | Production: `http://localhost`
 
 ## Features
 
-**Available (19+ Addons):**
+**Available (25 Addons):**
 
 - User Management (Multi-Tenant, Roles: Root/Admin/Employee)
 - Document System (Upload, Categories, Access Control)
@@ -90,7 +90,7 @@ Development: `http://localhost:5173` | Production: `http://localhost`
 - Survey Tool (Templates, Statistics, Export)
 - Asset Management (CRUD, Categories, Maintenance)
 - Payroll (via Document Explorer: Secure PDF Upload)
-- Addon System (22 Addons, A-la-carte Model)
+- Addon System (25 Addons, A-la-carte Model)
 
 Details: [FEATURES.md](./docs/FEATURES.md)
 
@@ -109,15 +109,26 @@ Details: [FEATURES.md](./docs/FEATURES.md)
 
 ## Docker
 
+> Alle Befehle laufen über `doppler run --` — Secrets kommen ausschließlich aus Doppler ([HOW-TO-DOPPLER-GUIDE.md](./docs/how-to/HOW-TO-DOPPLER-GUIDE.md)). Default-Profile via `docker/.env`: `COMPOSE_PROFILES=dev,observability` (ADR-027 Amendment 2026-04-28).
+
 ```bash
 cd docker
 
-docker-compose up -d                              # Start development
-docker-compose --profile production up -d         # Start production
-docker-compose ps                                 # Status
-docker-compose logs -f backend                    # Logs
-docker-compose down                               # Stop
+# === Development (dev + observability per docker/.env) ===
+doppler run -- docker-compose up -d                          # Start dev stack
+doppler run -- docker-compose ps                             # Status
+doppler run -- docker-compose logs -f backend                # Backend logs
+doppler run -- docker-compose --profile dev down             # Stop
+
+# === Production (CI-Parität via docker/Dockerfile multi-stage) ===
+# Pflicht: Dev-Backend vorher stoppen — beide Profile teilen container_name=assixx-backend
+doppler run -- docker-compose --profile dev stop backend deletion-worker
+doppler run -- docker-compose --profile dev rm -f backend deletion-worker
+doppler run -- docker-compose --profile production build
+doppler run -- docker-compose --profile production up -d
 ```
+
+> **Vollständige Befehlsreferenz:** [docs/COMMON-COMMANDS.md §1](./docs/COMMON-COMMANDS.md) · [docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) · Node-Bumps: [HOW-TO-BUMP-NODE.md](./docs/how-to/HOW-TO-BUMP-NODE.md)
 
 ---
 

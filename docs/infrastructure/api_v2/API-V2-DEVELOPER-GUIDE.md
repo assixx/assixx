@@ -332,7 +332,7 @@ describe('Users API v2', () => {
 
 - [API Standards](./API-WORKSHOP-MATERIALS/workshop-decisions.md)
 - [Migration Guide](./MIGRATION-GUIDE-V1-TO-V2.md)
-- [TypeScript Architecture](../../docs/TYPESCRIPT-STANDARDS.md)
+- [TypeScript Architecture](../../TYPESCRIPT-STANDARDS.md)
 - [Response Types](../../backend/src/utils/apiResponse.ts)
 
 ## 🎯 Next Steps

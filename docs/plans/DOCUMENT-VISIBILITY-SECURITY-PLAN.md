@@ -860,7 +860,7 @@ if (category === 'payroll' && user.role === 'admin') {
 
 - [DATABASE-SETUP-README.md](./DATABASE-SETUP-README.md) - Database schema reference
 - [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) - How to create migrations
-- [TYPESCRIPT-STANDARDS.md](./TYPESCRIPT-STANDARDS.md) - TypeScript best practices
+- [TYPESCRIPT-STANDARDS.md](../TYPESCRIPT-STANDARDS.md) - TypeScript best practices
 - [DESIGN-STANDARDS.md](./DESIGN-STANDARDS.md) - UI/UX guidelines
 
 ---
