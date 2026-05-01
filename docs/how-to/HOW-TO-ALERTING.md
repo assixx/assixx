@@ -216,6 +216,116 @@ that complements these queries) · masterplan
 
 ---
 
+## 5c. 2FA Audit-Trail Filter Recipes (ADR-054 / ADR-009)
+
+The `audit_trail` table (ADR-009, monthly-partitioned via pg_partman) is the
+authoritative ground truth for compliance + forensics. Loki is fast for
+investigation; `audit_trail` is durable for the auditor. Use these recipes
+when a Loki retention window has expired, or when you need an SQL-grade
+report (joins to `users`/`tenants`/`addons`, COUNTs, GROUP BYs).
+
+> **Connection:** run as `assixx_user` (BYPASSRLS) for cross-tenant queries,
+> or as `app_user` with `SET app.tenant_id = '<id>'` for tenant-scoped reads.
+> See [DATABASE-MIGRATION-GUIDE.md §RLS](../DATABASE-MIGRATION-GUIDE.md).
+
+### Canonical filter — every 2FA event
+
+```sql
+SELECT created_at, tenant_id, user_id, action, resource_type,
+       resource_id, changes
+FROM audit_trail
+WHERE resource_type IN ('2fa-challenge', '2fa-lockout')
+   OR (action = 'login' AND changes->>'method' = '2fa-email')
+ORDER BY created_at DESC
+LIMIT 100;
+```
+
+The `OR` clause catches the discriminated `LoginResult` branch (ADR-054 DD-7)
+that emits an `action='login'` row with `method=2fa-email` in the `changes`
+JSONB — distinguishes 2FA-gated logins from OAuth-bypass logins (DD-7
+`loginWithVerifiedUser`).
+
+### Lockout report — past 24 h
+
+```sql
+SELECT tenant_id, user_id, COUNT(*) AS lockouts,
+       MIN(created_at) AS first_lockout,
+       MAX(created_at) AS last_lockout
+FROM audit_trail
+WHERE resource_type = '2fa-lockout'
+  AND created_at > NOW() - INTERVAL '24 hours'
+GROUP BY tenant_id, user_id
+HAVING COUNT(*) >= 2
+ORDER BY lockouts DESC;
+```
+
+Users with ≥ 2 lockouts in 24 h are candidates for HOW-TO-2FA-RECOVERY.md
+intervention (forgotten mail address, mailbox down, brute-force target).
+
+### Per-tenant 2FA volume — past 7 days
+
+```sql
+SELECT t.subdomain, t.id AS tenant_id,
+       COUNT(*) FILTER (WHERE a.resource_type = '2fa-challenge') AS challenges,
+       COUNT(*) FILTER (WHERE a.resource_type = '2fa-lockout')   AS lockouts,
+       COUNT(*) FILTER (WHERE a.action = 'login'
+                          AND a.changes->>'method' = '2fa-email') AS verified_logins
+FROM audit_trail a
+JOIN tenants t ON t.id = a.tenant_id
+WHERE a.created_at > NOW() - INTERVAL '7 days'
+  AND (a.resource_type IN ('2fa-challenge', '2fa-lockout')
+       OR (a.action = 'login' AND a.changes->>'method' = '2fa-email'))
+GROUP BY t.id, t.subdomain
+ORDER BY challenges DESC;
+```
+
+Capacity-planning + early SMTP-cost signal. A tenant with `challenges >>
+verified_logins` is leaking codes (mail bounces, user retypes).
+
+### Verify-failure rate — derive lockout precursors
+
+```sql
+SELECT date_trunc('hour', created_at) AS hour,
+       COUNT(*) FILTER (WHERE changes->>'outcome' = 'fail')    AS fails,
+       COUNT(*) FILTER (WHERE changes->>'outcome' = 'success') AS successes,
+       ROUND(
+         100.0 * COUNT(*) FILTER (WHERE changes->>'outcome' = 'fail')
+              / NULLIF(COUNT(*), 0),
+         2
+       ) AS fail_pct
+FROM audit_trail
+WHERE resource_type = '2fa-challenge'
+  AND created_at > NOW() - INTERVAL '24 hours'
+GROUP BY hour
+ORDER BY hour DESC;
+```
+
+Trend that complements the SMTP-failure-rate alert (`08-smtp-failure-rate.json`).
+SMTP-fail spikes the transport metric; verify-fail spikes the human-error /
+brute-force metric. Both > baseline = correlated incident worth escalation.
+
+### Compliance export — single user, full 2FA history
+
+```sql
+SELECT created_at, action, resource_type, ip_address, user_agent, changes
+FROM audit_trail
+WHERE user_id = $1
+  AND tenant_id = $2
+  AND (resource_type IN ('2fa-challenge', '2fa-lockout')
+       OR (action = 'login' AND changes->>'method' = '2fa-email'))
+ORDER BY created_at;
+```
+
+GDPR Art.15 access-request answer + lost-mailbox forensics
+(see [HOW-TO-2FA-RECOVERY.md](./HOW-TO-2FA-RECOVERY.md) §2 Szenario A).
+
+**Cross-references:** [ADR-009](../infrastructure/adr/ADR-009-central-audit-logging.md)
+audit-trail interceptor + partitioning · [ADR-054](../infrastructure/adr/ADR-054-mandatory-email-2fa.md)
+§A8 audit tuples · [ADR-029](../infrastructure/adr/ADR-029-pg-partman-partition-management.md)
+pg_partman retention · [HOW-TO-2FA-RECOVERY.md](./HOW-TO-2FA-RECOVERY.md).
+
+---
+
 ## 6. Threshold Tuning
 
 All thresholds are conservative first-pass values. After two weeks of
