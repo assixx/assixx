@@ -156,7 +156,7 @@ describe('Organigram: Update Hierarchy Labels', () => {
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
         levels: {
-          team: 'Crews',
+          team: 'Teams',
         },
       }),
     });
@@ -167,7 +167,7 @@ describe('Organigram: Update Hierarchy Labels', () => {
     });
     const body = (await res.json()) as JsonBody;
 
-    expect(body.data.team).toBe('Crews');
+    expect(body.data.team).toBe('Teams');
   });
 });
 

@@ -13,7 +13,7 @@
 
 ## Context
 
-Industrial shift operations need a structured handover between out-going and in-coming shift crews. Paper protocols are:
+Industrial shift operations need a structured handover between out-going and in-coming shift Teams. Paper protocols are:
 
 - **Lossy** — notes leave the building, get destroyed, or never reach the next shift
 - **Inauditable** — no record of who wrote what, when, or whether the successor actually read it
@@ -34,7 +34,7 @@ Handover entries are keyed by the composite `(tenant_id, team_id, shift_date, sh
 
 **Why per-slot, not per-day or per-team:**
 
-- A factory with three crews per day (early/late/night) has three distinct handovers per day. Flattening to "per-day" would require the night crew to edit the same row the early crew wrote, destroying the assignee→author linkage and audit trail.
+- A factory with three Teams per day (early/late/night) has three distinct handovers per day. Flattening to "per-day" would require the night crew to edit the same row the early crew wrote, destroying the assignee→author linkage and audit trail.
 - Flattening to "per-team" (one rolling entry) would make the schema_snapshot pattern (Decision 2) useless — every schema change would orphan everything prior.
 - Keeping granularity at `(team, date, slot)` matches how operations actually speak: "the late-shift handover yesterday on Line 2 said…".
 
@@ -193,7 +193,7 @@ Creator-bypass for edits: the original `submitted_by` (or `reopened_by`) user ca
 
 ### A. Per-day handover row (no slot granularity)
 
-**Rejected.** Per Decision 1 — destroys per-crew authorship and audit trail. Night crews would overwrite early crews' rows.
+**Rejected.** Per Decision 1 — destroys per-crew authorship and audit trail. Night Teams would overwrite early Teams' rows.
 
 ### B. Relational field values (normalised schema, no JSONB)
 

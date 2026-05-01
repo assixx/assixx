@@ -610,7 +610,7 @@ describe('OrganigramSettingsService', () => {
       mockDb.query.mockResolvedValueOnce([{ settings: existingSettings }]);
 
       await service.updateHierarchyLabels(1, {
-        levels: { team: 'Crews' },
+        levels: { team: 'Teams' },
       });
 
       const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
