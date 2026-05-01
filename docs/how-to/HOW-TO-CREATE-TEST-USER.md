@@ -47,20 +47,44 @@ Ruft `POST /api/v2/signup` auf — testet den live Signup-Flow durchs gesamte Sy
 - Frontend-Dev ohne Cross-Tenant-Tests
 - **Nicht** zusätzlich zu `pnpm run db:seed` — der Seed legt assixx schon an, das Script erkennt das und exited.
 
-### Bekannter Quirk: `is_active=0` nach Signup
+### 2FA-Verify-Step nach Signup-API (ADR-054)
 
-Auf dem `feat/add-2FA`-Branch (Stand 2026-04-30) legt der Signup-Service den Root-User mit `is_active=0` an — die Verifikations-Mail erreicht Mailpit pending nicht zuverlässig. `JwtAuthGuard` (ADR-005) lehnt Logins mit `403 "Ihr Account ist nicht aktiv"` ab.
+Seit ADR-054 (Mandatory Email-Based 2FA, shipped v0.8.5) legt der Signup-Service jeden frischen Root-User mit `is_active=0` (pending) an und schickt einen 6-stelligen Code an die angegebene E-Mail-Adresse. Erst nach erfolgreichem 2FA-Verify wird der User auf `is_active=1` aktiviert + `tfa_enrolled_at = NOW()` gesetzt + Tokens ausgestellt. Das ist **kein Quirk mehr** — es ist der Sollzustand.
 
-**Quick-Fix nach Script-Lauf:**
+Wenn du `./scripts/create-test-tenant.sh` (Signup-API-Path) für einen Smoke-Test nutzt, durchläufst du also den vollständigen 2FA-Flow. Schritte:
 
 ```bash
-docker exec assixx-postgres psql -U assixx_user -d assixx \
-  -c "UPDATE users SET is_active = 1 WHERE email = 'info@assixx.com' AND tenant_id = 1;"
+# 1. Signup auslösen (legt User mit is_active=0 an + sendet Code an Mailpit)
+./scripts/create-test-tenant.sh
+
+# 2. Code aus Mailpit holen (Mailpit-UI: http://localhost:8025 — siehe HOW-TO-DEV-SMTP.md):
+CODE=$(curl -s 'http://localhost:8025/api/v1/messages' \
+  | jq -r '.messages[0].ID' \
+  | xargs -I{} curl -s "http://localhost:8025/api/v1/message/{}" \
+  | jq -r '.Text' \
+  | grep -oE '[A-HJKMNP-Z2-9]{6}' | head -1)
+echo "2FA-Code: $CODE"
+
+# 3. Challenge-Token aus dem Set-Cookie-Header der Signup-Response auslesen
+#    (das Script schreibt die Cookies normalerweise in /tmp/curl-cookies.txt —
+#    sonst Login-Cookie via DevTools → Network → Response Headers).
+CHALLENGE_TOKEN=$(grep challengeToken /tmp/curl-cookies.txt | awk '{print $7}')
+
+# 4. Verify-Endpoint aufrufen → aktiviert den User + mintet Tokens
+curl -X POST http://localhost:3000/api/v2/auth/2fa/verify \
+  -H "Content-Type: application/json" \
+  -b "challengeToken=$CHALLENGE_TOKEN" \
+  -d "{\"code\": \"$CODE\"}"
+# → 200 OK
+# → users.is_active = 1, users.tfa_enrolled_at = NOW(), users.last_2fa_verified_at = NOW()
+# → 3-Cookie-Triade (access/refresh/role) wird gesetzt
 ```
 
-> **WHY:** `IS_ACTIVE.ACTIVE = 1` (siehe `@assixx/shared/constants` + DATABASE-MIGRATION-GUIDE §`is_active Convention`). `assixx_user` ist BYPASSRLS, der UPDATE braucht keinen Tenant-Context.
+**`pnpm run db:seed` umgeht den 2FA-Flow.** Die Seed-User starten mit `is_active=1` aber `tfa_enrolled_at = NULL` — d.h. beim **ersten echten Login** durchläuft jeder Seed-User einmal die 2FA-Challenge. Beim Login (statt Signup) genauso aus Mailpit den Code abholen + via `/auth/2fa/verify` einlösen.
 
-> **Langfristige Lösung:** Wird obsolet durch konsistente Verwendung von `pnpm run db:seed` — der Seed setzt `is_active=1` direkt. Tracker: `feat/add-2FA` Verifikations-Mail-Pipeline.
+> **Code-Format (DD-1 / DD-12):** 6 Zeichen aus dem 31-Zeichen-Crockford-Base32-Alphabet `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (kein `0/1/I/L/O` — Industrial-Customer-Ergonomie). Das `grep -oE '[A-HJKMNP-Z2-9]{6}'` matched genau dieses Alphabet.
+
+> **Bei Lockout** (5 falsche Codes → 15 min gesperrt): siehe [HOW-TO-2FA-RECOVERY.md](./HOW-TO-2FA-RECOVERY.md).
 
 ---
 

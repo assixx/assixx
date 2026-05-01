@@ -21,6 +21,7 @@
 - Multi-Tenant Architecture with Subdomain Isolation
 - Three User Roles: Root, Admin, Employee
 - JWT-based Authentication
+- **Mandatory Email-Based 2FA** on every password login + signup (ADR-054, hardcoded — no opt-out, no per-tenant flag, no "trust this device"). OAuth (Microsoft / Google) is exempt because the provider already enforces MFA upstream (DD-7).
 - Profile Picture Upload
 - Password Reset Functionality
 
@@ -293,6 +294,29 @@
   chains. Per-pair rate-limit (1 / 15 min) implemented via DB-lookup on
   `password_reset_tokens.initiated_by_user_id`. German-language blocked-
   and admin-initiated email templates (dark-mode MSO-compatible).
+- **Mandatory Email-Based 2FA** (ADR-054): every password login + signup
+  gates through a 6-character Crockford-Base32 code (alphabet
+  `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, no `0/1/I/L/O` confusables, ~887 M
+  permutations) emailed to the user's mailbox. Hardcoded — no opt-out,
+  no per-tenant flag, no "trust this device" cookie. Code TTL 10 min,
+  5 wrong attempts → 15-min user lockout, 60 s resend cooldown, max 3
+  resends per challenge. Stored hashed at rest in Redis
+  (`sha256(userId:code:purpose)`); challenge token transmitted via
+  httpOnly+Secure+SameSite=Lax cookie with `maxAge` derived from
+  `CODE_TTL_SEC` (R8 — tokens never in body). OAuth (Microsoft /
+  Google) is exempt via `loginWithVerifiedUser()` — provider already
+  enforces MFA upstream (DD-7). Email-change endpoint requires a
+  **two-code verify** (old + new mailbox in the same transaction)
+  to block session-hijack-driven account capture (DD-32 / R15).
+  Failed SMTP delivery on signup is fail-loud: 503 returned and
+  the half-created `tenants` + `users` rows are deleted in one
+  transaction (anti subdomain-squatting, DD-14). Discriminated
+  `LoginResult` from `auth.service.ts:222` forces frontend to handle
+  both branches (`challenge_required` / `authenticated`) at compile
+  time. Lost-mailbox recovery: company IT restores the mailbox; the
+  `POST /users/:id/2fa/clear-lockout` endpoint clears only the 15-min
+  lockout (not the 2FA requirement), Two-Root rule enforced
+  (caller ≠ target). See [`HOW-TO-2FA-RECOVERY.md`](./how-to/HOW-TO-2FA-RECOVERY.md).
 - **Root Account Lifecycle Protection** (ADR-055): four-layer defense
   prevents takeover and lock-out of `root` accounts across all four
   termination operations (Soft-Delete, Deactivate, Role-Demotion,
