@@ -936,7 +936,7 @@ services:
   # @see docs/infrastructure/adr/ADR-002-alerting-monitoring.md
   # ===========================================================================
   redis-exporter:
-    image: oliver006/redis_exporter:v1.82.0-alpine
+    image: oliver006/redis_exporter:v1.83.0-alpine
     container_name: assixx-redis-exporter
     restart: unless-stopped
     deploy:
@@ -1006,7 +1006,7 @@ services:
   # Distribution: contrib (needed for tail_sampling processor).
   # ===========================================================================
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.150.1
+    image: otel/opentelemetry-collector-contrib:0.151.0
     container_name: assixx-otel-collector
     restart: unless-stopped
     deploy:
