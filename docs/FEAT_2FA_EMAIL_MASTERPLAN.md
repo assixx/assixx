@@ -1950,7 +1950,7 @@ structural invariants.
 
 ### Operational
 
-- [ ] **Grafana alert rule** (NOT Sentry — per ADR-002 Phase 5g, alerts are provisioned as code in `docker/grafana/alerts/*.json` via `apply.sh`): SMTP failure rate > 5 % over 5 min. New file `docker/grafana/alerts/08-smtp-failure-rate.json`. Runs through existing `doppler run -- ./docker/grafana/alerts/apply.sh` workflow.
+- [x] **Grafana alert rule** (NOT Sentry — per ADR-002 Phase 5g, alerts are provisioned as code in `docker/grafana/alerts/*.json` via `apply.sh`): SMTP failure rate > 5 % over 5 min. New file `docker/grafana/alerts/08-smtp-failure-rate.json` shipped 2026-05-01 (v0.8.8). UID `assixx-smtp-failure-rate`, group `assixx-warning`, `for: 5m`, threshold `> 0.05`. Two-query Loki ratio: numerator `count_over_time({…level="error"…} \|= "Fehler beim Senden der E-Mail" [5m])` (email-service.ts:612), denominator `+ {…level="info"…} \|= "E-Mail gesendet" [5m]` (email-service.ts:609); math node `$A / ($A + $B + 0.001)` — epsilon verhindert div-by-zero auf idle 5-min-Fenster. Pattern mirrors 04-backend-error-rate-warning + 07-tempo-cloud-quota-high. Anwendung via `doppler run -- ./docker/grafana/alerts/apply.sh` ist **User-Only** (Push in Grafana Cloud / shared external state).
 - [ ] Sentry: 5xx errors from 2FA endpoints captured automatically by existing `all-exceptions.filter.ts` (no new wiring).
 - [ ] Grafana dashboard panel: 2FA verify success/fail rate per minute (`audit_trail` query)
 - [ ] Loki saved query: `{service="backend"} | json | resource_type="2fa-challenge" or resource_type="2fa-lockout"`
@@ -1982,7 +1982,7 @@ structural invariants.
 
 ### Phase 6 — Definition of Done
 
-- [ ] ADR-054 reviewed + "Accepted"
+- [x] ADR-054 reviewed + "Accepted" (shipped 2026-05-01 / v0.8.5 — see Documentation row above)
 - [ ] All operational integrations live in staging
 - [ ] Lockout-clear runbook tested (lock self → recover via second root)
 - [ ] Customer migrations synced

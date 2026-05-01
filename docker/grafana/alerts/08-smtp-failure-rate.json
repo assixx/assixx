@@ -1,0 +1,91 @@
+{
+  "uid": "assixx-smtp-failure-rate",
+  "title": "SMTP Failure Rate > 5% (5 min window)",
+  "ruleGroup": "assixx-warning",
+  "folderUID": "assixx-prod-alerts",
+  "noDataState": "OK",
+  "execErrState": "Error",
+  "for": "5m",
+  "condition": "E",
+  "data": [
+    {
+      "refId": "A",
+      "queryType": "instant",
+      "relativeTimeRange": { "from": 300, "to": 0 },
+      "datasourceUid": "grafanacloud-logs",
+      "model": {
+        "expr": "sum(count_over_time({app=\"assixx\", service=\"backend\", level=\"error\", env=\"production\"} |= \"Fehler beim Senden der E-Mail\" [5m]))",
+        "queryType": "instant",
+        "intervalMs": 60000,
+        "maxDataPoints": 43200,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "B",
+      "queryType": "instant",
+      "relativeTimeRange": { "from": 300, "to": 0 },
+      "datasourceUid": "grafanacloud-logs",
+      "model": {
+        "expr": "sum(count_over_time({app=\"assixx\", service=\"backend\", level=\"info\", env=\"production\"} |= \"E-Mail gesendet\" [5m]))",
+        "queryType": "instant",
+        "intervalMs": 60000,
+        "maxDataPoints": 43200,
+        "refId": "B"
+      }
+    },
+    {
+      "refId": "C",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "math",
+        "expression": "$A / ($A + $B + 0.001)",
+        "refId": "C"
+      }
+    },
+    {
+      "refId": "D",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "reduce",
+        "expression": "C",
+        "reducer": "last",
+        "settings": { "mode": "replaceNN", "replaceWithValue": 0 },
+        "refId": "D"
+      }
+    },
+    {
+      "refId": "E",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "D",
+        "conditions": [
+          {
+            "evaluator": { "params": [0.05], "type": "gt" },
+            "operator": { "type": "and" },
+            "query": { "params": ["D"] },
+            "reducer": { "type": "last" },
+            "type": "query"
+          }
+        ],
+        "refId": "E"
+      }
+    }
+  ],
+  "annotations": {
+    "summary": "SMTP transport failure rate above 5% over last 5 minutes",
+    "description": "Mehr als 5% der E-Mail-Sendeversuche schlagen fehl. Bei aktiver 2FA (ADR-054) bedeutet das: Login + Signup blockieren fail-loud (DD-14), neue Tenants koennen nicht onboarden. Numerator: 'Fehler beim Senden der E-Mail' (email-service.ts:612). Denominator: + 'E-Mail gesendet' (email-service.ts:609). Math: $A / ($A + $B + 0.001) — epsilon verhindert div-by-zero bei idle Window. Runbook: docs/how-to/HOW-TO-ALERTING.md. Erste Checks: (a) Doppler-Secrets SMTP_HOST/SMTP_USER/SMTP_PASS auf prod gesetzt? (b) Provider-Status (Outlook/Gmail/SendGrid Health-Page)? (c) DKIM/SPF/DMARC noch valide (Step 0.5.2)? (d) Loki Explore: {app=\"assixx\", service=\"backend\", level=\"error\"} |= \"Fehler beim Senden der E-Mail\" — Group by error-message-suffix fuer transport vs auth vs DNS Fehler. (e) Falls 100% Fail-Rate: 2FA-Reaper-Service raeumt stale-pending Signups innerhalb 30 min (DD-14 anti-subdomain-squat) — Tenant-Onboarding pausieren bis SMTP wiederhergestellt."
+  },
+  "labels": {
+    "severity": "warning",
+    "service": "backend",
+    "component": "smtp"
+  }
+}
