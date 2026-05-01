@@ -1,13 +1,13 @@
 # FEAT: Android App (Capacitor) — Execution Masterplan
 
 > **Created:** 2026-04-11
-> **Version:** 0.2.0 (Draft + Amendment 2026-05-02)
+> **Version:** 0.3.0 (Draft + Amendments 2026-05-02 Parts A + B)
 > **Status:** DRAFT — Phase 0 (Planning)
 > **Branch:** `feat/android-app`
 > **Context:** [BRAINSTORMING_MOBILE_APP.md](./BRAINSTORMING_MOBILE_APP.md)
 > **Author:** Simon (Staff Engineer)
-> **Estimated Sessions:** 18
-> **Actual Sessions:** 0 / 18
+> **Estimated Sessions:** 21
+> **Actual Sessions:** 0 / 21
 
 ---
 
@@ -31,10 +31,11 @@ After "Routine finished — ready." the session may proceed to the next unchecke
 
 ## Changelog
 
-| Version | Date       | Change                                                                                            |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------- |
-| 0.1.0   | 2026-04-11 | Initial Draft — Phases 1-6 planned                                                                |
-| 0.2.0   | 2026-05-02 | Amendment 2026-05-02 — Codemod-based SPA migration, Pre-Flight trigger, ground-truth file counts |
+| Version | Date       | Change                                                                                                       |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| 0.1.0   | 2026-04-11 | Initial Draft — Phases 1-6 planned                                                                           |
+| 0.2.0   | 2026-05-02 | Amendment Part A — Codemod-based SPA migration, Pre-Flight trigger, ground-truth file counts                 |
+| 0.3.0   | 2026-05-02 | Amendment Part B — ADR/standards-compliance: layout-security trade-off, Svelte 5 syntax, RLS, lint, Zod DTOs |
 
 > **Versioning Rule:**
 >
@@ -241,6 +242,261 @@ different across cookies vs. native token store.
 | D4  | "Evaluate dual-load vs `ssr = false`"        | **Codemod to `+page.ts` + universal `apiFetch`**      | Pattern uniformity (70/84 files identical) makes codemod fastest path   |
 | D5  | "78 +page.server.ts files"                   | **84 files (verified 2026-05-02)**                    | Ground-truth count; pattern still uniform                                |
 | D6  | "Backend dual auth path is small change"     | **Confirmed small — but Form-Actions are NOT small**  | ~1500+ LOC across 9 form-action files needs manual rewrite for mobile   |
+
+---
+
+## Amendment 2026-05-02 (Part B) — ADR/Standards Compliance
+
+**Trigger:** Mandatory-checklist re-read (CLAUDE.md §"continue with Assixx") surfaced 5 compliance
+gaps where Part A was correct on strategy but missing concrete invariants from existing ADRs/
+standards. Part B closes them — no strategy changes, only added discipline.
+
+### B-1: Phase 1.2c — Layout-Restructure Security Trade-Off (ADR-012 + ADR-045)
+
+**Gap in Part A:** Track B (5 layout-server-files → universal layouts) treats security as solved
+"because backend guards exist" without naming the specific trade-off.
+
+**The trade-off (must be acknowledged in the masterplan, not implicit):**
+
+| Security Property                    | Web SSR (current)         | Mobile SPA (post-migration)            |
+| ------------------------------------ | ------------------------- | -------------------------------------- |
+| Auth check before HTML emitted       | ✅ Server (cookie)        | ❌ Client (token from Preferences)     |
+| Role-gated route invisible to denied user | ✅ 302 from server   | ❌ Loads JS, then client-side redirect |
+| API mutations (real damage)          | ✅ Backend guards         | ✅ Backend guards (unchanged)          |
+| UI-existence info-leak (route names) | ✅ Hidden                 | ⚠ Visible in static bundle             |
+
+**Conclusion:** The mobile SPA **leaks the UI tree structure** (route names, button labels, form
+shapes) to anyone who downloads the APK and decompiles `build-mobile/`. This is a **bounded
+information leak** — no data, no mutations, just feature existence. The 4-layer Defense-in-Depth
+from ADR-012 still holds because **Layer 4 (Backend API Guards via ADR-045's 3-layer stack:
+addon-gate → management-gate → action-permission)** remains the authoritative enforcement point.
+
+**Action items added to Phase 1.2c DoD:**
+
+- [ ] `+layout.ts` (universal) MUST call `goto('/login')` synchronously when no token in `TokenStore`
+- [ ] `+layout.ts` for `(admin)` / `(root)` MUST check `user.role` client-side BEFORE rendering
+      child routes (mirrors ADR-012 fail-closed pattern, even if APK is decompiled)
+- [ ] Document in `BRAINSTORMING_MOBILE_APP.md` "Known Limitations" — UI-existence info-leak is
+      acceptable given ADR-045 backend enforcement
+- [ ] Spike test: `cap build android --release` → unzip APK → grep `build-mobile/` for route
+      names — confirm leak surface is route-tree only (no data, no secrets)
+
+### B-2: Phase 1.2d — Svelte 5 Syntax + Line-Limit Discipline
+
+**Gap in Part A:** Form-action rewrite snippet uses generic SvelteKit examples without enforcing
+the project's Svelte 5 + ESLint rules.
+
+**Rules (from CODE-OF-CONDUCT-SVELTE.md + frontend/eslint.config.mjs):**
+
+1. **Svelte 5 event syntax:** `onsubmit={handleLogin}`, **NOT** `on:submit={handleLogin}` (Svelte 4 syntax).
+   See CODE-OF-CONDUCT-SVELTE §"Events (Svelte 5 Syntax)".
+2. **`max-lines-per-block`:** Svelte components — script ≤ 450, template ≤ 800 (frontend/eslint.config.mjs:439).
+3. **`max-lines-per-function`:** 60 (svelte components: 80 — frontend/eslint.config.mjs:450).
+4. **`cognitive-complexity`:** ≤ 10 (frontend/eslint.config.mjs:143).
+5. **`no-floating-promises`:** every async fetch call needs `await` or `void`.
+
+**Action items added to Phase 1.2d DoD:**
+
+- [ ] All event handlers use Svelte 5 `oneventname` syntax (no `on:event`)
+- [ ] `(public)/login/+page.svelte` script block stays ≤ 450 lines — extract handlers to
+      `_lib/login-handlers.ts` (already exists pattern in `(app)/(shared)/manage-surveys/_lib/`)
+- [ ] Login/signup/forgot/reset/oauth-complete handlers use `await` or explicit `void` (no
+      floating promises — `@typescript-eslint/no-floating-promises` is `error` in
+      frontend/eslint.config.mjs:298)
+- [ ] Cognitive complexity ≤ 10 per function — split if exceeded
+
+### B-3: Phase 3 — DB Migration Hard-Block + RLS Triple-User-Model
+
+**Gap in Part A:** `user_push_tokens` table mentioned, but the **🚨 HARD BLOCK** from
+DATABASE-MIGRATION-GUIDE.md §"LLMs / AI AGENTS" and the **mandatory** RLS pattern from
+ADR-019 §"How to add RLS to a new table" are not explicit.
+
+**Hard block (verbatim from DATABASE-MIGRATION-GUIDE.md):**
+
+> 1. **BACKUP FIRST** — Before ANY DB change. No exceptions.
+> 2. **GENERATOR ONLY** — `doppler run -- pnpm run db:migrate:create <name>`. Period.
+>    NO `Write` tool, NO `touch`, NO copy-paste, NO manual file creation.
+> 3. **DRY RUN MANDATORY** — `doppler run -- ./scripts/run-migrations.sh up --dry-run`
+> 4. **NEVER execute raw SQL** to bypass migration tooling.
+
+**Mandatory RLS template for `user_push_tokens` (from ADR-019 §"How to add RLS to a new table"):**
+
+```sql
+-- Schema
+CREATE TABLE user_push_tokens (
+    id SERIAL PRIMARY KEY,
+    tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    fcm_token TEXT NOT NULL,
+    platform VARCHAR(20) NOT NULL CHECK (platform IN ('android', 'ios')),
+    is_active SMALLINT NOT NULL DEFAULT 1,  -- 0|1|3|4 per IS_ACTIVE constants
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (tenant_id, user_id, fcm_token)
+);
+
+-- RLS — ENABLE + FORCE (mandatory per ADR-019)
+ALTER TABLE user_push_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_push_tokens FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON user_push_tokens
+    FOR ALL
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer);
+
+-- Triple-User-Model GRANTs (mandatory — both app_user AND sys_user)
+GRANT SELECT, INSERT, UPDATE, DELETE ON user_push_tokens TO app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON user_push_tokens TO sys_user;
+GRANT USAGE, SELECT ON SEQUENCE user_push_tokens_id_seq TO app_user;
+GRANT USAGE, SELECT ON SEQUENCE user_push_tokens_id_seq TO sys_user;
+```
+
+**Action items added to Phase 3 DoD:**
+
+- [ ] Migration generated via `doppler run -- pnpm run db:migrate:create add-user-push-tokens` —
+      NEVER hand-written
+- [ ] `pg_dump` backup created before applying migration (per HARD BLOCK rule 1)
+- [ ] `doppler run -- ./scripts/run-migrations.sh up --dry-run` passes before real run
+- [ ] RLS verified post-migration: `SELECT tablename, policyname FROM pg_policies WHERE
+      tablename = 'user_push_tokens';` — `tenant_isolation` policy present
+- [ ] `app_user` GRANTs verified: `\dp user_push_tokens` shows `arwd/assixx_user` for app_user
+- [ ] Customer fresh-install synced: `./scripts/sync-customer-migrations.sh`
+
+### B-4: Phase 1.2a — Universal `apiFetch` ESLint/Strict-TS Compliance
+
+**Gap in Part A:** Snippet for `$lib/api-fetch.ts` was conceptual but does not pass the strict
+ESLint rules from `frontend/eslint.config.mjs` and `eslint.config.mjs`.
+
+**Rules that affect the helper (verified against actual configs):**
+
+1. `@typescript-eslint/explicit-function-return-type: error` (eslint.config.mjs:217) — explicit
+   return types on exported functions
+2. `@typescript-eslint/strict-boolean-expressions: error` — no truthy checks (`if (token)` →
+   `if (token !== null && token !== '')`)
+3. `@typescript-eslint/no-floating-promises: error` — every promise awaited or `void`-prefixed
+4. `@typescript-eslint/consistent-type-imports: error` — type-only imports use `import type`
+5. `sonarjs/cognitive-complexity: ['error', 10]` — function complexity ≤ 10
+6. `@typescript-eslint/no-explicit-any: error` — generic `T` only, never `any`
+
+**Updated `$lib/api-fetch.ts` (ESLint-compliant):**
+
+```typescript
+import { browser } from '$app/environment';
+import { TokenStore } from './utils/token-store';
+import { API_BASE } from './config';
+import type { ApiResponse } from '@assixx/shared/types';
+
+/**
+ * Universal API fetch — works in:
+ *   - Web SSR (adapter-node, +page.server.ts)
+ *   - Web SPA (adapter-static + browser, +page.ts)
+ *   - Mobile SPA (Capacitor + browser, +page.ts)
+ *
+ * Token source switches by environment: browser → TokenStore (localStorage|Preferences),
+ * server → returns null (caller must use $lib/server/api-fetch with cookie).
+ *
+ * @see ADR-045 (3-layer permission stack — Backend enforces)
+ * @see ADR-005 (auth — Bearer header is canonical)
+ */
+export async function apiFetch<T>(
+  path: string,
+  fetchFn: typeof fetch = fetch,
+): Promise<T> {
+  const token = browser ? await TokenStore.get('accessToken') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token !== null && token !== '') {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const res = await fetchFn(`${API_BASE}${path}`, { headers });
+  if (!res.ok) {
+    throw new Error(`API ${res.status.toString()}: ${path}`);
+  }
+  const json = (await res.json()) as ApiResponse<T>;
+  if (json.success !== true || json.data === undefined) {
+    throw new Error(`API ${path}: malformed response`);
+  }
+  return json.data;
+}
+```
+
+**Action items added to Phase 1.2a DoD:**
+
+- [ ] `pnpm exec eslint frontend/src/lib/api-fetch.ts` → 0 errors
+- [ ] `pnpm exec tsc --noEmit -p frontend` → 0 errors
+- [ ] Cognitive complexity verified ≤ 10 (file is 1 function, complexity ~4)
+
+### B-5: Phase 1.2b — Codemod Post-Step `lint:fix`
+
+**Gap in Part A:** Codemod produces 84 `+page.ts` files but does not guarantee they pass
+ESLint. ESLint `consistent-type-imports` rule (frontend/eslint.config.mjs:335) auto-fixes
+import drift, but only if the fixer runs.
+
+**Action items added to Phase 1.2b DoD:**
+
+- [ ] Codemod final step: `pnpm run sync:svelte && cd frontend && pnpm run lint:fix`
+      (per ADR-041 §"Build Tooling Pre-Step Discipline" — every frontend ESLint invocation
+      MUST follow `sync:svelte`)
+- [ ] After lint:fix: `pnpm run type-check` → 0 errors
+- [ ] After lint:fix: `pnpm run lint` → 0 errors (no remaining violations after auto-fix)
+- [ ] Spot-check 3 random converted files for: (a) `import type` syntax used,
+      (b) no `any`, (c) cognitive complexity ≤ 10
+
+### B-6: Phase 3 — Push Token DTOs (ADR-030 + TYPESCRIPT-STANDARDS §7.5)
+
+**Gap in Part A:** Push-token endpoints mentioned without naming the mandatory factory pattern.
+
+**Rules (from ADR-030 + TYPESCRIPT-STANDARDS §7.5 + `shared/src/architectural.test.ts`):**
+
+1. Param DTOs MUST use `idField` / `createIdParamSchema()` from `common/dto/param.factory.ts` —
+   inline `z.coerce.number()` is **forbidden** and CI-blocked
+2. Body DTOs MUST extend `createZodDto(Schema)` (nestjs-zod) — never raw classes
+3. `IS_ACTIVE` constants from `@assixx/shared/constants` — never magic numbers `0/1/3/4`
+4. API field naming: **camelCase** (TYPESCRIPT-STANDARDS §5.3) — no `snake_case`
+
+**Mandatory pattern for `backend/src/nest/push/dto/`:**
+
+```typescript
+// dto/create-push-token.dto.ts
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
+
+export const CreatePushTokenSchema = z.object({
+  fcmToken: z.string().min(1).max(4096),  // NOT fcm_token (camelCase!)
+  platform: z.enum(['android', 'ios']),
+});
+
+export class CreatePushTokenDto extends createZodDto(CreatePushTokenSchema) {}
+
+// dto/push-token-id-param.dto.ts — use the factory, NOT inline z.coerce
+import { createIdParamSchema } from '../../common/dto/index.js';
+
+export const PushTokenIdParamSchema = createIdParamSchema('pushTokenId');
+export class PushTokenIdParamDto extends createZodDto(PushTokenIdParamSchema) {}
+```
+
+**Action items added to Phase 3 DoD:**
+
+- [ ] All push-DTOs use `createZodDto()` — no raw class declarations
+- [ ] No inline `z.coerce.number()` in `*-param.dto.ts` (CI test in
+      `shared/src/architectural.test.ts` enforces)
+- [ ] No magic `is_active = 0/1/3/4` — import `IS_ACTIVE` from `@assixx/shared/constants`
+- [ ] All API fields camelCase: `fcmToken` not `fcm_token`, `userId` not `user_id`
+- [ ] `pnpm run test:unit -- shared/src/architectural.test.ts` passes
+
+### Part B Summary
+
+| # | Phase | Gap                                  | Compliance Source                                                  |
+| - | ----- | ------------------------------------ | ------------------------------------------------------------------ |
+| 1 | 1.2c  | Layout-security trade-off named      | ADR-012 (fail-closed RBAC) + ADR-045 (3-layer permission stack)    |
+| 2 | 1.2d  | Svelte 5 syntax + line limits        | CODE-OF-CONDUCT-SVELTE.md + frontend/eslint.config.mjs:439, 450    |
+| 3 | 3     | Migration hard-block + RLS template  | DATABASE-MIGRATION-GUIDE.md §HARD BLOCK + ADR-019                  |
+| 4 | 1.2a  | apiFetch ESLint compliance           | eslint.config.mjs (strict-everywhere) + ADR-041                    |
+| 5 | 1.2b  | Codemod post-step lint:fix           | ADR-041 §Build Tooling Pre-Step Discipline                         |
+| 6 | 3     | Push DTOs via createZodDto + idField | ADR-030 + TYPESCRIPT-STANDARDS §7.5 + architectural.test.ts        |
+
+**Part B does not change strategy or session count.** It hardens the existing plan against
+silent rule violations that would surface as CI failures, ESLint blocks, or migration HARD-BLOCKs
+mid-implementation. Cost: ~30 min review per affected step. Benefit: zero rework.
 
 ---
 
