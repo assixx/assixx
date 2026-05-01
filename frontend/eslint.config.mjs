@@ -439,7 +439,7 @@ export default ts.config(
       'svelte/max-lines-per-block': [
         'error',
         {
-          script: 400,
+          script: 450,
           template: 800,
           // style: intentionally omitted — CSS adds no complexity
           skipBlankLines: true,

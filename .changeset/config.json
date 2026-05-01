@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/@changesets/config@3.1.2/schema.json",
-  "changelog": ["./scripts/changeset-formatter.cjs", { "repo": "assixx/assixx" }],
+  "changelog": ["./changeset-formatter.cjs", { "repo": "assixx/assixx" }],
   "commit": false,
   "fixed": [["assixx-backend", "assixx-frontend", "@assixx/shared"]],
   "linked": [],

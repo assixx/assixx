@@ -6,7 +6,14 @@ import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hiera
 
 import { MACHINE_TYPE_LABELS, MESSAGES, type AssetMessages } from './constants';
 
-import type { Asset, AssetFormData, AssetStatus, AssetStatusFilter, AssetTeamInfo } from './types';
+import type {
+  Asset,
+  AssetFormData,
+  AssetStatus,
+  AssetStatusFilter,
+  AssetTeamInfo,
+  PaginationPageItem,
+} from './types';
 
 // =============================================================================
 // BADGE DATA TYPES
@@ -235,4 +242,52 @@ export function populateFormFromAsset(asset: Asset): FormState {
     operatingHours: parseOperatingHours(asset.operatingHours ?? null),
     nextMaintenance: formatDateForInput(asset.nextMaintenance),
   };
+}
+
+// =============================================================================
+// PAGINATION
+// =============================================================================
+
+/**
+ * Page size for client-side pagination of assets.
+ * 25 = same value as manage-admins / manage-employees / manage-root (consistency).
+ * Backend cap is 100 (PaginationSchema.max in common.schema.ts).
+ */
+export const ASSETS_PER_PAGE = 25;
+
+/**
+ * Compute visible page-button slots with ellipsis gaps.
+ *
+ * Window of 5 pages around the current page; 1:1 copy of the helper used by
+ * manage-admins / manage-employees / manage-root / /logs so the design-system
+ * pagination markup stays identical across the app.
+ *
+ * @see frontend/src/design-system/primitives/navigation/pagination.css
+ */
+export function getVisiblePages(currentPage: number, totalPages: number): PaginationPageItem[] {
+  const pages: PaginationPageItem[] = [];
+
+  let startPage = Math.max(1, currentPage - 2);
+  const endPage = Math.min(totalPages, startPage + 4);
+  startPage = Math.max(1, endPage - 4);
+
+  if (startPage > 1) {
+    pages.push({ type: 'page', value: 1 });
+    if (startPage > 2) {
+      pages.push({ type: 'ellipsis' });
+    }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push({ type: 'page', value: i, active: i === currentPage });
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      pages.push({ type: 'ellipsis' });
+    }
+    pages.push({ type: 'page', value: totalPages });
+  }
+
+  return pages;
 }

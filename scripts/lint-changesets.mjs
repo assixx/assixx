@@ -6,7 +6,7 @@
  *   facts (image-size cut, pnpm-deploy adoption, devDep-moves, script
  *   wrapping, ESLint cleanup, ARCHITECTURE drift fix) into a single
  *   ~600-character first line. Even with the new custom changelog
- *   formatter (scripts/changeset-formatter.cjs), the formatter cannot
+ *   formatter (.changeset/changeset-formatter.cjs), the formatter cannot
  *   un-jam such a body — it routes the prefix to `[Maintenance]` and
  *   passes the run-on through verbatim. The forcing function has to
  *   sit BEFORE the body lands in `.changeset/*.md`, not after.
@@ -30,7 +30,7 @@
  *   node scripts/lint-changesets.mjs               # default: ./.changeset
  *   node scripts/lint-changesets.mjs --dir /tmp/x  # custom dir (tests)
  *
- * @see scripts/changeset-formatter.cjs — consumes the validated bodies
+ * @see .changeset/changeset-formatter.cjs — consumes the validated bodies
  * @see docs/how-to/HOW-TO-USE-CHANGESETS.md — contributor rules
  */
 import { readFileSync, readdirSync } from 'node:fs';

@@ -3,7 +3,7 @@
  * bullets in per-package CHANGELOG.md files (v0.1.0 → v0.4.13).
  *
  * Why this exists:
- *   scripts/changeset-formatter.cjs (added 2026-04-28) tags every NEW
+ *   .changeset/changeset-formatter.cjs (added 2026-04-28) tags every NEW
  *   changeset bullet with `[Section]`. Legacy bullets predate the
  *   formatter, so they bucket under `### Other` in the root CHANGELOG —
  *   visually inconsistent against the post-v0.4.14 KaC-grouped releases.
@@ -25,7 +25,7 @@
  * needs to be split into atomic facts AFTER this script runs. The script
  * cannot decide where to split a sentence — that's human judgment.
  *
- * @see scripts/changeset-formatter.cjs — same prefix → KaC mapping
+ * @see .changeset/changeset-formatter.cjs — same prefix → KaC mapping
  * @see scripts/aggregate-changelog.mjs — consumes the tagged bullets
  * @see docs/how-to/HOW-TO-USE-CHANGESETS.md
  */
@@ -34,7 +34,7 @@ import { stdout } from 'node:process';
 
 const FILES = ['backend/CHANGELOG.md', 'frontend/CHANGELOG.md', 'shared/CHANGELOG.md'];
 
-// Mirrors scripts/changeset-formatter.cjs PREFIX_TO_SECTION exactly.
+// Mirrors .changeset/changeset-formatter.cjs PREFIX_TO_SECTION exactly.
 // Keep in sync with the formatter — divergence would route legacy and new
 // entries differently for the same prefix.
 const PREFIX_TO_SECTION = Object.freeze({
@@ -50,7 +50,7 @@ const PREFIX_TO_SECTION = Object.freeze({
   build: 'Maintenance',
 });
 
-// Imperative → past-tense lookup. Mirrors scripts/changeset-formatter.cjs
+// Imperative → past-tense lookup. Mirrors .changeset/changeset-formatter.cjs
 // VERB_PAST_TENSE — must stay in sync (formatter is CJS, this script is
 // ESM, so the table is duplicated rather than imported).
 const VERB_PAST_TENSE = Object.freeze({

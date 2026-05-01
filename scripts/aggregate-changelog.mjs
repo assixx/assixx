@@ -19,7 +19,7 @@
  *
  *   Since 2026-04-28 the script also RE-SECTIONS bullets by Keep-a-Changelog
  *   headers (Added/Fixed/Changed/Performance/Docs/Maintenance/Breaking/Other)
- *   based on the `[Section]` tag written by scripts/changeset-formatter.cjs.
+ *   based on the `[Section]` tag written by .changeset/changeset-formatter.cjs.
  *   Legacy entries without a tag (v0.1.0–v0.4.13) bucket into "Other".
  *
  * Output contract:
@@ -39,7 +39,7 @@ const DEFAULT_OUTPUT = 'CHANGELOG.md';
 
 // Keep-a-Changelog section order for the user-facing root CHANGELOG.
 // `Breaking` first (loudest signal). `Other` last (catch-all for legacy
-// entries written before scripts/changeset-formatter.cjs existed).
+// entries written before .changeset/changeset-formatter.cjs existed).
 const SECTION_ORDER = [
   'Breaking',
   'Added',
@@ -51,7 +51,7 @@ const SECTION_ORDER = [
   'Other',
 ];
 
-// Matches the `[Section] ` tag that scripts/changeset-formatter.cjs writes
+// Matches the `[Section] ` tag that .changeset/changeset-formatter.cjs writes
 // at the start of every bullet. Captured group is the KaC section name.
 // Bullets without this tag (legacy v0.1.0–v0.4.13) bucket into "Other".
 const SECTION_TAG_RE = /^- \[(Breaking|Added|Changed|Fixed|Performance|Docs|Maintenance|Other)\] /;
@@ -98,7 +98,7 @@ function parseChangelog(raw) {
     }
 
     // Route each bullet into its KaC section based on the `[Section]` tag
-    // written by scripts/changeset-formatter.cjs. Legacy entries without
+    // written by .changeset/changeset-formatter.cjs. Legacy entries without
     // a tag fall through to "Other" — preserves history without rewrite.
     const sections = new Map();
     for (const bullet of allBullets) {
@@ -125,7 +125,7 @@ function parseChangelog(raw) {
  *   - A non-indented, non-bullet, non-blank line terminates the current
  *     bullet (separator before a new section).
  *
- * Why this matters: Changesets-default + scripts/changeset-formatter.cjs
+ * Why this matters: Changesets-default + .changeset/changeset-formatter.cjs
  * emit multi-line bodies as `- header\n\n  body line 1\n  body line 2`.
  * The previous loop terminated on the first blank line, dropping the body
  * entirely (visible regression: v0.4.13 fix-bullet body went missing in

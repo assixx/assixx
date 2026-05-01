@@ -286,9 +286,17 @@ async function resolveOrRecoverKey(
 ): Promise<ResolvedKey> {
   if (hasKey) {
     const resolved = await resolveExistingKey();
-    // Backfill: create escrow if missing (for users who had keys before escrow feature)
+    // Backfill escrow if missing — covers two cases:
+    //   1. Legacy users created before the escrow feature.
+    //   2. Users who landed in `(key=present, escrow=missing)` from a
+    //      pre-atomic registration (post-mortem 2026-05-01).
+    // AWAIT and let errors propagate: the previous fire-and-forget
+    // (`void tryCreateEscrowIfMissing(...)`) is precisely how those
+    // legacy users got stuck in the irrecoverable state we are now
+    // closing. Surfacing the error gives the user actionable feedback
+    // and a retry path on the next login.
     if (loginPassword !== null) {
-      void tryCreateEscrowIfMissing(loginPassword);
+      await tryCreateEscrowIfMissing(loginPassword);
     }
     return resolved;
   }
@@ -298,13 +306,18 @@ async function resolveOrRecoverKey(
     return await resolveExistingKey();
   }
 
-  // No recovery possible — generate fresh key pair
-  const resolved = await generateAndRegisterKey();
-  // Create escrow blob for the newly generated key
-  if (loginPassword !== null) {
-    void tryCreateEscrow(loginPassword);
+  // No recovery possible — generate fresh key + escrow ATOMICALLY in one
+  // server transaction. Without a password we cannot derive the wrappingKey,
+  // and registering a key without escrow is the irrecoverable state we are
+  // explicitly closing here (post-mortem 2026-05-01). Refuse loudly: the user
+  // can retry by logging in again so the login-password-bridge is populated.
+  if (loginPassword === null) {
+    log.error('No local key, no escrow recovery, no password — cannot seed without password');
+    throw new Error(
+      'E2E-Schlüssel konnte nicht erstellt werden — bitte erneut anmelden, damit das Passwort verfügbar ist.',
+    );
   }
-  return resolved;
+  return await generateAndRegisterKeyWithEscrow(loginPassword);
 }
 
 interface ResolvedKey {
@@ -396,43 +409,94 @@ async function resolveExistingKey(): Promise<ResolvedKey> {
   );
 }
 
-/** Generate a new key pair and upload to server */
-async function generateAndRegisterKey(): Promise<ResolvedKey> {
-  log.info('No local key found — generating new X25519 key pair');
+/**
+ * Atomic key + escrow registration via the `POST /e2e/keys/with-escrow`
+ * endpoint. Backend wraps both inserts in a single `tenantTransaction()` —
+ * either both rows commit or both roll back. By construction this closes
+ * the `(key=present, escrow=missing)` race window that the old two-call
+ * sequence left open (post-mortem 2026-05-01).
+ *
+ * Used by both same-origin first-key generation (this function calls it
+ * with an Argon2id-derived envelope) AND the cross-origin bootstrap
+ * branch (`bootstrapFreshEscrow` calls it with the apex-derived
+ * wrappingKey envelope). The differences are confined to the wrap step;
+ * the server-side guarantee is identical.
+ */
+interface ServerKeyEscrowEnvelope {
+  encryptedBlob: string;
+  argon2Salt: string;
+  xchachaNonce: string;
+  argon2Params: { memory: number; iterations: number; parallelism: number };
+}
+
+interface ServerKeyWithEscrowResponse {
+  key: ServerKeyData;
+  escrow: EscrowData;
+}
+
+async function postAtomicKeyAndEscrow(
+  publicKey: string,
+  envelope: ServerKeyEscrowEnvelope,
+): Promise<ServerKeyWithEscrowResponse> {
+  const apiClient = getApiClient();
+  return await apiClient.post<ServerKeyWithEscrowResponse>(
+    '/e2e/keys/with-escrow',
+    { publicKey, escrow: envelope },
+    { silent: true },
+  );
+}
+
+/**
+ * Same-origin first-key generation: derive wrappingKey from password
+ * (Argon2id, in-Worker), wrap private key, atomic POST. On 409 the
+ * server already has a key for this user that we cannot reconcile —
+ * fail-closed with `E2eKeyError` so the UI surfaces the admin-reset
+ * recovery hint (ADR-022 §Motivation).
+ */
+async function generateAndRegisterKeyWithEscrow(password: string): Promise<ResolvedKey> {
+  log.info('No local key + no escrow recovery — atomic key+escrow generation');
   const generated = await cryptoBridge.generateKeys();
   log.info({ fingerprint: generated.fingerprint.substring(0, 16) + '…' }, 'Key pair generated');
 
-  log.info('Uploading public key to server…');
-  const serverResult = await registerKeyOnServer(generated.publicKey);
+  const wrapped = await cryptoBridge.wrapKey(password);
 
-  // If the server already has a different key (409 → fetch returned that key),
-  // we cannot safely reconcile: the counterpart private key is lost (escrow
-  // recovery already failed or was unavailable — see resolveOrRecoverKey).
-  // Silent rotation would destroy every counterparty's decryptability of
-  // existing messages (ADR-022 §Motivation). Fail-closed; admin reset via
-  // `DELETE /api/v2/e2e/keys/:userId` is the only safe path forward.
-  if (serverResult.publicKey !== generated.publicKey) {
-    log.error(
-      {
-        generatedFingerprint: generated.fingerprint.substring(0, 16) + '…',
-        serverFingerprint: serverResult.fingerprint.substring(0, 16) + '…',
-      },
-      'Server has different E2E key and escrow recovery unavailable. Blocking E2E.',
+  try {
+    const result = await postAtomicKeyAndEscrow(generated.publicKey, {
+      encryptedBlob: wrapped.encryptedBlob,
+      argon2Salt: wrapped.argon2Salt,
+      xchachaNonce: wrapped.xchachaNonce,
+      argon2Params: wrapped.argon2Params,
+    });
+    log.info(
+      { fingerprint: result.key.fingerprint.substring(0, 16) + '…' },
+      'Atomic registration complete — key + escrow committed in one transaction',
     );
-    throw new E2eKeyError(
-      'server_has_key_no_recovery',
-      'Auf dem Server existiert bereits ein E2E-Schlüssel, der auf diesem Gerät nicht ' +
-        'wiederhergestellt werden kann. Admin muss den Schlüssel zurücksetzen.',
-    );
+    return {
+      publicKey: result.key.publicKey,
+      fingerprint: result.key.fingerprint,
+      keyVersion: result.key.keyVersion,
+    };
+  } catch (err: unknown) {
+    if (isConflictError(err)) {
+      log.error(
+        { localFingerprint: generated.fingerprint.substring(0, 16) + '…' },
+        'Atomic register hit 409 — server has a key + escrow for this user we cannot reconcile',
+      );
+      throw new E2eKeyError(
+        'server_has_key_no_recovery',
+        'Auf dem Server existiert bereits ein E2E-Schlüssel, der auf diesem Gerät nicht ' +
+          'wiederhergestellt werden kann. Admin muss den Schlüssel zurücksetzen.',
+      );
+    }
+    throw err;
   }
-
-  log.info('Public key registered on server successfully');
-  return {
-    publicKey: serverResult.publicKey,
-    fingerprint: serverResult.fingerprint,
-    keyVersion: serverResult.keyVersion,
-  };
 }
+
+// Note: the historic `generateAndRegisterKey()` (non-atomic two-call path)
+// was removed in the 2026-05-01 refactor. All first-key generation now
+// goes through `generateAndRegisterKeyWithEscrow()` (same-origin) or
+// `bootstrapFreshEscrow()` (cross-origin), both of which use the atomic
+// `POST /e2e/keys/with-escrow` endpoint.
 
 // =============================================================================
 // SERVER COMMUNICATION HELPERS
@@ -578,12 +642,17 @@ async function tryRecoverFromEscrow(password: string): Promise<boolean> {
 
 /**
  * Create an escrow blob on the server for future key recovery.
- * Fire-and-forget: logs but does not throw on failure.
+ *
+ * Throws on real failures — only swallows the "already exists" 409 because
+ * that is the idempotent success case (escrow is what we wanted, somebody
+ * else got there first). The previous fire-and-forget version is the root
+ * cause of the post-mortem 2026-05-01 incident: a transient escrow-create
+ * failure would silently leave the user in `(key, no escrow)` state.
  */
 async function tryCreateEscrow(password: string): Promise<void> {
+  const wrapped = await cryptoBridge.wrapKey(password);
+  const apiClient = getApiClient();
   try {
-    const wrapped = await cryptoBridge.wrapKey(password);
-    const apiClient = getApiClient();
     await apiClient.post(ESCROW_ENDPOINT, wrapped, { silent: true });
     log.info('Escrow blob created on server');
   } catch (err: unknown) {
@@ -591,31 +660,30 @@ async function tryCreateEscrow(password: string): Promise<void> {
       log.info('Escrow already exists — skipping creation');
       return;
     }
-    log.warn(
+    log.error(
       { err: err instanceof Error ? err.message : 'unknown' },
-      'Failed to create escrow — non-fatal',
+      'Failed to create escrow — propagating to caller (post-mortem 2026-05-01)',
     );
+    throw err;
   }
 }
 
 /**
- * Create an escrow blob only if none exists yet (backfill for existing keys).
- * Fire-and-forget: logs but does not throw on failure.
+ * Backfill: create an escrow blob iff none exists yet.
+ *
+ * Idempotent on the happy path (returns early when escrow already exists)
+ * but propagates real failures so the caller can decide. Used by the
+ * `hasKey=true` branch in `resolveOrRecoverKey` to repair legacy users
+ * created before the escrow feature, AND users left in
+ * `(key=present, escrow=missing)` by the pre-atomic registration code.
  */
 async function tryCreateEscrowIfMissing(password: string): Promise<void> {
-  try {
-    const apiClient = getApiClient();
-    const existing = await apiClient.get<EscrowData | null>(ESCROW_ENDPOINT);
-    if (existing !== null) {
-      return; // Already has escrow — nothing to do
-    }
-    await tryCreateEscrow(password);
-  } catch (err: unknown) {
-    log.warn(
-      { err: err instanceof Error ? err.message : 'unknown' },
-      'Escrow backfill check failed — non-fatal',
-    );
+  const apiClient = getApiClient();
+  const existing = await apiClient.get<EscrowData | null>(ESCROW_ENDPOINT);
+  if (existing !== null) {
+    return; // Already has escrow — nothing to do (idempotent)
   }
+  await tryCreateEscrow(password);
 }
 
 // =============================================================================
@@ -647,79 +715,55 @@ async function tryCreateEscrowIfMissing(password: string): Promise<void> {
  * Returns false on 409 (race / pre-existing key) or any other error — the
  * caller aborts the bootstrap in that case so the key/escrow stay coherent.
  */
-async function registerBootstrapKeyOrAbort(generatedPublicKey: string): Promise<boolean> {
-  const apiClient = getApiClient();
-  try {
-    const serverKey = await apiClient.post<ServerKeyData>(
-      '/e2e/keys',
-      { publicKey: generatedPublicKey },
-      { silent: true },
-    );
-    if (serverKey.publicKey !== generatedPublicKey) {
-      log.warn('Server returned a different key after register — aborting bootstrap');
-      return false;
-    }
-    return true;
-  } catch (err: unknown) {
-    if (isConflictError(err)) {
-      log.warn(
-        'Bootstrap key register hit 409 — server already has a key, falling back to normal init',
-      );
-    } else {
-      log.warn(
-        { err: err instanceof Error ? err.message : 'unknown' },
-        'Bootstrap key register failed — falling back to normal init',
-      );
-    }
-    return false;
-  }
-}
-
+/**
+ * Cross-origin first-login bootstrap — wraps with the apex-derived
+ * `wrappingKey` (no Argon2id here; the apex side already paid that cost
+ * during the unlock-ticket mint) and posts atomically.
+ *
+ * Returns `false` (instead of throwing) on failure to preserve the
+ * existing caller contract: `bootstrapFromUnlockTicket` falls through to
+ * `initialize()` on `false`, which then fail-closes cleanly. Throwing
+ * here would crash the layout mount and skip the fall-through.
+ */
 async function bootstrapFreshEscrow(
   wrappingKey: string,
   bootstrap: NonNullable<UnlockTicketConsumeResult['bootstrap']>,
 ): Promise<boolean> {
-  const apiClient = getApiClient();
-
   // 1. Generate fresh X25519 key pair (Worker + IndexedDB atomic).
   const generated = await cryptoBridge.generateKeys();
 
-  // 2. Register on server. Helper handles the 409/error branches; on any
-  //    failure we abort and let initialize() fail-close cleanly.
-  if (!(await registerBootstrapKeyOrAbort(generated.publicKey))) {
-    return false;
-  }
-
-  // 3. Encrypt the just-generated private key with the apex-derived wrappingKey.
+  // 2. Wrap private key with the apex-derived wrappingKey (no Argon2 round).
   const wrapped = await cryptoBridge.wrapKeyWithDerivedKey(wrappingKey);
 
-  // 4. Persist the first escrow row (POST /e2e/escrow). On failure the key
-  //    is registered but escrow is missing — same-origin logins later
-  //    backfill via tryCreateEscrowIfMissing. Still return true: the key
-  //    is in IndexedDB + server, initialize() will mark E2E ready.
+  // 3. Atomic register — both rows commit together or both roll back.
+  //    Replaces the previous two-call sequence (POST /e2e/keys then
+  //    POST /e2e/escrow) which left a `(key, no escrow)` window if the
+  //    second call failed (post-mortem 2026-05-01).
   try {
-    await apiClient.post(
-      ESCROW_ENDPOINT,
-      {
-        encryptedBlob: wrapped.encryptedBlob,
-        argon2Salt: bootstrap.argon2Salt,
-        xchachaNonce: wrapped.xchachaNonce,
-        argon2Params: bootstrap.argon2Params,
-      },
-      { silent: true },
-    );
+    await postAtomicKeyAndEscrow(generated.publicKey, {
+      encryptedBlob: wrapped.encryptedBlob,
+      argon2Salt: bootstrap.argon2Salt,
+      xchachaNonce: wrapped.xchachaNonce,
+      argon2Params: bootstrap.argon2Params,
+    });
     log.info(
       { fingerprint: generated.fingerprint.substring(0, 16) + '…' },
-      'Escrow bootstrap complete — first escrow stored',
+      'Atomic bootstrap complete — first key + first escrow committed',
     );
+    return true;
   } catch (err: unknown) {
-    log.warn(
-      { err: err instanceof Error ? err.message : 'unknown' },
-      'Escrow create failed during bootstrap — key registered, escrow missing (next same-origin login retries)',
-    );
+    if (isConflictError(err)) {
+      log.warn(
+        'Atomic bootstrap hit 409 — server already has key/escrow, falling back to normal init',
+      );
+    } else {
+      log.warn(
+        { err: err instanceof Error ? err.message : 'unknown' },
+        'Atomic bootstrap failed — falling back to normal init',
+      );
+    }
+    return false;
   }
-
-  return true;
 }
 
 /**

@@ -21,12 +21,20 @@
  *
  * Login vs. signup branching (verify endpoint):
  *   The verify body is identical for both flows; the discriminator lives in
- *   `ChallengeRecord.purpose` returned by `verifyChallenge`. For `'login'`
- *   we set the 3-cookie auth triad on the same origin (login lives on the
- *   tenant subdomain per ADR-050). For `'signup'` we mint an apex→subdomain
- *   handoff ticket via `OAuthHandoffService` and return its (token, subdomain)
- *   in the body — frontend then 303-redirects to the subdomain handoff
- *   endpoint, which sets cookies on the correct origin.
+ *   `ChallengeRecord.purpose` returned by `verifyChallenge`. The cross-origin
+ *   trigger is unified — `purpose === 'signup'` always handoffs (signup runs
+ *   on apex by definition), and `purpose === 'login'` handoffs whenever the
+ *   request host (`req.raw.hostTenantId`, set by `TenantHostResolverMiddleware`)
+ *   does not match the user's tenant — i.e. apex login (`www.assixx.com`,
+ *   `localhost:5173`) or cross-subdomain entry. Same-origin login (the user
+ *   is already on their tenant subdomain) skips the handoff and writes the
+ *   3-cookie auth triad directly. The handoff branch reuses the existing
+ *   `OAuthHandoffService` mint primitive and returns `{ token, subdomain }`
+ *   plus the `accessToken` (needed by the apex-side `enhance` callback to
+ *   mint the ADR-022 escrow unlock ticket before the cross-origin redirect);
+ *   the frontend then 303-redirects to the subdomain handoff consumer
+ *   (`(public)/signup/oauth-complete/+page.server.ts`) which sets cookies on
+ *   the correct origin and lands the user on their dashboard.
  *
  * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md (Phase 2 §2.7, §A8 audit, R8/R14)
  * @see docs/infrastructure/adr/ADR-005-authentication-strategy.md
@@ -62,6 +70,13 @@ import {
   TwoFaVerifyThrottle,
 } from '../common/decorators/throttle.decorators.js';
 import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
+// ADR-050 §"Backend: Pre-Auth Host Resolver" — `req.raw.hostTenantId` is set
+// by `TenantHostResolverMiddleware` before this controller runs. We read it
+// to decide whether the verify-success cookies can be set on the request
+// origin (same tenant) or whether we must mint a cross-origin handoff
+// instead. The `.raw` indirection is mandatory per ADR-050 D17 — the
+// middleware writes to the IncomingMessage which Fastify exposes as `.raw`.
+import type { HostAwareRequest } from '../common/middleware/tenant-host-resolver.middleware.js';
 import { ResendCodeDto, VerifyCodeDto } from './dto/index.js';
 import { TwoFactorAuthService } from './two-factor-auth.service.js';
 import type { TwoFactorResendResponse, TwoFactorVerifyResponse } from './two-factor-auth.types.js';
@@ -168,18 +183,51 @@ export class TwoFactorAuthController {
     // hit verify again. Path mirrors `CHALLENGE_COOKIE_OPTIONS.path = '/'`.
     reply.clearCookie('challengeToken', { path: '/' });
 
-    if (verified.purpose === 'login') {
-      // Login lives on `<tenant>.assixx.com/login` (ADR-050) — cookies set
-      // here scope to the correct origin. No handoff needed.
+    // ADR-050 §"Backend: Pre-Auth Host Resolver" — three-state value set by
+    // `TenantHostResolverMiddleware` BEFORE this controller runs:
+    //   - `number`    → request hit a known tenant subdomain
+    //   - `null`      → apex / localhost / IP / unknown subdomain
+    //   - `undefined` → middleware did not run (should not happen in prod;
+    //                   defensive — same handling as `null`)
+    const hostTenantId = (req as HostAwareRequest).raw.hostTenantId ?? null;
+    const subdomain = session.user.subdomain;
+
+    // Cross-origin trigger: cookies set here would scope to the wrong origin
+    // when the verify happened on a host that is NOT the user's tenant
+    // subdomain. Concrete cases:
+    //   - signup-purpose verify: ALWAYS true — signup runs on apex by
+    //     definition (`(public)/signup/` lives on `www.assixx.com`).
+    //   - login-purpose verify on apex (`www.assixx.com/login`,
+    //     `localhost:5173/login`): hostTenantId = null.
+    //   - login-purpose verify on a subdomain that does NOT belong to the
+    //     user (cross-tenant input): hostTenantId !== verified.tenantId.
+    //
+    // In all three cases we mint a handoff token (ADR-050 §OAuth) and the
+    // frontend redirects the browser to the user's correct subdomain, where
+    // the existing handoff consumer (`signup/oauth-complete/+page.server.ts`)
+    // sets cookies on the right origin. The handoff token is opaque, single-
+    // use, 60-s TTL, R15-host-checked on consume.
+    //
+    // Pre-ADR-054 the login-purpose branch unconditionally set cookies on the
+    // request origin. After ADR-054 made 2FA mandatory for every password
+    // login, that branch became the new "every login goes through here" hot
+    // path — exposing the latent assumption "login always runs on the tenant
+    // subdomain" which breaks for apex / localhost / cross-subdomain entry
+    // points. This branch closes that gap and brings login into parity with
+    // the signup verify-success → handoff pattern.
+    const needsHandoff =
+      verified.purpose === 'signup' || (subdomain !== null && hostTenantId !== verified.tenantId);
+
+    if (!needsHandoff) {
+      // Same-origin login (e.g. `firma-a.assixx.com/login` → user belongs to
+      // `firma-a`). Cookies land on the correct origin, no handoff needed.
       setAuthCookies(reply, session.accessToken, session.refreshToken);
       return { stage: 'authenticated', user: session.user };
     }
 
-    // signup branch — apex→subdomain handoff (ADR-050 §OAuth pattern).
-    // The user.subdomain enrichment in `loginWithVerifiedUser` covers the
-    // happy path; greenfield-prod tenants always have a subdomain via the
-    // signup DTO regex, so the null-check below is defensive only.
-    const subdomain = session.user.subdomain;
+    // Handoff branch. The user.subdomain enrichment in `loginWithVerifiedUser`
+    // covers the happy path; greenfield-prod tenants always have a subdomain
+    // via the signup DTO regex, so the null-check below is defensive only.
     if (subdomain === null) {
       throw new NotFoundException({
         code: 'TWO_FA_VERIFY_NO_SUBDOMAIN',
@@ -192,12 +240,21 @@ export class TwoFactorAuthController {
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,
     });
-    // No setAuthCookies on apex — would scope to `www.assixx.com`, useless
-    // for `<tenant>.assixx.com`. Frontend MUST follow the handoff redirect.
+    // No setAuthCookies on the request origin — would scope to the wrong
+    // host. Frontend MUST follow the handoff redirect, where the consumer
+    // sets cookies on the user's tenant subdomain.
+    //
+    // `accessToken` echoed in the body so the apex-side `use:enhance`
+    // callback can mint the ADR-022 escrow unlock ticket BEFORE the
+    // cross-origin redirect (see `TwoFactorVerifyForm.svelte` →
+    // `mintUnlockTicketOrFallback`). sessionStorage cannot bridge across
+    // origins, so the ticket-via-Redis path is the only way to keep E2E
+    // recovery working through cross-origin login.
     return {
       stage: 'authenticated',
       user: session.user,
       handoff: { token: handoffToken, subdomain },
+      accessToken: session.accessToken,
     };
   }
 

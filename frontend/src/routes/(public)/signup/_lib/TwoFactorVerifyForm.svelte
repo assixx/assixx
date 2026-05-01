@@ -27,6 +27,18 @@
 
   import { enhance } from '$app/forms';
 
+  // ADR-022 × ADR-054 × ADR-050 (2026-05-01 — FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_
+  // FOLLOWUP): the verify-success branch is cross-origin (apex → user's tenant
+  // subdomain). sessionStorage cannot bridge across origins, so we mint an
+  // escrow unlock ticket in Redis and append `?unlock=<id>` to the redirect
+  // URL. The Bootstrap branch in `mintUnlockTicketOrFallback` fires for fresh
+  // signup users (no escrow yet, no server key yet) and ships fresh Argon2
+  // salt + params so the subdomain's `e2e.initialize()` can derive the
+  // wrappingKey, generate the X25519 keypair, register it, AND store the
+  // first escrow blob in one atomic step. Without this hop every freshly
+  // signed-up tenant root user ended up with a server key but no escrow blob
+  // → permanent recoveryRequired, admin-reset-only.
+  import { mintUnlockTicketOrFallback } from '$lib/crypto/escrow-handoff';
   // Global toast store — same surface the parent signup page already uses
   // for success/error alerts. `showSuccessAlert` powers the resend
   // confirmation; `showToast` (full-shape with progress bar) powers the
@@ -48,6 +60,31 @@
   // owns 2FA-specific UI strings, but the temporal-delay value is a
   // signup-form concern that happens to apply to the post-verify branch.
   import { SUCCESS_REDIRECT_DELAY } from './constants';
+
+  // ---------------------------------------------------------------------------
+  // Props (ADR-022 × ADR-054 escrow bridge — FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_
+  // FOLLOWUP, 2026-05-01)
+  // ---------------------------------------------------------------------------
+  //
+  // Receives the user's plaintext password from the parent's `password` $state
+  // (signup/+page.svelte:54). Required so the verify-success branch can call
+  // `mintUnlockTicketOrFallback(redirectTo, accessToken, user.id, password)`
+  // before the cross-origin handoff redirect. Without this prop the apex-side
+  // ticket mint runs with `password=''` → worthless deterministic Argon2id-
+  // derived wrappingKey → bootstrap creates an escrow blob nobody can decrypt.
+  //
+  // The parent's `password` survives the credentials → verify stage transition
+  // because `enhanceSignup` falls through to `await update()` (instead of
+  // `window.location.href`-hard-navigating like pre-2026-05-01) — the parent
+  // component is NOT remounted on the same-origin /signup → /signup redirect,
+  // only `data.stage` flips. Mirrors the login twin's pattern.
+  //
+  // @see docs/infrastructure/adr/ADR-022-e2e-key-escrow.md §"Signup bootstrap"
+  // @see docs/FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP.md
+  interface Props {
+    password: string;
+  }
+  const { password }: Props = $props();
 
   // ---------------------------------------------------------------------------
   // Reactive state — Svelte 5 runes per CODE-OF-CONDUCT-SVELTE
@@ -260,6 +297,115 @@
     return typeof data === 'object' && data !== null ? data : {};
   }
 
+  /**
+   * Type guard for the cross-origin handoff success result returned by
+   * `handleVerifyAction` (FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP, 2026-
+   * 05-01). Mirrors `VerifyHandoffResult` in `_lib/2fa-server-helpers.ts`.
+   * Component scope and server-helper scope compile through different
+   * boundaries, so we can't share the interface directly — the type guard
+   * is the explicit contract instead.
+   *
+   * Differs from the login twin only in that signup ALWAYS handoffs (every
+   * signup verify is cross-origin by definition — apex `www.assixx.com` /
+   * `localhost` to the freshly-created tenant subdomain), so there is no
+   * "same-origin" sibling shape to discriminate against.
+   */
+  interface HandoffSuccessShape {
+    success: true;
+    redirectTo: string;
+    accessToken: string;
+    user: { id: number; role: string; tenantId: number };
+  }
+  /** Sub-guard: required nested user shape. Split out so the parent guard
+   *  stays under the cyclomatic-complexity ceiling. */
+  function isHandoffUser(value: unknown): value is HandoffSuccessShape['user'] {
+    if (typeof value !== 'object' || value === null) return false;
+    const u = value as Record<string, unknown>;
+    return typeof u.id === 'number' && typeof u.role === 'string' && typeof u.tenantId === 'number';
+  }
+  /** Sub-guard: required non-empty string field. */
+  function isNonEmptyString(value: unknown): value is string {
+    return typeof value === 'string' && value !== '';
+  }
+  function isHandoffSuccess(data: unknown): data is HandoffSuccessShape {
+    if (typeof data !== 'object' || data === null) return false;
+    const d = data as Record<string, unknown>;
+    return (
+      d.success === true &&
+      isNonEmptyString(d.redirectTo) &&
+      isNonEmptyString(d.accessToken) &&
+      isHandoffUser(d.user)
+    );
+  }
+
+  /**
+   * Cross-origin handoff branch (ADR-050 × ADR-022 × ADR-054 — FEAT_E2E_
+   * ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP, 2026-05-01). Mints the escrow unlock
+   * ticket on apex BEFORE the navigation so the subdomain's `e2e.initialize()`
+   * can derive the wrappingKey, generate the X25519 keypair, register it,
+   * AND store the first escrow blob in one atomic step (Bootstrap branch in
+   * `escrow-handoff.ts:217-228` — `serverHasActiveKey` returns false for a
+   * brand-new signup, `fetchEscrow` returns null, so the helper takes the
+   * Bootstrap path automatically).
+   *
+   * Fails open: mint failure → navigate without `?unlock=…` → subdomain
+   * fails closed with `recoveryRequired: true` → admin reset is the
+   * documented recovery path. NEVER throws — caller can `await` and
+   * trust the navigation will fire.
+   *
+   * UX delay preserved: registration is a multi-step emotional milestone
+   * (form → mail → code → activation), so the 5 s celebration toast still
+   * runs in parallel with the (~50–200 ms) ticket mint. `submitting` stays
+   * `true` for the full delay so the verify button cannot re-fire (button
+   * is disabled while `!canSubmit`, and `canSubmit` requires `!submitting`).
+   *
+   * Extracted from `enhanceVerify` to keep its cognitive-complexity score
+   * under the 10 ceiling.
+   */
+  async function handleHandoffSuccess(data: HandoffSuccessShape): Promise<void> {
+    const finalUrlPromise = mintUnlockTicketOrFallback(
+      data.redirectTo,
+      data.accessToken,
+      data.user.id,
+      password,
+    );
+    showToast({
+      type: 'success',
+      title: MESSAGES.VERIFY_SUCCESS_TITLE,
+      message: MESSAGES.VERIFY_SUCCESS_MESSAGE,
+      duration: SUCCESS_REDIRECT_DELAY,
+      showProgress: true,
+    });
+    const finalUrl = await finalUrlPromise;
+    setTimeout(() => {
+      window.location.href = finalUrl;
+    }, SUCCESS_REDIRECT_DELAY);
+  }
+
+  /**
+   * Apply the typed failure result from `?/verify` to local UI state
+   * (lockout banner, wrong-code count, generic error). Extracted to keep
+   * `enhanceVerify` under sonarjs/cognitive-complexity = 10.
+   */
+  function applyVerifyFailure(rawData: unknown): void {
+    const data = asFailure(rawData);
+    if (data.locked === true) {
+      locked = true;
+      errorMessage = MESSAGES.ERR_LOCKED;
+      clearDigits();
+      return;
+    }
+    if (data.wrongCode === true) {
+      wrongCodeCount += 1;
+      const remaining = Math.max(0, MAX_VERIFY_ATTEMPTS - wrongCodeCount);
+      errorMessage = MESSAGES.ERR_WRONG_CODE(remaining);
+      clearDigits();
+      return;
+    }
+    errorMessage = data.error ?? MESSAGES.ERR_GENERIC;
+    clearDigits();
+  }
+
   function enhanceVerify() {
     submitting = true;
     errorMessage = null;
@@ -270,11 +416,11 @@
       result: { type: string; data?: unknown; location?: string };
       update: () => Promise<void>;
     }): Promise<void> => {
-      // CRITICAL: handle redirects BEFORE flipping `submitting = false`.
+      // CRITICAL: handle handoff/redirect BEFORE flipping `submitting = false`.
       // Same race-prevention rationale as the login twin — a subsequent
       // re-fire could race the in-flight cross-origin navigation.
       //
-      // For signup the redirect target is the cross-origin handoff URL
+      // For signup the post-verify destination is ALWAYS cross-origin
       // (`https://<subdomain>.<apex>/signup/oauth-complete?token=…`). The
       // browser leaves the apex via this navigation; the receiving page
       // (existing OAuth handoff consumer) sets cookies on the correct
@@ -282,16 +428,26 @@
       // navigation REQUIRES `window.location.href` — SvelteKit's client
       // router cannot leave the current origin.
       //
-      // UX delay (signup-only): the legacy `handleSubmit` flow showed a 5 s
-      // success toast with progress bar before redirecting. We restore it
-      // here on the post-verify branch — registration is a multi-step
-      // emotional milestone (form → mail → code → activation), so a brief
-      // celebratory acknowledgement matters more than the millisecond saved
-      // by an immediate hop. `submitting` stays `true` for the full delay
-      // so the verify button cannot re-fire (button is disabled while
-      // `!canSubmit`, and `canSubmit` requires `!submitting`). The login
-      // twin intentionally has NO delay — login is same-origin and the
-      // dashboard load handles the "you are logged in" surface.
+      // Cross-origin handoff branch (ADR-050 × ADR-022 × ADR-054 — FEAT_E2E_
+      // ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP, 2026-05-01). The action returns
+      // `VerifyHandoffResult` (no longer throws redirect) so we can mint the
+      // ADR-022 escrow unlock ticket BEFORE the cross-origin nav. Pre-fix,
+      // the action threw `redirect()` and the browser navigated immediately
+      // → no place to mint the ticket → server key registered without an
+      // escrow blob → admin-reset-only recovery for every fresh signup.
+      if (result.type === 'success' && isHandoffSuccess(result.data)) {
+        await handleHandoffSuccess(result.data);
+        return;
+      }
+
+      // Defensive fallback for the legacy redirect-throw shape. Should not
+      // fire after the 2026-05-01 refactor (action returns instead of
+      // throws), but kept for resilience: if the helper ever re-introduces
+      // a throw-redirect branch (e.g. for an error-recovery path), we still
+      // navigate cross-origin without losing the celebration UX. The escrow
+      // ticket is NOT minted on this path — we'd be stranding the user, but
+      // a missing escrow is recoverable via admin reset whereas a frozen UI
+      // is not. Better visible-bug-on-rare-path than silent regression.
       if (result.type === 'redirect') {
         if (typeof result.location === 'string' && result.location !== '') {
           showToast({
@@ -307,8 +463,6 @@
           }, SUCCESS_REDIRECT_DELAY);
           return;
         }
-        // Defensive fallback — SvelteKit always sets `location` on redirect
-        // results, but if it ever doesn't, stage-reset by reloading.
         window.location.reload();
         return;
       }
@@ -316,22 +470,7 @@
       submitting = false;
 
       if (result.type === 'failure') {
-        const data = asFailure(result.data);
-        if (data.locked === true) {
-          locked = true;
-          errorMessage = MESSAGES.ERR_LOCKED;
-          clearDigits();
-          return;
-        }
-        if (data.wrongCode === true) {
-          wrongCodeCount += 1;
-          const remaining = Math.max(0, MAX_VERIFY_ATTEMPTS - wrongCodeCount);
-          errorMessage = MESSAGES.ERR_WRONG_CODE(remaining);
-          clearDigits();
-          return;
-        }
-        errorMessage = data.error ?? MESSAGES.ERR_GENERIC;
-        clearDigits();
+        applyVerifyFailure(result.data);
         return;
       }
 

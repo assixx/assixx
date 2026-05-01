@@ -6,7 +6,7 @@
 
 **Enterprise 2.0 Platform for Industrial Companies**
 
-[![Version](https://img.shields.io/badge/Version-0.4.13-blue.svg)](https://github.com/assixx/assixx)
+[![Version](https://img.shields.io/badge/Version-0.4.14-blue.svg)](https://github.com/assixx/assixx)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/assixx/assixx)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 

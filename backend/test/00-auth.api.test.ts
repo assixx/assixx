@@ -168,6 +168,12 @@ async function performVerifyStep(
     headers: {
       'Content-Type': 'application/json',
       Cookie: `challengeToken=${challengeToken}`,
+      // ADR-050 + ADR-054: matches the apitest tenant's subdomain so the
+      // controller takes the same-origin Set-Cookie branch (the path this
+      // file's R8 assertions exercise — no `accessToken` echoed in the
+      // body, tokens travel exclusively via Set-Cookie). Sibling helper
+      // documented in `helpers.ts::APITEST_TENANT_FORWARDED_HOST`.
+      'X-Forwarded-Host': 'assixx.assixx.com',
     },
     body: JSON.stringify({ code }),
   });

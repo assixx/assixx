@@ -15,36 +15,7 @@ import { createLogger } from '$lib/utils/logger';
 
 import type { OrganizationalScope } from '$lib/types/organizational-scope';
 import type { PageServerLoad } from './$types';
-import type { RootSelfTerminationRequest, RootUserLookup } from './_lib/types';
-
-interface ApprovalListItem {
-  uuid: string;
-  addonCode: string;
-  sourceEntityType: string;
-  sourceUuid: string;
-  title: string;
-  description: string | null;
-  requestedBy: number;
-  requestedByName: string;
-  assignedTo: number | null;
-  assignedToName: string | null;
-  status: 'pending' | 'approved' | 'rejected';
-  priority: string;
-  decidedBy: number | null;
-  decidedByName: string | null;
-  decidedAt: string | null;
-  decisionNote: string | null;
-  rewardAmount: number | null;
-  isRead: boolean;
-  createdAt: string;
-}
-
-interface PaginatedApprovals {
-  items: ApprovalListItem[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+import type { PaginatedApprovals, RootSelfTerminationRequest, RootUserLookup } from './_lib/types';
 
 interface ApprovalStats {
   pending: number;

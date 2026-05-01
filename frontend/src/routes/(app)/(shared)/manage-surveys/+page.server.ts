@@ -37,7 +37,18 @@ function buildCurrentUser(
 }
 
 async function loadSurveyData(token: string, fetchFn: typeof fetch) {
-  const surveysResult = await apiFetchWithPermission<Survey[]>('/surveys', token, fetchFn);
+  // limit=100 = backend cap (PaginationSchema.max in common.schema.ts).
+  // Without &limit, /surveys defaults to 10 → silent data truncation for any
+  // tenant with >10 surveys across all states (active + completed + drafts).
+  // Per-section pagination UI is deferred (Phase 2) until a tenant report
+  // shows the Completed section growing past ~25 entries; current scope is
+  // limited to closing the silent-truncation bug.
+  // @see docs/how-to/HOW-TO-FIX-MANAGE-PAGINATION.md
+  const surveysResult = await apiFetchWithPermission<Survey[]>(
+    '/surveys?limit=100',
+    token,
+    fetchFn,
+  );
 
   if (surveysResult.permissionDenied) {
     return { denied: true as const } as const;

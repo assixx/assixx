@@ -10,7 +10,7 @@
    */
   import { onDestroy, onMount, type Snippet } from 'svelte';
 
-  import { afterNavigate, beforeNavigate, replaceState } from '$app/navigation';
+  import { afterNavigate, beforeNavigate } from '$app/navigation';
 
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
@@ -326,10 +326,25 @@
 
     if (ticketId !== null && ticketId !== '') {
       // Strip the query param FIRST — if the bootstrap throws mid-flight we
-      // still want the URL clean. SvelteKit's replaceState does not navigate
-      // and avoids the `history.replaceState` warning (router conflict).
+      // still want the URL clean.
+      //
+      // Why raw `window.history.replaceState` instead of SvelteKit's
+      // `replaceState` from `$app/navigation`: this function is invoked from
+      // `onMount` during the very first hydration after a cross-origin
+      // redirect (apex → tenant subdomain). At that moment SvelteKit's
+      // router has not finished initialising — calling its `replaceState`
+      // throws `Cannot call replaceState(...) before router is initialized`,
+      // which aborts `bootstrapFromUnlockTicket` AND `initialize` below and
+      // leaves the unlock ticket unconsumed (server log: mint without
+      // matching consume; ticket expires after 60 s; user falls into
+      // recoveryRequired on the next attempt). The raw history API has no
+      // such timing constraint. Trade-off: `$page.url` goes stale until the
+      // next navigation, but nothing in this flow re-reads `?unlock=` and
+      // it's already a single-use param. Bug surfaced 2026-05-01 once
+      // signup-side ticket minting started routing fresh users through this
+      // path — see ADR-022 §"Amendment 2026-05-01 — Signup Bootstrap".
       url.searchParams.delete('unlock');
-      replaceState(url, {});
+      window.history.replaceState(window.history.state, '', url.toString());
 
       const recovered = await e2e.bootstrapFromUnlockTicket(userId, ticketId);
       if (!recovered) {

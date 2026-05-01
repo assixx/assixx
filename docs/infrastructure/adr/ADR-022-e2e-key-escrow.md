@@ -787,3 +787,351 @@ boundaries. No 409, no `recoveryRequired`, no admin intervention.
   `bootstrapFreshEscrow` (gen + register + wrap + store) +
   `recoverFromExistingEscrow` (extracted from prior body) +
   `registerBootstrapKeyOrAbort` (409-handling).
+
+---
+
+## Amendment 2026-05-01 — Signup Bootstrap (Closes Login/Signup Asymmetry)
+
+### Context
+
+The 2026-04-25 amendment shipped the bootstrap-variant ticket primitive +
+the apex caller on the **login** side (`(public)/login/+page.svelte`).
+The matching **signup** caller was never wired — every freshly signed-up
+tenant root user therefore ended up exactly in the "server has key, no
+escrow" orphan state that the 2026-04-25 pre-flight check was designed
+to detect, but had no code path to prevent at signup time.
+
+Concrete reproduction (2026-05-01, dev box, tenant 1 user 1):
+
+1. Apex `/login` credentials submit → 2FA challenge → verify success →
+   handoff branch fires (host ≠ user's tenant subdomain).
+2. `mintUnlockTicketOrFallback` runs Branch 3 (Skip): `fetchEscrow`
+   returns null, `serverHasActiveKey` returns true → no ticket minted,
+   redirect to subdomain WITHOUT `?unlock=…`.
+3. Subdomain `(app)/+layout.svelte` → `e2e.initialize()` → no local
+   key → generates fresh keypair → `POST /e2e/keys` → 409 (server
+   already holds a different key from a prior abandoned signup) →
+   `recoveryRequired = true`. Permanent block until admin reset.
+
+The orphan key was created during the original signup flow because the
+signup verify form (`(public)/signup/_lib/TwoFactorVerifyForm.svelte`)
+threw `redirect()` instead of returning a `VerifyHandoffResult` — leaving
+no client-side step where the apex-side ticket mint could run.
+
+### Decision
+
+The signup verify-action now follows the exact same contract as the
+login verify-action: **RETURN `VerifyHandoffResult` instead of throwing
+`redirect()`**, so the client-side `enhance` callback can call
+`mintUnlockTicketOrFallback` BEFORE the cross-origin navigation. For a
+brand-new signup user the helper takes the Bootstrap branch
+automatically (no escrow, no server key) — no signup-specific
+`mintBootstrapTicket` helper is needed; the `*OrFallback` name was
+deliberate, the helper is the canonical entry point for every cross-
+origin handoff dance and discriminates internally via the existing
+3-branch logic.
+
+The credentials → verify stage transition on signup also had to change
+from `window.location.href` (hard nav, password $state destroyed) to
+`await update()` (same-origin redirect followed by SvelteKit's client
+router, parent component preserved, password $state survives). Mirrors
+the login twin's pattern. Without this change the verify form would
+receive `password=''` even with the prop wiring, producing a worthless
+deterministic Argon2id-derived wrappingKey and a corrupted escrow blob.
+
+### Files Changed (Amendment 2026-05-01)
+
+- `frontend/src/routes/(public)/signup/_lib/2fa-server-helpers.ts` —
+  `VerifyResponseData` gains `accessToken?: string` mirror of backend
+  contract. New exported `VerifyHandoffResult` interface (mirror of
+  the login twin's). `readVerifySuccess` validates + extracts
+  `accessToken` (treats missing as 500 — backend contract violation).
+  `handleVerifyAction` returns `VerifyHandoffResult` instead of
+  throwing `redirect()`.
+- `frontend/src/routes/(public)/signup/_lib/TwoFactorVerifyForm.svelte` —
+  new `password: string` prop. Imports `mintUnlockTicketOrFallback`
+  from `$lib/crypto/escrow-handoff`. Type guard `isHandoffSuccess` +
+  helper `handleHandoffSuccess` (extracted to keep `enhanceVerify`
+  under cognitive-complexity = 10). New first branch in
+  `enhanceVerify`: `result.type === 'success' && isHandoffSuccess(...)`
+  → mint ticket in parallel with the 5 s celebration toast → navigate
+  to `redirectTo` with `?unlock=…` appended. Legacy redirect-throw
+  branch retained as defensive fallback.
+- `frontend/src/routes/(public)/signup/+page.svelte` —
+  `enhanceSignup` redirect-branch falls through to `await update()`
+  instead of `window.location.href`-hard-navigating, so the parent
+  component (and its `password` $state) survive the credentials →
+  verify stage transition. `<TwoFactorVerifyForm {password} />` wires
+  the prop.
+- `frontend/src/routes/(public)/signup/+page.server.ts` — JSDoc on the
+  `verify` action updated to reflect the new return-vs-throw contract.
+- `frontend/src/routes/(public)/signup/oauth-complete/+page.server.ts`
+  — **no change required**. The `?unlock=` preservation in
+  `handleHandoff` (added with the 2026-04-22 amendment for the login
+  flow) is already dual-purpose; the same handoff consumer serves both
+  login and signup and forwards `?unlock=` onto the dashboard redirect
+  unchanged.
+
+### Backend (no change)
+
+`two-factor-auth.controller.ts:253-258` already echoes `accessToken`
+for every handoff branch (login + signup). The 2026-05-01 fix is
+purely frontend.
+
+### Verification
+
+Pre-fix DB query for any victim tenant:
+
+```sql
+SELECT u.id, u.email,
+       k.fingerprint AS server_key_fingerprint,
+       e.blob_version AS has_escrow
+  FROM users u
+  LEFT JOIN e2e_user_keys  k ON k.user_id = u.id AND k.is_active = 1
+  LEFT JOIN e2e_key_escrow e ON e.user_id = u.id AND e.is_active = 1
+ WHERE u.email = '<test@…>';
+-- Pre-fix: server_key_fingerprint NOT NULL, has_escrow IS NULL  ← stranded
+```
+
+Cleanup for any pre-fix orphan-state user (so they can sign in cleanly
+once the fix is live):
+
+```sql
+UPDATE e2e_user_keys SET is_active = 0
+ WHERE user_id = $1 AND is_active = 1;
+```
+
+Post-fix the same query after a fresh signup must show
+`has_escrow = 1` and a fingerprint that matches the subdomain's local
+IndexedDB.
+
+### Open Items (deferred)
+
+1. **Empty-password edge case** — if a user reloads the verify page
+   (rare: requires a valid challenge cookie still in flight), the
+   parent's `password` $state initialises to `''` on the fresh mount.
+   `mintUnlockTicketOrFallback` currently has no empty-password guard
+   and would derive a worthless deterministic wrappingKey. The same
+   latent edge case exists on login. Fix is a single guard in
+   `escrow-handoff.ts::mintUnlockTicketOrFallback`: bail out and
+   return `redirectTo` unchanged when `loginPasswordValue === ''`.
+   Out of scope for this amendment because reproducing it requires a
+   manual reload mid-flow.
+2. **DRY consolidation of the two verify forms** —
+   `(public)/login/_lib/TwoFactorVerifyForm.svelte` and
+   `(public)/signup/_lib/TwoFactorVerifyForm.svelte` are now near-
+   identical (~95% shared logic, differ in lockout target, cancel
+   target, success-toast delay). Worth folding into a single
+   component with a discriminator prop in a follow-up PR. Not in
+   scope here — both forms now have parity for the escrow flow,
+   future drift risk is the only motivation.
+
+---
+
+## Amendment 2026-05-01b — Atomic Key+Escrow Registration (Closes the (key, no escrow) Race Window)
+
+### Context — what the prior amendments did NOT cover
+
+The 2026-04-25 amendment introduced the cross-origin bootstrap ticket
+to repair users who already held an orphan key and arrived at the
+subdomain without a recovery path. The 2026-05-01 amendment wired the
+matching apex-side caller into the signup flow so freshly created
+tenants would not enter that orphan state from day zero.
+
+Both amendments still relied on the **two-call sequence** from the
+client:
+
+```
+POST /api/v2/e2e/keys      → INSERT row in e2e_user_keys, return key
+POST /api/v2/e2e/escrow    → INSERT row in e2e_key_escrow, return blob
+```
+
+These are **two independent transactions**. Any failure on the second
+call (network blip, transient DB error, browser tab killed, JS
+exception in the wrap step, the user navigating away mid-flow) leaves
+the database in `(e2e_user_keys.is_active = 1, e2e_key_escrow = ∅)` —
+the same orphan state the prior amendments fight, just produced by a
+different mechanism.
+
+In `e2e-state.svelte.ts` the hazard was actively designed-in: the
+escrow store call was deliberately fire-and-forget on both paths.
+
+```typescript
+// Same-origin fall-through (resolveOrRecoverKey, before the fix):
+const resolved = await generateAndRegisterKey();
+if (loginPassword !== null) {
+  void tryCreateEscrow(loginPassword);   // ← non-awaited, non-throwing
+}
+return resolved;
+
+// Cross-origin bootstrap (bootstrapFreshEscrow, before the fix):
+try {
+  await apiClient.post(ESCROW_ENDPOINT, { ... });
+} catch (err) {
+  log.warn('Escrow create failed during bootstrap — key registered, escrow missing');
+  // returns true anyway — caller sees "bootstrapped"
+}
+```
+
+`tryCreateEscrow` itself swallowed every error except 409. The two
+swallows compose: a transient escrow POST failure produced **zero
+user-visible feedback** while permanently parking the user in the
+unrecoverable state that the prior amendments treat as a one-shot
+admin-reset event. Concrete reproduction:
+
+1. User truncates `e2e_user_keys` + `e2e_key_escrow` (admin reset).
+2. User logs in cleanly via apex; `mintUnlockTicketOrFallback`
+   correctly chooses Branch 2 (Bootstrap) and mints a bootstrap
+   ticket → subdomain `bootstrapFreshEscrow` runs.
+3. `POST /e2e/keys` succeeds (key row committed).
+4. `POST /e2e/escrow` fails for any reason — the catch swallows it.
+5. `bootstrapFreshEscrow` returns `true`. Subdomain `e2e.initialize()`
+   reports `isReady: true`.
+6. Next login from any cross-origin entry point, or any login after
+   IndexedDB is cleared on the subdomain: **Branch 3 (Skip) fires
+   forever**. User is locked into "admin reset required" until manual
+   DB intervention.
+
+### Decision
+
+Replace the two-call sequence with a single atomic endpoint that
+commits the key row AND the escrow row inside one
+`tenantTransaction()`. PostgreSQL transactional semantics guarantee
+both rows commit together or both roll back — by construction the
+`(key, no escrow)` state cannot be observed at rest.
+
+```
+POST /api/v2/e2e/keys/with-escrow
+Body: { publicKey, escrow: { encryptedBlob, argon2Salt, xchachaNonce, argon2Params } }
+→ 201 Created { key, escrow }   # both rows committed
+→ 409 Conflict                   # active key OR active escrow already exists
+→ any DB failure                 # both rolled back, no observable side-effect
+```
+
+The legacy `POST /e2e/keys` and `POST /e2e/escrow` endpoints stay in
+the controller for two narrow paths:
+
+- Admin-reset followup where the next same-origin login backfills via
+  `tryCreateEscrowIfMissing` (a user with a pre-existing local key
+  whose server-side rows were just wiped).
+- `PUT /e2e/escrow` for password-change re-encryption — unchanged.
+
+Both legacy callers carry deprecation notes pointing future first-key
+work at the atomic endpoint.
+
+### Frontend invariants enforced alongside the endpoint
+
+The atomic endpoint alone is insufficient; the client must call it
+unconditionally on first-key creation paths AND must surface escrow
+failures instead of swallowing them. Three additional client-side
+changes lock those invariants:
+
+1. `generateAndRegisterKey()` (legacy non-atomic) deleted from
+   `e2e-state.svelte.ts`. The same-origin fall-through in
+   `resolveOrRecoverKey` now calls `generateAndRegisterKeyWithEscrow`
+   which derives the wrappingKey from the login password, wraps the
+   freshly generated private key, and posts the atomic envelope. If
+   no password is available (rare: cross-origin layout mount with no
+   login-password-bridge AND no escrow on server AND no local key) we
+   throw a plain `Error` so `recoveryRequired` stays false and the
+   user is told to log in again — not flagged for admin reset.
+2. `bootstrapFreshEscrow()` (cross-origin first login) rewritten to
+   use the atomic endpoint with the apex-derived wrappingKey. Returns
+   `false` on any failure to preserve the existing caller fall-through
+   contract — the `bootstrapFromUnlockTicket` consumer expects
+   non-throwing.
+3. `tryCreateEscrow()` and `tryCreateEscrowIfMissing()` (the backfill
+   paths) now propagate errors instead of logging-and-swallowing. Only
+   the idempotent "already exists" 409 is still treated as success.
+   The `void tryCreateEscrowIfMissing(...)` call in
+   `resolveOrRecoverKey` becomes `await tryCreateEscrowIfMissing(...)`.
+   Legacy users with a local key but missing server escrow are
+   repaired on the next same-origin login with a known password; if
+   the backfill itself fails, the user sees a transient error and can
+   retry, instead of silently remaining in the orphan state.
+
+### Why this composes with the prior amendments
+
+| Amendment          | Closes                                                                                                                                                                                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-04-22         | No-auto-rotation + plaintext fallback block; primitive: bootstrap ticket.                                                                                                                                                                                                                  |
+| 2026-04-25         | Cross-origin first-escrow bootstrap on the **login** path.                                                                                                                                                                                                                                 |
+| 2026-05-01         | Cross-origin first-escrow bootstrap on the **signup** path (caller wiring parity).                                                                                                                                                                                                         |
+| 2026-05-01b (this) | Eliminates the `(key, no escrow)` state at its database root by making the registration atomic. Defends against transient failure on EVERY path — including paths the prior amendments never covered (a legitimate bootstrap that just happens to lose the escrow POST to a network blip). |
+
+Each prior amendment closed a **caller-side gap**. This amendment
+closes the **server-side data invariant**: even if a future caller
+forgets to wire the bootstrap branch, or a brand-new path is added,
+the database itself refuses to commit a key without its escrow.
+
+### Files Changed (Amendment 2026-05-01b)
+
+Backend:
+
+- `backend/src/nest/e2e-keys/dto/register-keys-with-escrow.dto.ts`
+  (new) — combined Zod schema, both fields required.
+- `backend/src/nest/e2e-keys/dto/register-keys-with-escrow.dto.test.ts`
+  (new) — 6 composition tests (atomicity invariant: partial input
+  rejected at schema layer).
+- `backend/src/nest/e2e-keys/dto/index.ts` — barrel export updated.
+- `backend/src/nest/e2e-keys/e2e-keys.service.ts` —
+  `registerKeysWithEscrow()` plus four private helpers
+  (`assertNoActiveKeyOrEscrow`, `insertKeyRow`, `insertEscrowRow`,
+  `mapKeyRowToResponse`, `mapEscrowRowToResponse`). All three INSERTs
+  share the single `tenantTransaction()`. Legacy `registerKeys()`
+  retained with deprecation note.
+- `backend/src/nest/e2e-keys/e2e-keys.service.test.ts` — 7 new tests
+  including atomicity invariant (escrow INSERT failure propagates),
+  conflict pre-checks for both tables, JSONB serialisation of
+  `argon2Params`.
+- `backend/src/nest/e2e-keys/e2e-keys.controller.ts` —
+  `POST /e2e/keys/with-escrow` endpoint with `AuthThrottle()`. Both
+  endpoints now carry deprecation pointers.
+
+Frontend:
+
+- `frontend/src/lib/crypto/e2e-state.svelte.ts` —
+  `postAtomicKeyAndEscrow()` (shared helper),
+  `generateAndRegisterKeyWithEscrow()` (same-origin),
+  `bootstrapFreshEscrow()` rewrite (cross-origin atomic),
+  `tryCreateEscrow*` propagate-on-failure semantics, `void → await`
+  on the backfill call site, removed unused
+  `registerBootstrapKeyOrAbort`, removed legacy
+  `generateAndRegisterKey`.
+
+### Verification
+
+Unit tests: 30/30 green (`backend/src/nest/e2e-keys/`). Type-check
+green on shared + backend + frontend + backend/test. Lint green on
+both sides.
+
+End-to-end (dev, tenant 1 user 1, after `TRUNCATE` on both tables):
+
+| Login  | Apex behaviour                                          | Subdomain behaviour                                                                                                                             | Result                     |
+| ------ | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| First  | Branch 2 (Bootstrap) — bootstrap ticket minted          | `consume-unlock` → `bootstrapFreshEscrow` → `POST /e2e/keys/with-escrow` 201 → `Atomic bootstrap complete — first key + first escrow committed` | E2E ready, `isReady: true` |
+| Second | Branch 1 (Unlock) — escrow exists, unlock ticket minted | `consume-unlock` → `recoverFromExistingEscrow` → `Private key bootstrapped from unlock ticket`                                                  | E2E ready, `isReady: true` |
+
+Backend log on first login: `Atomic register: E2E key + escrow for
+user 1 in tenant 1 (fingerprint: 6c687f2eec48bf6c...)` — confirms
+single-transaction commit.
+
+### Open Items (deferred)
+
+1. **Architectural test for the legacy two-call pattern** —
+   `shared/src/architectural.test.ts` should fail on any new caller
+   of `apiClient.post('/e2e/keys', …)` outside the small allowlist
+   (the rotate path, the legacy backfill path). Cheap insurance
+   against a future contributor reintroducing the race window.
+2. **Removal of the legacy `POST /e2e/keys` endpoint** — once one
+   release cycle confirms zero non-atomic usage in production logs,
+   the endpoint and its DTO can be deleted. Keep the rotate endpoint
+   (`PUT /e2e/keys/me`) and the admin-reset cascade unchanged.
+3. **Same atomic refactor for `PUT /e2e/escrow` (password change)** —
+   the password-change path currently issues `POST /api/v2/auth/...`
+   (re-derive) followed by `PUT /e2e/escrow`. Failure between them
+   produces a different orphan: the user's password rotates but the
+   escrow stays encrypted with the old key, breaking next-login
+   recovery on a new origin. Same atomicity argument applies; the
+   fix is a single combined endpoint. Out of scope here because the
+   2026-04-25 amendment already documented this as a known gap.

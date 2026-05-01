@@ -57,6 +57,15 @@ type UserRole = 'root' | 'admin' | 'employee' | 'dummy';
  * the login twin. A 200 without `handoff` is a backend contract violation
  * (the controller has explicit logic to set it before responding for the
  * `verified.purpose === 'signup'` branch in `two-factor-auth.controller.ts`).
+ *
+ * `accessToken` (added 2026-05-01) is echoed alongside `handoff` so the apex-
+ * side `enhance` callback can mint the ADR-022 escrow unlock ticket BEFORE the
+ * cross-origin redirect (otherwise `e2e.initialize()` on the subdomain has no
+ * way to derive the wrappingKey — sessionStorage is origin-scoped, useless
+ * across the apex→subdomain hop). This closes the FEAT_E2E_ESCROW_SIGNUP_
+ * BOOTSTRAP_FOLLOWUP gap: pre-2026-05-01 signup verify never minted a ticket
+ * → server key was registered without an escrow blob → user stranded behind
+ * an admin reset. Backend: `two-factor-auth.controller.ts:253-258`.
  */
 interface VerifyResponseData {
   stage: 'authenticated';
@@ -70,6 +79,51 @@ interface VerifyResponseData {
     subdomain: string | null;
   };
   handoff?: { token: string; subdomain: string };
+  accessToken?: string;
+}
+
+/**
+ * Form-action SUCCESS-return shape for the cross-origin handoff branch
+ * (added 2026-05-01 — FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP).
+ *
+ * Returned (not thrown) by `handleVerifyAction` so the client-side `enhance`
+ * callback in `TwoFactorVerifyForm.svelte` can run `mintUnlockTicketOrFallback`
+ * (which routes through the Bootstrap branch in `escrow-handoff.ts:217-228`
+ * for a brand-new signup user — no escrow exists, server has no key yet) and
+ * append `?unlock=<ticketId>` to `redirectTo` BEFORE the cross-origin
+ * navigation. Without this round-trip the subdomain's `e2e.initialize()`
+ * generates a fresh keypair, registers it, but never creates the escrow blob
+ * → orphan-state, recoveryRequired, admin-reset-only.
+ *
+ * Mirrors `VerifyHandoffResult` in the login twin
+ * (`(public)/login/_lib/2fa-server-helpers.ts`); the two flows share the same
+ * mint primitive — login takes the Unlock branch (existing escrow), signup
+ * takes the Bootstrap branch (no escrow yet). One ticket primitive, two
+ * payload shapes — see `escrow-handoff.ts` for the discriminator.
+ *
+ * Why a returned value instead of a thrown SvelteKit `redirect()` (which is
+ * what the pre-fix signup verify did): a thrown `redirect` short-circuits the
+ * `enhance` callback, leaving no client-side step where the apex-side ticket
+ * mint can run. Returning a value lets the callback do its work, then call
+ * `window.location.href = finalUrl` once `?unlock=` is appended.
+ *
+ * `accessToken` lives in JS heap memory only for the few hundred ms between
+ * this return and the cross-origin redirect, used exclusively for the
+ * authenticated `/e2e/escrow*` fetches. NOT persisted (no localStorage, no
+ * apex cookie). The session lives on the subdomain via the handoff payload.
+ */
+export interface VerifyHandoffResult {
+  success: true;
+  /** Absolute URL on `<userSubdomain>` — handoff consumer at `/signup/oauth-complete?token=…`. */
+  redirectTo: string;
+  /** Short-lived bearer for the ADR-022 escrow ticket mint on apex. NEVER persist. */
+  accessToken: string;
+  user: {
+    id: number;
+    role: UserRole;
+    /** Forwarded for cross-tenant debugging only; backend re-derives from JWT. */
+    tenantId: number;
+  };
 }
 
 interface VerifyResponseEnvelope {
@@ -138,15 +192,24 @@ function parseCodeField(
 
 /**
  * Inspect a 200-OK signup-verify response: shape-check the body and pull the
- * mandatory `handoff` payload. A signup-purpose verify WITHOUT `handoff` is a
- * backend contract violation — log + 500 rather than silently fall through to
- * a same-origin cookie path that would leave the user authenticated on apex
- * but with cookies scoped to the wrong origin.
+ * mandatory `handoff` + `accessToken` payload. A signup-purpose verify WITHOUT
+ * either is a backend contract violation — log + 500 rather than silently fall
+ * through to a same-origin cookie path that would leave the user authenticated
+ * on apex but with cookies scoped to the wrong origin.
+ *
+ * `accessToken` requirement (added 2026-05-01): the apex-side `enhance`
+ * callback needs it to mint the ADR-022 escrow unlock ticket BEFORE the
+ * cross-origin redirect. The backend echoes it for every handoff branch
+ * (`two-factor-auth.controller.ts:253-258`); missing it means the controller
+ * regressed and signup users would silently re-enter the orphan-key state
+ * (server key registered, no escrow blob, recoveryRequired forever).
  */
-function readVerifySuccess(
-  body: VerifyResponseEnvelope,
-):
-  | { user: VerifyResponseData['user']; handoff: { token: string; subdomain: string } }
+function readVerifySuccess(body: VerifyResponseEnvelope):
+  | {
+      user: VerifyResponseData['user'];
+      handoff: { token: string; subdomain: string };
+      accessToken: string;
+    }
   | ActionFailure<VerifyActionFailureData> {
   if (!body.success || body.data === undefined) {
     log.error('Signup verify 200 without success / data — backend envelope violation');
@@ -156,7 +219,13 @@ function readVerifySuccess(
     log.error('Signup-purpose verify returned no handoff payload — backend contract violation');
     return fail(500, { error: MESSAGES.ERR_GENERIC });
   }
-  return { user: body.data.user, handoff: body.data.handoff };
+  if (typeof body.data.accessToken !== 'string' || body.data.accessToken === '') {
+    log.error(
+      'Signup-purpose verify returned no accessToken in body — backend contract violation (ADR-022 escrow ticket cannot be minted)',
+    );
+    return fail(500, { error: MESSAGES.ERR_GENERIC });
+  }
+  return { user: body.data.user, handoff: body.data.handoff, accessToken: body.data.accessToken };
 }
 
 /**
@@ -242,17 +311,33 @@ function buildSubdomainHandoffUrl(slug: string, token: string, request: Request)
 
 /**
  * `verify` action handler — invoked when the user submits the 6-character
- * code from the inline verify card on `/signup`. Throws SvelteKit `redirect()`
- * to the cross-origin subdomain handoff URL on the happy path; returns
- * `ActionFailure` for typed UX errors.
+ * code from the inline verify card on `/signup`.
  *
- * Redirect target: `https://<subdomain>.<apex>/signup/oauth-complete?token=…`
- * (NOT a same-origin dashboard path like login). The receiving page is the
- * existing OAuth handoff consumer, which is dual-purpose by design.
+ * RETURNS `VerifyHandoffResult` on the happy path (no longer throws redirect),
+ * so the client-side `enhance` callback in `TwoFactorVerifyForm.svelte` can
+ * mint the ADR-022 escrow unlock ticket BEFORE `window.location.href`-
+ * navigating to `redirectTo`. The legacy throw-redirect pattern (pre-2026-05-
+ * 01) short-circuited the callback, leaving no place to run the apex-side
+ * ticket mint — every freshly signed-up tenant root user ended up with a
+ * server key but no escrow blob (FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP).
+ *
+ * Redirect target lives in `redirectTo`:
+ *   `https://<userSubdomain>/signup/oauth-complete?token=<handoff>`
+ * The receiving page (existing OAuth handoff consumer) preserves the
+ * subsequently-appended `?unlock=<ticketId>` through to the dashboard
+ * redirect, where `(app)/+layout.svelte`'s `bootstrapE2eFromUrlAndInitialize`
+ * consumes it and routes through `bootstrapFreshEscrow` to create the user's
+ * first key + first escrow blob in one atomic step. Mirrors the login twin's
+ * post-2026-04-22 contract (ADR-022 amendment) — same primitive, signup
+ * variant takes the Bootstrap branch in `escrow-handoff.ts:217-228` because
+ * a brand-new account has no escrow yet AND no server key yet.
+ *
+ * @returns `ActionFailure` on validation/server failure; `VerifyHandoffResult`
+ *          on success. NEVER throws `redirect()` on the happy path anymore.
  */
 export async function handleVerifyAction(
   event: RequestEvent,
-): Promise<ActionFailure<VerifyActionFailureData>> {
+): Promise<ActionFailure<VerifyActionFailureData> | VerifyHandoffResult> {
   const { request, cookies } = event;
   const formData = await request.formData();
 
@@ -284,18 +369,26 @@ export async function handleVerifyAction(
     const verified = readVerifySuccess(body);
     if (isActionFailure<VerifyActionFailureData>(verified)) return verified;
 
-    // Single-use is spent — clear the apex challenge cookie before redirect.
+    // Single-use is spent — clear the apex challenge cookie before returning.
     // Reaching this branch means the backend already cleared its server-side
     // record (verifyChallenge does GETDEL); the apex cookie is now stale and
     // would only confuse `load()` on a back-button into /signup.
     cookies.delete('challengeToken', { path: '/' });
 
-    const handoffUrl = buildSubdomainHandoffUrl(
-      verified.handoff.subdomain,
-      verified.handoff.token,
-      request,
-    );
-    redirect(303, handoffUrl);
+    return {
+      success: true,
+      redirectTo: buildSubdomainHandoffUrl(
+        verified.handoff.subdomain,
+        verified.handoff.token,
+        request,
+      ),
+      accessToken: verified.accessToken,
+      user: {
+        id: verified.user.id,
+        role: verified.user.role,
+        tenantId: verified.user.tenantId,
+      },
+    };
   } catch (err: unknown) {
     if (isRedirectError(err)) throw err;
     log.error({ err }, 'Signup verify request failed');

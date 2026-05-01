@@ -187,22 +187,8 @@
       result: { type: string; data?: unknown; location?: string };
       update: () => Promise<void>;
     }): Promise<void> => {
-      // Redirect → server emitted 303 to /signup (challenge cookie set).
-      // Hard-nav so the next request runs `load` and surfaces stage='verify'.
-      // Matches the parity-with-login pattern and avoids any subtle
-      // client-router timing issue around the cookie set.
-      if (result.type === 'redirect') {
-        if (typeof result.location === 'string' && result.location !== '') {
-          window.location.href = result.location;
-          return;
-        }
-        window.location.reload();
-        return;
-      }
-
-      loading = false;
-
       if (result.type === 'failure') {
+        loading = false;
         turnstileRef?.reset();
         const data =
           typeof result.data === 'object' && result.data !== null ?
@@ -212,8 +198,24 @@
         return;
       }
 
-      // Defensive fallback — apply default behaviour for unhandled types.
+      // Redirect → server emitted 303 to /signup (challenge cookie set).
+      // Fall through to `update()` — SvelteKit follows the same-origin redirect
+      // and re-runs `load`, which now reads the freshly-set challengeToken
+      // cookie and returns `stage: 'verify'`. The page re-renders WITHOUT
+      // remounting this component, so `password` $state survives the
+      // credentials → verify transition. The verify form then reads it via
+      // the `{password}` prop and forwards to `mintUnlockTicketOrFallback`
+      // when the post-verify cross-origin handoff fires (ADR-022 × ADR-054).
+      //
+      // Pre-2026-05-01 this branch did `window.location.href = result.location`
+      // — a hard nav that destroyed `password` $state and left the verify form
+      // with an empty password, which produced a worthless Argon2id-derived
+      // wrappingKey and stranded every freshly signed-up user without an
+      // escrow blob (FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP). Mirrors
+      // login's pattern (login/+page.svelte:491 — same `await update()` fall-
+      // through, same parent-component preservation guarantee).
       await update();
+      loading = false;
     };
   }
 </script>
@@ -260,8 +262,20 @@
             form, OAuth section, and footer links are intentionally hidden
             in this stage — only the code-entry card body is rendered,
             matching the user-requested single-card UX.
+
+            ADR-022 × ADR-054 × ADR-050 (2026-05-01 — FEAT_E2E_ESCROW_SIGNUP_
+            BOOTSTRAP_FOLLOWUP): pass the credentials-stage `password` $state
+            into the verify form so it can call `mintUnlockTicketOrFallback`
+            BEFORE the cross-origin handoff redirect. Without this prop the
+            apex-side ticket mint runs with an empty password → worthless
+            Argon2id-derived wrappingKey → bootstrap creates an escrow blob
+            that nobody can decrypt → user is stranded behind an admin reset.
+            The parent's `password` survives the credentials → verify stage
+            transition because `enhanceSignup` falls through to `await
+            update()` (mirrors login twin) — the parent component is NOT
+            remounted, only `data.stage` changes.
           -->
-          <TwoFactorVerifyForm />
+          <TwoFactorVerifyForm {password} />
         {:else}
           <h2 class="signup-title">Konto erstellen</h2>
           <p class="signup-subtitle">30 Tage kostenlos testen — keine Kreditkarte nötig</p>

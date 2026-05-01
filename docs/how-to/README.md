@@ -37,10 +37,11 @@
 
 ### Feature Development
 
-| Guide                                                     | Description                                                                   |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [HOW-TO-INTEGRATE-FEATURE](./HOW-TO-INTEGRATE-FEATURE.md) | End-to-end checklist for integrating a new feature (RLS, GRANTs, tests, docs) |
-| [HOW-TO-PLAN-SAMPLE](./HOW-TO-PLAN-SAMPLE.md)             | Feature execution masterplan template (extracted from Vacation module)        |
+| Guide                                                             | Description                                                                                                                |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| [HOW-TO-INTEGRATE-FEATURE](./HOW-TO-INTEGRATE-FEATURE.md)         | End-to-end checklist for integrating a new feature (RLS, GRANTs, tests, docs)                                              |
+| [HOW-TO-PLAN-SAMPLE](./HOW-TO-PLAN-SAMPLE.md)                     | Feature execution masterplan template (extracted from Vacation module)                                                     |
+| [HOW-TO-FIX-MANAGE-PAGINATION](./HOW-TO-FIX-MANAGE-PAGINATION.md) | Pagination-Fix für `manage-*` Seiten — 4-Step Pattern, Triage-Tabelle, sekundäre Endpoints (Ref: manage-employees/-admins) |
 
 ### Versioning & Release
 

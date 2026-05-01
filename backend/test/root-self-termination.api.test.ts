@@ -139,7 +139,7 @@ let requestIdRootC1: string; // T20 setup — pending in iso tenant
  * cannot block the attempt. Mailpit lookup is `since`-scoped — never call
  * `clearMailpit()` (cross-worker race per FEAT_2FA_EMAIL §0.5.5 v0.7.2).
  */
-async function loginAs(email: string, userId: number): Promise<string> {
+async function loginAs(email: string, userId: number, tenantSubdomain: string): Promise<string> {
   clear2faStateForUser(userId);
   const loginStartedAt = new Date();
 
@@ -163,7 +163,19 @@ async function loginAs(email: string, userId: number): Promise<string> {
   const code = await fetchLatest2faCode(email, 10_000, loginStartedAt);
   const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `challengeToken=${challengeToken}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+      // ADR-050 + ADR-054: pin the verify to the user's actual tenant
+      // subdomain so `hostTenantId === verified.tenantId` → same-origin
+      // Set-Cookie branch fires (cookies in response, no handoff).
+      // This file creates per-test tenants (T_API/T_LAST/T_ISO with a
+      // dynamic RUN_TAG), so the slug must be threaded in by the caller
+      // — a hardcoded `assixx.assixx.com` would mismatch and trip the
+      // handoff branch. `buildRoot()` and `buildNonRoot()` both know the
+      // owning tenant slug at call time.
+      'X-Forwarded-Host': `${tenantSubdomain}.assixx.com`,
+    },
     body: JSON.stringify({ code }),
   });
   if (!verifyRes.ok) {
@@ -295,13 +307,13 @@ beforeAll(async () => {
   async function buildRoot(tag: string, tenantSub: string): Promise<RootUser> {
     const email = `${tag.toLowerCase()}@${tenantSub}.test`;
     const u = need(userByEmail, email);
-    const token = await loginAs(email, u.id);
+    const token = await loginAs(email, u.id, tenantSub);
     return { id: u.id, uuid: u.uuid, email, token };
   }
   async function buildNonRoot(tag: string): Promise<NonRootUser> {
     const email = `${tag.toLowerCase()}@${T_API}.test`;
     const u = need(userByEmail, email);
-    const token = await loginAs(email, u.id);
+    const token = await loginAs(email, u.id, T_API);
     return { id: u.id, email, token };
   }
 

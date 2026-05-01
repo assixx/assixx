@@ -19,8 +19,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
   }
 
   // Parallel fetch: assets + reference data
+  // limit=100 = backend cap (PaginationSchema.max in common.schema.ts).
+  // /assets defaults to 20 → silent truncation for tenants with > 20 assets
+  // (typical industrial tenants run 50–80 machines per facility). Client-side
+  // pagination on the loaded set (KISS, mirrors manage-root/manage-employees).
+  // @see docs/how-to/HOW-TO-FIX-MANAGE-PAGINATION.md
   const [assetsData, departmentsData, areasData, teamsData] = await Promise.all([
-    apiFetch<Asset[]>('/assets', token, fetch),
+    apiFetch<Asset[]>('/assets?limit=100', token, fetch),
     apiFetch<Department[]>('/departments', token, fetch),
     apiFetch<Area[]>('/areas', token, fetch),
     apiFetch<Team[]>('/teams', token, fetch),

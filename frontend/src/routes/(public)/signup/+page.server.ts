@@ -346,10 +346,16 @@ export const actions: Actions = {
    * `_lib/2fa-server-helpers.ts` to keep this file under the 800-line ceiling
    * + each action under the 60-line / complexity-10 ceilings.
    *
-   * Throws SvelteKit `redirect()` on the happy path (→ cross-origin
-   * subdomain handoff URL); returns `ActionFailure` for typed UX errors.
+   * RETURNS `VerifyHandoffResult` on the happy path (no longer throws redirect
+   * after FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP, 2026-05-01) so the
+   * client-side `enhance` callback in `TwoFactorVerifyForm.svelte` can run
+   * the ADR-022 escrow unlock-ticket mint BEFORE the cross-origin redirect to
+   * `<userSubdomain>/signup/oauth-complete?token=…&unlock=…`. Returns
+   * `ActionFailure` for typed UX errors (wrong code / lockout / expired).
    *
    * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md §5.3
+   * @see docs/FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP.md
+   * @see docs/infrastructure/adr/ADR-022-e2e-key-escrow.md §"Signup bootstrap"
    */
   verify: handleVerifyAction,
 

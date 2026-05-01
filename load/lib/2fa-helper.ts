@@ -208,8 +208,20 @@ function pollMailpitForCode(email: string, issuedAtMs: number): string {
  * `T | undefined`, so explicit guards are mandatory before returning.
  */
 function submitVerify(code: string, email: string): AuthState {
+  // ADR-050 + ADR-054: pin verify to the apitest tenant subdomain so
+  // `hostTenantId === verified.tenantId` → same-origin Set-Cookie branch
+  // fires (controller change 2026-05-01). Without this header k6 hits
+  // `localhost:3000` directly → middleware sees Host=localhost →
+  // hostTenantId=null → handoff branch fires → no auth cookies in
+  // response → this helper fails on the missing-accessToken check.
+  // Mirrors the API-test helpers' `APITEST_TENANT_FORWARDED_HOST`
+  // (`backend/test/helpers.ts`); both load + API tests log in users
+  // that belong to the `assixx`-subdomain tenant.
   const verifyRes = http.post(`${BASE_URL}/auth/2fa/verify`, JSON.stringify({ code }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Forwarded-Host': 'assixx.assixx.com',
+    },
     tags: { name: 'auth_2fa_verify' },
   });
   if (verifyRes.status !== 200) {

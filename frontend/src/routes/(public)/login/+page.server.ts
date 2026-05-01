@@ -10,6 +10,11 @@
 import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit';
 
 import { setAuthCookies, clearAuthCookies } from '$lib/server/auth-cookies';
+// ADR-050 §"OAuth: Centralized Callback, Post-Callback Handoff" — shared
+// helper, also used by `_lib/2fa-server-helpers.ts::handleVerifyAction`
+// (the post-ADR-054 mandatory-2FA path that now needs the same cross-
+// origin redirect this file's OAuth-bypass-login branch needed first).
+import { buildSubdomainHandoffUrl } from '$lib/server/handoff-url';
 import { resilientFetch } from '$lib/server/resilient-fetch';
 import { verifyTurnstile } from '$lib/server/turnstile';
 import { createLogger } from '$lib/utils/logger';
@@ -338,38 +343,6 @@ async function verifyTurnstileFromForm(
 }
 
 /**
- * Build the subdomain-scoped handoff URL the browser should navigate to
- * after apex-login mint (Session 12c).
- *
- * Rules:
- *   - `localhost`                → `{slug}.localhost` (dev)
- *   - `assixx.com` / `www.assixx.com` → `{slug}.assixx.com` (prod apex)
- *   - subdomain already          → swap first label (cross-subdomain redirect)
- *
- * Preserves protocol + port from the current request URL, so dev on
- * `:5173` stays on `:5173` and prod stays on 443.
- */
-function buildSubdomainHandoffUrl(slug: string, token: string, request: Request): string {
-  const url = new URL(request.url);
-  const hostname = url.hostname;
-
-  let newHost: string;
-  if (hostname === 'localhost' || hostname === 'assixx.com') {
-    newHost = `${slug}.${hostname}`;
-  } else if (hostname === 'www.assixx.com') {
-    newHost = `${slug}.assixx.com`;
-  } else {
-    // Subdomain context (incl. `foo.localhost`) — replace first label.
-    const parts = hostname.split('.');
-    parts[0] = slug;
-    newHost = parts.join('.');
-  }
-
-  const port = url.port ? `:${url.port}` : '';
-  return `${url.protocol}//${newHost}${port}/signup/oauth-complete?token=${encodeURIComponent(token)}`;
-}
-
-/**
  * Session 12c (ADR-050): if the browser authenticated on the apex (or a
  * different subdomain than the user's tenant), mint a handoff token and
  * return an absolute redirect URL pointing at the correct subdomain.
@@ -378,6 +351,11 @@ function buildSubdomainHandoffUrl(slug: string, token: string, request: Request)
  * ceiling. Returns `null` when no handoff is needed (user is already on
  * their correct origin OR tenant has no subdomain configured), in which
  * case the caller falls through to normal apex-cookie flow.
+ *
+ * URL-build helper lifted to `$lib/server/handoff-url.ts` (2026-05-01) so
+ * the mandatory-2FA verify path (`_lib/2fa-server-helpers.ts`) can reuse
+ * the same builder — see ADR-054 + the `two-factor-auth.controller.ts`
+ * handoff branch.
  */
 async function buildHandoffRedirect(
   data: LoginResponseData,

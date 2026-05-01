@@ -44,6 +44,7 @@
     getStatusLabel,
     formatDate,
     getAvatarColor,
+    getVisiblePages,
     populateFormFromUser,
     getDefaultFormValues,
     validateEmailMatch,
@@ -51,6 +52,7 @@
     getAvailabilityBadge,
     getPlannedAvailability,
     getTruncatedNotes,
+    ROOTS_PER_PAGE,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -80,6 +82,9 @@
   // Filter State
   let currentStatusFilter = $state<StatusFilter>('active');
   let currentSearchQuery = $state('');
+
+  // Pagination State (client-side, page slice over filteredUsers)
+  let currentPage = $state(1);
 
   // Search State
   let searchOpen = $state(false);
@@ -129,6 +134,34 @@
   const filteredUsers = $derived(
     applyAllFilters(allRootUsers, currentStatusFilter, currentSearchQuery),
   );
+
+  // Derived: Pagination — slice the filtered set into the current page.
+  // Search dropdown still reads `filteredUsers` (full set) so a user can
+  // jump to a hit on any page; pagination only governs the table.
+  const totalPages = $derived(Math.max(1, Math.ceil(filteredUsers.length / ROOTS_PER_PAGE)));
+  const paginatedUsers = $derived(
+    filteredUsers.slice((currentPage - 1) * ROOTS_PER_PAGE, currentPage * ROOTS_PER_PAGE),
+  );
+  const visiblePages = $derived(getVisiblePages(currentPage, totalPages));
+
+  // Reset to page 1 when filter set changes — prevents user landing on
+  // an empty page after narrowing search/status. Mount-fire is a no-op.
+  $effect(() => {
+    void currentStatusFilter;
+    void currentSearchQuery;
+    currentPage = 1;
+  });
+
+  // Client-side pagination handlers (no URL update — KISS, see utils.ts).
+  function goToPage(p: number): void {
+    if (p >= 1 && p <= totalPages) currentPage = p;
+  }
+  function handlePreviousPage(): void {
+    if (currentPage > 1) currentPage -= 1;
+  }
+  function handleNextPage(): void {
+    if (currentPage < totalPages) currentPage += 1;
+  }
 
   // Derived: Current user for availability modal
   const availabilityUser = $derived(
@@ -583,7 +616,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each filteredUsers as user (user.id)}
+              {#each paginatedUsers as user (user.id)}
                 {@const avBadge = getAvailabilityBadge(user)}
                 {@const planned = getPlannedAvailability(user)}
                 {@const additionalInfo = getTruncatedNotes(user.notes)}
@@ -666,6 +699,50 @@
             </tbody>
           </table>
         </div>
+        {#if totalPages > 1}
+          <nav
+            class="pagination"
+            id="root-pagination"
+          >
+            <button
+              type="button"
+              class="pagination__btn pagination__btn--prev"
+              onclick={handlePreviousPage}
+              disabled={currentPage === 1}
+            >
+              <i class="fas fa-chevron-left"></i> Zurück
+            </button>
+            <div class="pagination__pages">
+              {#each visiblePages as page, i (i)}
+                {#if page.type === 'ellipsis'}
+                  <span class="pagination__ellipsis">...</span>
+                {:else if page.type === 'page'}
+                  <button
+                    type="button"
+                    class="pagination__page"
+                    class:pagination__page--active={page.active}
+                    onclick={() => {
+                      goToPage(page.value);
+                    }}
+                  >
+                    {page.value}
+                  </button>
+                {/if}
+              {/each}
+            </div>
+            <span class="pagination__info">
+              Seite {currentPage} von {totalPages} ({filteredUsers.length} Einträge)
+            </span>
+            <button
+              type="button"
+              class="pagination__btn pagination__btn--next"
+              onclick={handleNextPage}
+              disabled={currentPage === totalPages}
+            >
+              Weiter <i class="fas fa-chevron-right"></i>
+            </button>
+          </nav>
+        {/if}
         <div class="alert alert--info mt-6">
           <div class="alert__icon"><i class="fas fa-info-circle"></i></div>
           <div class="alert__content">

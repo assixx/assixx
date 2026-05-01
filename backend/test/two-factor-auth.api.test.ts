@@ -86,13 +86,35 @@ interface VerifyStepResult {
   refreshToken: string | null;
 }
 
-async function verifyRaw(challengeToken: string, code: string): Promise<VerifyStepResult> {
+/**
+ * Default `X-Forwarded-Host` for verify calls — `apitest`/`VICTIM` users
+ * both belong to tenant 1 whose subdomain is `assixx` (see `tenants` table
+ * fixture). Sending the matching host triggers the same-origin Set-Cookie
+ * branch (ADR-050 §"Backend: Pre-Auth Host Resolver" + 2026-05-01
+ * controller change), preserving every pre-existing test contract that
+ * asserts `accessToken`/`refreshToken` Set-Cookie headers.
+ *
+ * Override per call site (e.g. apex-handoff branch tests) by passing a
+ * different host or `null` (omit header → middleware sees `localhost`
+ * → `hostTenantId=null` → handoff branch).
+ */
+const DEFAULT_VERIFY_HOST = 'assixx.localhost';
+
+async function verifyRaw(
+  challengeToken: string,
+  code: string,
+  forwardedHost: string | null = DEFAULT_VERIFY_HOST,
+): Promise<VerifyStepResult> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Cookie: `challengeToken=${challengeToken}`,
+  };
+  if (forwardedHost !== null) {
+    headers['X-Forwarded-Host'] = forwardedHost;
+  }
   const res = await fetch(`${BASE_URL}/auth/2fa/verify`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Cookie: `challengeToken=${challengeToken}`,
-    },
+    headers,
     body: JSON.stringify({ code }),
   });
   const body = (await res.json()) as JsonBody;
@@ -288,6 +310,76 @@ describe('POST /auth/2fa/verify — happy path + token issuance', () => {
     // shape of code, the token is gone → generic 401 (R10).
     const replay = await verifyRaw(challengeToken, 'ABCDE2');
     expect(replay.res.status).toBe(401);
+  });
+});
+
+describe('POST /auth/2fa/verify — cross-origin handoff branch (ADR-050 + ADR-054)', () => {
+  /**
+   * When the verify happens on a host that does NOT match the user's
+   * tenant subdomain, the controller mints a handoff token instead of
+   * setting Set-Cookie auth headers. Three concrete trigger sites:
+   *   1. Apex login (`www.assixx.com` / `localhost` — no `X-Forwarded-Host`).
+   *   2. Cross-subdomain (user belongs to `assixx`, request hits
+   *      `firma-a.assixx.com`).
+   *   3. Signup-purpose verify (always handoffs — covered in suite D).
+   *
+   * Pre-2026-05-01 the login-purpose branch unconditionally set cookies on
+   * the request origin even if the host was wrong, which silently shipped
+   * the apex-cookie-bug surfaced post-ADR-054 mandatory 2FA. This test
+   * pins the new contract: handoff payload in body + accessToken echoed +
+   * NO Set-Cookie auth headers.
+   */
+  it('apex login (no X-Forwarded-Host) → handoff in body, no auth Set-Cookie', async () => {
+    clear2faStateForUser(APITEST_USER_ID);
+    await clearMailpit();
+    const login = await loginRaw(APITEST_EMAIL, APITEST_PASSWORD);
+    if (login.challengeToken === null) {
+      throw new Error('apex-handoff test: login did not issue challengeToken');
+    }
+    const code = await fetchLatest2faCode(APITEST_EMAIL);
+
+    // forwardedHost=null → middleware sees `localhost` → hostTenantId=null
+    // → handoff branch fires.
+    const verify = await verifyRaw(login.challengeToken, code, null);
+
+    expect(verify.res.status).toBe(200);
+    expect(verify.body.data.stage).toBe('authenticated');
+    expect(verify.body.data.user.email).toBe(APITEST_EMAIL);
+
+    // Handoff branch invariants:
+    expect(verify.body.data.handoff).toBeDefined();
+    expect(verify.body.data.handoff.token).toMatch(/^[a-f0-9]{64}$/);
+    expect(verify.body.data.handoff.subdomain).toBe('assixx');
+    // accessToken echoed in body for the apex-side ADR-022 escrow ticket
+    // mint — only ever present on the handoff branch.
+    expect(typeof verify.body.data.accessToken).toBe('string');
+    expect(verify.body.data.accessToken).not.toBe('');
+    // No Set-Cookie auth headers — cookies belong on the subdomain origin
+    // and would be useless (or confusing) on the apex.
+    expect(verify.accessToken).toBeNull();
+    expect(verify.refreshToken).toBeNull();
+  });
+
+  it('wrong-subdomain login (firma-a host, assixx user) → handoff to assixx', async () => {
+    clear2faStateForUser(APITEST_USER_ID);
+    await clearMailpit();
+    const login = await loginRaw(APITEST_EMAIL, APITEST_PASSWORD);
+    if (login.challengeToken === null) {
+      throw new Error('cross-subdomain test: login did not issue challengeToken');
+    }
+    const code = await fetchLatest2faCode(APITEST_EMAIL);
+
+    // User belongs to tenant `assixx`, request claims to come from
+    // `firma-a.assixx.com` (a real tenant in the seed data — see
+    // `tenants` fixture). Middleware resolves hostTenantId=2 (firma-a),
+    // user.tenantId=1 → mismatch → handoff redirects user to THEIR
+    // tenant (assixx), NOT to the host they came from.
+    const verify = await verifyRaw(login.challengeToken, code, 'firma-a.assixx.com');
+
+    expect(verify.res.status).toBe(200);
+    expect(verify.body.data.handoff).toBeDefined();
+    expect(verify.body.data.handoff.subdomain).toBe('assixx');
+    expect(verify.accessToken).toBeNull();
   });
 });
 

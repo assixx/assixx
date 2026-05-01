@@ -1,5 +1,11 @@
 # @assixx/shared
 
+## 0.4.14
+
+### Patch Changes
+
+- [Added] Added 2FA on login and signup
+
 ## 0.4.13
 
 ### Patch Changes

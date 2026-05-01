@@ -147,3 +147,15 @@ export interface AssetTeam {
   assignedAt?: string;
   notes?: string;
 }
+
+/**
+ * Pagination page item — UI representation of a page-button slot.
+ *
+ * Mirrors manage-admins / manage-employees / manage-root / /logs so the
+ * design-system pagination markup can be reused 1:1.
+ *
+ * @see frontend/src/design-system/primitives/navigation/pagination.css
+ */
+export type PaginationPageItem =
+  | { type: 'page'; value: number; active?: boolean }
+  | { type: 'ellipsis' };

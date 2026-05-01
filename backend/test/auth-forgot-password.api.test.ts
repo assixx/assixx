@@ -107,7 +107,13 @@ async function loginAs(email: string, password: string): Promise<AuthState> {
   const code = await fetchLatest2faCode(email, 10_000, loginStartedAt);
   const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `challengeToken=${challengeToken}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+      // ADR-050 + ADR-054: pin the verify to the apitest tenant subdomain
+      // so the same-origin Set-Cookie branch fires (helpers.ts mirror).
+      'X-Forwarded-Host': 'assixx.assixx.com',
+    },
     body: JSON.stringify({ code }),
   });
   if (!verifyRes.ok) {

@@ -4,10 +4,11 @@
  * REST endpoints for managing X25519 public keys used in E2E encryption.
  *
  * Endpoints:
- * - POST   /e2e/keys       — Register a new public key (user, 409 if exists)
- * - GET    /e2e/keys/me     — Get own key data
- * - GET    /e2e/keys/:userId — Get another user's public key
- * - DELETE /e2e/keys/:userId — Admin: reset a user's key (marks is_active=4)
+ * - POST   /e2e/keys              — Register a new public key (user, 409 if exists)
+ * - POST   /e2e/keys/with-escrow  — Atomic key + escrow registration (ADR-022, post-mortem 2026-05-01)
+ * - GET    /e2e/keys/me           — Get own key data
+ * - GET    /e2e/keys/:userId      — Get another user's public key
+ * - DELETE /e2e/keys/:userId      — Admin: reset a user's key (marks is_active=4)
  *
  * Rate limiting via AuthThrottle / UserThrottle / AdminThrottle decorators (ADR-001).
  * ResponseInterceptor (ADR-007) wraps all responses — do NOT wrap manually.
@@ -37,7 +38,8 @@ import {
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
-import { RegisterKeysDto } from './dto/index.js';
+import { RegisterKeysDto, RegisterKeysWithEscrowDto } from './dto/index.js';
+import type { E2eKeyWithEscrowResponse } from './e2e-keys.service.js';
 import { E2eKeysService } from './e2e-keys.service.js';
 import type { E2eKeyResponse, E2ePublicKeyResponse } from './e2e-keys.types.js';
 
@@ -46,9 +48,16 @@ export class E2eKeysController {
   constructor(private readonly e2eKeysService: E2eKeysService) {}
 
   /**
-   * Register a new E2E public key.
+   * Register a new E2E public key (key-only path).
    * Returns 409 Conflict if an active key already exists (multi-tab race protection).
    * Rate limited: 10 per 5 minutes (key registration is rare).
+   *
+   * Prefer `POST /e2e/keys/with-escrow` for first-time registration —
+   * the standalone register leaves a race window between key insert and
+   * follow-up escrow insert that produced irrecoverable `(key, no escrow)`
+   * state (post-mortem 2026-05-01). This endpoint is retained for legacy
+   * paths where the escrow is created via `tryCreateEscrowIfMissing` on
+   * the next same-origin login.
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -60,6 +69,34 @@ export class E2eKeysController {
     @CurrentUser() user: NestAuthUser,
   ): Promise<E2eKeyResponse> {
     return await this.e2eKeysService.registerKeys(dto.publicKey, tenantId, user.id);
+  }
+
+  /**
+   * Atomic key + escrow registration. Both rows commit in a single
+   * `tenantTransaction()` or both roll back — by construction there is
+   * no observable `(key, no escrow)` state, eliminating the irrecoverable
+   * divergence class documented in the 2026-05-01 post-mortem.
+   *
+   * Returns 409 Conflict if EITHER an active key OR an active escrow
+   * already exists for this user (use the retrieval endpoints instead).
+   *
+   * Rate limited as `AuthThrottle()` to match the legacy `POST /e2e/keys`.
+   */
+  @Post('with-escrow')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle()
+  async registerKeysWithEscrow(
+    @Body() dto: RegisterKeysWithEscrowDto,
+    @TenantId() tenantId: number,
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<E2eKeyWithEscrowResponse> {
+    return await this.e2eKeysService.registerKeysWithEscrow(
+      dto.publicKey,
+      dto.escrow,
+      tenantId,
+      user.id,
+    );
   }
 
   /**

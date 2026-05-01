@@ -23,6 +23,20 @@
  *   plugin (`@changesets/cli/changelog`) and `@changesets/changelog-github`
  *   are both CJS — we follow the same pattern.
  *
+ * Why this file lives in `.changeset/` (and not `scripts/`) — 2026-05-01:
+ *   `@changesets/cli` v2.31.0 (with `apply-release-plan` v7.1.1) passes its
+ *   own `__dirname` (deep in `node_modules/.../@changesets/cli/dist`) as
+ *   the `contextDir` to `applyReleasePlan`. The fallback resolver in
+ *   `apply-release-plan` then anchors `config.changelog[0]` to that path —
+ *   so any relative path outside `.changeset/` (e.g. `./scripts/…`) fails
+ *   the second resolve and crashes `pnpm changeset:version` with
+ *   `Cannot find module './scripts/changeset-formatter.cjs'`.
+ *
+ *   The first resolver tries `<cwd>/.changeset` — keeping the formatter
+ *   here makes that first resolve succeed unconditionally. Do NOT move
+ *   back to `scripts/` unless upstream regression is fixed (track via
+ *   `applyReleasePlan(..., __dirname)` call site in changesets-cli source).
+ *
  * @see .changeset/config.json — wires this formatter via tuple syntax
  * @see scripts/aggregate-changelog.mjs — strips the `[Section]` tag and
  *      re-sections root CHANGELOG.md into KaC headers
@@ -216,7 +230,15 @@ async function getReleaseLine(changeset, _type, options) {
   // correctly in Markdown. Aggregator preserves this indentation.
   const body = rest === '' ? '' : '\n\n  ' + rest.replace(/\n/g, '\n  ');
 
-  return `[${section}] ${firstOut}${body}`;
+  // Leading `- ` is OUR responsibility (not apply-release-plan's) since
+  // v7.1.1. Earlier versions wrapped formatter output as `- <commit>: ${ret}`
+  // automatically; v7.1.1 writes the formatter return verbatim. Default
+  // plugin `@changesets/changelog-git` does the same — its return starts
+  // with `- ${commit}: ${firstLine}`. Without `- `, the per-package
+  // CHANGELOG entries render as paragraphs (not bullets), the aggregator's
+  // SECTION_TAG_RE (`^- \[…\] `) skips them, and the version section ends
+  // up empty in root CHANGELOG.md (visible regression in v0.4.14).
+  return `- [${section}] ${firstOut}${body}`;
 }
 
 /**

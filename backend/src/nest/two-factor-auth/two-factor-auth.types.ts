@@ -85,25 +85,39 @@ export type LoginResultBody =
  * been stamped with `last_2fa_verified_at` (and `tfa_enrolled_at` on first
  * 2FA), and tokens have been minted.
  *
- * `handoff` is present ONLY for signup-purpose verifies. Signup runs on apex
- * (`www.assixx.com/signup/verify` — DTO requires the new tenant's subdomain),
- * so cookies set on apex would scope to the wrong origin. The handoff
- * payload reuses the OAuth subdomain-bridge primitive (`OAuthHandoffService`,
- * ADR-050 §OAuth) — frontend redirects 303 to
- * `https://${subdomain}.assixx.com/handoff?ticket=${token}`, the existing
- * handoff endpoint consumes the ticket and writes cookies on the correct
- * origin. Login-purpose verifies happen on the tenant subdomain itself, so
- * cookies are set on the same origin and `handoff` is omitted.
+ * `handoff` is present whenever the response cookies cannot be set on the
+ * current request origin — i.e. the user verified on a host that does not
+ * match the user's tenant subdomain (ADR-050). Concrete trigger sites:
  *
- * Under `exactOptionalPropertyTypes` (ADR-041) the `handoff?` field must be
- * literally absent when not used (never `undefined`) — frontend guards via
- * `'handoff' in response` or `response.handoff !== undefined` are both safe
- * because the controller constructs the object with or without the key.
+ *   - signup-purpose verify (always — runs on apex by definition).
+ *   - login-purpose verify when the user logged in on the apex
+ *     (`www.assixx.com/login`, `localhost:5173/login`) or on a subdomain
+ *     that does not belong to the user's tenant. Frontend follows the
+ *     handoff redirect to `<userSubdomain>/signup/oauth-complete?token=…`
+ *     (the existing OAuth handoff consumer) which sets cookies on the
+ *     correct origin.
+ *
+ * `accessToken` is shipped alongside `handoff` so the apex-side enhance
+ * callback can mint the ADR-022 escrow unlock ticket BEFORE the cross-
+ * origin redirect (otherwise the subdomain's `e2e.initialize()` cannot
+ * recover the user's encrypted private key — sessionStorage does not
+ * survive a cross-origin navigation). It carries no extra security risk
+ * over the OAuth-bypass login path which has always returned tokens in
+ * the body for the same reason. R8 (challenge-token-never-in-body) is
+ * unrelated to `accessToken`; only the challenge token must stay in
+ * cookies.
+ *
+ * Under `exactOptionalPropertyTypes` (ADR-041) the `handoff?` /
+ * `accessToken?` fields must be literally absent when not used (never
+ * `undefined`) — frontend guards via `'handoff' in response` or
+ * `response.handoff !== undefined` are both safe because the controller
+ * constructs the object with or without the key.
  */
 export interface TwoFactorVerifyResponse {
   stage: 'authenticated';
   user: LoginResponse['user'];
   handoff?: { token: string; subdomain: string };
+  accessToken?: string;
 }
 
 /**

@@ -272,12 +272,29 @@ async function _runLoginRequest(): Promise<Response> {
   });
 }
 
+/**
+ * Forwarded host for the apitest tenant — every test user created via
+ * `createUserIfMissing(rootToken, …)` lands in tenant 1 (`apitest` root)
+ * whose subdomain is `assixx` (see `tenants` seed). Sending the matching
+ * host on the verify call triggers the same-origin Set-Cookie branch in
+ * `two-factor-auth.controller.ts` (ADR-050 §"Backend: Pre-Auth Host
+ * Resolver" + 2026-05-01 controller change), preserving every existing
+ * `_performLogin` / `loginNonRoot` / `loginNonRootFull` contract that
+ * extracts `accessToken`/`refreshToken` from `Set-Cookie`.
+ *
+ * Tests that authenticate users in OTHER tenants must use a dedicated
+ * verify path with the right host (none today — every API-test fixture
+ * provisions through the apitest root token).
+ */
+const APITEST_TENANT_FORWARDED_HOST = 'assixx.assixx.com';
+
 async function _runVerifyRequest(challengeToken: string, code: string): Promise<Response> {
   return await fetch(`${BASE_URL}/auth/2fa/verify`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Cookie: `challengeToken=${challengeToken}`,
+      'X-Forwarded-Host': APITEST_TENANT_FORWARDED_HOST,
     },
     body: JSON.stringify({ code }),
   });
@@ -430,7 +447,12 @@ export async function loginNonRoot(email: string, password: string): Promise<str
   const code = await fetchLatest2faCode(email, MAIL_POLL_TIMEOUT_MS, loginStartedAt);
   const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `challengeToken=${challengeToken}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+      // Same-origin Set-Cookie branch — see APITEST_TENANT_FORWARDED_HOST.
+      'X-Forwarded-Host': APITEST_TENANT_FORWARDED_HOST,
+    },
     body: JSON.stringify({ code }),
   });
   if (!verifyRes.ok) {
@@ -473,7 +495,12 @@ export async function loginNonRootFull(email: string, password: string): Promise
   const code = await fetchLatest2faCode(email, MAIL_POLL_TIMEOUT_MS, loginStartedAt);
   const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `challengeToken=${challengeToken}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+      // Same-origin Set-Cookie branch — see APITEST_TENANT_FORWARDED_HOST.
+      'X-Forwarded-Host': APITEST_TENANT_FORWARDED_HOST,
+    },
     body: JSON.stringify({ code }),
   });
   if (!verifyRes.ok) {

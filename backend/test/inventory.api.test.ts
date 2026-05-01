@@ -190,7 +190,12 @@ async function loginAs(email: string, password: string): Promise<string> {
   const code = await fetchLatest2faCode(email, 10_000, loginStartedAt);
   const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `challengeToken=${challengeToken}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+      // ADR-050 + ADR-054: same-origin Set-Cookie branch (helpers.ts mirror).
+      'X-Forwarded-Host': 'assixx.assixx.com',
+    },
     body: JSON.stringify({ code }),
   });
   if (!verifyRes.ok) {

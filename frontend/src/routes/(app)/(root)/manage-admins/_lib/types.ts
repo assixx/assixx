@@ -126,3 +126,14 @@ export interface AdminApiResponse {
 export interface ApiResponse<T> {
   data?: T;
 }
+
+/**
+ * Pagination page item — UI representation of a page-button slot.
+ * Mirrors manage-employees and /logs so the design-system pagination
+ * markup can be reused 1:1.
+ *
+ * @see frontend/src/design-system/primitives/navigation/pagination.css
+ */
+export type PaginationPageItem =
+  | { type: 'page'; value: number; active?: boolean }
+  | { type: 'ellipsis' };

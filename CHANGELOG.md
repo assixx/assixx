@@ -5,6 +5,12 @@
 > CHANGELOGs after `pnpm changeset:version`. Do not hand-edit — changes
 > will be overwritten on the next release.
 
+## 0.4.14 — 2026-05-01
+
+### Added
+
+- Added 2FA on login and signup
+
 ## 0.4.13 — 2026-04-28
 
 ### Changed

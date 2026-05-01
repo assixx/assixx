@@ -107,7 +107,11 @@ function queryTenantIdBySubdomain(subdomain: string): number | null {
  * never depend on Mailpit being globally clean (cross-worker race per
  * §0.5.5 v0.7.2). Lockouts are pre-cleared via `2fa:lock:{userId}` DEL.
  */
-async function loginAs(email: string, password: string): Promise<string> {
+async function loginAs(
+  email: string,
+  password: string,
+  tenantSubdomain = 'assixx',
+): Promise<string> {
   const preLookupId = queryUserIdByEmail(email);
   if (preLookupId !== null) clear2faStateForUser(preLookupId);
 
@@ -133,7 +137,15 @@ async function loginAs(email: string, password: string): Promise<string> {
   const code = await fetchLatest2faCode(email, 10_000, loginStartedAt);
   const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `challengeToken=${challengeToken}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+      // ADR-050 + ADR-054: pin verify to the user's tenant subdomain so
+      // the same-origin Set-Cookie branch fires. Default `assixx` works
+      // for the apitest tenant (default param); `createFreshTenant`
+      // overrides with the dynamically-generated `p4-…` slug.
+      'X-Forwarded-Host': `${tenantSubdomain}.assixx.com`,
+    },
     body: JSON.stringify({ code }),
   });
   if (!verifyRes.ok) {
@@ -306,7 +318,7 @@ async function createFreshTenant(
     throw new Error(`createFreshTenant[${label}]: user ${adminEmail} missing post-signup`);
   }
 
-  const token = await loginAs(adminEmail, TEST_PASSWORD);
+  const token = await loginAs(adminEmail, TEST_PASSWORD, subdomain);
   return { token, tenantId, userId, subdomain, domain };
 }
 

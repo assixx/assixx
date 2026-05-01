@@ -1,5 +1,11 @@
 # assixx-frontend
 
+## 0.4.14
+
+### Patch Changes
+
+- [Added] Added 2FA on login and signup
+
 ## 0.4.12
 
 ### Patch Changes

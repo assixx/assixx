@@ -41,7 +41,7 @@ feat(scope): kurze Beschreibung
 | `build:`                      | Maintenance  | `build: switch to pnpm deploy pattern`  |
 | `<prefix>!:` oder `BREAKING:` | **Breaking** | `refactor!: drop V1 API surface`        |
 
-`scripts/changeset-formatter.cjs` strippt den Prefix, taggt die Sektion automatisch, hängt PR-Link an wenn `(#NNN)` im Text steht, **und konvertiert das erste Wort vom Imperativ in Past-Tense** (`add` → `Added`, `bump` → `Bumped`, `fix` → `Fixed`, etc.). Du schreibst weiter `feat: add foo` — der Formatter macht daraus `Added foo` (claude-code-Style).
+`.changeset/changeset-formatter.cjs` strippt den Prefix, taggt die Sektion automatisch, hängt PR-Link an wenn `(#NNN)` im Text steht, **und konvertiert das erste Wort vom Imperativ in Past-Tense** (`add` → `Added`, `bump` → `Bumped`, `fix` → `Fixed`, etc.). Du schreibst weiter `feat: add foo` — der Formatter macht daraus `Added foo` (claude-code-Style).
 
 Der Aggregator hängt zusätzlich das **ISO-Release-Datum** an den Version-Header (`## 0.4.13 — 2026-04-28`) — gezogen aus `git log -1 --format=%aI v<version>`, Fallback auf heutiges Datum wenn der Tag noch nicht existiert (in-progress Release).
 

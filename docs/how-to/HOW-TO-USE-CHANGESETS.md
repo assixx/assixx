@@ -22,7 +22,7 @@ Changesets captures **what changed** and **which semver bump is needed** — at 
 | `.changeset/config.json`               | Configuration (Fixed Versioning, baseBranch, custom formatter wiring)                               |
 | `.changeset/README.md`                 | Contributor quick-reference (German) — prefix rules + lint                                          |
 | `.changeset/*.md`                      | Pending changesets (temporary, consumed during version bump)                                        |
-| `scripts/changeset-formatter.cjs`      | Custom Conv-Commits → Keep-a-Changelog formatter (added 2026-04-28)                                 |
+| `.changeset/changeset-formatter.cjs`   | Custom Conv-Commits → Keep-a-Changelog formatter (added 2026-04-28)                                 |
 | `scripts/lint-changesets.mjs`          | CI lint for `.changeset/*.md` quality (added 2026-04-28)                                            |
 | `scripts/sync-root-version.mjs`        | Syncs root `package.json.version` + README badge after `changeset version`                          |
 | `scripts/aggregate-changelog.mjs`      | Merges per-package CHANGELOGs into root `CHANGELOG.md` (consumed by UI), re-sections by KaC headers |
@@ -81,7 +81,7 @@ git push --follow-tags
 
 ## Body Format (mandatory since 2026-04-28)
 
-Every changeset's first non-empty body line MUST start with a Conventional-Commits prefix. The custom formatter (`scripts/changeset-formatter.cjs`) does FOUR things in one pass:
+Every changeset's first non-empty body line MUST start with a Conventional-Commits prefix. The custom formatter (`.changeset/changeset-formatter.cjs`) does FOUR things in one pass:
 
 1. **Routes** to a Keep-a-Changelog section in the root CHANGELOG (`feat:` → Added, `fix:` → Fixed, etc.)
 2. **Strips** the Conv-Commits prefix from the rendered body
@@ -463,17 +463,17 @@ This override must **not** be expanded to `"js-yaml@<4.1.1"` — that breaks `re
 
 ## Architecture Decision
 
-| Aspect              | Decision                                     | Reasoning                                                            |
-| ------------------- | -------------------------------------------- | -------------------------------------------------------------------- |
-| Tool                | Changesets (not semantic-release, not lerna) | KISS, Markdown-based, pnpm-native                                    |
-| Versioning Strategy | Fixed Group                                  | One product = one version                                            |
-| npm Publish         | No (`access: restricted`)                    | Private SaaS, not a public package                                   |
-| Auto-Commit         | No (`commit: false`)                         | Manual control over commits                                          |
-| CHANGELOG Format    | Custom (`scripts/changeset-formatter.cjs`)   | Conv-Commits → Keep-a-Changelog routing + PR-link enrichment         |
-| Bullet style        | Action-verb-led past-tense (`Added foo`)     | Inspired by claude-code; auto-converted from imperative by formatter |
-| Release dates       | ISO `## VERSION — YYYY-MM-DD` from git tag   | Tenant-admin "when did this ship?" signal; today fallback if no tag  |
-| Body Discipline     | CI lint (`scripts/lint-changesets.mjs`)      | Forcing function — prevents 0.4.13-style run-on bullets at source    |
-| Root Sync           | `scripts/sync-root-version.mjs`              | Changesets only manages workspace packages                           |
-| Root CHANGELOG      | `scripts/aggregate-changelog.mjs`            | Single source for `/versioninfo`; KaC re-sectioning by tag           |
-| Tagging             | Custom `git tag -a` (not `changeset tag`)    | Single `v`-tag, no per-package tag noise                             |
-| GitHub Release      | Auto-created on `v*` tag push                | `softprops/action-gh-release@v2` step in `docker-build.yml`          |
+| Aspect              | Decision                                      | Reasoning                                                            |
+| ------------------- | --------------------------------------------- | -------------------------------------------------------------------- |
+| Tool                | Changesets (not semantic-release, not lerna)  | KISS, Markdown-based, pnpm-native                                    |
+| Versioning Strategy | Fixed Group                                   | One product = one version                                            |
+| npm Publish         | No (`access: restricted`)                     | Private SaaS, not a public package                                   |
+| Auto-Commit         | No (`commit: false`)                          | Manual control over commits                                          |
+| CHANGELOG Format    | Custom (`.changeset/changeset-formatter.cjs`) | Conv-Commits → Keep-a-Changelog routing + PR-link enrichment         |
+| Bullet style        | Action-verb-led past-tense (`Added foo`)      | Inspired by claude-code; auto-converted from imperative by formatter |
+| Release dates       | ISO `## VERSION — YYYY-MM-DD` from git tag    | Tenant-admin "when did this ship?" signal; today fallback if no tag  |
+| Body Discipline     | CI lint (`scripts/lint-changesets.mjs`)       | Forcing function — prevents 0.4.13-style run-on bullets at source    |
+| Root Sync           | `scripts/sync-root-version.mjs`               | Changesets only manages workspace packages                           |
+| Root CHANGELOG      | `scripts/aggregate-changelog.mjs`             | Single source for `/versioninfo`; KaC re-sectioning by tag           |
+| Tagging             | Custom `git tag -a` (not `changeset tag`)     | Single `v`-tag, no per-package tag noise                             |
+| GitHub Release      | Auto-created on `v*` tag push                 | `softprops/action-gh-release@v2` step in `docker-build.yml`          |

@@ -23,8 +23,18 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
-  // Permission check: first fetch detects 403 (ADR-020 pattern)
-  const empResult = await apiFetchWithPermission<Employee[]>('/users?role=employee', token, fetch);
+  // Permission check: first fetch detects 403 (ADR-020 pattern).
+  // limit=100 = backend cap (PaginationSchema.max). For tenants with > 100
+  // active employees we will need server-driven pagination (TODO Phase 2);
+  // current scope: client-side pagination on the loaded set (KISS).
+  // The `meta.pagination` envelope produced by ResponseInterceptor for
+  // paginated services is dropped by extractResponseData on purpose — the UI
+  // paginates over `filteredEmployees` (post status + search filter).
+  const empResult = await apiFetchWithPermission<Employee[]>(
+    '/users?role=employee&limit=100',
+    token,
+    fetch,
+  );
   if (empResult.permissionDenied) {
     return {
       permissionDenied: true as const,

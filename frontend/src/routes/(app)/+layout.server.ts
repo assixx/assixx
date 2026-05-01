@@ -140,11 +140,23 @@ async function parseDashboardCounts(response: Response | null): Promise<Dashboar
   return json.data ?? null;
 }
 
-/** Parse theme setting from response (graceful fallback to null) */
+/**
+ * Parse theme setting from the appearance-category list response.
+ *
+ * Why list endpoint instead of `GET /settings/user/theme`: a missing row
+ * triggered `NotFoundException` (warn-level log) on every layout load for users
+ * without a saved theme — false alarm because the spec is "no row → fall back
+ * to default dark". Listing the `appearance` category returns 200 + empty array
+ * on miss, so the absence is a normal data state instead of an exception.
+ * Filter by `appearance` (not `search=theme`, which uses ILIKE and could match
+ * unrelated keys) to keep the query tight.
+ */
 async function parseThemeSetting(response: Response | null): Promise<'dark' | 'light' | null> {
   if (response?.ok !== true) return null;
-  const json = (await response.json()) as ApiResponse<{ settingValue: string }>;
-  const value = json.data?.settingValue;
+  const json = (await response.json()) as ApiResponse<{
+    settings: { settingKey: string; settingValue: unknown }[];
+  }>;
+  const value = json.data?.settings.find((s) => s.settingKey === 'theme')?.settingValue;
   if (value === 'dark' || value === 'light') return value;
   return null;
 }
@@ -454,7 +466,10 @@ async function fetchCountsThemeAddonsAndLabels(
     passwordPolicyResponse,
   ] = await Promise.all([
     fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+    // List the `appearance` category instead of GET-by-key — empty array on
+    // miss avoids the spurious 404/warn for users without a saved theme.
+    // See parseThemeSetting() for context.
+    fetchFn(`${API_BASE}/settings/user?category=appearance`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
@@ -498,7 +513,9 @@ async function fetchUserCountsThemeAddonsAndLabels(
   ] = await Promise.all([
     fetchFn(`${API_BASE}/users/me`, { headers }),
     fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+    // See sibling fast-path comment + parseThemeSetting() for why we list
+    // `appearance` instead of GET-by-key.
+    fetchFn(`${API_BASE}/settings/user?category=appearance`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),

@@ -22,10 +22,20 @@
 
   import { enhance } from '$app/forms';
 
+  // ADR-050 × ADR-022 (2026-05-01): when the verify happens on a host
+  // that does NOT match the user's tenant subdomain (apex login,
+  // localhost, foreign subdomain — every dev login under ADR-054
+  // mandatory 2FA), the server-action returns a `VerifyHandoffResult`
+  // instead of throwing a redirect. We mint the escrow unlock ticket
+  // here BEFORE the cross-origin navigation; sessionStorage cannot
+  // bridge across origins, so the ticket-via-Redis is the only way to
+  // keep ADR-022 escrow recovery working through the handoff.
+  import { mintUnlockTicketOrFallback } from '$lib/crypto/escrow-handoff';
   // Global toast store — same surface the parent login page uses for
   // success messages (e.g. `?logout=success`). Replaces a previous inline
   // `<div class="alert alert--success">` so the resend confirmation lives
   // on the same UX layer as every other success alert in the app.
+  import { setLoginPassword } from '$lib/crypto/login-password-bridge';
   import { showSuccessAlert } from '$lib/stores/toast';
   import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
@@ -37,6 +47,26 @@
     MESSAGES,
     RESEND_COOLDOWN_SEC,
   } from './2fa-constants';
+
+  // ---------------------------------------------------------------------------
+  // Props (ADR-022 × ADR-054 escrow bridge)
+  // ---------------------------------------------------------------------------
+  //
+  // Receives the user's plaintext password from the parent's `password` $state
+  // (login/+page.svelte:52). Required so the verify-success branch can call
+  // `setLoginPassword(password)` before the post-2FA redirect — without it the
+  // sessionStorage bridge stays empty and `e2e.initialize()` cannot derive an
+  // Argon2id wrapping key, which means no escrow blob is ever written for
+  // password users (ADR-022 §"Login Password Bridge"). Pre-ADR-054 the bridge
+  // call lived in the credentials form's success branch; mandatory 2FA made
+  // that branch unreachable for password logins, so the bridge moved here.
+  //
+  // @see docs/infrastructure/adr/ADR-022-e2e-key-escrow.md
+  // @see docs/infrastructure/adr/ADR-054-mandatory-email-2fa.md
+  interface Props {
+    password: string;
+  }
+  const { password }: Props = $props();
 
   // ---------------------------------------------------------------------------
   // Reactive state — Svelte 5 runes per CODE-OF-CONDUCT-SVELTE
@@ -299,6 +329,98 @@
     return typeof data === 'object' && data !== null ? data : {};
   }
 
+  /**
+   * Type guard for the cross-origin handoff success result returned by
+   * `handleVerifyAction` when the verify happens on a host that does NOT
+   * match the user's tenant subdomain (apex / wrong subdomain).
+   *
+   * Mirrors `VerifyHandoffResult` in `_lib/2fa-server-helpers.ts`. We
+   * cannot share the interface directly because Svelte components and
+   * server-side helpers compile through different boundaries; the type
+   * guard is the explicit contract.
+   *
+   * Distinguishing fields vs. signup-style success: presence of both
+   * `redirectTo` (cross-origin URL) and `accessToken` (short-lived
+   * bearer for the apex-side escrow ticket mint).
+   */
+  interface HandoffSuccessShape {
+    success: true;
+    redirectTo: string;
+    accessToken: string;
+    user: { id: number; role: string; tenantId: number };
+  }
+  /** Sub-guard: the nested `user` shape on a handoff result. Split out so
+   *  the parent guard stays under the cyclomatic-complexity ceiling. */
+  function isHandoffUser(value: unknown): value is HandoffSuccessShape['user'] {
+    if (typeof value !== 'object' || value === null) return false;
+    const u = value as Record<string, unknown>;
+    return typeof u.id === 'number' && typeof u.role === 'string' && typeof u.tenantId === 'number';
+  }
+  /** Sub-guard: required non-empty string on the parent payload. */
+  function isNonEmptyString(value: unknown): value is string {
+    return typeof value === 'string' && value !== '';
+  }
+  function isHandoffSuccess(data: unknown): data is HandoffSuccessShape {
+    if (typeof data !== 'object' || data === null) return false;
+    const d = data as Record<string, unknown>;
+    return (
+      d.success === true &&
+      isNonEmptyString(d.redirectTo) &&
+      isNonEmptyString(d.accessToken) &&
+      isHandoffUser(d.user)
+    );
+  }
+
+  /**
+   * Handle the cross-origin handoff branch (ADR-050 × ADR-022). Mirrors
+   * the credentials form's `mintUnlockTicketOrFallback` dance — mint the
+   * escrow ticket on apex BEFORE the navigation so the subdomain's
+   * `e2e.initialize()` can recover the user's encrypted private key.
+   * Fails open (mint failure → navigate without `?unlock=…` → subdomain
+   * fails closed with `recoveryRequired: true`).
+   *
+   * Extracted to keep `enhanceVerify` under cognitive-complexity = 10.
+   */
+  async function handleHandoffSuccess(data: HandoffSuccessShape): Promise<void> {
+    const finalUrl = await mintUnlockTicketOrFallback(
+      data.redirectTo,
+      data.accessToken,
+      data.user.id,
+      password,
+    );
+    // No setLoginPassword() — sessionStorage is per-origin, useless on
+    // a cross-origin redirect. The escrow ticket is the equivalent
+    // bridge primitive across origins (lives in Redis with a 60-s TTL).
+    window.location.href = finalUrl;
+  }
+
+  /**
+   * Apply the typed failure result from `?/verify` to the local UI state
+   * (lockout banner, wrong-code count, generic error).
+   *
+   * Extracted from `enhanceVerify` to keep its cognitive-complexity score
+   * under the 10 ceiling — adding the cross-origin handoff branch took it
+   * to 11, this extraction reclaims the budget.
+   */
+  function applyVerifyFailure(rawData: unknown): void {
+    const data = asFailure(rawData);
+    if (data.locked === true) {
+      locked = true;
+      errorMessage = MESSAGES.ERR_LOCKED;
+      clearDigits();
+      return;
+    }
+    if (data.wrongCode === true) {
+      wrongCodeCount += 1;
+      const remaining = Math.max(0, MAX_VERIFY_ATTEMPTS - wrongCodeCount);
+      errorMessage = MESSAGES.ERR_WRONG_CODE(remaining);
+      clearDigits();
+      return;
+    }
+    errorMessage = data.error ?? MESSAGES.ERR_GENERIC;
+    clearDigits();
+  }
+
   function enhanceVerify() {
     submitting = true;
     errorMessage = null;
@@ -309,7 +431,8 @@
       result: { type: string; data?: unknown; location?: string };
       update: () => Promise<void>;
     }): Promise<void> => {
-      // CRITICAL: handle redirects BEFORE flipping `submitting = false`.
+      // CRITICAL: handle redirects + cross-origin success BEFORE flipping
+      // `submitting = false`.
       //
       // Why: the auto-submit `$effect` (line ~115) re-fires `requestSubmit()`
       // the moment `code.length === 6 && !submitting` is true again. If we
@@ -323,12 +446,35 @@
       //
       // Keeping `submitting = true` while the navigation is in flight blocks
       // the `$effect` predicate (`!submitting`) and makes the redirect win.
+
+      // Cross-origin handoff branch (ADR-050 × ADR-022 × ADR-054). This is
+      // the post-mandatory-2FA hot path: every dev login from
+      // `localhost:5173` and every prod login from the apex hits this.
+      // Same `submitting`-stays-true protection as the redirect branch
+      // because we still navigate via `window.location.href` at the end.
+      if (result.type === 'success' && isHandoffSuccess(result.data)) {
+        await handleHandoffSuccess(result.data);
+        return;
+      }
+
       if (result.type === 'redirect') {
         // Full page reload — login→dashboard is a state boundary
         // (unauthenticated → authenticated). Client-side `update()` / `goto()`
         // fails with NetworkError on this transition. Mirrors the credentials
         // form's `window.location.href` approach (+page.svelte:639–643).
         if (typeof result.location === 'string' && result.location !== '') {
+          // ADR-022 × ADR-054: bridge plaintext password into sessionStorage
+          // so the post-redirect `e2e.initialize()` (in (app)/+layout.svelte)
+          // can derive the Argon2id wrapping key and create / recover the
+          // user's escrow blob. Must happen BEFORE the navigation — once the
+          // browser leaves this page the component (and `password` prop) are
+          // gone. consumeLoginPassword() in e2e-state.svelte.ts:119 picks it
+          // up on the next page load and clears the storage atomically.
+          //
+          // ONLY for same-origin: cross-origin handoff branch above uses
+          // the Redis-ticket primitive instead because sessionStorage is
+          // origin-scoped.
+          setLoginPassword(password);
           window.location.href = result.location;
           return;
         }
@@ -341,22 +487,7 @@
       submitting = false;
 
       if (result.type === 'failure') {
-        const data = asFailure(result.data);
-        if (data.locked === true) {
-          locked = true;
-          errorMessage = MESSAGES.ERR_LOCKED;
-          clearDigits();
-          return;
-        }
-        if (data.wrongCode === true) {
-          wrongCodeCount += 1;
-          const remaining = Math.max(0, MAX_VERIFY_ATTEMPTS - wrongCodeCount);
-          errorMessage = MESSAGES.ERR_WRONG_CODE(remaining);
-          clearDigits();
-          return;
-        }
-        errorMessage = data.error ?? MESSAGES.ERR_GENERIC;
-        clearDigits();
+        applyVerifyFailure(result.data);
         return;
       }
 
