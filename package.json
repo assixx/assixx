@@ -1,6 +1,6 @@
 {
   "name": "assixx",
-  "version": "0.4.13",
+  "version": "0.4.14",
   "type": "module",
   "main": "backend/dist/nest/main.js",
   "engines": {
@@ -95,6 +95,7 @@
     "fix:all": "pnpm run format && pnpm run lint:fix && pnpm run stylelint:fix",
     "check:all": "pnpm run format && pnpm run lint:fix && pnpm run type-check && pnpm run stylelint",
     "validate:all": "F=0; echo '=== VALIDATE ALL ===' ; pnpm run format || F=1 ; echo '\\n=== Prettier Frontend (Tailwind) ===' ; (cd frontend && pnpm run format) || F=1 ; echo '\\n=== ESLint Backend ===' ; pnpm run lint:fix || F=1 ; echo '\\n=== ESLint Frontend ===' ; pnpm run lint:frontend:fix || F=1 ; echo '\\n=== TypeScript Check ===' ; pnpm run type-check || F=1 ; echo '\\n=== Svelte Check ===' ; (cd frontend && pnpm run check) || F=1 ; echo '\\n=== Stylelint ===' ; pnpm run stylelint:fix || F=1 ; echo '' ; if [ $F -ne 0 ]; then echo '=== VALIDATE ALL FAILED ==='; exit 1; fi ; echo '=== VALIDATE ALL PASSED ==='",
+    "validate:changed": "F=0; echo '=== VALIDATE CHANGED (vs main) ===' ; pnpm exec lint-staged --diff=\"main...HEAD\" || F=1 ; echo '\\n=== TypeScript Check (full -- graph-bound, ADR-041) ===' ; pnpm run type-check || F=1 ; echo '\\n=== Svelte Check (full -- graph-bound) ===' ; (cd frontend && pnpm run check) || F=1 ; echo '' ; if [ $F -ne 0 ]; then echo '=== VALIDATE CHANGED FAILED ==='; exit 1; fi ; echo '=== VALIDATE CHANGED PASSED ==='",
     "stylelint": "pnpm --filter assixx-frontend run stylelint",
     "stylelint:fix": "pnpm --filter assixx-frontend run stylelint:fix",
     "stylelint:report": "pnpm --filter assixx-frontend run stylelint:report",
@@ -122,7 +123,8 @@
     "changeset": "changeset",
     "changeset:version": "changeset version && node scripts/sync-root-version.mjs && node scripts/aggregate-changelog.mjs",
     "changeset:tag": "VERSION=$(node -p \"require('./package.json').version\") && git tag -a \"v$VERSION\" -m \"v$VERSION\"",
-    "changeset:status": "changeset status"
+    "changeset:status": "changeset status",
+    "changeset:lint": "node scripts/lint-changesets.mjs"
   },
   "keywords": [
     "assixx",
@@ -157,7 +159,8 @@
     "eslint-plugin-no-unsanitized": "^4.1.5",
     "eslint-plugin-sonarjs": "^4.0.3",
     "husky": "9.1.7",
-    "knip": "^6.7.0",
+    "knip": "^6.9.0",
+    "lint-staged": "16.4.0",
     "markdownlint-cli": "^0.48.0",
     "node-pg-migrate": "8.0.4",
     "nodemon": "^3.1.14",

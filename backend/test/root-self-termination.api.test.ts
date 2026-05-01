@@ -58,6 +58,9 @@ import {
   APITEST_PASSWORD,
   BASE_URL,
   type JsonBody,
+  clear2faStateForUser,
+  extractCookieValue,
+  fetchLatest2faCode,
   fetchWithRetry,
   flushThrottleKeys,
 } from './helpers.js';
@@ -127,17 +130,62 @@ let requestIdRootC1: string; // T20 setup — pending in iso tenant
 
 // ─── Login helper (per-user, with 429 retry) ─────────────────────────────────
 
-async function loginAs(email: string): Promise<string> {
-  const res = await fetchWithRetry(`${BASE_URL}/auth/login`, {
+/**
+ * Run the full 2-step 2FA login dance for a fixture user (login → challenge
+ * → Mailpit code → verify) and return the access token extracted from the
+ * verify response's Set-Cookie. `userId` is pre-known from the fixture-build
+ * `userByEmail` map so we avoid an extra psql lookup. Pre-clears
+ * `2fa:lock:{userId}` + `2fa:fail-streak:{userId}` so a poisoned prior run
+ * cannot block the attempt. Mailpit lookup is `since`-scoped — never call
+ * `clearMailpit()` (cross-worker race per FEAT_2FA_EMAIL §0.5.5 v0.7.2).
+ */
+async function loginAs(email: string, userId: number, tenantSubdomain: string): Promise<string> {
+  clear2faStateForUser(userId);
+  const loginStartedAt = new Date();
+
+  const loginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password: APITEST_PASSWORD }),
   });
-  if (!res.ok) {
-    throw new Error(`Login failed for ${email}: ${res.status} ${res.statusText}`);
+  if (!loginRes.ok) {
+    throw new Error(`Login failed for ${email}: ${String(loginRes.status)} ${loginRes.statusText}`);
   }
-  const body = (await res.json()) as JsonBody;
-  return body.data.accessToken as string;
+  const loginBody = (await loginRes.json()) as JsonBody;
+  if (loginBody.data?.stage !== 'challenge_required') {
+    throw new Error(`unexpected login stage for ${email}: ${String(loginBody.data?.stage)}`);
+  }
+  const challengeToken = extractCookieValue(loginRes.headers.getSetCookie(), 'challengeToken');
+  if (challengeToken === null) {
+    throw new Error(`no challengeToken cookie for ${email}`);
+  }
+
+  const code = await fetchLatest2faCode(email, 10_000, loginStartedAt);
+  const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+      // ADR-050 + ADR-054: pin the verify to the user's actual tenant
+      // subdomain so `hostTenantId === verified.tenantId` → same-origin
+      // Set-Cookie branch fires (cookies in response, no handoff).
+      // This file creates per-test tenants (T_API/T_LAST/T_ISO with a
+      // dynamic RUN_TAG), so the slug must be threaded in by the caller
+      // — a hardcoded `assixx.assixx.com` would mismatch and trip the
+      // handoff branch. `buildRoot()` and `buildNonRoot()` both know the
+      // owning tenant slug at call time.
+      'X-Forwarded-Host': `${tenantSubdomain}.assixx.com`,
+    },
+    body: JSON.stringify({ code }),
+  });
+  if (!verifyRes.ok) {
+    throw new Error(`2fa verify failed for ${email}: ${String(verifyRes.status)}`);
+  }
+  const accessToken = extractCookieValue(verifyRes.headers.getSetCookie(), 'accessToken');
+  if (accessToken === null) {
+    throw new Error(`no accessToken cookie for ${email}`);
+  }
+  return accessToken;
 }
 
 beforeAll(async () => {
@@ -255,17 +303,17 @@ beforeAll(async () => {
     return v;
   }
 
-  // 4) Login each user → JWT.
+  // 4) Login each user → JWT (full 2FA dance per Step 2.4).
   async function buildRoot(tag: string, tenantSub: string): Promise<RootUser> {
     const email = `${tag.toLowerCase()}@${tenantSub}.test`;
     const u = need(userByEmail, email);
-    const token = await loginAs(email);
+    const token = await loginAs(email, u.id, tenantSub);
     return { id: u.id, uuid: u.uuid, email, token };
   }
   async function buildNonRoot(tag: string): Promise<NonRootUser> {
     const email = `${tag.toLowerCase()}@${T_API}.test`;
     const u = need(userByEmail, email);
-    const token = await loginAs(email);
+    const token = await loginAs(email, u.id, T_API);
     return { id: u.id, email, token };
   }
 

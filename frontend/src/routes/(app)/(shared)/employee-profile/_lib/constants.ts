@@ -40,7 +40,7 @@ export const MESSAGES = {
   currentPasswordWrong: 'Aktuelles Passwort ist falsch',
   passwordMismatch: 'Passwörter stimmen nicht überein',
   passwordRequirements:
-    'Min. 12 Zeichen, 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)',
+    'Min. 12 Zeichen, alle 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)',
   passwordTooWeak: 'Passwort ist zu schwach - bitte wählen Sie ein sichereres Passwort',
 } as const;
 
@@ -50,9 +50,9 @@ export const PICTURE_UPLOAD_ERROR_MAP: Record<string, string> = {
   FILE_TOO_LARGE: MESSAGES.fileTooLarge,
 } as const;
 
-/** Password tooltip text */
+/** Password tooltip text — policy tightened 2026-04-30 to require ALL 4 categories */
 export const PASSWORD_TOOLTIP =
-  'Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)';
+  'Min. 12 Zeichen, max. 72 Zeichen. Mindestens 1 Großbuchstabe, 1 Kleinbuchstabe, 1 Zahl und 1 Sonderzeichen (!@#$%^&* () _ + - = [ ] { } ; \' " \\ | , . < > / ?)';
 
 /** Info box text for readonly fields (Employee-specific) */
 export const READONLY_INFO_TEXT =

@@ -18,7 +18,10 @@ import {
   type JsonBody,
   authHeaders,
   authOnly,
+  clear2faStateForUser,
   ensureTestEmployee,
+  extractCookieValue,
+  fetchLatest2faCode,
   fetchWithRetry,
   loginApitest,
 } from './helpers.js';
@@ -139,18 +142,70 @@ async function setUserPermissions(
   }
 }
 
-/** Login as a non-cached user (employee). Returns access token only. */
+/**
+ * Lookup user-id by email via direct psql so `loginAs` can pre-clear stale
+ * 2FA lockouts without needing to know the id at the call-site.
+ */
+function queryUserIdByEmail(email: string): number | null {
+  const out = execSync(
+    `docker exec assixx-postgres psql -U assixx_user -d assixx -t -A -c "SELECT id FROM users WHERE email = '${email}' LIMIT 1"`,
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  ).trim();
+  if (out === '') return null;
+  const id = Number.parseInt(out, 10);
+  return Number.isFinite(id) ? id : null;
+}
+
+/**
+ * Login as a non-cached user (employee). Runs the full 2-step 2FA dance
+ * (login → challenge → Mailpit code → verify) and returns the access token
+ * extracted from the verify response's Set-Cookie. Mirrors the canonical
+ * pattern from `00-auth.api.test.ts:loginAndVerify()` (FEAT_2FA_EMAIL §Phase
+ * 4 / Session 10b — adapts pre-existing files broken by Step 2.4
+ * token-shape change). Mailpit lookup is `since`-scoped — never call
+ * `clearMailpit()` here (cross-worker race per §0.5.5 v0.7.2).
+ */
 async function loginAs(email: string, password: string): Promise<string> {
-  const res = await fetchWithRetry(`${BASE_URL}/auth/login`, {
+  const preLookupId = queryUserIdByEmail(email);
+  if (preLookupId !== null) clear2faStateForUser(preLookupId);
+
+  const loginStartedAt = new Date();
+  const loginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  if (!res.ok) {
-    throw new Error(`loginAs(${email}) failed: ${String(res.status)}`);
+  if (!loginRes.ok) {
+    throw new Error(`loginAs(${email}) failed: ${String(loginRes.status)}`);
   }
-  const body = (await res.json()) as JsonBody;
-  return body.data.accessToken as string;
+  const loginBody = (await loginRes.json()) as JsonBody;
+  if (loginBody.data?.stage !== 'challenge_required') {
+    throw new Error(`unexpected login stage for ${email}: ${String(loginBody.data?.stage)}`);
+  }
+  const challengeToken = extractCookieValue(loginRes.headers.getSetCookie(), 'challengeToken');
+  if (challengeToken === null) {
+    throw new Error(`no challengeToken cookie for ${email}`);
+  }
+
+  const code = await fetchLatest2faCode(email, 10_000, loginStartedAt);
+  const verifyRes = await fetch(`${BASE_URL}/auth/2fa/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+      // ADR-050 + ADR-054: same-origin Set-Cookie branch (helpers.ts mirror).
+      'X-Forwarded-Host': 'assixx.assixx.com',
+    },
+    body: JSON.stringify({ code }),
+  });
+  if (!verifyRes.ok) {
+    throw new Error(`2fa verify failed for ${email}: ${String(verifyRes.status)}`);
+  }
+  const accessToken = extractCookieValue(verifyRes.headers.getSetCookie(), 'accessToken');
+  if (accessToken === null) {
+    throw new Error(`no accessToken cookie for ${email}`);
+  }
+  return accessToken;
 }
 
 interface RootLogEntry {
@@ -683,12 +738,25 @@ describe('Inventory: Tags CRUD', () => {
   });
 
   it('should reject creating list with non-existing tag IDs (400)', async () => {
+    // Per-run unique codePrefix: list create + tag attach is NOT transactional
+    // in `inventory-lists.service.ts:162-202` — the list INSERT commits before
+    // `replaceTagsForList` validates tag IDs. On a validation failure the
+    // partial list row persists, and the next run hits the
+    // `idx_inventory_lists_unique_prefix` partial unique index → 409 instead
+    // of the expected 400. Until the service is wrapped in `tenantTransaction()`
+    // (or tag IDs are pre-validated before the INSERT), generate a fresh
+    // 5-letter prefix per run (26^5 = 11.8M combinations) so we never collide
+    // with our own orphan rows from prior failed runs.
+    const codePrefix = Array.from({ length: 5 }, () =>
+      String.fromCharCode(65 + Math.floor(Math.random() * 26)),
+    ).join('');
+
     const res = await fetch(`${API}/lists`, {
       method: 'POST',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
         title: 'Bad Tag List',
-        codePrefix: 'BTL',
+        codePrefix,
         codeSeparator: '-',
         codeDigits: 3,
         tagIds: ['00000000-0000-0000-0000-000000000000'],
@@ -867,7 +935,11 @@ describe('Inventory: Granular Permissions (ADR-020)', () => {
   beforeAll(async () => {
     await ensureTestEmployee(auth.authToken);
 
-    const usersRes = await fetch(`${BASE_URL}/users?limit=50`, {
+    // Filter by role + bump limit — matches the `helpers.ts` ensureTestEmployee
+    // pattern (lines 646-651). Test tenant fixtures grew past 50 users (kvp
+    // fixtures, 2fa victims), so unfiltered `?limit=50` no longer contains
+    // `employee@assixx.com` and `.find()` returned undefined → throw at line 928.
+    const usersRes = await fetch(`${BASE_URL}/users?role=employee&limit=100`, {
       headers: authOnly(auth.authToken),
     });
     const usersBody = (await usersRes.json()) as JsonBody;

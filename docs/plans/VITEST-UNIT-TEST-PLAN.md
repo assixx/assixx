@@ -1913,5 +1913,5 @@ expect(data.content).toBe('Hello!');
 - [IBM: Unit Testing Best Practices](https://www.ibm.com/think/insights/unit-testing-best-practices)
 - [The Coder Cafe: Unit Tests as Documentation](https://read.thecoder.cafe/p/unit-tests-as-documentation)
 - [ADR-013: CI/CD Pipeline Hardening](./infrastructure/adr/ADR-013-ci-cd-pipeline-hardening.md)
-- [TYPESCRIPT-STANDARDS.md](./TYPESCRIPT-STANDARDS.md)
+- [TYPESCRIPT-STANDARDS.md](../TYPESCRIPT-STANDARDS.md)
 - [CODE-OF-CONDUCT.md](./CODE-OF-CONDUCT.md)

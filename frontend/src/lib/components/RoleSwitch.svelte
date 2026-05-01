@@ -158,9 +158,13 @@
       // Uses BroadcastChannel + triggers storage event for cross-tab sync
       broadcastRoleSwitch(result.user.activeRole as 'root' | 'admin' | 'employee', result.token);
     }
-    // Clear role switch banner dismissals
+    // Clear role switch banner dismissals — migrated from localStorage to
+    // cookies (commit 2026-04-30, eliminates SSR hydration flash on hard
+    // reload). MUST stay in sync with ROLE_SWITCH_BANNER_DISMISS_COOKIE_PREFIX
+    // in (app)/+layout.server.ts and ROLE_SWITCH_DISMISS_COOKIE_PREFIX in
+    // (app)/+layout.svelte. Max-Age=0 deletes the cookie immediately.
     for (const role of ['root', 'admin', 'employee']) {
-      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
+      document.cookie = `assixx_role_switch_banner_dismissed_${role}=; Path=/; Max-Age=0; SameSite=Lax`;
     }
   }
 

@@ -17,6 +17,7 @@ import {
   HttpException,
   InternalServerErrorException,
   NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { JwtService } from '@nestjs/jwt';
@@ -28,6 +29,7 @@ import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { MailerService } from '../common/services/mailer.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { TenantVerificationService } from '../domains/tenant-verification.service.js';
+import type { TwoFactorAuthService } from '../two-factor-auth/two-factor-auth.service.js';
 import { AuthService } from './auth.service.js';
 
 // =============================================================
@@ -108,10 +110,23 @@ function createMockCls(): { get: ReturnType<typeof vi.fn>; set: ReturnType<typeo
   };
 }
 
+/**
+ * Minimal `TwoFactorAuthService` stub (Step 2.4 / ADR-054). `AuthService.login`
+ * forwards user.id, tenant_id, email + 'login' purpose to `issueChallenge`
+ * after credential validation. Other methods (`verifyChallenge`, `resendChallenge`,
+ * `clearLockoutForUser`) are not reachable from `AuthService` in V1 — Step 2.7
+ * verify endpoint is in `TwoFactorAuthController`. Surface stays narrow on
+ * purpose: tests stay honest about which methods AuthService touches.
+ */
+function createMockTwoFactorAuth(): { issueChallenge: ReturnType<typeof vi.fn> } {
+  return { issueChallenge: vi.fn() };
+}
+
 type MockDb = ReturnType<typeof createMockDb>;
 type MockJwt = ReturnType<typeof createMockJwtService>;
 type MockMailer = ReturnType<typeof createMockMailer>;
 type MockCls = ReturnType<typeof createMockCls>;
+type MockTwoFactorAuth = ReturnType<typeof createMockTwoFactorAuth>;
 
 function createAuthUser(overrides: Partial<NestAuthUser> = {}): NestAuthUser {
   return {
@@ -143,19 +158,29 @@ function createMockUserRow(overrides?: Record<string, unknown>): Record<string, 
   };
 }
 
-/** Set up mocks for a successful login flow */
-function setupLoginMocks(db: MockDb, jwt: MockJwt, userOverrides?: Record<string, unknown>): void {
+/**
+ * Set up mocks for a successful login flow under the 2FA gate (Step 2.4 / ADR-054).
+ *
+ * Post-credential side effects (token rotation, last-login update, login audit,
+ * subdomain lookup) all migrated to the verify endpoint (Step 2.7). `login()`
+ * now stops at credential validation + `twoFactorAuth.issueChallenge('login')`,
+ * so this helper only seeds the user row + bcrypt match + 2FA challenge response.
+ */
+function setupLoginMocks(
+  db: MockDb,
+  twoFactorAuth: MockTwoFactorAuth,
+  userOverrides?: Record<string, unknown>,
+): void {
   db.systemQuery.mockResolvedValueOnce([createMockUserRow(userOverrides)]); // findUserByEmail
   mockBcryptCompare.mockResolvedValueOnce(true); // password match
-  jwt.sign
-    .mockReturnValueOnce('mock-access-token') // access
-    .mockReturnValueOnce('mock-refresh-token'); // refresh
-  db.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
-  db.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
-  db.systemQuery.mockResolvedValueOnce([]); // logLoginAudit
-  // Session 12c (ADR-050): login now calls getSubdomainForTenant before
-  // building the user response — one extra systemQuery per login path.
-  db.systemQuery.mockResolvedValueOnce([{ subdomain: 'test-tenant' }]); // getSubdomainForTenant
+  // Mirror `TwoFactorChallenge` shape exactly — the discriminated union narrows
+  // on `stage === 'challenge_required'` and assertions read these fields.
+  twoFactorAuth.issueChallenge.mockResolvedValueOnce({
+    challengeToken: 'mock-challenge-token',
+    expiresAt: '2026-04-29T12:10:00.000Z',
+    resendAvailableAt: '2026-04-29T12:01:00.000Z',
+    resendsRemaining: 3,
+  });
 }
 
 /**
@@ -187,6 +212,7 @@ describe('SECURITY: AuthService', () => {
   let mockJwt: MockJwt;
   let mockMailer: MockMailer;
   let mockCls: MockCls;
+  let mockTwoFactorAuth: MockTwoFactorAuth;
 
   beforeEach(() => {
     mockBcryptCompare.mockReset();
@@ -195,6 +221,7 @@ describe('SECURITY: AuthService', () => {
     mockJwt = createMockJwtService();
     mockMailer = createMockMailer();
     mockCls = createMockCls();
+    mockTwoFactorAuth = createMockTwoFactorAuth();
     service = new AuthService(
       mockDb as unknown as DatabaseService,
       mockJwt as unknown as JwtService,
@@ -210,6 +237,9 @@ describe('SECURITY: AuthService', () => {
       // notification meta-block. Only read in the non-root branch of
       // `forgotPassword()`; silent-drop and root-happy paths don't touch it.
       mockCls as unknown as ClsService,
+      // Step 2.4 (ADR-054): 2FA challenge issuance for the password-login path.
+      // OAuth path (`loginWithVerifiedUser`) bypasses this layer per DD-7.
+      mockTwoFactorAuth as unknown as TwoFactorAuthService,
     );
   });
 
@@ -275,23 +305,37 @@ describe('SECURITY: AuthService', () => {
   describe('login', () => {
     const loginDto = { email: 'admin@test.de', password: 'StrongP@ss1' };
 
-    it('should return tokens and safe user response on success', async () => {
-      setupLoginMocks(mockDb, mockJwt);
+    // Step 2.4 (ADR-054): credential-validation tests stay (gate runs before
+    // the 2FA layer). Token-issuance / last-login / audit / subdomain
+    // assertions migrated to the verify endpoint (Step 2.7) and will land
+    // alongside it. Phase 3 of FEAT_2FA_EMAIL_MASTERPLAN adds ≥10 new
+    // login-branch tests against `TwoFactorAuthService` doubles.
+    it('should issue a 2FA challenge on successful credential validation', async () => {
+      setupLoginMocks(mockDb, mockTwoFactorAuth);
 
       const result = await service.login(loginDto);
 
-      expect(result.accessToken).toBe('mock-access-token');
-      expect(result.refreshToken).toBe('mock-refresh-token');
-      expect(result.user.id).toBe(1);
-      expect(result.user.email).toBe('admin@test.de');
-      expect(result.user.role).toBe('admin');
-      expect(result.user.tenantId).toBe(10);
+      // Discriminated union — under v0.5.0 password login always issues a challenge.
+      expect(result.stage).toBe('challenge_required');
+      if (result.stage !== 'challenge_required') return; // narrow for TS
+      expect(result.challenge.challengeToken).toBe('mock-challenge-token');
+      expect(result.challenge.resendsRemaining).toBe(3);
+      // Service forwards user.id, user.tenant_id, user.email + 'login' purpose.
+      // tenant_id is critical — the challenge record carries it forward so the
+      // verify-side audit (Step 2.7) stays scoped to the correct tenant.
+      expect(mockTwoFactorAuth.issueChallenge).toHaveBeenCalledWith(
+        1,
+        10,
+        'admin@test.de',
+        'login',
+      );
     });
 
     it('should throw UnauthorizedException for unknown email', async () => {
       mockDb.systemQuery.mockResolvedValueOnce([]); // no user found
 
       await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      expect(mockTwoFactorAuth.issueChallenge).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -302,6 +346,10 @@ describe('SECURITY: AuthService', () => {
       mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow({ is_active: isActive })]);
 
       await expect(service.login(loginDto)).rejects.toThrow(ForbiddenException);
+      // Inactive users must NOT trigger a 2FA challenge — they receive a
+      // generic "Account nicht aktiv" 403 instead. Suppresses code-spam
+      // attacks against deactivated accounts.
+      expect(mockTwoFactorAuth.issueChallenge).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException for wrong password', async () => {
@@ -309,10 +357,13 @@ describe('SECURITY: AuthService', () => {
       mockBcryptCompare.mockResolvedValueOnce(false); // password mismatch
 
       await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      // Wrong-password attempts must not leak into the 2FA layer either —
+      // would otherwise let an attacker enumerate emails by spamming codes.
+      expect(mockTwoFactorAuth.issueChallenge).not.toHaveBeenCalled();
     });
 
     it('should lowercase email before lookup', async () => {
-      setupLoginMocks(mockDb, mockJwt);
+      setupLoginMocks(mockDb, mockTwoFactorAuth);
 
       await service.login({ email: 'ADMIN@TEST.DE', password: 'StrongP@ss1' });
 
@@ -320,77 +371,92 @@ describe('SECURITY: AuthService', () => {
       expect(emailParam).toBe('admin@test.de');
     });
 
-    it('should call updateLastLogin after successful auth', async () => {
-      setupLoginMocks(mockDb, mockJwt);
+    // ─── Phase 3 / Session 9 — additional new-branch coverage ────────────
+    //
+    // These pin the post-Step-2.4 contract: AuthService.login is now a
+    // thin shell over `TwoFactorAuthService.issueChallenge` for every
+    // authenticated password user. Token issuance, last-login, login-audit
+    // and subdomain lookup migrated to the verify endpoint (Step 2.7).
 
-      await service.login(loginDto);
-
-      // updateLastLogin is the 3rd db.systemQuery call (index 2)
-      const updateCall = mockDb.systemQuery.mock.calls[2];
-      expect(updateCall?.[0]).toContain('UPDATE users SET last_login');
-    });
-
-    it('should not fail login when audit log fails', async () => {
-      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]); // findUser
+    // Plan §3 row "User in 2FA lockout state → ForbiddenException with retry hint":
+    // the lockout pre-check lives inside `issueChallenge` (verified in
+    // `two-factor-auth.service.test.ts`); `AuthService.login` is purely a
+    // propagation point. Asserting that propagation is intact closes the
+    // regression risk that a future refactor wraps the throw in a 500.
+    it('propagates ForbiddenException raised by issueChallenge (DD-5/DD-6 lockout state)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]);
       mockBcryptCompare.mockResolvedValueOnce(true);
-      mockJwt.sign.mockReturnValueOnce('access-tok').mockReturnValueOnce('refresh-tok');
-      mockDb.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
-      mockDb.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
-      mockDb.systemQuery.mockRejectedValueOnce(new Error('Audit DB error')); // logLoginAudit fails
-      mockDb.systemQuery.mockResolvedValueOnce([{ subdomain: 'test-tenant' }]); // getSubdomainForTenant
+      mockTwoFactorAuth.issueChallenge.mockRejectedValueOnce(
+        new ForbiddenException('Konto ist vorübergehend gesperrt.'),
+      );
 
-      const result = await service.login(loginDto);
-
-      expect(result.accessToken).toBe('access-tok');
+      await expect(service.login(loginDto)).rejects.toBeInstanceOf(ForbiddenException);
+      // Tokens MUST NOT be minted for a locked user — `jwt.sign` is reached
+      // only via the verify endpoint, never via login() itself.
+      expect(mockJwt.sign).not.toHaveBeenCalled();
     });
 
-    it('should map null first_name/last_name to undefined in response', async () => {
-      setupLoginMocks(mockDb, mockJwt, {
-        first_name: null,
-        last_name: null,
-      });
+    // DD-14 — SMTP failure inside issueChallenge surfaces as 503; AuthService
+    // does not catch and remap, so the contract is "let it propagate".
+    it('propagates ServiceUnavailableException when SMTP fails inside issueChallenge (DD-14)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]);
+      mockBcryptCompare.mockResolvedValueOnce(true);
+      mockTwoFactorAuth.issueChallenge.mockRejectedValueOnce(
+        new ServiceUnavailableException('Der Code konnte nicht gesendet werden.'),
+      );
 
-      const result = await service.login(loginDto);
-
-      expect(result.user.firstName).toBeUndefined();
-      expect(result.user.lastName).toBeUndefined();
+      await expect(service.login(loginDto)).rejects.toBeInstanceOf(ServiceUnavailableException);
+      expect(mockJwt.sign).not.toHaveBeenCalled();
     });
 
-    it('should forward ipAddress and userAgent to storeRefreshToken', async () => {
-      setupLoginMocks(mockDb, mockJwt);
-
-      await service.login(loginDto, '192.168.1.1', 'Mozilla/5.0');
-
-      // storeRefreshToken is the 2nd db.systemQuery call (index 1)
-      const storeParams = mockDb.systemQuery.mock.calls[1]?.[1] as unknown[];
-      expect(storeParams?.[5]).toBe('192.168.1.1'); // ip_address
-      expect(storeParams?.[6]).toBe('Mozilla/5.0'); // user_agent
-    });
-
-    it('should sign access token with access secret', async () => {
-      setupLoginMocks(mockDb, mockJwt);
+    // Step 2.4: token rotation (`jwt.sign` × 2) + `storeRefreshToken` migrate
+    // to the verify endpoint. login() must NOT touch any of them on the
+    // happy path either — guard against the natural-but-wrong refactor that
+    // restores token issuance "just to be safe" pre-2FA.
+    it('does NOT mint tokens or write refresh-token rows on the password-login path', async () => {
+      setupLoginMocks(mockDb, mockTwoFactorAuth);
 
       await service.login(loginDto);
 
-      expect(mockJwt.sign).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'access' }),
-        expect.objectContaining({
-          secret: 'test-access-secret-for-vitest-unit-tests-minimum-32-characters-long',
-        }),
-      );
+      expect(mockJwt.sign).not.toHaveBeenCalled();
+      // setupLoginMocks queues exactly one systemQuery (findUserByEmail).
+      // If login() reached storeRefreshToken / updateLastLogin / logLoginAudit
+      // we would see additional systemQuery calls.
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
     });
 
-    it('should sign refresh token with separate refresh secret', async () => {
-      setupLoginMocks(mockDb, mockJwt);
+    // R8 — challenge token flows ONLY via the httpOnly cookie set in the
+    // controller. The response body must carry the metadata view, not the
+    // token itself in any extra leaked field. The discriminated-union typing
+    // already nails this at the type level; this test pins it at runtime.
+    it('returns ONLY {stage, challenge} on the body (no token leakage in extra fields, R8)', async () => {
+      setupLoginMocks(mockDb, mockTwoFactorAuth);
 
-      await service.login(loginDto);
+      const result = await service.login(loginDto);
 
-      expect(mockJwt.sign).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'refresh' }),
-        expect.objectContaining({
-          secret: 'test-refresh-secret-for-vitest-unit-tests-minimum-32-characters-long',
-        }),
-      );
+      expect(Object.keys(result).sort()).toEqual(['challenge', 'stage']);
+      // `challenge.challengeToken` is the SUT's internal handle — it travels
+      // via the cookie set by AuthController. The service-layer struct keeps
+      // the field for the controller's `setChallengeCookie` call (Step 2.4 SUT),
+      // so the type-level R8 stripping happens in the controller layer.
+      // Assert here that no DUPLICATE token appears at the body root.
+      expect(result).not.toHaveProperty('challengeToken');
+      expect(result).not.toHaveProperty('accessToken');
+      expect(result).not.toHaveProperty('refreshToken');
+    });
+
+    // DD-7 regression — `loginWithVerifiedUser` (OAuth path, ADR-046) MUST
+    // never invoke `issueChallenge`. The dedicated `describe('loginWithVerifiedUser')`
+    // block below covers OAuth state in depth; this one-liner pins the exact
+    // boundary condition: zero 2FA invocations on the OAuth path. Without
+    // this test, a refactor that "harmonises" the two methods could quietly
+    // start issuing 2FA codes on every Microsoft login (DD-7 violation).
+    it('loginWithVerifiedUser never invokes the 2FA layer (DD-7 OAuth-exempt regression guard)', async () => {
+      setupLoginWithVerifiedUserMocks(mockDb, mockJwt);
+
+      await service.loginWithVerifiedUser(1, 10, 'microsoft');
+
+      expect(mockTwoFactorAuth.issueChallenge).not.toHaveBeenCalled();
     });
   });
 

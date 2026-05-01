@@ -22,10 +22,10 @@
 --   All 4 roots have role='root' + has_full_access=true. Passwords are bcrypt-12
 --   hashed from known plaintexts (regenerable via `bcryptjs.hashSync(pw, 12)`):
 --
---     apitest → admin@apitest.de    / ApiTest12345!
+--     assixx  → info@assixx.com     / ApiTest12345!     (renamed from apitest 2026-04, see HOW-TO-CREATE-TEST-USER.md)
 --     firma-a → test@firma-a.test   / TestFirmaA12345!
 --     firma-b → test@firma-b.test   / TestFirmaB12345!
---     scs     → test@scs-technik.de / TestScs12345!  (change post-seed if desired)
+--     scs     → test@scs-technik.de / TestScs12345!     (change post-seed if desired)
 --
 -- IDEMPOTENCY:
 --   This seed uses plain INSERT (no ON CONFLICT). Re-running WITHOUT a prior
@@ -36,7 +36,8 @@
 --   To re-seed: TRUNCATE TABLE tenants RESTART IDENTITY CASCADE; then re-run.
 --
 -- REFERENCES:
---   §0.7 Step 0.7 decision: Option (c) dedicated SQL seed, 3 tenants + apitest compat.
+--   §0.7 Step 0.7 decision: Option (c) dedicated SQL seed, 3 firma tenants + assixx
+--     (renamed from apitest 2026-04, see HOW-TO-CREATE-TEST-USER.md migration note).
 --   §1.1 tenant_domains schema (status, verification_token, is_primary, RLS).
 --   signup.service.ts:146-163 = transactional pattern this seed mirrors atomically.
 
@@ -46,19 +47,32 @@ DECLARE
   v_user_id   INTEGER;
 BEGIN
   -- ==========================================================================
-  -- Tenant 1: apitest — backward-compat with scripts/create-test-tenant.sh
+  -- Tenant 1: assixx — canonical test tenant (HOW-TO-CREATE-TEST-USER.md)
   -- ==========================================================================
-  -- Rationale (§0.7 Option α): existing API-integration tests hardcode
-  -- `admin@apitest.de` / `ApiTest12345!`. Pre-seeding the tenant as VERIFIED keeps
-  -- those tests green without having to change their credentials.
+  -- 2026-04 migration away from `apitest`/`apitest.de` (was a foreign real
+  -- domain → catch-all spam risk on password-reset / notification mails).
+  -- `assixx`/`assixx.com` is project-owned, safe.
+  --
+  -- API-integration tests in `backend/test/helpers.ts` hardcode
+  -- `info@assixx.com` / `ApiTest12345!` (subdomain `assixx`). Pre-seeding the
+  -- tenant atomically with `tenant_domains(status='verified')` + `is_active=1`
+  -- replaces the post-reset `scripts/create-test-tenant.sh` step — the seed
+  -- avoids the signup-API + verification-mail-pending-→-`is_active=0` quirk
+  -- documented in HOW-TO-CREATE-TEST-USER.md §"Account ist nicht aktiv".
+  --
+  -- Password hash is for `ApiTest12345!`. bcrypt salt is random, plaintext
+  -- matches the helpers.ts APITEST_PASSWORD constant. The hash is identical
+  -- to the pre-rename apitest hash because bcrypt hashes the password only
+  -- (not the email), so renaming admin@apitest.de → info@assixx.com leaves
+  -- the credential intact.
   INSERT INTO tenants
     (company_name, subdomain, email, phone, street, house_number, postal_code,
      city, country_code, status, billing_email, uuid, uuid_created_at,
      trial_ends_at)
   VALUES
-    ('API Test GmbH', 'apitest', 'info@apitest.de', '+49123456789',
+    ('API Test GmbH', 'assixx', 'info@assixx.com', '+49123456789',
      'Musterstraße', '42', '10115', 'Berlin', 'DE',
-     'trial', 'admin@apitest.de', uuidv7(), NOW(),
+     'trial', 'info@assixx.com', uuidv7(), NOW(),
      NOW() + INTERVAL '14 days')
   RETURNING id INTO v_tenant_id;
 
@@ -66,18 +80,18 @@ BEGIN
     (username, email, password, role, first_name, last_name, tenant_id, phone,
      employee_number, has_full_access, is_active, uuid, uuid_created_at)
   VALUES
-    ('admin@apitest.de', 'admin@apitest.de',
+    ('info@assixx.com', 'info@assixx.com',
      '$2b$12$HLKWAGdFkmrRjtmLWYZM3.KHQ1B7x9LU8C.dt.RLIbJGA/zD7Xi32',
      'root', 'Admin', 'Test', v_tenant_id, '+49123456789',
-     'SEED-APITEST-001', true, 1, uuidv7(), NOW())
+     'SEED-ASSIXX-001', true, 1, uuidv7(), NOW())
   RETURNING id INTO v_user_id;
 
-  UPDATE users SET employee_id = 'API-R' || LPAD(v_user_id::text, 5, '0') WHERE id = v_user_id;
+  UPDATE users SET employee_id = 'ASX-R' || LPAD(v_user_id::text, 5, '0') WHERE id = v_user_id;
 
   INSERT INTO tenant_domains
     (tenant_id, domain, status, verification_token, verified_at, is_primary, is_active)
   VALUES
-    (v_tenant_id, 'apitest.de', 'verified',
+    (v_tenant_id, 'assixx.com', 'verified',
      REPLACE(uuidv7()::text, '-', '') || REPLACE(uuidv7()::text, '-', ''),
      NOW(), true, 1);
 
@@ -91,7 +105,7 @@ BEGIN
          NOW(), 1, NOW(), NOW()
   FROM addons WHERE is_core = false AND is_active = 1;
 
-  RAISE NOTICE 'Seeded apitest: tenant_id=%, user_id=%, domain=apitest.de', v_tenant_id, v_user_id;
+  RAISE NOTICE 'Seeded assixx: tenant_id=%, user_id=%, domain=assixx.com', v_tenant_id, v_user_id;
 
   -- ==========================================================================
   -- Tenant 2: firma-a — RLS multi-tenant isolation test

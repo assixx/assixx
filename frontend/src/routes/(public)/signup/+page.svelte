@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { enhance } from '$app/forms';
   import { resolve } from '$app/paths';
 
   import LegalFooter from '$lib/components/LegalFooter.svelte';
@@ -7,15 +8,18 @@
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import Seo from '$lib/components/Seo.svelte';
   import Turnstile from '$lib/components/Turnstile.svelte';
-  import { showWarningAlert, showErrorAlert, showToast } from '$lib/stores/toast';
-  import { buildLoginUrl } from '$lib/utils/build-apex-url';
+  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import { analyzePassword, type PasswordStrengthResult } from '$lib/utils/password-strength';
 
-  import { registerUser, createRegisterPayload } from './_lib/api';
-  import { DEFAULT_COUNTRY, SUCCESS_REDIRECT_DELAY, ERROR_MESSAGES } from './_lib/constants';
+  import { DEFAULT_COUNTRY, ERROR_MESSAGES } from './_lib/constants';
   import CountryPhoneInput from './_lib/CountryPhoneInput.svelte';
   import SignupNav from './_lib/SignupNav.svelte';
   import SubdomainInput from './_lib/SubdomainInput.svelte';
+  // Inline 2FA-verify card content — rendered when `load` returns
+  // `stage: 'verify'` (httpOnly challengeToken cookie present).
+  // FEAT_2FA_EMAIL_MASTERPLAN Step 5.3 v0.8.2 (inline-card revision —
+  // mirrors login Step 5.2 v0.8.1).
+  import TwoFactorVerifyForm from './_lib/TwoFactorVerifyForm.svelte';
   import {
     isSubdomainValid,
     isEmailValid,
@@ -25,15 +29,15 @@
     isPasswordValid,
   } from './_lib/validators';
 
-  import type { PageData } from './$types';
+  import type { ActionData, PageData } from './$types';
 
   import { env } from '$env/dynamic/public';
 
   // `data.brand` is populated by `(public)/+layout.server.ts` via
   // `resolveBrand(hostSlug, tenantName)` — ADR-050 subdomain branding.
-  // Signup has no `+page.server.ts` load of its own, so `PageData` only
-  // surfaces the layout's `PublicLayoutData` shape.
-  const { data }: { data: PageData } = $props();
+  // `data.stage` (`'credentials' | 'verify'`) is set by `+page.server.ts`
+  // load() based on the httpOnly `challengeToken` cookie — Step 5.3.
+  const { data, form }: { data: PageData; form: ActionData } = $props();
 
   // =========================================================================
   // FORM STATE
@@ -72,7 +76,10 @@
   const publicEnv = env as Record<string, string | undefined>;
   const turnstileEnabled = (publicEnv.PUBLIC_TURNSTILE_SITE_KEY ?? '') !== '';
   let turnstileToken = $state('');
-  let turnstileRef: { reset: () => void } | undefined;
+  // Drive-by Svelte-5-runes fix (mirrors the same fix in login/+page.svelte
+  // Step 5.2 v0.8.1): `bind:this` refs that get reassigned must be declared
+  // with `$state` so Svelte 5's analyzer recognises them as reactive.
+  let turnstileRef = $state<{ reset: () => void } | undefined>(undefined);
 
   // =========================================================================
   // DERIVED
@@ -104,6 +111,13 @@
   );
 
   const buttonText = $derived(loading ? 'Wird erstellt...' : 'Konto erstellen');
+
+  // FEAT_2FA_EMAIL_MASTERPLAN Step 5.3 v0.8.2 — `data.stage` is set by the
+  // `load` function based on the httpOnly `challengeToken` cookie. When a
+  // signup succeeds with `stage='challenge_required'`, the action mints the
+  // cookie and 303-redirects back to /signup; load then returns
+  // `stage='verify'` and the card body swaps to the inline TwoFactorVerifyForm.
+  const isVerifyStage = $derived(data.stage === 'verify');
 
   // =========================================================================
   // EVENT HANDLERS
@@ -142,73 +156,67 @@
     if (field === 'confirm') showPasswordConfirm = !showPasswordConfirm;
   }
 
-  async function handleSubmit(e: Event): Promise<void> {
-    e.preventDefault();
-
+  /**
+   * Form-action enhance callback — Step 5.4 (DD-19) refactor 2026-04-30.
+   * Replaces the previous client-side `handleSubmit` that POSTed to
+   * `/signup` via `_lib/api.ts`. The server action (`+page.server.ts`)
+   * now handles Turnstile verify, payload normalisation, the backend POST,
+   * and the cross-origin Set-Cookie forwarding for the 2FA challenge token.
+   *
+   * Behaviour:
+   *   - On invalid form → cancel via SvelteKit's SubmitFunction `cancel()`
+   *     + show warning toast. Defense-in-depth (the submit button is
+   *     already disabled when `!isFormValid`, but Enter-key submissions
+   *     can still fire on some browsers).
+   *   - On `result.type === 'redirect'` → hard-nav (server 303s back to
+   *     /signup which surfaces stage='verify' on next load).
+   *   - On `result.type === 'failure'` → reset Turnstile + show server's
+   *     German error message via the existing toast surface.
+   */
+  function enhanceSignup({ cancel }: { cancel: () => void }) {
     if (!isFormValid) {
       showWarningAlert(ERROR_MESSAGES.formIncomplete);
-      return;
+      cancel();
+      return undefined;
     }
-
     loading = true;
-
-    try {
-      // Verify Turnstile token server-side before registration
-      if (turnstileEnabled) {
-        if (turnstileToken === '') {
-          showErrorAlert('Bitte warten Sie, bis die Sicherheitsprüfung abgeschlossen ist.');
-          return;
-        }
-
-        const verifyRes = await fetch('/api/turnstile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: turnstileToken, action: 'signup' }),
-        });
-
-        if (!verifyRes.ok) {
-          turnstileRef?.reset();
-          showErrorAlert('Sicherheitsprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.');
-          return;
-        }
+    return async ({
+      result,
+      update,
+    }: {
+      result: { type: string; data?: unknown; location?: string };
+      update: () => Promise<void>;
+    }): Promise<void> => {
+      if (result.type === 'failure') {
+        loading = false;
+        turnstileRef?.reset();
+        const data =
+          typeof result.data === 'object' && result.data !== null ?
+            (result.data as { error?: string })
+          : {};
+        showErrorAlert(data.error ?? ERROR_MESSAGES.unknownError);
+        return;
       }
 
-      const payload = createRegisterPayload({
-        companyName,
-        subdomain,
-        email,
-        firstName,
-        lastName,
-        phone,
-        countryCode,
-        password,
-      });
-
-      await registerUser(payload);
-
-      showToast({
-        type: 'success',
-        title: 'Erfolg',
-        message: 'Erfolgreich registriert! Sie werden zur Anmeldung weitergeleitet...',
-        duration: SUCCESS_REDIRECT_DELAY,
-        showProgress: true,
-      });
-
-      turnstileRef?.reset();
-
-      setTimeout(() => {
-        // ADR-050 Amendment 2026-04-22: signup is on the apex (no tenant
-        // context yet) — buildLoginUrl resolves to apex regardless. Hard-nav
-        // (not goto) for parity with the rest of the apex-redirect surface.
-        window.location.href = buildLoginUrl();
-      }, SUCCESS_REDIRECT_DELAY);
-    } catch (err: unknown) {
-      turnstileRef?.reset();
-      const message = err instanceof Error ? err.message : ERROR_MESSAGES.unknownError;
-      showErrorAlert(message);
-    } finally {
+      // Redirect → server emitted 303 to /signup (challenge cookie set).
+      // Fall through to `update()` — SvelteKit follows the same-origin redirect
+      // and re-runs `load`, which now reads the freshly-set challengeToken
+      // cookie and returns `stage: 'verify'`. The page re-renders WITHOUT
+      // remounting this component, so `password` $state survives the
+      // credentials → verify transition. The verify form then reads it via
+      // the `{password}` prop and forwards to `mintUnlockTicketOrFallback`
+      // when the post-verify cross-origin handoff fires (ADR-022 × ADR-054).
+      //
+      // Pre-2026-05-01 this branch did `window.location.href = result.location`
+      // — a hard nav that destroyed `password` $state and left the verify form
+      // with an empty password, which produced a worthless Argon2id-derived
+      // wrappingKey and stranded every freshly signed-up user without an
+      // escrow blob (FEAT_E2E_ESCROW_SIGNUP_BOOTSTRAP_FOLLOWUP). Mirrors
+      // login's pattern (login/+page.svelte:491 — same `await update()` fall-
+      // through, same parent-component preservation guarantee).
+      await update();
       loading = false;
-    }
+    };
   }
 </script>
 
@@ -241,309 +249,390 @@
 
     <!-- Right: Form -->
     <div class="signup-form-side">
-      <div class="signup-card">
-        <h2 class="signup-title">Konto erstellen</h2>
-        <p class="signup-subtitle">30 Tage kostenlos testen — keine Kreditkarte nötig</p>
+      <div
+        class="signup-card"
+        class:signup-card--verify-stage={isVerifyStage}
+      >
+        {#if isVerifyStage}
+          <!--
+            Inline 2FA verify card content (FEAT_2FA_EMAIL_MASTERPLAN Step 5.3
+            v0.8.2, inline-design revision — mirrors login Step 5.2 v0.8.1).
+            Component owns its own state + server-action enhance callbacks
+            (`?/verify`, `?/resend` on the parent route). The credentials
+            form, OAuth section, and footer links are intentionally hidden
+            in this stage — only the code-entry card body is rendered,
+            matching the user-requested single-card UX.
 
-        <!--
-          Microsoft OAuth entry point. Plan §5.3 requires:
-          (1) MicrosoftSignInButton with mode=signup ABOVE the manual signup form,
-          (2) On Microsoft signup success the backend redirects to
-              /signup/oauth-complete?ticket={uuid} (handled by Step 5.4),
-          (3) If R3 duplicate Microsoft account is detected, backend redirects
-              to /login?oauth=error&reason=already_linked — the user lands on
-              the login page, not here, so no signup-side error handler needed.
-          Disabled while the manual form is submitting to prevent parallel
-          navigations destabilising mid-request state.
-        -->
-        <div class="oauth-section">
-          <MicrosoftSignInButton
-            mode="signup"
-            disabled={loading}
-          />
-          <OAuthDivider />
-        </div>
+            ADR-022 × ADR-054 × ADR-050 (2026-05-01 — FEAT_E2E_ESCROW_SIGNUP_
+            BOOTSTRAP_FOLLOWUP): pass the credentials-stage `password` $state
+            into the verify form so it can call `mintUnlockTicketOrFallback`
+            BEFORE the cross-origin handoff redirect. Without this prop the
+            apex-side ticket mint runs with an empty password → worthless
+            Argon2id-derived wrappingKey → bootstrap creates an escrow blob
+            that nobody can decrypt → user is stranded behind an admin reset.
+            The parent's `password` survives the credentials → verify stage
+            transition because `enhanceSignup` falls through to `await
+            update()` (mirrors login twin) — the parent component is NOT
+            remounted, only `data.stage` changes.
+          -->
+          <TwoFactorVerifyForm {password} />
+        {:else}
+          <h2 class="signup-title">Konto erstellen</h2>
+          <p class="signup-subtitle">30 Tage kostenlos testen — keine Kreditkarte nötig</p>
 
-        <!-- Signup Form -->
-        <form
-          id="signupForm"
-          onsubmit={handleSubmit}
-        >
-          <!-- Company -->
-          <div class="form-field">
-            <label
-              class="form-field__label form-field__label--required"
-              for="company_name">Firmenname</label
-            >
-            <input
-              type="text"
-              id="company_name"
-              name="company_name"
-              class="form-field__control"
-              class:is-error={companyNameTouched && companyName === ''}
-              required
-              placeholder="Ihre Firma GmbH"
-              autocomplete="organization"
-              bind:value={companyName}
-              onblur={() => {
-                companyNameTouched = true;
-              }}
-              disabled={loading}
-            />
-          </div>
-
-          <SubdomainInput
-            bind:subdomain
-            disabled={loading}
-          />
-
-          <div class="section-divider"></div>
-
-          <!-- Personal Info -->
-          <div class="name-row">
-            <div class="form-field">
-              <label
-                class="form-field__label form-field__label--required"
-                for="first_name">Vorname</label
-              >
-              <input
-                type="text"
-                id="first_name"
-                name="first_name"
-                class="form-field__control"
-                class:is-error={firstNameTouched && firstName === ''}
-                required
-                autocomplete="given-name"
-                bind:value={firstName}
-                onblur={() => {
-                  firstNameTouched = true;
-                }}
-                disabled={loading}
-              />
-            </div>
-
-            <div class="form-field">
-              <label
-                class="form-field__label form-field__label--required"
-                for="last_name">Nachname</label
-              >
-              <input
-                type="text"
-                id="last_name"
-                name="last_name"
-                class="form-field__control"
-                class:is-error={lastNameTouched && lastName === ''}
-                required
-                autocomplete="family-name"
-                bind:value={lastName}
-                onblur={() => {
-                  lastNameTouched = true;
-                }}
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          <div class="inline-row">
-            <div class="form-field">
-              <label
-                class="form-field__label form-field__label--required"
-                for="email">E-Mail</label
-              >
-              <input
-                type="email"
-                id="email"
-                name="email"
-                class="form-field__control"
-                required
-                placeholder="email@firma.de"
-                autocomplete="email"
-                bind:value={email}
-                oninput={handleEmailConfirmInput}
-                disabled={loading}
-              />
-            </div>
-
-            <div class="form-field">
-              <label
-                class="form-field__label form-field__label--required"
-                for="email_confirm">E-Mail bestätigen</label
-              >
-              <input
-                type="email"
-                id="email_confirm"
-                name="email_confirm"
-                class="form-field__control"
-                class:is-error={emailMatchError}
-                required
-                placeholder="email@firma.de"
-                bind:value={emailConfirm}
-                oninput={handleEmailConfirmInput}
-                disabled={loading}
-              />
-              {#if emailMatchError}
-                <p class="form-field__message form-field__message--error">
-                  {emailMatchError}
-                </p>
-              {/if}
-            </div>
-          </div>
-
-          <CountryPhoneInput
-            bind:phone
-            bind:countryCode
-            disabled={loading}
-          />
-
-          <div class="section-divider"></div>
-
-          <!-- Password -->
-          <div class="inline-row">
-            <div class="form-field">
-              <label
-                class="form-field__label form-field__label--required"
-                for="password"
-              >
-                Passwort
-                <span class="tooltip ml-1">
-                  <i class="fas fa-info-circle"></i>
-                  <span
-                    class="tooltip__content tooltip__content--info tooltip__content--right"
-                    role="tooltip"
-                  >
-                    Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben,
-                    Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
-                  </span>
-                </span>
-              </label>
-              <div class="form-field__password-wrapper">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  class="form-field__control"
-                  required
-                  minlength="12"
-                  maxlength="72"
-                  placeholder="Min. 12 Zeichen"
-                  autocomplete="new-password"
-                  bind:value={password}
-                  oninput={handlePasswordInput}
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  class="form-field__password-toggle"
-                  aria-label="Passwort anzeigen"
-                  onclick={() => {
-                    togglePasswordVisibility('password');
-                  }}
-                >
-                  <i class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
-                </button>
-              </div>
-            </div>
-
+          <!--
+            Form Action Error (from server) — only shown on the credentials
+            stage. The verify stage's `TwoFactorVerifyForm` owns its own
+            inline error rendering via the enhance callback, so duplicating
+            here would surface the same wrong-code message twice.
+          -->
+          {#if form?.error !== undefined && form.error !== ''}
             <div
-              class="form-field"
-              class:is-error={passwordMatchError}
-              class:is-success={passwordConfirm !== '' && passwordMatch}
+              class="alert alert--error signup-form-error"
+              role="alert"
             >
-              <label
-                class="form-field__label form-field__label--required"
-                for="password_confirm">Passwort bestätigen</label
-              >
-              <div class="form-field__password-wrapper">
-                <input
-                  type={showPasswordConfirm ? 'text' : 'password'}
-                  id="password_confirm"
-                  name="password_confirm"
-                  class="form-field__control"
-                  class:is-error={passwordMatchError}
-                  class:is-success={passwordConfirm !== '' && passwordMatch}
-                  required
-                  autocomplete="new-password"
-                  bind:value={passwordConfirm}
-                  oninput={handlePasswordConfirmInput}
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  class="form-field__password-toggle"
-                  aria-label="Passwort anzeigen"
-                  onclick={() => {
-                    togglePasswordVisibility('confirm');
-                  }}
-                >
-                  <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"></i>
-                </button>
-              </div>
-              {#if passwordMatchError}
-                <p class="form-field__message form-field__message--error">
-                  {passwordMatchError}
-                </p>
-              {:else if passwordConfirm !== '' && passwordMatch}
-                <p class="form-field__message form-field__message--success">
-                  <i class="fas fa-check"></i> Passwörter stimmen überein
-                </p>
-              {/if}
+              {form.error}
             </div>
-          </div>
-
-          {#if passwordStrength !== null || strengthLoading}
-            <PasswordStrengthIndicator
-              score={passwordStrength?.score ?? -1}
-              label={passwordStrength?.label ?? ''}
-              crackTime={passwordStrength?.crackTime ?? ''}
-              loading={strengthLoading}
-              feedback={passwordStrength?.feedback ?? null}
-            />
           {/if}
 
-          <!-- Terms & Submit -->
-          <label class="terms-checkbox">
-            <input
-              type="checkbox"
-              id="termsCheckbox"
-              name="terms"
-              required
-              bind:checked={termsAccepted}
+          <!--
+            Microsoft OAuth entry point. Plan §5.3 requires:
+            (1) MicrosoftSignInButton with mode=signup ABOVE the manual signup form,
+            (2) On Microsoft signup success the backend redirects to
+                /signup/oauth-complete?ticket={uuid} (handled by Step 5.4),
+            (3) If R3 duplicate Microsoft account is detected, backend redirects
+                to /login?oauth=error&reason=already_linked — the user lands on
+                the login page, not here, so no signup-side error handler needed.
+            Disabled while the manual form is submitting to prevent parallel
+            navigations destabilising mid-request state.
+          -->
+          <div class="oauth-section">
+            <MicrosoftSignInButton
+              mode="signup"
               disabled={loading}
             />
-            <span>
-              Ich akzeptiere die&nbsp;
-              <a
-                href={resolve('/TERMS-OF-USE.md')}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="terms-link">Nutzungsbedingungen</a
-              >
-            </span>
-          </label>
+            <OAuthDivider />
+          </div>
 
-          <!-- Cloudflare Turnstile -->
-          <Turnstile
-            bind:this={turnstileRef}
-            bind:token={turnstileToken}
-            action="signup"
-          />
-
-          <button
-            type="submit"
-            class="btn btn-index signup-submit"
-            disabled={loading || !isFormValid}
+          <!--
+            Signup Form — POST to `?/signup` named action (FEAT_2FA_EMAIL_MASTERPLAN
+            Step 5.4 / DD-19, 2026-04-30). Field `name=` attributes match the
+            keys read by `+page.server.ts::buildSignupPayload`. The previous
+            client-side `onsubmit={handleSubmit}` (which POSTed via _lib/api.ts)
+            is retired — server action handles Turnstile verify, payload
+            normalisation, backend POST, and cross-origin Set-Cookie
+            forwarding for the 2FA challenge cookie.
+          -->
+          <form
+            id="signupForm"
+            method="POST"
+            action="?/signup"
+            use:enhance={enhanceSignup}
           >
-            {buttonText}
-          </button>
+            <!-- Company -->
+            <div class="form-field">
+              <label
+                class="form-field__label form-field__label--required"
+                for="company_name">Firmenname</label
+              >
+              <input
+                type="text"
+                id="company_name"
+                name="companyName"
+                class="form-field__control"
+                class:is-error={companyNameTouched && companyName === ''}
+                required
+                placeholder="Ihre Firma GmbH"
+                autocomplete="organization"
+                bind:value={companyName}
+                onblur={() => {
+                  companyNameTouched = true;
+                }}
+                disabled={loading}
+              />
+            </div>
 
-          <p class="login-link-text">
-            Bereits registriert?
-            <a
-              href={resolve('/login')}
-              class="login-link">Anmelden</a
+            <SubdomainInput
+              bind:subdomain
+              disabled={loading}
+            />
+            <!-- Hidden mirror of the bound subdomain so the form-action sees
+                 the value via formData (SubdomainInput's internal <input>
+                 may not have a name= attribute that matches our DTO). -->
+            <input
+              type="hidden"
+              name="subdomain"
+              value={subdomain}
+            />
+
+            <div class="section-divider"></div>
+
+            <!-- Personal Info -->
+            <div class="name-row">
+              <div class="form-field">
+                <label
+                  class="form-field__label form-field__label--required"
+                  for="first_name">Vorname</label
+                >
+                <input
+                  type="text"
+                  id="first_name"
+                  name="adminFirstName"
+                  class="form-field__control"
+                  class:is-error={firstNameTouched && firstName === ''}
+                  required
+                  autocomplete="given-name"
+                  bind:value={firstName}
+                  onblur={() => {
+                    firstNameTouched = true;
+                  }}
+                  disabled={loading}
+                />
+              </div>
+
+              <div class="form-field">
+                <label
+                  class="form-field__label form-field__label--required"
+                  for="last_name">Nachname</label
+                >
+                <input
+                  type="text"
+                  id="last_name"
+                  name="adminLastName"
+                  class="form-field__control"
+                  class:is-error={lastNameTouched && lastName === ''}
+                  required
+                  autocomplete="family-name"
+                  bind:value={lastName}
+                  onblur={() => {
+                    lastNameTouched = true;
+                  }}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div class="inline-row">
+              <div class="form-field">
+                <label
+                  class="form-field__label form-field__label--required"
+                  for="email">E-Mail</label
+                >
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  class="form-field__control"
+                  required
+                  placeholder="email@firma.de"
+                  autocomplete="email"
+                  bind:value={email}
+                  oninput={handleEmailConfirmInput}
+                  disabled={loading}
+                />
+              </div>
+
+              <div class="form-field">
+                <label
+                  class="form-field__label form-field__label--required"
+                  for="email_confirm">E-Mail bestätigen</label
+                >
+                <input
+                  type="email"
+                  id="email_confirm"
+                  name="email_confirm"
+                  class="form-field__control"
+                  class:is-error={emailMatchError}
+                  required
+                  placeholder="email@firma.de"
+                  bind:value={emailConfirm}
+                  oninput={handleEmailConfirmInput}
+                  disabled={loading}
+                />
+                {#if emailMatchError}
+                  <p class="form-field__message form-field__message--error">
+                    {emailMatchError}
+                  </p>
+                {/if}
+              </div>
+            </div>
+
+            <CountryPhoneInput
+              bind:phone
+              bind:countryCode
+              disabled={loading}
+            />
+            <!-- Hidden mirrors of the bound phone + countryCode so the
+                 form-action picks them up via formData. CountryPhoneInput
+                 may bind a country-code dropdown that isn't a single named
+                 input, so we surface both fields explicitly here. -->
+            <input
+              type="hidden"
+              name="phone"
+              value={phone}
+            />
+            <input
+              type="hidden"
+              name="countryCode"
+              value={countryCode}
+            />
+
+            <div class="section-divider"></div>
+
+            <!-- Password -->
+            <div class="inline-row">
+              <div class="form-field">
+                <label
+                  class="form-field__label form-field__label--required"
+                  for="password"
+                >
+                  Passwort
+                  <span class="tooltip ml-1">
+                    <i class="fas fa-info-circle"></i>
+                    <span
+                      class="tooltip__content tooltip__content--info tooltip__content--right"
+                      role="tooltip"
+                    >
+                      Min. 12 Zeichen, max. 72 Zeichen. Mindestens 1 Großbuchstabe, 1
+                      Kleinbuchstabe, 1 Zahl und 1 Sonderzeichen (!@#$%^&* () _ + - = [ ] &#123;
+                      &#125; ; &apos; &quot; \ | , . &lt; &gt; / ?)
+                    </span>
+                  </span>
+                </label>
+                <div class="form-field__password-wrapper">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="adminPassword"
+                    class="form-field__control"
+                    required
+                    minlength="12"
+                    maxlength="72"
+                    placeholder="Min. 12 Zeichen"
+                    autocomplete="new-password"
+                    bind:value={password}
+                    oninput={handlePasswordInput}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    class="form-field__password-toggle"
+                    aria-label="Passwort anzeigen"
+                    onclick={() => {
+                      togglePasswordVisibility('password');
+                    }}
+                  >
+                    <i class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div
+                class="form-field"
+                class:is-error={passwordMatchError}
+                class:is-success={passwordConfirm !== '' && passwordMatch}
+              >
+                <label
+                  class="form-field__label form-field__label--required"
+                  for="password_confirm">Passwort bestätigen</label
+                >
+                <div class="form-field__password-wrapper">
+                  <input
+                    type={showPasswordConfirm ? 'text' : 'password'}
+                    id="password_confirm"
+                    name="password_confirm"
+                    class="form-field__control"
+                    class:is-error={passwordMatchError}
+                    class:is-success={passwordConfirm !== '' && passwordMatch}
+                    required
+                    autocomplete="new-password"
+                    bind:value={passwordConfirm}
+                    oninput={handlePasswordConfirmInput}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    class="form-field__password-toggle"
+                    aria-label="Passwort anzeigen"
+                    onclick={() => {
+                      togglePasswordVisibility('confirm');
+                    }}
+                  >
+                    <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                  </button>
+                </div>
+                {#if passwordMatchError}
+                  <p class="form-field__message form-field__message--error">
+                    {passwordMatchError}
+                  </p>
+                {:else if passwordConfirm !== '' && passwordMatch}
+                  <p class="form-field__message form-field__message--success">
+                    <i class="fas fa-check"></i> Passwörter stimmen überein
+                  </p>
+                {/if}
+              </div>
+            </div>
+
+            {#if passwordStrength !== null || strengthLoading}
+              <PasswordStrengthIndicator
+                score={passwordStrength?.score ?? -1}
+                label={passwordStrength?.label ?? ''}
+                crackTime={passwordStrength?.crackTime ?? ''}
+                loading={strengthLoading}
+                feedback={passwordStrength?.feedback ?? null}
+              />
+            {/if}
+
+            <!-- Terms & Submit -->
+            <label class="terms-checkbox">
+              <input
+                type="checkbox"
+                id="termsCheckbox"
+                name="terms"
+                required
+                bind:checked={termsAccepted}
+                disabled={loading}
+              />
+              <span>
+                Ich akzeptiere die&nbsp;
+                <a
+                  href={resolve('/TERMS-OF-USE.md')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="terms-link">Nutzungsbedingungen</a
+                >
+              </span>
+            </label>
+
+            <!-- Cloudflare Turnstile -->
+            <input
+              type="hidden"
+              name="turnstileToken"
+              value={turnstileToken}
+            />
+            <Turnstile
+              bind:this={turnstileRef}
+              bind:token={turnstileToken}
+              action="signup"
+            />
+
+            <button
+              type="submit"
+              class="btn btn-index signup-submit"
+              disabled={loading || !isFormValid}
             >
-          </p>
-        </form>
+              {buttonText}
+            </button>
+
+            <p class="login-link-text">
+              Bereits registriert?
+              <a
+                href={resolve('/login')}
+                class="login-link">Anmelden</a
+              >
+            </p>
+          </form>
+        {/if}
       </div>
     </div>
   </div>
@@ -620,7 +709,7 @@
   }
 
   .signup-hero__logo {
-    height: 160px;
+    height: 185px;
     margin-bottom: 36px;
   }
 
@@ -659,6 +748,25 @@
     flex-direction: column;
     width: 100%;
     max-width: 680px;
+  }
+
+  /*
+   * Verify-Stage centriert die Card vertikal innerhalb der `.signup-form-side`.
+   *
+   * WHY: `.signup-form-side` hat `align-items: flex-start` (gewollt für die
+   * 20-Felder-Credentials-Form, die nahe am oberen Rand starten soll, UX-
+   * Request 2026-04-16 „ein wenig hochziehen"). Die Verify-Card ist mit
+   * 6 OTP-Boxen + 2 Buttons + Back-Link aber kurz (~280 px) und hängt damit
+   * im oberen Drittel mit großer Leerfläche darunter — sieht wie ein Bug aus.
+   *
+   * `margin-block: auto` auf einem Flex-Item überschreibt `align-items` des
+   * Parents (CSS Flexbox §8.1) und konsumiert den verfügbaren Platz oben +
+   * unten symmetrisch → vertikal zentriert. Kein Eingriff in die Parent-Regel
+   * nötig, kein Cross-Stage-Side-Effect (Credentials-Stage hat den Modifier
+   * nicht und behält das Top-Aligned-Verhalten).
+   */
+  .signup-card--verify-stage {
+    margin-block: auto;
   }
 
   .signup-title {

@@ -280,6 +280,15 @@ export class OAuthController {
 
     // Auto-login the freshly created root admin so the SPA/SSR session begins
     // without a second round-trip. Uses the SAME cookie shape as password login.
+    //
+    // DD-7 (ADR-054 — drafted Phase 6 of FEAT_2FA_EMAIL_MASTERPLAN):
+    // OAuth users are exempt from email-based 2FA. Microsoft already enforced
+    // MFA upstream during consent; an Assixx-side email code on top would
+    // force a double-prompt UX with zero marginal security gain.
+    // `loginWithVerifiedUser()` therefore mints session tokens directly.
+    // Password signup routes through `TwoFactorAuthService.issueChallenge()`
+    // instead — see auth.service.ts above the method definition for the
+    // canonical invariant comment that this call site mirrors.
     const session = await this.authService.loginWithVerifiedUser(
       signup.userId,
       signup.tenantId,
@@ -385,6 +394,13 @@ export class OAuthController {
     reply: FastifyReply,
   ): Promise<void> {
     const { ipAddress, userAgent } = getClientInfo(req);
+    // DD-7 (ADR-054 — drafted Phase 6 of FEAT_2FA_EMAIL_MASTERPLAN):
+    // OAuth login bypasses the email-2FA challenge layer that password login
+    // uses. The Microsoft id_token already proves the user authenticated at
+    // Microsoft (MFA enforced upstream); `loginWithVerifiedUser()` mints
+    // session tokens directly. Password login goes through
+    // `TwoFactorAuthService.issueChallenge()` instead — see auth.service.ts
+    // above the method definition for the canonical invariant comment.
     const session = await this.authService.loginWithVerifiedUser(
       userId,
       tenantId,

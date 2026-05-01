@@ -158,7 +158,7 @@ const STATIC_MESSAGES = {
     'Bitte warte 15 Minuten, bevor Du erneut einen Reset-Link für diesen Benutzer anforderst.',
   RESET_LINK_ERROR_GENERIC: 'Fehler beim Senden des Reset-Links',
   HINT_PASSWORD:
-    'Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)',
+    'Min. 12 Zeichen, max. 72 Zeichen. Mindestens 1 Großbuchstabe, 1 Kleinbuchstabe, 1 Zahl und 1 Sonderzeichen (!@#$%^&* () _ + - = [ ] { } ; \' " \\ | , . < > / ?)',
   HINT_EMPLOYEE_NUMBER: 'Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)',
   HINT_MULTISELECT: 'Strg/Cmd + Klick für Mehrfachauswahl',
   HINT_STATUS: 'Inaktive/Archivierte Administratoren können sich nicht anmelden',

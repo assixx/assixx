@@ -1,91 +1,59 @@
 <!--
-Titel-Konvention für Auto-Label (siehe .github/workflows/pr-auto-label.yml):
-  feat:     -> enhancement
-  fix:      -> bug
-  docs:     -> documentation
-  refactor: -> refactor
-  perf:     -> performance
-  security: -> security
-  chore:    -> chore
-  ci:       -> github_actions
-  breaking: -> breaking-change
+Title prefix drives auto-label (see .github/workflows/pr-auto-label.yml):
+  feat / fix / docs / refactor / perf / security / chore / ci / breaking
 -->
 
-## Zusammenfassung
+## Summary
 
-<!-- 1-3 Bullet Points: WAS und WARUM (das WIE zeigt der Diff). -->
+<!-- 1–3 bullets: WHAT and WHY (the diff shows HOW). -->
 
 -
 
-## Bezug
-
-<!-- "Closes #123" / "Fixes #123" schließt das Issue beim Merge. -->
+## Links
 
 - Closes #
-- ADR:
-- Masterplan:
+- ADR / Masterplan:
 
-## Art der Änderung
+## Test plan
 
-- [ ] `feat:` Neues Feature / Addon
-- [ ] `fix:` Bug-Fix
-- [ ] `refactor:` Refactoring (kein Verhalten geändert)
-- [ ] `perf:` Performance-Verbesserung
-- [ ] `security:` Sicherheitsfix
-- [ ] `docs:` Dokumentation / ADR
-- [ ] `chore:` Wartung / Dependencies
-- [ ] `ci:` CI / GitHub Actions
-- [ ] `breaking:` Breaking Change (Konsumenten müssen anpassen)
+<!-- How did you verify it works and nothing else broke? -->
 
-## Test-Plan
-
-<!-- Wie wurde validiert, dass die Änderung korrekt ist und nichts Bestehendes bricht? -->
-
-- [ ]
-- [ ]
+-
 
 ## Definition of Done
 
-### Code-Qualität (immer)
+- [ ] `pnpm run validate:all` green + relevant tests pass (`unit` / `api` / `permission` / `frontend-unit` / `e2e`)
+- [ ] Comments explain **WHY** with ADR / issue references where the reasoning is non-obvious
 
-- [ ] `pnpm run validate:all` (Format + Lint + Type-Check + Stylelint) grün
-- [ ] Relevante Tests grün (`unit` / `api` / `permission` / `frontend-unit` / `e2e`)
-- [ ] Keine `// TODO:`-Kommentare hinterlassen (CLAUDE-KAIZEN-MANIFEST)
-- [ ] Kommentare erklären **WHY**, nicht WHAT — mit Verweis auf ADR/Issue/Vorentscheidung
-- [ ] Keine `any`-Types ohne dokumentierte Begründung
-- [ ] KISS: nur das umgesetzt, was die Aufgabe fordert (keine Premature Abstractions)
+### Database (if touched)
 
-### Backend & Datenbank (falls zutreffend)
+- [ ] Migration created via `pnpm run db:migrate:create` — never manually (ADR-014)
+- [ ] Backup taken, dry-run green, `down()` implemented or explicitly marked lossy
+- [ ] RLS enabled + `tenant_isolation` policy + GRANTs to `app_user` AND `sys_user` (ADR-019)
 
-- [ ] Migration via `pnpm run db:migrate:create` erstellt (NIE manuell, ADR-014)
-- [ ] Backup vor Apply, Dry-Run grün, `down()` implementiert oder bewusst Lossy markiert
-- [ ] RLS aktiviert + Policy `tenant_isolation` mit `NULLIF(current_setting(...), '')::int` (ADR-019)
-- [ ] `GRANT ... TO app_user` UND `TO sys_user` (Triple-User-Model)
-- [ ] DTOs via `createZodDto(Schema)` und `idField` / `createIdParamSchema` aus `common/dto/` (ADR-030)
-- [ ] `IS_ACTIVE` aus `@assixx/shared/constants` statt Magic Numbers
-- [ ] DB-Zugriff via passende `DatabaseService`-Methode (`tenantQuery` / `tenantTransaction` / `systemQuery`)
-- [ ] Mutationen mit `@RequirePermission(ADDON, MODULE, 'canWrite')` — kein `@Roles('admin', 'root')` als alleiniger Guard (ADR-045)
+### Backend mutation (if added)
 
-### Frontend (falls zutreffend)
+- [ ] Guarded with `@RequirePermission(ADDON, MODULE, 'canWrite')` — no bare `@Roles(...)` for mutations (ADR-045)
+- [ ] DTO via `createZodDto()` + `idField` / `createIdParamSchema` from `common/dto/` (ADR-030)
 
-- [ ] Route in passender Group: `(root)` / `(admin)` / `(shared)` (ADR-012)
-- [ ] Addon-Gate via `requireAddon(activeAddons, '<code>')` in `+page.server.ts` (ADR-033)
-- [ ] 403-Pfad: `apiFetchWithPermission()` + `<PermissionDenied />` (ADR-020)
-- [ ] Hierarchy-Labels via `createMessages(data.hierarchyLabels)` propagiert (ADR-034)
-- [ ] Svelte-5-Runes (`$state`, `$derived`, `$effect`) — keine Legacy-Stores in neuem Code
-- [ ] Session-Expired-Handling via `$lib/utils/session-expired.ts` (kein Re-Implement)
+### Frontend page (if added)
 
-### Dokumentation
+- [ ] Placed in correct route group: `(root)` / `(admin)` / `(shared)` (ADR-012)
+- [ ] Addon-gated via `requireAddon()` in `+page.server.ts`; 403 path uses `apiFetchWithPermission()` + `<PermissionDenied />` (ADR-020, ADR-033)
 
-- [ ] `docs/ARCHITECTURE.md` §1 Navigation-Map aktualisiert (Datei verschoben/umbenannt oder neues Konzept)
-- [ ] ADR neu erstellt oder bestehender ergänzt (bei Architektur-Entscheidungen)
-- [ ] Masterplan-Status aktualisiert (bei laufendem Feature)
-- [ ] Changeset erstellt via `pnpm changeset` (bei user-sichtbarer Änderung)
+### Documentation
+
+- [ ] `docs/ARCHITECTURE.md` §1 Navigation Map updated (file moved/renamed or new concept)
+- [ ] ADR / Masterplan / Changeset (`pnpm changeset`) updated where relevant
 
 ## Screenshots / Demo
 
-<!-- Vorher/Nachher-Screenshots oder kurzes GIF/MP4 bei UI-Änderungen. -->
+<!-- Before/after for UI changes. -->
 
-## Risiken & Rollback
+## Risks & rollback (if applicable)
 
-<!-- Gibt es einen Rollback-Plan? Folge-PRs nötig? Migrations-Risiken? -->
+<!-- Migration risks? Follow-up PRs? Rollback plan? -->
+
+---
+
+> Reference: [HOW-TO-TEST](../docs/how-to/HOW-TO-TEST.md) · [Changesets](../docs/how-to/HOW-TO-USE-CHANGESETS.md)

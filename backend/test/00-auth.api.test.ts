@@ -4,12 +4,32 @@
  * Runs against the REAL backend (Docker must be running).
  * Uses native fetch() -- no mocking, no HTTP client libraries.
  *
- * NOTE: This file does NOT use helpers.ts loginApitest() because it
- * tests the login endpoint directly. Other test files use the cached helper.
+ * NOTE: This file does NOT use helpers.ts loginApitest() for the auth-shape
+ * assertions because it tests the login + 2FA verify endpoints directly.
+ * Other test files use the cached helper. The shared 2FA / Mailpit / Redis
+ * cleanup utilities ARE imported from helpers.ts to keep the contract in one
+ * place (FEAT_2FA_EMAIL_MASTERPLAN Session 10).
+ *
+ * Phase 2 (Step 2.4) hardcoded email-based 2FA on every password login —
+ * `/auth/login` no longer returns tokens; it returns
+ * `{ stage: 'challenge_required', challenge }` and sets a `challengeToken`
+ * httpOnly cookie. Tokens are issued by `/auth/2fa/verify` as `accessToken` +
+ * `refreshToken` httpOnly cookies (NOT in the body, R8). Phase 2 (Step 2.5)
+ * applies the same shape to `/signup`: tenant + user rows are created at
+ * is_active=INACTIVE, the response carries the same discriminated union, and
+ * the user is activated only when the 2FA verify succeeds.
  *
  * @see vitest.config.ts (project: api)
+ * @see docs/FEAT_2FA_EMAIL_MASTERPLAN.md Phase 2 / Phase 4
  */
 import { execSync } from 'node:child_process';
+
+import {
+  clear2faStateForUser,
+  clearMailpit,
+  extractCookieValue,
+  fetchLatest2faCode,
+} from './helpers.js';
 
 // Integration test: response shapes are validated by assertions, not static types.
 
@@ -18,6 +38,8 @@ type JsonBody = Record<string, any>;
 const BASE_URL = 'http://localhost:3000/api/v2';
 const APITEST_EMAIL = 'info@assixx.com';
 const APITEST_PASSWORD = 'ApiTest12345!';
+/** Apitest tenant root user id — verified via psql probe 2026-04-29. */
+const APITEST_USER_ID = 1;
 
 // Shared state across sequential describe blocks
 let authToken = '';
@@ -93,8 +115,22 @@ function flushThrottleKeys(): void {
   );
 }
 
-/** Login with 429 retry for rate-limited environments. */
-async function login(): Promise<{ res: Response; body: JsonBody }> {
+/**
+ * Step 1: POST /auth/login with 429 recovery. Returns the raw response so
+ * `Auth: Step 1` assertions can inspect the discriminated-union body
+ * (`stage: 'challenge_required'`) and the `challengeToken` cookie directly.
+ *
+ * 429 handling: AuthThrottle is 10 req / 5 min (auth.controller.ts:356,
+ * throttle.decorators.ts:42, ADR-001 §"Manual Reset"). The earlier suite-wide
+ * Setup/Step1/Step2/Refresh/Logout tests in this file together drain the
+ * bucket by the time we reach the late "Auth: Logout > re-login" case.
+ * Sleep-and-retry was useless (TTL is 5 min, the loop slept 6 s total).
+ * Fix: flush `throttle:*` directly (Redis-side, idempotent — see ADR-001
+ * "Dev friction → Manual Reset") and retry once. Safe here because every
+ * 00-auth test that asserts ON 429 increments the bucket itself in-place
+ * (it() block) — they never route through this composite helper.
+ */
+async function performLoginStep(): Promise<{ res: Response; body: JsonBody }> {
   for (let attempt = 1; attempt <= 3; attempt++) {
     const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
@@ -106,7 +142,7 @@ async function login(): Promise<{ res: Response; body: JsonBody }> {
     });
 
     if (res.status === 429) {
-      await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
+      flushThrottleKeys();
       continue;
     }
 
@@ -115,6 +151,79 @@ async function login(): Promise<{ res: Response; body: JsonBody }> {
   }
 
   throw new Error('Login failed after 3 retries (429)');
+}
+
+/**
+ * Step 2: POST /auth/2fa/verify with the challenge cookie + the code parsed
+ * from Mailpit. Returns the raw response so `Auth: Step 2` assertions can
+ * inspect the body (`stage: 'authenticated'`, `user`) and the
+ * accessToken/refreshToken cookies issued by `setAuthCookies`.
+ */
+async function performVerifyStep(
+  challengeToken: string,
+  code: string,
+): Promise<{ res: Response; body: JsonBody }> {
+  const res = await fetch(`${BASE_URL}/auth/2fa/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: `challengeToken=${challengeToken}`,
+      // ADR-050 + ADR-054: matches the apitest tenant's subdomain so the
+      // controller takes the same-origin Set-Cookie branch (the path this
+      // file's R8 assertions exercise — no `accessToken` echoed in the
+      // body, tokens travel exclusively via Set-Cookie). Sibling helper
+      // documented in `helpers.ts::APITEST_TENANT_FORWARDED_HOST`.
+      'X-Forwarded-Host': 'assixx.assixx.com',
+    },
+    body: JSON.stringify({ code }),
+  });
+  const body = (await res.json()) as JsonBody;
+  return { res, body };
+}
+
+/**
+ * Composite helper: run BOTH steps end-to-end against `info@assixx.com`. Used
+ * by `it()` blocks that just need authenticated state (logout, re-login).
+ *
+ * Pre-cleans Redis 2FA state and Mailpit so failed prior runs cannot poison
+ * the lockout/fail-streak counters or leave stale codes in the inbox.
+ */
+async function loginAndVerify(): Promise<{
+  loginRes: Response;
+  loginBody: JsonBody;
+  verifyRes: Response;
+  verifyBody: JsonBody;
+  challengeToken: string;
+  accessToken: string;
+  refreshTokenValue: string;
+}> {
+  clear2faStateForUser(APITEST_USER_ID);
+  await clearMailpit();
+
+  const { res: loginRes, body: loginBody } = await performLoginStep();
+  if (loginBody.data?.stage !== 'challenge_required') {
+    throw new Error(`Unexpected login stage: ${String(loginBody.data?.stage)}`);
+  }
+  const challengeToken = extractCookieValue(loginRes.headers.getSetCookie(), 'challengeToken');
+  if (challengeToken === null) {
+    throw new Error('challengeToken cookie missing from /auth/login response');
+  }
+
+  const code = await fetchLatest2faCode(APITEST_EMAIL);
+  const { res: verifyRes, body: verifyBody } = await performVerifyStep(challengeToken, code);
+  const setCookies = verifyRes.headers.getSetCookie();
+  const accessToken = extractCookieValue(setCookies, 'accessToken') ?? '';
+  const refreshTokenValue = extractCookieValue(setCookies, 'refreshToken') ?? '';
+
+  return {
+    loginRes,
+    loginBody,
+    verifyRes,
+    verifyBody,
+    challengeToken,
+    accessToken,
+    refreshTokenValue,
+  };
 }
 
 // ─── Setup: Ensure apitest tenant exists and login ─────────────────────────
@@ -135,6 +244,13 @@ describe('Setup: Apitest Tenant', () => {
   });
 
   it('should create tenant or confirm it already exists', async () => {
+    // Pre-clean Mailpit so any signup-challenge mail this test produces is
+    // unambiguous (DB might be fresh, in which case this signup is the FIRST
+    // event and produces a `purpose=signup` 2FA mail — we MUST verify it,
+    // otherwise the user stays at is_active=INACTIVE per Step 2.5 and every
+    // subsequent test in the suite logs in as an inactive user → 403).
+    await clearMailpit();
+
     const res = await fetch(`${BASE_URL}/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -157,71 +273,181 @@ describe('Setup: Apitest Tenant', () => {
     });
     const body = (await res.json()) as JsonBody;
 
-    // 201 = created, 409 = already exists -- both are fine
+    // 201 = fresh signup (tenant + user created at is_active=INACTIVE,
+    //        body carries `stage: 'challenge_required'` per Step 2.5).
+    // 409 = subdomain or admin email already taken (subsequent runs).
     expect([201, 409]).toContain(res.status);
     expect(body).toBeDefined();
 
-    // eslint-disable-next-line vitest/no-conditional-expect -- Integration test: response shape differs by HTTP status (201 vs 409)
-    if (res.status === 201) expect(body.data.subdomain).toBe('assixx');
+    if (res.status === 201) {
+      // Fresh-DB bootstrap: signup-Step issues a 2FA challenge for the new
+      // root user. We must complete the verify or the apitest tenant root
+      // sits at is_active=INACTIVE and breaks every downstream test.
+      // eslint-disable-next-line vitest/no-conditional-expect -- Integration test: 201 branch is the fresh-DB bootstrap path; 409 just confirms the tenant exists
+      expect(body.data.stage).toBe('challenge_required');
+
+      const challengeToken = extractCookieValue(res.headers.getSetCookie(), 'challengeToken');
+      // eslint-disable-next-line vitest/no-conditional-expect -- 201 only
+      expect(challengeToken).not.toBeNull();
+      const code = await fetchLatest2faCode(APITEST_EMAIL);
+      // challengeToken non-null established by the assertion above
+      const { res: verifyRes, body: verifyBody } = await performVerifyStep(
+        challengeToken as string,
+        code,
+      );
+      // eslint-disable-next-line vitest/no-conditional-expect -- 201 only
+      expect(verifyRes.status).toBe(200);
+      // eslint-disable-next-line vitest/no-conditional-expect -- 201 only
+      expect(verifyBody.data.stage).toBe('authenticated');
+    }
   });
 
-  it('should login as apitest admin', async () => {
-    const { res, body } = await login();
+  it('should login + 2FA verify as apitest admin', async () => {
+    const { loginRes, loginBody, verifyRes, verifyBody, accessToken, refreshTokenValue } =
+      await loginAndVerify();
 
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.data.accessToken).toBeTypeOf('string');
-    expect(body.data.refreshToken).toBeTypeOf('string');
-    expect(body.data.user.id).toBeTypeOf('number');
-    expect(body.data.user.email).toBe(APITEST_EMAIL);
-    expect(body.data.user).toHaveProperty('role');
+    // Step 1 contract — discriminated union, no tokens in body (R8).
+    expect(loginRes.status).toBe(200);
+    expect(loginBody.success).toBe(true);
+    expect(loginBody.data.stage).toBe('challenge_required');
+    expect(loginBody.data.challenge).toBeTypeOf('object');
+    expect(loginBody.data.challenge.expiresAt).toBeTypeOf('string');
+    expect(loginBody.data.challenge.resendAvailableAt).toBeTypeOf('string');
+    expect(loginBody.data.challenge.resendsRemaining).toBe(3);
+    // Cookie carries the challenge token, body deliberately does NOT (DD-4 / R8).
+    expect(loginBody.data).not.toHaveProperty('accessToken');
+    expect(loginBody.data).not.toHaveProperty('refreshToken');
+
+    // Step 2 contract — tokens issued via Set-Cookie, user shape in body.
+    expect(verifyRes.status).toBe(200);
+    expect(verifyBody.success).toBe(true);
+    expect(verifyBody.data.stage).toBe('authenticated');
+    expect(verifyBody.data.user.id).toBeTypeOf('number');
+    expect(verifyBody.data.user.email).toBe(APITEST_EMAIL);
+    expect(verifyBody.data.user).toHaveProperty('role');
+    expect(verifyBody.data).not.toHaveProperty('accessToken');
+    expect(verifyBody.data).not.toHaveProperty('refreshToken');
+    expect(accessToken.length).toBeGreaterThan(20);
+    expect(refreshTokenValue.length).toBeGreaterThan(20);
 
     // Store for subsequent tests
-    authToken = body.data.accessToken;
-    refreshToken = body.data.refreshToken;
-    _userId = body.data.user.id;
-    _tenantId = body.data.user.tenantId;
+    authToken = accessToken;
+    refreshToken = refreshTokenValue;
+    _userId = verifyBody.data.user.id as number;
+    _tenantId = verifyBody.data.user.tenantId as number;
 
     // Enable addons + set team lead (idempotent, runs every time)
     applyDbPrerequisites(_tenantId, _userId);
   });
 });
 
-// ─── Auth: Login (single request, multiple assertions) ───────────────────────
+// ─── Auth: Step 1 — Challenge issuance (POST /auth/login) ────────────────────
 
-describe('Auth: Login', () => {
+describe('Auth: Step 1 — POST /auth/login → challenge', () => {
   let loginRes: Response;
   let loginBody: JsonBody;
+  let setCookies: string[];
 
   beforeAll(async () => {
-    const result = await login();
+    // Pre-clean lockout/fail-streak for the test root so a poisoned prior run
+    // can't blow this test up with a 403 instead of the expected 200/challenge.
+    clear2faStateForUser(APITEST_USER_ID);
+    await clearMailpit();
+    const result = await performLoginStep();
     loginRes = result.res;
     loginBody = result.body;
-
-    // Update shared state
-    authToken = loginBody.data.accessToken;
-    refreshToken = loginBody.data.refreshToken;
-    _userId = loginBody.data.user.id;
-    _tenantId = loginBody.data.user.tenantId;
+    setCookies = loginRes.headers.getSetCookie();
   });
 
-  it('should return 200 OK', () => {
+  it('should return 200 OK with success envelope', () => {
     expect(loginRes.status).toBe(200);
     expect(loginBody.success).toBe(true);
   });
 
-  it('should return access and refresh tokens', () => {
-    expect(loginBody.data).toHaveProperty('accessToken');
-    expect(loginBody.data.accessToken).toBeTypeOf('string');
-    expect(loginBody.data).toHaveProperty('refreshToken');
-    expect(loginBody.data.refreshToken).toBeTypeOf('string');
+  it('should return stage=challenge_required (no tokens in body, R8)', () => {
+    expect(loginBody.data.stage).toBe('challenge_required');
+    expect(loginBody.data).not.toHaveProperty('accessToken');
+    expect(loginBody.data).not.toHaveProperty('refreshToken');
+    expect(loginBody.data).not.toHaveProperty('user');
   });
 
-  it('should return user data', () => {
-    expect(loginBody.data).toHaveProperty('user');
-    expect(loginBody.data.user).toHaveProperty('id');
-    expect(loginBody.data.user).toHaveProperty('email');
-    expect(loginBody.data.user).toHaveProperty('role');
+  it('should return challenge metadata with valid timestamps + DD-21 resend cap', () => {
+    expect(loginBody.data.challenge).toBeTypeOf('object');
+    expect(loginBody.data.challenge.expiresAt).toBeTypeOf('string');
+    expect(loginBody.data.challenge.resendAvailableAt).toBeTypeOf('string');
+    expect(loginBody.data.challenge.resendsRemaining).toBe(3);
+    // Both timestamps must be parseable ISO 8601
+    expect(Number.isFinite(Date.parse(loginBody.data.challenge.expiresAt as string))).toBe(true);
+    expect(Number.isFinite(Date.parse(loginBody.data.challenge.resendAvailableAt as string))).toBe(
+      true,
+    );
+  });
+
+  it('should set httpOnly challengeToken cookie (cookie = single source of truth)', () => {
+    const challengeToken = extractCookieValue(setCookies, 'challengeToken');
+    expect(challengeToken).not.toBeNull();
+    expect((challengeToken ?? '').length).toBeGreaterThan(20);
+    // Cookie must carry httpOnly attribute — never accessible to JS (R8)
+    const cookieLine = setCookies.find((c) => c.startsWith('challengeToken='));
+    expect(cookieLine).toBeDefined();
+    expect((cookieLine ?? '').toLowerCase()).toContain('httponly');
+    expect((cookieLine ?? '').toLowerCase()).toContain('samesite=lax');
+  });
+});
+
+// ─── Auth: Step 2 — 2FA verify (POST /auth/2fa/verify) ───────────────────────
+
+describe('Auth: Step 2 — POST /auth/2fa/verify → tokens', () => {
+  let verifyRes: Response;
+  let verifyBody: JsonBody;
+  let setCookies: string[];
+
+  beforeAll(async () => {
+    // Run a fresh login → mailpit → verify cycle so the assertions below
+    // exercise live cookies (the prior block consumed the previous challenge).
+    const result = await loginAndVerify();
+    verifyRes = result.verifyRes;
+    verifyBody = result.verifyBody;
+    setCookies = verifyRes.headers.getSetCookie();
+
+    // Update shared state for downstream describe blocks
+    authToken = result.accessToken;
+    refreshToken = result.refreshTokenValue;
+    _userId = verifyBody.data.user.id as number;
+    _tenantId = verifyBody.data.user.tenantId as number;
+  });
+
+  it('should return 200 OK + stage=authenticated', () => {
+    expect(verifyRes.status).toBe(200);
+    expect(verifyBody.success).toBe(true);
+    expect(verifyBody.data.stage).toBe('authenticated');
+  });
+
+  it('should return user data in body', () => {
+    expect(verifyBody.data).toHaveProperty('user');
+    expect(verifyBody.data.user).toHaveProperty('id');
+    expect(verifyBody.data.user.email).toBe(APITEST_EMAIL);
+    expect(verifyBody.data.user).toHaveProperty('role');
+    expect(verifyBody.data.user).toHaveProperty('tenantId');
+  });
+
+  it('should issue access + refresh tokens via Set-Cookie (NOT body, R8)', () => {
+    expect(verifyBody.data).not.toHaveProperty('accessToken');
+    expect(verifyBody.data).not.toHaveProperty('refreshToken');
+    const accessToken = extractCookieValue(setCookies, 'accessToken');
+    const refreshTokenCookie = extractCookieValue(setCookies, 'refreshToken');
+    expect(accessToken).not.toBeNull();
+    expect(refreshTokenCookie).not.toBeNull();
+    expect((accessToken ?? '').length).toBeGreaterThan(20);
+    expect((refreshTokenCookie ?? '').length).toBeGreaterThan(20);
+  });
+
+  it('should clear the challengeToken cookie after successful verify', () => {
+    // setAuthCookies wipes challengeToken via Max-Age=0; getSetCookie() lists
+    // it as `challengeToken=; Max-Age=0; ...` which extractCookieValue
+    // correctly reports as null (empty value treated as absent).
+    const cleared = extractCookieValue(setCookies, 'challengeToken');
+    expect(cleared).toBeNull();
   });
 });
 
@@ -266,16 +492,18 @@ describe('Auth: Logout', () => {
     expect(body.data).toHaveProperty('tokensRevoked');
   });
 
-  it('should re-login after logout to keep state for potential subsequent tests', async () => {
-    const { res, body } = await login();
+  it('should re-login + 2FA verify after logout to keep state for subsequent tests', async () => {
+    const result = await loginAndVerify();
 
-    expect(res.status).toBe(200);
+    expect(result.loginRes.status).toBe(200);
+    expect(result.verifyRes.status).toBe(200);
+    expect(result.verifyBody.data.stage).toBe('authenticated');
 
     // Restore shared state
-    authToken = body.data.accessToken;
-    refreshToken = body.data.refreshToken;
-    _userId = body.data.user.id;
-    _tenantId = body.data.user.tenantId;
+    authToken = result.accessToken;
+    refreshToken = result.refreshTokenValue;
+    _userId = result.verifyBody.data.user.id as number;
+    _tenantId = result.verifyBody.data.user.tenantId as number;
   });
 });
 

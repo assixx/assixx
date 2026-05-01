@@ -22,6 +22,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 
+// eslint-disable-next-line import-x/no-cycle -- justified: indirect cycle oauth → signup → forwardRef(2fa) → oauth, broken at signup.module.ts:17 + two-factor-auth.module.ts:63 by canonical NestJS forwardRef pattern (FEAT_2FA_EMAIL §2.7, v0.6.1).
 import { SignupModule } from '../../signup/signup.module.js';
 // eslint-disable-next-line import-x/no-cycle -- justified: canonical NestJS forwardRef pattern (Spec Deviation D15)
 import { AuthModule } from '../auth.module.js';

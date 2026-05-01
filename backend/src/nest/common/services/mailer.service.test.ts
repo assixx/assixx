@@ -17,15 +17,21 @@ import { MailerService, type PasswordResetRecipient } from './mailer.service.js'
 // Module-level mocks — must be hoisted before service import
 // =============================================================
 
-const { mockLoadBrandedTemplate, mockSendEmail } = vi.hoisted(() => ({
-  mockLoadBrandedTemplate: vi.fn(),
-  mockSendEmail: vi.fn(),
-}));
+const { mockLoadBrandedTemplate, mockSendEmail, mockSend2faCode, mockSend2faSuspicious } =
+  vi.hoisted(() => ({
+    mockLoadBrandedTemplate: vi.fn(),
+    mockSendEmail: vi.fn(),
+    // 2FA helpers added in FEAT_2FA_EMAIL_MASTERPLAN §2.9 — DD-14 fail-loud + DD-20 silent.
+    mockSend2faCode: vi.fn(),
+    mockSend2faSuspicious: vi.fn(),
+  }));
 
 vi.mock('../../../utils/email-service.js', () => ({
   default: {
     loadBrandedTemplate: mockLoadBrandedTemplate,
     sendEmail: mockSendEmail,
+    send2faCode: mockSend2faCode,
+    send2faSuspiciousActivity: mockSend2faSuspicious,
   },
 }));
 
@@ -64,8 +70,12 @@ describe('MailerService', () => {
   beforeEach(() => {
     mockLoadBrandedTemplate.mockReset();
     mockSendEmail.mockReset();
+    mockSend2faCode.mockReset();
+    mockSend2faSuspicious.mockReset();
     mockLoadBrandedTemplate.mockResolvedValue(makeBrandedStub());
     mockSendEmail.mockResolvedValue({ success: true, messageId: 'msg-1' });
+    mockSend2faCode.mockResolvedValue(undefined);
+    mockSend2faSuspicious.mockResolvedValue(undefined);
     service = new MailerService();
   });
 
@@ -177,6 +187,45 @@ describe('MailerService', () => {
 
       await expect(
         service.sendPasswordReset(makeRecipient(), RAW_TOKEN, EXPIRES_AT),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  // ===========================================================================
+  // 2FA helpers (FEAT_2FA_EMAIL_MASTERPLAN §2.9 — DD-14 fail-loud, DD-20 silent)
+  // ===========================================================================
+
+  describe('sendTwoFactorCode — DD-14 fail-loud contract', () => {
+    it('forwards arguments unchanged to email-service.send2faCode', async () => {
+      await service.sendTwoFactorCode('alice@assixx.de', 'K7PX3M', 'login', 10);
+
+      expect(mockSend2faCode).toHaveBeenCalledTimes(1);
+      expect(mockSend2faCode).toHaveBeenCalledWith('alice@assixx.de', 'K7PX3M', 'login', 10);
+    });
+
+    it('re-throws unchanged on transport failure (caller converts to 503 + cleanup)', async () => {
+      const cause = new Error('SMTP unreachable');
+      mockSend2faCode.mockRejectedValueOnce(cause);
+
+      await expect(
+        service.sendTwoFactorCode('alice@assixx.de', 'K7PX3M', 'signup', 10),
+      ).rejects.toBe(cause);
+    });
+  });
+
+  describe('sendTwoFactorSuspiciousActivity — DD-20 silent-swallow contract', () => {
+    it('forwards the recipient unchanged to email-service.send2faSuspiciousActivity', async () => {
+      await service.sendTwoFactorSuspiciousActivity('alice@assixx.de');
+
+      expect(mockSend2faSuspicious).toHaveBeenCalledTimes(1);
+      expect(mockSend2faSuspicious).toHaveBeenCalledWith('alice@assixx.de');
+    });
+
+    it('does NOT throw when the underlying transport rejects (paper-trail mail)', async () => {
+      mockSend2faSuspicious.mockRejectedValueOnce(new Error('template builder bug'));
+
+      await expect(
+        service.sendTwoFactorSuspiciousActivity('alice@assixx.de'),
       ).resolves.toBeUndefined();
     });
   });

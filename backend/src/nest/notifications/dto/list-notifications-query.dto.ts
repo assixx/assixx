@@ -26,13 +26,16 @@ const PrioritySchema = z.enum(['low', 'normal', 'medium', 'high', 'urgent'], {
 export const ListNotificationsQuerySchema = PaginationSchema.extend({
   type: NotificationTypeSchema.optional(),
   priority: PrioritySchema.optional(),
-  unread: z.preprocess(
-    (val: unknown) =>
-      val === 'true' ? true
-      : val === 'false' ? false
-      : val,
-    z.boolean().optional(),
-  ),
+  // `.optional()` outside preprocess (Zod 4.x regression). ADR-030 §4.
+  unread: z
+    .preprocess(
+      (val: unknown) =>
+        val === 'true' ? true
+        : val === 'false' ? false
+        : val,
+      z.boolean(),
+    )
+    .optional(),
 });
 
 /**

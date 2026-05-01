@@ -25,8 +25,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals, url }) => {
   const currentUserId = locals.user?.id ?? null;
 
   // Parallel fetch: root users + positions
+  // limit=100 = backend cap (PaginationSchema.max in common.schema.ts).
+  // Without &limit, /users defaults to 10 → silent truncation if a tenant
+  // has > 10 root accounts. Pattern fix per HOW-TO; client-side pagination
+  // (KISS, mirrors manage-admins/manage-employees).
+  // @see docs/how-to/HOW-TO-FIX-MANAGE-PAGINATION.md
   const [rootUsersData, positionsData] = await Promise.all([
-    apiFetch<RootUser[]>('/users?role=root', token, fetch),
+    apiFetch<RootUser[]>('/users?role=root&limit=100', token, fetch),
     apiFetch<{ id: string; name: string; roleCategory: string }[]>(
       '/organigram/positions',
       token,

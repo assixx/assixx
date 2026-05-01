@@ -23,10 +23,13 @@ const log = createLogger('Sentry');
 const SENTRY_DSN =
   'https://afe0f8b38a0c3cc9c09d40f90743766a@o4510697769730048.ingest.de.sentry.io/4510697927802960';
 
-// Public pages where Replay/Feedback are unnecessary (no authenticated user session)
+// Public pages where Replay/Feedback are unnecessary (no authenticated user session).
+// Adding /roadmap here saves ~500 KiB on a marketing-only page that anonymous
+// visitors hit before signup. Disclaimer/Impressum/Datenschutz could follow
+// the same logic but are out of scope for this change.
 const isPublicPage =
   typeof window !== 'undefined' &&
-  ['/login', '/signup', '/'].some((p) => window.location.pathname === p);
+  ['/login', '/signup', '/', '/roadmap'].some((p) => window.location.pathname === p);
 
 Sentry.init({
   dsn: SENTRY_DSN,

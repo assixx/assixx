@@ -34,8 +34,10 @@
   import { applyAllFilters } from './_lib/filters';
   import { assetState } from './_lib/state.svelte';
   import {
+    ASSETS_PER_PAGE,
     getEmptyStateTitle,
     getEmptyStateDescription,
+    getVisiblePages,
     buildAssetFormData,
     populateFormFromAsset,
     getTeamsBadgeData,
@@ -91,6 +93,40 @@
   $effect(() => {
     assetState.setFilteredAssets(filteredAssets);
   });
+
+  // =============================================================================
+  // PAGINATION (client-side, page slice over filteredAssets)
+  // =============================================================================
+
+  let currentPage = $state(1);
+
+  // Pagination — slice the filtered set into the current page. Search dropdown
+  // still reads `filteredAssets` (full set) so a user can jump to a hit on any
+  // page; pagination only governs the table.
+  const totalPages = $derived(Math.max(1, Math.ceil(filteredAssets.length / ASSETS_PER_PAGE)));
+  const paginatedAssets = $derived(
+    filteredAssets.slice((currentPage - 1) * ASSETS_PER_PAGE, currentPage * ASSETS_PER_PAGE),
+  );
+  const visiblePages = $derived(getVisiblePages(currentPage, totalPages));
+
+  // Reset to page 1 when filter set changes — prevents user landing on
+  // an empty page after narrowing search/status. Mount-fire is a no-op.
+  $effect(() => {
+    void assetState.currentStatusFilter;
+    void assetState.currentSearchQuery;
+    currentPage = 1;
+  });
+
+  // Client-side pagination handlers (no URL update — KISS, see utils.ts).
+  function goToPage(p: number): void {
+    if (p >= 1 && p <= totalPages) currentPage = p;
+  }
+  function handlePreviousPage(): void {
+    if (currentPage > 1) currentPage -= 1;
+  }
+  function handleNextPage(): void {
+    if (currentPage < totalPages) currentPage += 1;
+  }
 
   // =============================================================================
   // API FUNCTIONS - Level 3: invalidateAll() after mutations
@@ -630,7 +666,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each filteredAssets as asset (asset.id)}
+                {#each paginatedAssets as asset (asset.id)}
                   {@const areaBadge = getAreaBadgeData(asset.areaName, labels)}
                   {@const deptBadge = getDepartmentBadgeData(asset.departmentName, labels)}
                   {@const teamsBadge = getTeamsBadgeData(asset.teams, labels)}
@@ -720,6 +756,50 @@
               </tbody>
             </table>
           </div>
+          {#if totalPages > 1}
+            <nav
+              class="pagination"
+              id="assets-pagination"
+            >
+              <button
+                type="button"
+                class="pagination__btn pagination__btn--prev"
+                onclick={handlePreviousPage}
+                disabled={currentPage === 1}
+              >
+                <i class="fas fa-chevron-left"></i> Zurück
+              </button>
+              <div class="pagination__pages">
+                {#each visiblePages as page, i (i)}
+                  {#if page.type === 'ellipsis'}
+                    <span class="pagination__ellipsis">...</span>
+                  {:else if page.type === 'page'}
+                    <button
+                      type="button"
+                      class="pagination__page"
+                      class:pagination__page--active={page.active}
+                      onclick={() => {
+                        goToPage(page.value);
+                      }}
+                    >
+                      {page.value}
+                    </button>
+                  {/if}
+                {/each}
+              </div>
+              <span class="pagination__info">
+                Seite {currentPage} von {totalPages} ({filteredAssets.length} Einträge)
+              </span>
+              <button
+                type="button"
+                class="pagination__btn pagination__btn--next"
+                onclick={handleNextPage}
+                disabled={currentPage === totalPages}
+              >
+                Weiter <i class="fas fa-chevron-right"></i>
+              </button>
+            </nav>
+          {/if}
         </div>
       {/if}
     </div>

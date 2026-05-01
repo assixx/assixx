@@ -10,7 +10,7 @@
    */
   import { onDestroy, onMount, type Snippet } from 'svelte';
 
-  import { afterNavigate, beforeNavigate, replaceState } from '$app/navigation';
+  import { afterNavigate, beforeNavigate } from '$app/navigation';
 
   import Breadcrumb from '$lib/components/Breadcrumb.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
@@ -113,8 +113,11 @@
     return data.user?.role ?? 'employee';
   };
 
-  const isBannerDismissed = (role: string): boolean =>
-    getStorageValue(`roleSwitchBannerDismissed_${role}`) === 'true';
+  // Cookie-name prefix for the role-switch-banner dismiss flag — MUST stay
+  // in sync with ROLE_SWITCH_BANNER_DISMISS_COOKIE_PREFIX in
+  // (app)/+layout.server.ts. Per-role keying mirrors the legacy
+  // localStorage scheme (cleared by RoleSwitch.svelte on actual switch).
+  const ROLE_SWITCH_DISMISS_COOKIE_PREFIX = 'assixx_role_switch_banner_dismissed_';
 
   // Role Switch State - activeRole read from localStorage IMMEDIATELY during hydration
   // svelte-ignore state_referenced_locally
@@ -125,7 +128,15 @@
   let sidebarCollapsed = $state(false);
   let mobileMenuOpen = $state(false);
   let isMobile = $state(false);
-  let roleSwitchBannerDismissed = $state(isBannerDismissed(getInitialActiveRole()));
+  // Initialize from SSR cookie-read (data.roleSwitchBannerDismissed) — the
+  // server already resolved the cookie for the current activeRole, so the
+  // banner is suppressed at SSR-time when dismissed → no hydration flash on
+  // hard reload (mirrors SingleRoot/UnverifiedDomain pattern, commit 2026-04-30).
+  // INTENTIONAL: capture initial SSR value; subsequent updates flow through
+  // dismissRoleSwitchBanner() (cookie-write + state-set) and the cleanup in
+  // RoleSwitch.svelte clears the cookie before triggering a hard nav.
+  // svelte-ignore state_referenced_locally
+  let roleSwitchBannerDismissed = $state(data.roleSwitchBannerDismissed);
 
   // Token Timer State
   let tokenTimeLeft = $state('--:--');
@@ -315,10 +326,25 @@
 
     if (ticketId !== null && ticketId !== '') {
       // Strip the query param FIRST — if the bootstrap throws mid-flight we
-      // still want the URL clean. SvelteKit's replaceState does not navigate
-      // and avoids the `history.replaceState` warning (router conflict).
+      // still want the URL clean.
+      //
+      // Why raw `window.history.replaceState` instead of SvelteKit's
+      // `replaceState` from `$app/navigation`: this function is invoked from
+      // `onMount` during the very first hydration after a cross-origin
+      // redirect (apex → tenant subdomain). At that moment SvelteKit's
+      // router has not finished initialising — calling its `replaceState`
+      // throws `Cannot call replaceState(...) before router is initialized`,
+      // which aborts `bootstrapFromUnlockTicket` AND `initialize` below and
+      // leaves the unlock ticket unconsumed (server log: mint without
+      // matching consume; ticket expires after 60 s; user falls into
+      // recoveryRequired on the next attempt). The raw history API has no
+      // such timing constraint. Trade-off: `$page.url` goes stale until the
+      // next navigation, but nothing in this flow re-reads `?unlock=` and
+      // it's already a single-use param. Bug surfaced 2026-05-01 once
+      // signup-side ticket minting started routing fresh users through this
+      // path — see ADR-022 §"Amendment 2026-05-01 — Signup Bootstrap".
       url.searchParams.delete('unlock');
-      replaceState(url, {});
+      window.history.replaceState(window.history.state, '', url.toString());
 
       const recovered = await e2e.bootstrapFromUnlockTicket(userId, ticketId);
       if (!recovered) {
@@ -390,7 +416,12 @@
   /** Dismiss role switch banner */
   function dismissRoleSwitchBanner(): void {
     roleSwitchBannerDismissed = true;
-    localStorage.setItem(`roleSwitchBannerDismissed_${activeRole}`, 'true');
+    // Persistent cookie (Max-Age 1y ≈ 31_536_000s) matches the legacy
+    // localStorage indefinite-persistence semantics. SSR-read on next nav
+    // suppresses the banner before hydration → no hard-reload flash.
+    // Cookie cleared in RoleSwitch.svelte:updateStorageAfterSwitch on actual
+    // role-switch (mirrors the legacy localStorage cleanup loop).
+    document.cookie = `${ROLE_SWITCH_DISMISS_COOKIE_PREFIX}${activeRole}=1; Path=/; Max-Age=31536000; SameSite=Lax`;
   }
 
   // --- LIFECYCLE ---
@@ -530,8 +561,11 @@
        when the tenant has zero verified domains. Disappears the moment one
        gets verified — `(app)/+layout.server.ts` re-fetches `tenantVerified`
        on `invalidateAll()` after the verify-success in /settings/.../domains
-       (v0.3.0 S4). Employees never see this banner per §0.2.5 #16. -->
-  {#if !data.tenantVerified && (userRole === 'root' || userRole === 'admin')}
+       (v0.3.0 S4). Employees never see this banner per §0.2.5 #16.
+       unverifiedDomainBannerDismissed is SSR-read from the dismiss cookie —
+       gating here (not inside the component) suppresses the SSR HTML so the
+       hydration flash on hard reload is gone (commit 2026-04-30). -->
+  {#if !data.tenantVerified && !data.unverifiedDomainBannerDismissed && (userRole === 'root' || userRole === 'admin')}
     <UnverifiedDomainBanner />
   {/if}
 

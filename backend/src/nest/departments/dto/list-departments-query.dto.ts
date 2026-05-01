@@ -19,7 +19,8 @@ function coerceToBooleanOrPassthrough(val: unknown): unknown {
  * List departments query parameters
  */
 export const ListDepartmentsQuerySchema = z.object({
-  includeExtended: z.preprocess(coerceToBooleanOrPassthrough, z.boolean().optional()),
+  // `.optional()` outside preprocess (Zod 4.x regression). ADR-030 §4.
+  includeExtended: z.preprocess(coerceToBooleanOrPassthrough, z.boolean()).optional(),
 });
 
 /**

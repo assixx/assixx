@@ -21,7 +21,8 @@ function coerceToBooleanOrPassthrough(val: unknown): unknown {
  * Delete team query parameters
  */
 export const DeleteTeamQuerySchema = z.object({
-  force: z.preprocess(coerceToBooleanOrPassthrough, z.boolean().optional()),
+  // `.optional()` outside preprocess (Zod 4.x regression). ADR-030 §4.
+  force: z.preprocess(coerceToBooleanOrPassthrough, z.boolean()).optional(),
 });
 
 /**

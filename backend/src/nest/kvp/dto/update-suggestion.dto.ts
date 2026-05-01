@@ -54,10 +54,13 @@ export const UpdateSuggestionSchema = z.object({
     .trim()
     .max(100, 'Estimated cost cannot exceed 100 characters')
     .optional(),
-  actualSavings: z.preprocess(
-    (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
-    z.number().min(0, 'Actual savings must be a non-negative number').optional(),
-  ),
+  // `z.coerce.number()` per ADR-030 §4 — replaces broken `z.preprocess(...,
+  // z.number().optional())` (Zod 4.x: inner `.optional()` reports
+  // "expected nonoptional, received undefined" when the field is missing).
+  actualSavings: z.coerce
+    .number()
+    .min(0, 'Actual savings must be a non-negative number')
+    .optional(),
   status: StatusSchema.optional(),
   assignedTo: IdSchema.optional(),
   rejectionReason: z

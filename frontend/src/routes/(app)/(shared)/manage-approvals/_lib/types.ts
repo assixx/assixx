@@ -58,3 +58,49 @@ export interface RootUserLookup {
   lastName: string;
   email: string;
 }
+
+// =============================================================================
+// Approvals List — pagination types
+// =============================================================================
+//
+// Mirrors backend `PaginatedApprovals` shape (see ApprovalsController list
+// endpoint). Shared between +page.server.ts (SSR) and +page.svelte (client
+// page-change re-fetch via listApprovals). Phase-2 server-driven pagination
+// pattern — see docs/how-to/HOW-TO-FIX-MANAGE-PAGINATION.md.
+
+/**
+ * Single approval row as delivered by `/approvals?page=N&limit=N`. Fields
+ * mirror the backend `ApprovalListItem` projection. The +page.svelte UI
+ * consumes a subset (no `requestedBy`/`assignedTo`/`decidedBy` IDs needed —
+ * names are sufficient for display) but the full shape is kept here so the
+ * type stays a single source of truth across server + client.
+ */
+export interface ApprovalListItem {
+  uuid: string;
+  addonCode: string;
+  sourceEntityType: string;
+  sourceUuid: string;
+  title: string;
+  description: string | null;
+  requestedBy: number;
+  requestedByName: string;
+  assignedTo: number | null;
+  assignedToName: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  priority: string;
+  decidedBy: number | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  rewardAmount: number | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+/** Paginated list envelope — matches backend `PaginatedApprovals`. */
+export interface PaginatedApprovals {
+  items: ApprovalListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}

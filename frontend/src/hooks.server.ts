@@ -45,6 +45,8 @@ const PUBLIC_ROUTES = [
   '/reset-password',
   '/impressum',
   '/datenschutz',
+  '/disclaimer',
+  '/roadmap',
   '/tenant-deletion-approve',
   '/rate-limit',
   '/robots.txt',

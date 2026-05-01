@@ -19,3 +19,6 @@ export {
   UpdateAvailabilityEntryDto,
   UpdateAvailabilityEntrySchema,
 } from './update-availability-entry.dto.js';
+// Step 2.12 (DD-32 / R15) — self-service email-change two-code 2FA flow.
+export { RequestEmailChangeDto, RequestEmailChangeSchema } from './request-email-change.dto.js';
+export { VerifyEmailChangeDto, VerifyEmailChangeSchema } from './verify-email-change.dto.js';

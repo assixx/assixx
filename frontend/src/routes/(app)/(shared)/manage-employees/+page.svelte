@@ -41,6 +41,8 @@
     validateSaveEmployeeForm,
     validateAvailabilityForm,
     buildAvailabilityPayload,
+    getVisiblePages,
+    EMPLOYEES_PER_PAGE,
   } from './_lib/utils';
 
   // Extracted Components
@@ -100,6 +102,9 @@
   let currentStatusFilter = $state<StatusFilter>('active');
   let currentSearchQuery = $state('');
 
+  // Pagination State (client-side, page slice over filteredEmployees)
+  let currentPage = $state(1);
+
   // Search State
   let searchOpen = $state(false);
 
@@ -156,6 +161,20 @@
   const filteredEmployees = $derived(
     applyAllFilters(allEmployees, currentStatusFilter, currentSearchQuery),
   );
+
+  // Derived: Pagination — slice the filtered set into the current page.
+  // SearchResults dropdown still receives `filteredEmployees` (full set) so
+  // a user can jump to a hit on any page. Pagination only governs the table.
+  const totalPages = $derived(
+    Math.max(1, Math.ceil(filteredEmployees.length / EMPLOYEES_PER_PAGE)),
+  );
+  const paginatedEmployees = $derived(
+    filteredEmployees.slice(
+      (currentPage - 1) * EMPLOYEES_PER_PAGE,
+      currentPage * EMPLOYEES_PER_PAGE,
+    ),
+  );
+  const visiblePages = $derived(getVisiblePages(currentPage, totalPages));
 
   // Derived: Current employee for availability modal
   const availabilityEmployee = $derived(
@@ -459,20 +478,36 @@
 
   function handleStatusToggle(status: StatusFilter): void {
     currentStatusFilter = status;
-    // filteredEmployees is $derived - automatically updates when filter changes
   }
 
   function handleSearchInput(e: Event): void {
     const input = e.target as HTMLInputElement;
     currentSearchQuery = input.value;
     searchOpen = currentSearchQuery.trim().length > 0;
-    // filteredEmployees is $derived - automatically updates when search changes
   }
 
   function clearSearch(): void {
     currentSearchQuery = '';
     searchOpen = false;
-    // filteredEmployees is $derived - automatically updates
+  }
+
+  // Reset to page 1 whenever filter set changes — prevents user landing on
+  // an empty page after narrowing search/status. Mount-fire is a no-op.
+  $effect(() => {
+    void currentStatusFilter;
+    void currentSearchQuery;
+    currentPage = 1;
+  });
+
+  // Client-side pagination handlers (no URL update — KISS, see utils.ts)
+  function goToPage(p: number): void {
+    if (p >= 1 && p <= totalPages) currentPage = p;
+  }
+  function handlePreviousPage(): void {
+    if (currentPage > 1) currentPage -= 1;
+  }
+  function handleNextPage(): void {
+    if (currentPage < totalPages) currentPage += 1;
   }
 
   function handleSearchResultClick(employeeId: number): void {
@@ -689,7 +724,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {#each filteredEmployees as employee (employee.id)}
+                  {#each paginatedEmployees as employee (employee.id)}
                     <EmployeeTableRow
                       {employee}
                       {labels}
@@ -705,6 +740,50 @@
                 </tbody>
               </table>
             </div>
+            {#if totalPages > 1}
+              <nav
+                class="pagination"
+                id="employees-pagination"
+              >
+                <button
+                  type="button"
+                  class="pagination__btn pagination__btn--prev"
+                  onclick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  <i class="fas fa-chevron-left"></i> Zurück
+                </button>
+                <div class="pagination__pages">
+                  {#each visiblePages as page, i (i)}
+                    {#if page.type === 'ellipsis'}
+                      <span class="pagination__ellipsis">...</span>
+                    {:else if page.type === 'page'}
+                      <button
+                        type="button"
+                        class="pagination__page"
+                        class:pagination__page--active={page.active}
+                        onclick={() => {
+                          goToPage(page.value);
+                        }}
+                      >
+                        {page.value}
+                      </button>
+                    {/if}
+                  {/each}
+                </div>
+                <span class="pagination__info">
+                  Seite {currentPage} von {totalPages} ({filteredEmployees.length} Einträge)
+                </span>
+                <button
+                  type="button"
+                  class="pagination__btn pagination__btn--next"
+                  onclick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  Weiter <i class="fas fa-chevron-right"></i>
+                </button>
+              </nav>
+            {/if}
           </div>
         {/if}
       </div>

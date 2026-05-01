@@ -114,6 +114,24 @@ function queryDomainByTenantSubdomain(subdomain: string): {
   return { domain, status, isPrimary, verificationToken };
 }
 
+/**
+ * Look up `tenants.id` by subdomain via direct psql. Replaces the previous
+ * body-based extraction (`responseBody.data.tenantId`) — Phase 2 / Step 2.5
+ * removed `tenantId` (and `subdomain`, `tenantVerificationRequired`) from the
+ * `/signup` response body in favour of the `LoginResult` discriminated union
+ * (`{ stage: 'challenge_required', challenge }`). The DB row exists in the
+ * same `systemTransaction` as `tenant_domains`, so the lookup is race-safe.
+ */
+function queryTenantIdBySubdomain(subdomain: string): number | null {
+  const out = execSync(
+    `docker exec assixx-postgres psql -U assixx_user -d assixx -t -A -c "SELECT id FROM tenants WHERE subdomain = '${subdomain}' LIMIT 1"`,
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+  ).trim();
+  if (out === '') return null;
+  const id = Number.parseInt(out, 10);
+  return Number.isFinite(id) ? id : null;
+}
+
 // ─── Setup / teardown ────────────────────────────────────────────────────────
 
 beforeAll(() => {
@@ -233,16 +251,29 @@ describe('POST /api/v2/signup — positive path', () => {
         `Positive signup setup failed: HTTP ${String(res.status)} ${JSON.stringify(responseBody)}`,
       );
     }
-    createdTenantId = responseBody.data?.tenantId as number | undefined;
+    // Phase 2 / Step 2.5 (FEAT_2FA_EMAIL_MASTERPLAN): /signup body changed
+    // from { subdomain, tenantId, tenantVerificationRequired } to
+    // LoginResultBody (`{ stage: 'challenge_required', challenge }`). The
+    // tenant + tenant_domains rows are still committed in the same
+    // systemTransaction — `tenantId` just has to be looked up via DB now.
+    createdTenantId = queryTenantIdBySubdomain(subdomain) ?? undefined;
   });
 
-  it('returns 201 with tenantVerificationRequired=true', () => {
+  it('returns 201 with stage=challenge_required (post-Step-2.5 contract)', () => {
     expect(responseBody?.success).toBe(true);
-    expect(responseBody?.data?.subdomain).toBe(subdomain);
-    expect(responseBody?.data?.tenantId).toBeTypeOf('number');
-    // Signup's post-hardening contract: tell the frontend the new tenant must
-    // run the DNS-TXT dance before user-creation unlocks (§2.8 + Phase 5 UI).
-    expect(responseBody?.data?.tenantVerificationRequired).toBe(true);
+    // Discriminated union — body NEVER carries tokens, subdomain, or tenantId
+    // anymore (R8 + Step 2.5). The tenant_domains DNS-TXT verification is
+    // implied by the seed-pending row asserted in the next test, no longer
+    // by a `tenantVerificationRequired` flag.
+    expect(responseBody?.data?.stage).toBe('challenge_required');
+    expect(responseBody?.data?.challenge).toBeTypeOf('object');
+    expect(responseBody?.data?.challenge?.resendsRemaining).toBe(3);
+    expect(responseBody?.data).not.toHaveProperty('accessToken');
+    expect(responseBody?.data).not.toHaveProperty('refreshToken');
+    expect(responseBody?.data).not.toHaveProperty('subdomain');
+    expect(responseBody?.data).not.toHaveProperty('tenantId');
+    // DB-side lookup confirms tenant was created (replaces the body assertion).
+    expect(createdTenantId).toBeTypeOf('number');
   });
 
   it('seeds a tenant_domains row with status=pending and is_primary=true', () => {

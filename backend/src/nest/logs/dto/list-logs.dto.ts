@@ -10,7 +10,13 @@ import { z } from 'zod';
 import { DateSchema, IdSchema, PaginationSchema } from '../../../schemas/common.schema.js';
 
 /**
- * List logs query schema
+ * List logs query schema.
+ *
+ * `offset` ist nicht mehr separat überschrieben — `PaginationSchema` aus
+ * `common.schema.ts` definiert es bereits korrekt via `z.coerce.number()`.
+ * Der frühere lokale `z.preprocess`-Override war redundant + verstieß gegen
+ * ADR-030 §4 ("z.coerce over z.preprocess"). Entfernt 2026-04-30 zusammen
+ * mit dem PaginationSchema-Fix für den Zod-3→4-Regression-Bug.
  */
 export const ListLogsQuerySchema = PaginationSchema.extend({
   userId: IdSchema.optional(),
@@ -20,10 +26,6 @@ export const ListLogsQuerySchema = PaginationSchema.extend({
   startDate: DateSchema.optional(),
   endDate: DateSchema.optional(),
   search: z.string().trim().optional(),
-  offset: z.preprocess(
-    (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
-    z.number().int().min(0, 'Offset must be a non-negative integer').optional(),
-  ),
 });
 
 /**

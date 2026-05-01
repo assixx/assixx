@@ -28,7 +28,9 @@ export const ListTeamsQuerySchema = z.object({
     .min(1, 'Search term must be at least 1 character')
     .max(100, 'Search term must not exceed 100 characters')
     .optional(),
-  includeMembers: z.preprocess(coerceToBooleanOrPassthrough, z.boolean().optional()),
+  // `.optional()` outside preprocess: Zod 4.x broke the inner-`.optional()`
+  // form. See ADR-030 §4 + PaginationSchema migration (2026-04-30).
+  includeMembers: z.preprocess(coerceToBooleanOrPassthrough, z.boolean()).optional(),
 });
 
 /**

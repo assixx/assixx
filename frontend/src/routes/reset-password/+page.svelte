@@ -20,16 +20,33 @@
   const hasUpperCase = $derived(/[A-Z]/.test(password));
   const hasLowerCase = $derived(/[a-z]/.test(password));
   const hasNumber = $derived(/\d/.test(password));
-  const hasSpecial = $derived(/[!@#$%^&*(),.?":{}|<>]/.test(password));
+  // WHY (2026-04-30): special-char regex aligned with backend PasswordSchema
+  // (common.schema.ts) — previously the live validator's regex was narrower than
+  // the backend's, so users could enter `_` or `+` and the submit button stayed
+  // disabled even though the backend would have accepted the password. Same
+  // 28-char class as the backend now.
+  const hasSpecial = $derived(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password));
   const categoryCount = $derived(
     [hasUpperCase, hasLowerCase, hasNumber, hasSpecial].filter(Boolean).length,
   );
   const isLongEnough = $derived(password.length >= 12);
   const isNotTooLong = $derived(password.length <= 72);
-  const hasEnoughCategories = $derived(categoryCount >= 3);
+  // Policy tightened 2026-04-30: ALL 4 categories required (was 3-of-4).
+  const hasAllCategories = $derived(categoryCount === 4);
+  // ASCII-only whitelist (Microsoft-style, 2026-04-30). Mirrors the backend
+  // PasswordSchema's first refine (common.schema.ts). Empty string treated as
+  // "valid so far" so the checklist item doesn't go red before the user typed.
+  const hasOnlyAllowedChars = $derived(
+    password === '' || /^[A-Za-z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/? ]+$/.test(password),
+  );
   const passwordsMatch = $derived(password === confirmPassword && confirmPassword !== '');
   const isFormValid = $derived(
-    isLongEnough && isNotTooLong && hasEnoughCategories && passwordsMatch && hasToken,
+    isLongEnough &&
+      isNotTooLong &&
+      hasOnlyAllowedChars &&
+      hasAllCategories &&
+      passwordsMatch &&
+      hasToken,
   );
 
   const strengthPercent = $derived.by(() => {
@@ -200,7 +217,12 @@
               <li class:met={hasLowerCase}>Kleinbuchstabe (a-z)</li>
               <li class:met={hasNumber}>Zahl (0-9)</li>
               <li class:met={hasSpecial}>Sonderzeichen (!@#$...)</li>
-              <li class:met={hasEnoughCategories}>Mind. 3 von 4 Kategorien</li>
+              <li class:met={hasAllCategories}>
+                Alle 4 Kategorien (Großbuchst. + Kleinbuchst. + Zahl + Sonderzeichen)
+              </li>
+              <li class:met={hasOnlyAllowedChars}>
+                Nur erlaubte Zeichen (keine Umlaute, Akzente, Emojis)
+              </li>
             </ul>
           {/if}
 

@@ -24,9 +24,9 @@ import {
   authHeaders,
   authOnly,
   ensureTestEmployee,
-  fetchWithRetry,
   getPositionIdsByName,
   loginApitest,
+  loginNonRoot,
 } from './helpers.js';
 
 let auth: AuthState;
@@ -39,8 +39,12 @@ beforeAll(async () => {
   // Ensure test employee exists
   await ensureTestEmployee(auth.authToken);
 
-  // Get employee UUID from users list
-  const usersRes = await fetch(`${BASE_URL}/users?limit=50`, {
+  // Get employee UUID from users list.
+  // Filter by role + bump limit — matches the `helpers.ts` ensureTestEmployee
+  // pattern (lines 646-651). Test tenant fixtures grew past 50 users (kvp
+  // fixtures, 2fa victims), so unfiltered `?limit=50` no longer contains
+  // `employee@assixx.com` and `.find()` returned undefined → throw at line 52.
+  const usersRes = await fetch(`${BASE_URL}/users?role=employee&limit=100`, {
     headers: authOnly(auth.authToken),
   });
   const usersBody = (await usersRes.json()) as JsonBody;
@@ -53,17 +57,9 @@ beforeAll(async () => {
   }
   employeeUuid = employee.uuid;
 
-  // Login as employee for 403 test
-  const empLoginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: 'employee@assixx.com',
-      password: APITEST_PASSWORD,
-    }),
-  });
-  const empLoginBody = (await empLoginRes.json()) as JsonBody;
-  employeeToken = empLoginBody.data.accessToken as string;
+  // Login as employee for 403 test. Full 2-step 2FA dance per FEAT_2FA_EMAIL
+  // Step 2.4 — `loginNonRoot` consolidates the pattern across api-test files.
+  employeeToken = await loginNonRoot('employee@assixx.com', APITEST_PASSWORD);
 });
 
 // ─── GET Default Permissions (seq: 1) ─────────────────────────────────────────
@@ -547,14 +543,9 @@ describe('REGRESSION: manage-permissions self-grant trigger with deputy columns'
         ],
       });
 
-      // 5. Login as team lead
-      const loginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: leadEmail, password: APITEST_PASSWORD }),
-      });
-      const loginBody = (await loginRes.json()) as JsonBody;
-      teamLeadToken = loginBody.data.accessToken as string;
+      // 5. Login as team lead — full 2-step 2FA dance per FEAT_2FA_EMAIL
+      //    Step 2.4 (`loginNonRoot` does login → Mailpit → verify internally).
+      teamLeadToken = await loginNonRoot(leadEmail, APITEST_PASSWORD);
 
       setupOk = true;
     } catch {

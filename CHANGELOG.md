@@ -5,89 +5,134 @@
 > CHANGELOGs after `pnpm changeset:version`. Do not hand-edit — changes
 > will be overwritten on the next release.
 
-## 0.4.13
+## 0.4.14 — 2026-05-01
 
-### Patch Changes
+### Added
 
-- refactor: add participants in kvp
-- fix: cross-origin first-escrow bootstrap (ADR-022 §"New-user scenario")
-- chore: bump grafana v13
-- chore(docker): backend production image switches to `pnpm deploy` pattern (closes ADR-027 §3 deferred); cuts `assixx-backend:prod` image size from 1.27 GB to 614 MB (-52%) by mirroring `Dockerfile.frontend`. Moves frontend-only devDeps (Storybook, Stylelint suite, postcss-html, prettier-plugin-css-order) and 4 duplicates (vite, @tailwindcss/vite, prettier-plugin-svelte, prettier-plugin-tailwindcss) out of root `package.json` into `frontend/package.json` (single source of truth). Root scripts (`storybook`, `build-storybook`, `stylelint*`) now wrap to `pnpm --filter assixx-frontend run …`. Removes dead `eslint-plugin-storybook` import from root `eslint.config.mjs`. Fixes `docs/ARCHITECTURE.md` map drift (`Dockerfile.prod` → `Dockerfile`).
+- Added 2FA on login and signup
 
-## 0.4.12
+## 0.4.13 — 2026-04-28
 
-### Patch Changes
+### Changed
 
-- chore: add version reference and bug report
-- feat: add subdomain in url | Tenant isolation prevention
-- feat: add microsoft oAuth
-- feat: add shift handover
-- chore: add grafana tempo
-- chore: bump node 24.15.0 LTS
-- chore: add otelementry
+- Added participants in kvp
 
-## 0.4.11
+### Fixed
 
-### Patch Changes
+- Cross-origin first-escrow bootstrap (ADR-022 §"New-user scenario")
 
-- chore: bump typsescript from 5 to 6
-- chore: bump postgres from 17 to 18
+  The apex-login → subdomain-handoff flow now creates the user's first escrow
+  blob automatically via a bootstrap-variant of the unlock ticket. Previously
+  documented as deferred in the ADR-022 Amendment 2026-04-22, but every new
+  user (and every database restore without escrow rows) hit a non-recoverable
+  fail-closed state on the second cross-origin login. The unlock ticket payload
+  now optionally carries `argon2Salt + argon2Params` derived on apex; the
+  subdomain generates the X25519 key, registers it, and stores the first
+  escrow blob — all without re-prompting for the password and without a second
+  Argon2id round-trip. Pre-flight check on apex (`GET /e2e/keys/me`) skips
+  the bootstrap when the server already holds an active key for that user
+  (existing-user-without-escrow case → admin reset remains the recovery).
 
-## 0.4.10
+### Docs
 
-### Patch Changes
+- Fixed `docs/ARCHITECTURE.md` map drift (`Dockerfile.prod` → `Dockerfile`)
 
-- feat: add swap requests for shifts
-- feature: add inventory list
-- refactor: cleanup
+### Maintenance
 
-## 0.4.9
+- Bumped grafana v13
+- Backend prod image: `pnpm deploy` pattern — image size 1.27 GB → 614 MB (-52%). Closes ADR-027 §3.
+- Moved frontend-only devDeps from root `package.json` into `frontend/package.json` (single source of truth)
+- Removed dead `eslint-plugin-storybook` import from root `eslint.config.mjs`
 
-### Patch Changes
+## 0.4.12 — 2026-04-25
 
-- refactor: add TPM apporval system
-- feat: add defects chart
+### Added
 
-## 0.4.8
+- Added subdomain in url | Tenant isolation prevention
+- Added microsoft oAuth
+- Added shift handover
 
-### Patch Changes
+### Maintenance
 
-- feat: add position master
+- Added version reference and bug report
+- Added grafana tempo
+- Bumped node 24.15.0 LTS
+- Added otelementry
 
-## 0.4.7
+## 0.4.11 — 2026-04-10
 
-### Patch Changes
+### Maintenance
 
-- feat: add position master
+- Bumped typsescript from 5 to 6
+- Bumped postgres from 17 to 18
 
-## 0.4.6
+## 0.4.10 — 2026-04-10
 
-### Minor Changes
+### Added
 
-- feat: PermissionControl (docs/infrastructure/adr/ADR-036-organizational-scope-access-control.md and docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md)
+- Added swap requests for shifts
+- Added inventory list
 
-## 0.4.5
+### Changed
 
-### Patch Changes
+- Cleaned up
 
-- Refactor: is_active Magic Numbers durch IS_ACTIVE-Konstanten ersetzt (466 Stellen in 134 Dateien). Regressions-Schutz durch 4 Architektur-Tests in CI. Dokumentiert in TYPESCRIPT-STANDARDS.md Section 7.4 + No-Go #16.
-- feat: add organigramm
+## 0.4.9 — 2026-04-01
+
+### Added
+
+- Added defects chart
+
+### Changed
+
+- Added TPM apporval system
+
+## 0.4.8 — 2026-03-28
+
+### Added
+
+- Added position master
+
+## 0.4.7 — 2026-03-28
+
+### Added
+
+- Added position master
+
+## 0.4.6 — 2026-03-14
+
+### Added
+
+- PermissionControl (docs/infrastructure/adr/ADR-036-organizational-scope-access-control.md and docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md)
+
+## 0.4.5 — 2026-03-12
+
+### Added
+
+- Added organigramm
   feat: add dynamic postions
   refactor: renaming feature to addon (module)
   chore: docs updated
   style: adjust landingpage to addon modules
   chore: bump deps
   chore: stabilisation
+- Added organigramm
+
+### Changed
+
+- Is_active Magic Numbers durch IS_ACTIVE-Konstanten ersetzt (466 Stellen in 134 Dateien). Regressions-Schutz durch 4 Architektur-Tests in CI. Dokumentiert in TYPESCRIPT-STANDARDS.md Section 7.4 + No-Go #16.
+- Added adress for customer in db and signup page
+
+### Other
+
 - Partition Health: /health/partitions Endpoint + API-Test
   - Neuer Endpoint `/health/partitions` zur Verifizierung der pg_partman-Konfiguration (Extension, part_config, Partitionen, Defaults)
   - HTTP 200 bei gesundem Zustand, HTTP 503 bei Problemen
   - 9 API-Integrationstests (`partitions.api.test.ts`) verifizieren Partition-Coverage automatisch
   - GRANT für `app_user` auf `partman`-Schema (read-only, Monitoring)
-- refactor: add adress for customer in db and signup page
-- feat: add organigramm
 
-## 0.4.0
+## 0.4.0 — 2026-03-06
 
-### Minor Changes
+### Other
 
 - TPM (Total Productive Maintenance) feature complete: maintenance plans, Kamishibai board, card execution workflow, approval system, schedule projection, slot assistant, escalation, photo uploads, execution history, plan archive/unarchive, work order integration, shift assignments, category/interval/status color config, time estimates, rename machine to assets, audit trail logging, TPM card creation limits, template removal, API tests and full frontend UI

@@ -35,18 +35,53 @@ export const EmailSchema = z
   .trim();
 
 /**
- * Password validation with MODERN security requirements (2024 Standards)
- * - Minimum: 12 characters (NIST 800-63B recommendation)
- * - Maximum: 72 characters (BCrypt limitation - truncates at 72 bytes)
- * - Complexity: At least 3 out of 4 character categories
+ * Allowed character whitelist for passwords — ASCII only, no umlauts/accents/emojis.
  *
- * NOTE: BCrypt has a 72-byte limit. We use 72 chars to be safe with UTF-8.
- * For longer passwords, consider migrating to Argon2id.
+ * WHY (2026-04-30): cross-component UTF-8 handling (login form ↔ DB collation ↔ bcrypt
+ * 72-BYTE limit ↔ JSON transport) is a recurring source of "password works in Postman
+ * but not in prod" bugs. Industry precedent: Microsoft Entra, AWS Cognito, GitHub all
+ * reject non-ASCII passwords with a dedicated error. The whitelist is exactly the union
+ * of the 4 category classes (A-Z, a-z, 0-9, special) plus space — anything outside
+ * fails fast with a clear error BEFORE the category counter runs.
+ *
+ * Bug uncovered during this hardening: prior code silently accepted `Prüfung12345!`
+ * because `/[a-z]/` is ASCII-only — so `ü` was simply ignored, neither counted nor
+ * rejected. With the whitelist refine, the password is rejected at the first gate.
+ */
+const ALLOWED_PASSWORD_CHARS = /^[A-Za-z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/? ]+$/;
+
+/**
+ * Password validation with strict policy (Assixx 2026-04-30)
+ * - Minimum: 12 characters (NIST 800-63B recommendation)
+ * - Maximum: 72 characters (BCrypt limitation — truncates at 72 bytes)
+ * - Charset: ASCII printable only — no umlauts/accents/emojis (whitelist refine)
+ * - Complexity: ALL 4 character categories required (uppercase + lowercase + digit + special)
+ *
+ * WHY tightened from "3 of 4" to "all 4" (2026-04-30): the previous "3 of 4" rule allowed
+ * predictable patterns like `Password1234` (no special) or `password123!` (no upper) that
+ * passed validation but had low real-world entropy. Forcing all four categories is the
+ * minimum-viable UX-honest message ("you MUST include each") without introducing zxcvbn /
+ * pwned-password gates (separate scope). Tests confirmed: every dev/test fixture password
+ * (`ApiTest12345!`, `TestFirmaA12345!`, `TestScs12345!`, `Unverified12345!`, `SecurePass123!`)
+ * already satisfies 4/4 — no test breakage. Existing user logins are unaffected (bcrypt
+ * compare only, no re-validation). Only password reset / change after this date enforces 4/4.
+ *
+ * NOTE: BCrypt has a 72-byte limit. We use 72 chars to be safe with UTF-8 (now moot with
+ * the ASCII-only whitelist — every char is exactly 1 byte). For longer passwords, consider
+ * migrating to Argon2id.
  */
 export const PasswordSchema = z
   .string()
   .min(12, 'Password must be at least 12 characters')
   .max(72, 'Password cannot exceed 72 characters (BCrypt limit)')
+  .refine((password: string) => ALLOWED_PASSWORD_CHARS.test(password), {
+    // Order matters: whitelist gate BEFORE category counter, so non-ASCII inputs
+    // get a clear "disallowed character" error instead of a confusing "missing
+    // lowercase" error (the category regexes are ASCII-only and silently skip
+    // umlauts/accents).
+    message:
+      'Password contains disallowed characters. Only ASCII letters (A-Z, a-z), digits (0-9), and the special characters !@#$%^&*()_+-=[]{};\':"\\|,.<>/? are allowed (no umlauts, accents, or emojis).',
+  })
   .refine(
     (password: string) => {
       // Count how many character categories are present
@@ -64,12 +99,12 @@ export const PasswordSchema = z
       // Category 4: Special characters (common set)
       if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) categoriesPresent++;
 
-      // Require at least 3 out of 4 categories
-      return categoriesPresent >= 3;
+      // Require ALL 4 categories (tightened 2026-04-30)
+      return categoriesPresent === 4;
     },
     {
       message:
-        'Password must contain characters from at least 3 of the following: uppercase, lowercase, numbers, special characters (!@#$%^&*)',
+        'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (!@#$%^&*()_+-=[]{};\':"\\|,.<>/?)',
     },
   );
 
@@ -94,28 +129,26 @@ export const RoleSchema = z.enum(['admin', 'employee', 'root', 'dummy']);
 // ============================================================
 
 /**
- * Pagination query parameters with defaults
- * Transforms string inputs to numbers automatically
+ * Pagination query parameters with defaults.
+ *
+ * WHY z.coerce + .default (and not z.preprocess + .default):
+ * Zod 4.x changed semantics: `.default(N)` no longer triggers when the
+ * preprocess function returns `undefined` for a missing query param —
+ * the inner schema receives `undefined` and reports
+ * `"expected nonoptional, received undefined"`. ADR-030 §4 mandates
+ * `z.coerce.number()` over `z.preprocess` for exactly this reason.
+ * Migrated 2026-04-30 after the regression surfaced as 400 on
+ * `GET /api/v2/logs?limit=5` (root-dashboard SSR loader).
+ *
+ * Behavior contract (matches Zod-3 era expectations):
+ *   - page    → string|number coerced; missing → default 1
+ *   - limit   → string|number coerced; missing → default 10
+ *   - offset  → string|number coerced; missing → undefined (truly optional)
  */
 export const PaginationSchema = z.object({
-  page: z.preprocess((val: unknown) => {
-    if (typeof val === 'string' || typeof val === 'number') {
-      return Number.parseInt(val.toString(), 10);
-    }
-    return 1;
-  }, z.number().int().min(1).default(1)),
-  limit: z.preprocess((val: unknown) => {
-    if (typeof val === 'string' || typeof val === 'number') {
-      return Number.parseInt(val.toString(), 10);
-    }
-    return 10;
-  }, z.number().int().min(1).max(100).default(10)),
-  offset: z.preprocess((val: unknown) => {
-    if (typeof val === 'string' || typeof val === 'number') {
-      return Number.parseInt(val.toString(), 10);
-    }
-    return undefined;
-  }, z.number().int().min(0).optional()),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  offset: z.coerce.number().int().min(0).optional(),
 });
 
 /**

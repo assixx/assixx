@@ -46,6 +46,12 @@ const EnvSchema = z.object({
   SMTP_PORT: z.coerce.number().int().positive().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+  // 2FA (ADR-054 / FEAT_2FA_EMAIL_MASTERPLAN §2.9, DD-13).
+  // Required at runtime so a missing secret crashes startup loud (R11) — the
+  // 2FA code mail must always have a sender. Default keeps dev/test green
+  // when Doppler hasn't been wired yet; production Doppler config supplies
+  // the real address (FEAT_2FA_EMAIL_MASTERPLAN §0.5.2 SMTP domain auth).
+  SMTP_FROM: z.string().min(1).default('noreply@assixx.de'),
 });
 
 type EnvConfig = z.infer<typeof EnvSchema>;
@@ -78,6 +84,7 @@ export class AppConfigService {
       SMTP_PORT: this.configService.get<string>('SMTP_PORT'),
       SMTP_USER: this.configService.get<string>('SMTP_USER'),
       SMTP_PASS: this.configService.get<string>('SMTP_PASS'),
+      SMTP_FROM: this.configService.get<string>('SMTP_FROM'),
     });
 
     if (!result.success) {
@@ -223,5 +230,14 @@ export class AppConfigService {
 
   get hasSmtp(): boolean {
     return this.config.SMTP_HOST !== undefined && this.config.SMTP_PORT !== undefined;
+  }
+
+  /**
+   * Sender address for transactional outbound mail (2FA codes, lockout
+   * notifications). Always defined — Zod default fills in `noreply@assixx.de`
+   * when the secret is missing. ADR-054 / FEAT_2FA_EMAIL_MASTERPLAN DD-13.
+   */
+  get smtpFrom(): string {
+    return this.config.SMTP_FROM;
   }
 }

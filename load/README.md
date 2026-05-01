@@ -29,7 +29,16 @@ Performance-Smoke-Suite für die Assixx-API. Docker-basiert — **kein lokaler k
      --no-auth-warning FLUSHDB
    ```
 
-4. **Docker-Image** (einmalig, läuft automatisch beim ersten Run)
+4. **Mailpit healthy** (`assixx-mailpit` Container, Profile `dev`, Port `8025`)
+   Pflicht seit ADR-054 — jeder Password-Login löst Mandatory-Email-2FA aus, k6 holt den 6-Zeichen-Code aus Mailpit-API in `setup()`. Stack-Default-Profile (`docker/.env: COMPOSE_PROFILES=dev,observability`) enthält Mailpit, also normalerweise schon up.
+
+   ```bash
+   curl -s http://localhost:8025/api/v1/info | jq .Version  # -> "v1.29.7"
+   ```
+
+   Bridge-Helper: `load/lib/2fa-helper.ts` · Setup-Doku: [HOW-TO-DEV-SMTP.md](../docs/how-to/HOW-TO-DEV-SMTP.md) · Limitation: nur lokaler Dev-Stack (Staging/Prod-Load gegen echtes SMTP wäre out-of-band Token-Mint, queued in FEAT_2FA_EMAIL_MASTERPLAN §Phase 7).
+
+5. **Docker-Image** (einmalig, läuft automatisch beim ersten Run)
    ```bash
    docker pull grafana/k6:latest
    ```
@@ -111,14 +120,19 @@ http_req_duration: 'p(95)<500ms';
 
 ## Troubleshooting
 
-| Symptom                                               | Ursache                                 | Lösung                                                       |
-| ----------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------ |
-| `login returns 200: false, got 429`                   | Redis-Throttle voll                     | `docker exec assixx-redis redis-cli ... FLUSHDB`             |
-| `login returns 200: false, got 401`                   | Passwort geändert oder Tenant fehlt     | HOW-TO-CREATE-TEST-USER folgen                               |
-| `connect: connection refused`                         | Backend down                            | `cd docker && docker-compose up -d`                          |
-| `permission denied` auf `$PWD/load`                   | Docker-Mount-Rechte (selten)            | Absoluter Pfad: `-v /home/scs/projects/Assixx/load:/scripts` |
-| Thresholds passen alle, aber `/tpm/plans/cards` → 403 | Addon `tpm` nicht für apitest aktiviert | `INSERT INTO tenant_addons ...` (siehe HOW-TO-TEST §3)       |
-| Endpoints liefern 404 statt 200                       | Route-Pfad hat sich geändert            | Smoke-Test updaten (`load/tests/smoke.ts`)                   |
+| Symptom                                                                                          | Ursache                                                                 | Lösung                                                                                               |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `login returns 200: false, got 429`                                                              | Redis-Throttle voll                                                     | `docker exec assixx-redis redis-cli ... FLUSHDB`                                                     |
+| `login returns 200: false, got 401`                                                              | Passwort geändert oder Tenant fehlt                                     | HOW-TO-CREATE-TEST-USER folgen                                                                       |
+| `pollMailpitForCode: no fresh mail to <email> within 15000ms (Mailpit at http://localhost:8025)` | Mailpit down ODER Backend-SMTP-Send broken ODER `SMTP_HOST≠mailpit`     | `docker-compose ps mailpit` → `(healthy)`; `docker logs assixx-backend \| grep -i 'send.*2fa\|smtp'` |
+| `pollMailpitForCode: ... mailpit search returned 404`                                            | `MAILPIT_URL` zeigt auf falschen Host (rare — nur wenn `__ENV` gesetzt) | `docker run ... -e MAILPIT_URL=http://localhost:8025 ...`                                            |
+| `2FA verify failed for <email>: status=401`                                                      | Code stale/expired (>10 min) ODER Cookie-Jar-Race in setup()            | `pnpm test:load:smoke` erneut starten — k6 setup() ist deterministisch ein Login pro Run             |
+| `2FA verify response for <email> missing accessToken cookie`                                     | Backend-`setAuthCookies` regressed                                      | `auth.controller.ts:174` prüfen; sollte `accessToken`/`refreshToken`/`accessTokenExp` setzen         |
+| `2FA code not found in Mailpit message body — template drift?`                                   | `2fa-code.template.ts:renderCodeMailText` Marker `Ihr Code:` geändert   | Regex in `load/lib/2fa-helper.ts:CODE_REGEX` UND `backend/test/helpers.ts:_extract2faCode` syncen    |
+| `connect: connection refused`                                                                    | Backend down                                                            | `cd docker && docker-compose up -d`                                                                  |
+| `permission denied` auf `$PWD/load`                                                              | Docker-Mount-Rechte (selten)                                            | Absoluter Pfad: `-v /home/scs/projects/Assixx/load:/scripts`                                         |
+| Thresholds passen alle, aber `/tpm/plans/cards` → 403                                            | Addon `tpm` nicht für apitest aktiviert                                 | `INSERT INTO tenant_addons ...` (siehe HOW-TO-TEST §3)                                               |
+| Endpoints liefern 404 statt 200                                                                  | Route-Pfad hat sich geändert                                            | Smoke-Test updaten (`load/tests/smoke.ts`)                                                           |
 
 ---
 

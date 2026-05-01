@@ -33,8 +33,8 @@ APP_USER_PASSWORD="$(doppler secrets get DB_PASSWORD --plain)" ./install.sh
 # 6. Backend starten
 cd ../docker && doppler run -- docker-compose start backend deletion-worker
 
-# 7. Test-Tenant erstellen
-cd .. && ./scripts/create-test-tenant.sh
+# 7. Dev-Tenants seeden (5 Tenants atomar: assixx, firma-a, firma-b, scs, unverified-e2e)
+cd .. && doppler run -- pnpm run db:seed
 
 # 8. Verifizieren
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "
@@ -101,16 +101,28 @@ Führt in Reihenfolge aus:
 
 Backend verbindet sich als `app_user` (mit RLS) zur frischen DB.
 
-### Schritt 7: Test-Tenant
+### Schritt 7: Dev-Tenants seeden
 
-Erstellt via `POST /api/v2/signup`:
+`pnpm run db:seed` führt `database/seeds/*.sql` alphabetisch via `psql -v ON_ERROR_STOP=1` aus:
 
-| Was       | Wert                                |
-| --------- | ----------------------------------- |
-| Tenant    | API Test GmbH (subdomain: `assixx`) |
-| Root-User | info@assixx.com                     |
-| Passwort  | `ApiTest12345!`                     |
-| Addons    | Alle aktiviert (14 Tage Trial)      |
+| Datei                           | Inhalt                                                                                 |
+| ------------------------------- | -------------------------------------------------------------------------------------- |
+| `001_global-seed-data.sql`      | Addons, KVP-Kategorien, Asset-Kategorien (idempotent, ON CONFLICT DO NOTHING)          |
+| `002_test-tenants-dev-only.sql` | 5 Dev-Tenants, alle `is_active=1`, Trial-Addons aktiviert (NON-idempotent — fail-loud) |
+
+**Erstellte Tenants (fixed IDs durch `RESTART IDENTITY` in Schritt 4):**
+
+| ID  | Subdomain        | Root-User                | Passwort           | Domain-Status |
+| --- | ---------------- | ------------------------ | ------------------ | ------------- |
+| 1   | `assixx`         | info@assixx.com          | `ApiTest12345!`    | verified      |
+| 2   | `firma-a`        | test@firma-a.test        | `TestFirmaA12345!` | verified      |
+| 3   | `firma-b`        | test@firma-b.test        | `TestFirmaB12345!` | verified      |
+| 4   | `scs`            | test@scs-technik.de      | `TestScs12345!`    | verified      |
+| 5   | `unverified-e2e` | test@unverified-e2e.test | `Unverified12345!` | **pending**   |
+
+API-Tests verlassen sich auf die fixed IDs — z.B. `tenant-domains.api.test.ts:895` erwartet firma-a auf `tenant_id=2`. Daher ist Schritt 4 (`DROP SCHEMA`) Pflicht-Voraussetzung; ohne saubere Identity-Reset würde der Seed bei `INSERT INTO tenants` mit subdomain-unique-Conflict abbrechen.
+
+> **Migration 2026-04:** Tenant 1 hieß früher `apitest` (Subdomain) mit Domain `apitest.de` — fremde reale Domain, Catch-All-Risiko bei Mails. Migration auf projekt-eigenes `assixx`/`assixx.com`. `apitest` darf nirgendwo mehr im Stack auftauchen.
 
 ### Schritt 8: Verifikation
 
@@ -122,8 +134,8 @@ Erstellt via `POST /api/v2/signup`:
 | RLS Policies | ~121                     |
 | Addons       | 22                       |
 | Migrationen  | 114+                     |
-| Tenants      | 1                        |
-| Users        | 1                        |
+| Tenants      | 5                        |
+| Users        | 5                        |
 
 ---
 

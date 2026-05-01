@@ -74,6 +74,7 @@ import { TeamsModule } from './teams/teams.module.js';
 import { TenantsModule } from './tenants/tenants.module.js';
 import { AppThrottlerModule } from './throttler/throttler.module.js';
 import { TpmModule } from './tpm/tpm.module.js';
+import { TwoFactorAuthModule } from './two-factor-auth/two-factor-auth.module.js';
 import { UserPermissionsModule } from './user-permissions/user-permissions.module.js';
 import { UsersModule } from './users/users.module.js';
 import { VacationModule } from './vacation/vacation.module.js';
@@ -209,6 +210,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     VacationModule,
     WorkOrdersModule,
     TpmModule,
+    TwoFactorAuthModule,
     ChatModule,
     CompanyModule,
     UserPermissionsModule,

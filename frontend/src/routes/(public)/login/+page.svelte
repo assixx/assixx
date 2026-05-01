@@ -11,16 +11,22 @@
   import Seo from '$lib/components/Seo.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import Turnstile from '$lib/components/Turnstile.svelte';
-  import { cryptoBridge } from '$lib/crypto/crypto-bridge';
+  import { mintUnlockTicketOrFallback } from '$lib/crypto/escrow-handoff';
   import { setLoginPassword } from '$lib/crypto/login-password-bridge';
   import { isDark } from '$lib/stores/theme.svelte';
   import { showInfoAlert, showSuccessAlert } from '$lib/stores/toast';
   import { setActiveRole } from '$lib/utils/auth';
-  import { createLogger } from '$lib/utils/logger';
   import { mapOAuthErrorReason } from '$lib/utils/oauth';
   import { getTokenManager } from '$lib/utils/token-manager';
 
-  const log = createLogger('LoginHandoff');
+  // Inline 2FA-verify card content — rendered when `load` returns
+  // `stage: 'verify'` (httpOnly challengeToken cookie present).
+  // FEAT_2FA_EMAIL_MASTERPLAN Step 5.2 v0.8.1 (inline-card revision).
+  import TwoFactorVerifyForm from './_lib/TwoFactorVerifyForm.svelte';
+
+  // Logger lifted to `$lib/crypto/escrow-handoff.ts` along with the
+  // `mintUnlockTicketOrFallback` helpers (2026-05-01). No remaining
+  // log call sites in this file.
 
   import type { ActionData, PageData } from './$types';
 
@@ -36,7 +42,7 @@
   const publicEnv = env as Record<string, string | undefined>;
   const turnstileEnabled = (publicEnv.PUBLIC_TURNSTILE_SITE_KEY ?? '') !== '';
   let turnstileToken = $state('');
-  let turnstileRef: { reset: () => void } | undefined;
+  let turnstileRef = $state<{ reset: () => void } | undefined>(undefined);
 
   // =============================================================================
   // SVELTE 5 RUNES - Reactive State
@@ -49,7 +55,7 @@
   let error: string | null = $state(null);
   let showToast = $state(false);
   let isTimeout = $state(false);
-  let emailRef: HTMLInputElement | undefined;
+  let emailRef = $state<HTMLInputElement | undefined>(undefined);
 
   // Toast auto-dismiss configuration (1:1 like legacy)
   const TOAST_DURATION_SECONDS = 3;
@@ -150,6 +156,13 @@
 
   // Button text - computed from loading state
   const buttonText = $derived(loading ? 'Anmelden...' : 'Anmelden');
+
+  // FEAT_2FA_EMAIL_MASTERPLAN Step 5.2 v0.8.1 — `data.stage` is set by the
+  // `load` function based on the httpOnly `challengeToken` cookie. When a
+  // password login succeeds with `stage='challenge_required'`, the action
+  // mints the cookie and 303-redirects back to /login; load then returns
+  // `stage='verify'` and the card body swaps to the inline TwoFactorVerifyForm.
+  const isVerifyStage = $derived(data.stage === 'verify');
 
   // =============================================================================
   // Toast Helpers (1:1 like legacy login-form-controller.ts)
@@ -260,182 +273,9 @@
     return hasValidUser(data);
   }
 
-  /** Default Argon2id params used when bootstrapping an escrow for a brand-new user.
-   * Matches the in-Worker `wrapKey` defaults so a same-origin password-change re-encrypt
-   * can be done with comparable cost. Stored alongside the blob for future param upgrades. */
-  const DEFAULT_ARGON2_PARAMS = { memory: 65536, iterations: 3, parallelism: 1 } as const;
-
-  interface EscrowMetadata {
-    encryptedBlob: string;
-    argon2Salt: string;
-    xchachaNonce: string;
-    argon2Params: { memory: number; iterations: number; parallelism: number };
-  }
-
-  /** Fetch existing escrow metadata. Returns null on 4xx/5xx OR `data: null`. */
-  async function fetchEscrow(accessToken: string): Promise<EscrowMetadata | null> {
-    const resp = await fetch('/api/v2/e2e/escrow', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!resp.ok) {
-      log.warn(
-        { status: resp.status },
-        'Escrow fetch failed during handoff — continuing without unlock ticket',
-      );
-      return null;
-    }
-    const body = (await resp.json()) as {
-      success?: boolean;
-      data?: EscrowMetadata | null;
-    };
-    return body.data ?? null;
-  }
-
-  /** Pre-flight check: does the server already hold an active E2E key for this user?
-   * Used to distinguish "first-ever login" (no key, no escrow → bootstrap) from
-   * "existing user without escrow" (key present, escrow null → admin reset path). */
-  async function serverHasActiveKey(accessToken: string): Promise<boolean> {
-    const resp = await fetch('/api/v2/e2e/keys/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!resp.ok) {
-      return false;
-    }
-    const body = (await resp.json()) as { success?: boolean; data?: unknown };
-    return body.data !== null && body.data !== undefined;
-  }
-
-  /** Generate a fresh 32-byte salt as base64. */
-  function freshArgon2Salt(): string {
-    const bytes = crypto.getRandomValues(new Uint8Array(32));
-    let binary = '';
-    for (const byte of bytes) {
-      binary += String.fromCharCode(byte);
-    }
-    return btoa(binary);
-  }
-
-  /** Mint the Redis ticket, return the URL with `?unlock=<id>` appended.
-   * Returns `redirectTo` unchanged on any failure (silent → fail-closed downstream). */
-  async function mintTicketOrFallback(
-    redirectTo: string,
-    accessToken: string,
-    body: Record<string, unknown>,
-  ): Promise<string> {
-    const resp = await fetch('/api/v2/e2e/escrow/unlock-ticket', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(body),
-    });
-    if (!resp.ok) {
-      log.warn({ status: resp.status }, 'Unlock ticket mint failed — continuing without ticket');
-      return redirectTo;
-    }
-    const respBody = (await resp.json()) as {
-      success?: boolean;
-      data?: { ticketId: string };
-    };
-    const ticketId = respBody.data?.ticketId;
-    if (typeof ticketId !== 'string' || ticketId === '') {
-      log.warn({ respBody }, 'Unlock ticket response malformed — continuing without ticket');
-      return redirectTo;
-    }
-    const url = new URL(redirectTo);
-    url.searchParams.set('unlock', ticketId);
-    return url.toString();
-  }
-
-  /**
-   * ADR-050 × ADR-022 — cross-origin escrow-unlock-ticket mint.
-   *
-   * Runs client-side on apex AFTER successful login, BEFORE the redirect to
-   * the subdomain. Two branches discriminated by the server's escrow state:
-   *
-   *  1. **Unlock branch** — escrow exists. Derive wrappingKey from
-   *     `(password, escrow.salt, escrow.params)`. Mint a regular unlock
-   *     ticket. Subdomain unwraps the existing blob.
-   *
-   *  2. **Bootstrap branch** (ADR-022 §"New-user scenario") — no escrow yet
-   *     AND server has no active key (true first login). Generate a fresh
-   *     salt, derive wrappingKey from `(password, fresh_salt, defaults)`,
-   *     mint a bootstrap ticket carrying salt + params. Subdomain generates
-   *     its first key + creates the user's first escrow blob.
-   *
-   *  3. **Skip** — no escrow but server already has a key (existing user
-   *     who lost local state on this origin). Bootstrap is unsafe (would
-   *     409 on the subdomain's `generateAndRegisterKey`); fail-closed
-   *     downstream is the correct semantics. Admin reset is the recovery.
-   *
-   * Fail-closed by design: any failure in network, Worker, or response
-   * shape returns `redirectTo` unchanged → subdomain `initialize()` runs
-   * normally and either generates a fresh key (if server has none) or
-   * fail-closes with `recoveryRequired: true` (if it does).
-   *
-   * Security: `accessToken` is used ONLY for the authenticated fetches
-   * below and never leaves this function's scope. `wrappingKey` is derived
-   * inside the Worker and serialised ONCE into the POST body; it lives in
-   * this function's local scope until GC'd by the page unload.
-   */
-  async function mintUnlockTicketOrFallback(
-    redirectTo: string,
-    accessToken: string,
-    userId: number,
-    loginPasswordValue: string,
-  ): Promise<string> {
-    try {
-      // Spin up the Worker. On apex this opens a per-user IndexedDB with no
-      // existing key — a harmless no-op. The Worker is terminated by the
-      // page unload that follows the redirect; nothing persists here.
-      await cryptoBridge.init(userId);
-
-      const escrow = await fetchEscrow(accessToken);
-      if (escrow !== null) {
-        // Unlock branch: derive from the server-stored salt + params.
-        const wrappingKey = await cryptoBridge.deriveWrappingKey(
-          loginPasswordValue,
-          escrow.argon2Salt,
-          escrow.argon2Params,
-        );
-        return await mintTicketOrFallback(redirectTo, accessToken, { wrappingKey });
-      }
-
-      // No escrow → check whether the server already has a key. If yes, this
-      // is an existing user who lost local state on this origin — bootstrap
-      // is unsafe (key already registered, can't reconcile escrow). Skip the
-      // ticket and let the subdomain fail-close with `recoveryRequired`.
-      if (await serverHasActiveKey(accessToken)) {
-        log.info(
-          'No escrow but server has key — skipping bootstrap (admin reset required for this user)',
-        );
-        return redirectTo;
-      }
-
-      // Bootstrap branch: true first login. Mint fresh salt + params, derive,
-      // mint a bootstrap ticket. Subdomain generates the key and stores the
-      // first escrow.
-      const argon2Salt = freshArgon2Salt();
-      const argon2Params = { ...DEFAULT_ARGON2_PARAMS };
-      const wrappingKey = await cryptoBridge.deriveWrappingKey(
-        loginPasswordValue,
-        argon2Salt,
-        argon2Params,
-      );
-      return await mintTicketOrFallback(redirectTo, accessToken, {
-        wrappingKey,
-        argon2Salt,
-        argon2Params,
-      });
-    } catch (err: unknown) {
-      log.warn(
-        { err: err instanceof Error ? err.message : 'unknown' },
-        'Unlock ticket flow threw — continuing without ticket',
-      );
-      return redirectTo;
-    }
-  }
+  // Cross-origin escrow-unlock-ticket helpers lifted to
+  // `$lib/crypto/escrow-handoff.ts` (2026-05-01) so the post-ADR-054 verify
+  // form can reuse them. See `mintUnlockTicketOrFallback` import above.
 
   /**
    * Type guard for the Session 12c handoff-redirect shape.
@@ -542,8 +382,13 @@
         </div>
       {/if}
 
-      <!-- Form Action Error (from server) -->
-      {#if form?.error}
+      <!--
+        Form Action Error (from server) — only shown on the credentials stage.
+        The verify stage's `TwoFactorVerifyForm` owns its own inline error
+        rendering via the enhance callback, so duplicating the toast here
+        would surface the same wrong-code message twice.
+      -->
+      {#if form?.error !== undefined && form.error !== '' && !isVerifyStage}
         <div
           class="toast toast--error"
           data-temp-toast="error"
@@ -558,138 +403,161 @@
         </div>
       {/if}
 
-      <form
-        method="POST"
-        use:enhance={() => {
-          loading = true;
-          return async ({ result, update }) => {
-            loading = false;
+      {#if isVerifyStage}
+        <!--
+          Inline 2FA verify card content (FEAT_2FA_EMAIL_MASTERPLAN Step 5.2
+          v0.8.1, inline-design revision). Component owns its own state +
+          server-action enhance callbacks (`?/verify`, `?/resend` on the
+          parent route). The credentials form, OAuth section, and footer
+          links are intentionally hidden in this stage — only the code-entry
+          card body is rendered, matching the user-requested single-card UX.
+        -->
+        <!--
+          ADR-022 × ADR-054: pass the credentials-stage `password` $state
+          into the verify form so it can call `setLoginPassword(password)`
+          before the post-verify redirect. Without this prop, the same-origin
+          escrow bridge stays empty (sessionStorage never written) and
+          `e2e.initialize()` runs with `loginPassword=null` → no escrow blob
+          is created on the server. The parent's `password` survives the
+          credentials → verify stage transition because it lives at this
+          file's top-level scope, not inside the credentials form's
+          conditional branch.
+        -->
+        <TwoFactorVerifyForm {password} />
+      {:else}
+        <form
+          method="POST"
+          action="?/login"
+          use:enhance={() => {
+            loading = true;
+            return async ({ result, update }) => {
+              loading = false;
 
-            // Session 12c (ADR-050): handoff-redirect branch MUST come FIRST.
-            // Refresh tokens land on the subdomain origin via handleHandoff
-            // (we don't persist them here). We do use the short-lived access
-            // token client-side for ONE purpose: minting the ADR-022 escrow
-            // unlock ticket so the subdomain can recover the E2E private key
-            // without a password re-prompt (2026-04-22 amendment). See
-            // `mintUnlockTicketOrFallback` above for the full rationale +
-            // fail-closed semantics.
-            //
-            // We intentionally skip TokenManager.setTokens(), localStorage,
-            // setActiveRole(), setLoginPassword() etc. — the subdomain's own
-            // `/signup/oauth-complete` consumer sets all of that on its own
-            // origin via Session 12's handleHandoff(). The login-password
-            // bridge is moot because this is a cross-origin redirect; module
-            // memory dies at `window.location.href`.
-            if (result.type === 'success' && isHandoffRedirectData(result.data)) {
-              const { redirectTo, accessToken, user: handoffUser } = result.data;
-              const finalUrl = await mintUnlockTicketOrFallback(
-                redirectTo,
-                accessToken,
-                handoffUser.id,
-                password,
-              );
-              window.location.href = finalUrl;
-              return;
-            }
+              // Session 12c (ADR-050): handoff-redirect branch MUST come FIRST.
+              // Refresh tokens land on the subdomain origin via handleHandoff
+              // (we don't persist them here). We do use the short-lived access
+              // token client-side for ONE purpose: minting the ADR-022 escrow
+              // unlock ticket so the subdomain can recover the E2E private key
+              // without a password re-prompt (2026-04-22 amendment). See
+              // `mintUnlockTicketOrFallback` above for the full rationale +
+              // fail-closed semantics.
+              //
+              // We intentionally skip TokenManager.setTokens(), localStorage,
+              // setActiveRole(), setLoginPassword() etc. — the subdomain's own
+              // `/signup/oauth-complete` consumer sets all of that on its own
+              // origin via Session 12's handleHandoff(). The login-password
+              // bridge is moot because this is a cross-origin redirect; module
+              // memory dies at `window.location.href`.
+              if (result.type === 'success' && isHandoffRedirectData(result.data)) {
+                const { redirectTo, accessToken, user: handoffUser } = result.data;
+                const finalUrl = await mintUnlockTicketOrFallback(
+                  redirectTo,
+                  accessToken,
+                  handoffUser.id,
+                  password,
+                );
+                window.location.href = finalUrl;
+                return;
+              }
 
-            if (result.type === 'success' && isSuccessResultData(result.data)) {
-              const { accessToken, user, redirectTo } = result.data;
+              if (result.type === 'success' && isSuccessResultData(result.data)) {
+                const { accessToken, user, redirectTo } = result.data;
 
-              // Store tokens for client-side API calls
-              getTokenManager().setTokens(accessToken);
-              localStorage.setItem('token', accessToken); // Legacy compatibility
+                // Store tokens for client-side API calls
+                getTokenManager().setTokens(accessToken);
+                localStorage.setItem('token', accessToken); // Legacy compatibility
 
-              // Store user data
-              localStorage.setItem('user', JSON.stringify(user));
-              localStorage.setItem('userRole', user.role);
-              setActiveRole(user.role);
+                // Store user data
+                localStorage.setItem('user', JSON.stringify(user));
+                localStorage.setItem('userRole', user.role);
+                setActiveRole(user.role);
 
-              // Bridge login password for E2E key escrow recovery (ADR-022)
-              // Must happen before redirect — consumed by e2e-state.initialize()
-              setLoginPassword(password);
+                // Bridge login password for E2E key escrow recovery (ADR-022)
+                // Must happen before redirect — consumed by e2e-state.initialize()
+                setLoginPassword(password);
 
-              // Full page load — login is a state boundary (unauthenticated → authenticated).
-              // Client-side goto() fails with Vite 8 SSR: when navigating from /login (outside
-              // (app) group) to dashboard (inside (app) group), the intermediate (app)-layout
-              // insertion doesn't clean up the old SSR-rendered login DOM nodes.
-              window.location.href = redirectTo ?? '/admin-dashboard';
-              return;
-            }
+                // Full page load — login is a state boundary (unauthenticated → authenticated).
+                // Client-side goto() fails with Vite 8 SSR: when navigating from /login (outside
+                // (app) group) to dashboard (inside (app) group), the intermediate (app)-layout
+                // insertion doesn't clean up the old SSR-rendered login DOM nodes.
+                window.location.href = redirectTo ?? '/admin-dashboard';
+                return;
+              }
 
-            // Reset Turnstile for retry (token is single-use)
-            turnstileRef?.reset();
+              // Reset Turnstile for retry (token is single-use)
+              turnstileRef?.reset();
 
-            // On error, update() will populate form.error
-            await update();
-          };
-        }}
-      >
-        <div class="form-field">
-          <label
-            class="form-field__label form-field__label--required"
-            for="email"
-          >
-            E-Mail
-          </label>
+              // On error, update() will populate form.error
+              await update();
+            };
+          }}
+        >
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="email"
+            >
+              E-Mail
+            </label>
+            <input
+              bind:this={emailRef}
+              type="email"
+              id="email"
+              name="email"
+              class="form-field__control"
+              required
+              autocomplete="email"
+              bind:value={email}
+              disabled={loading}
+            />
+          </div>
+
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="password"
+            >
+              Passwort
+            </label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-field__control"
+              required
+              autocomplete="current-password"
+              bind:value={password}
+              disabled={loading}
+            />
+          </div>
+
+          <!-- Cloudflare Turnstile -->
           <input
-            bind:this={emailRef}
-            type="email"
-            id="email"
-            name="email"
-            class="form-field__control"
-            required
-            autocomplete="email"
-            bind:value={email}
-            disabled={loading}
+            type="hidden"
+            name="turnstileToken"
+            value={turnstileToken}
           />
-        </div>
-
-        <div class="form-field">
-          <label
-            class="form-field__label form-field__label--required"
-            for="password"
-          >
-            Passwort
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            class="form-field__control"
-            required
-            autocomplete="current-password"
-            bind:value={password}
-            disabled={loading}
+          <Turnstile
+            bind:this={turnstileRef}
+            bind:token={turnstileToken}
+            action="login"
           />
-        </div>
 
-        <!-- Cloudflare Turnstile -->
-        <input
-          type="hidden"
-          name="turnstileToken"
-          value={turnstileToken}
-        />
-        <Turnstile
-          bind:this={turnstileRef}
-          bind:token={turnstileToken}
-          action="login"
-        />
+          <div class="mt-6">
+            <button
+              type="submit"
+              class="btn btn-primary w-full"
+              disabled={loading || !isFormValid}
+            >
+              {#if loading}
+                <span class="spinner-ring spinner-ring--sm"></span>
+              {/if}
+              {buttonText}
+            </button>
+          </div>
+        </form>
 
-        <div class="mt-6">
-          <button
-            type="submit"
-            class="btn btn-primary w-full"
-            disabled={loading || !isFormValid}
-          >
-            {#if loading}
-              <span class="spinner-ring spinner-ring--sm"></span>
-            {/if}
-            {buttonText}
-          </button>
-        </div>
-      </form>
-
-      <!--
+        <!--
         Microsoft OAuth entry point (UI swap — previously ABOVE the form).
         New reading order per UX request 2026-04-16: email/password is the
         primary path, OAuth is the alternative. Hence:
@@ -698,24 +566,25 @@
         `disabled` stays tied to `loading` so a password submit in flight
         cannot race with an OAuth redirect (same guarantee as §5.2 before).
       -->
-      <div class="oauth-section">
-        <OAuthDivider label="oder" />
-        <MicrosoftSignInButton
-          mode="login"
-          disabled={loading}
-        />
-      </div>
+        <div class="oauth-section">
+          <OAuthDivider label="oder" />
+          <MicrosoftSignInButton
+            mode="login"
+            disabled={loading}
+          />
+        </div>
 
-      <!-- svelte-ignore a11y_invalid_attribute -->
-      <div class="login-footer">
-        <a
-          href="#"
-          onclick={handlePasswordReset}>Passwort vergessen?</a
-        ><a
-          href="#"
-          onclick={handleRequestAccess}>Zugangsdaten beantragen</a
-        >
-      </div>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <div class="login-footer">
+          <a
+            href="#"
+            onclick={handlePasswordReset}>Passwort vergessen?</a
+          ><a
+            href="#"
+            onclick={handleRequestAccess}>Zugangsdaten beantragen</a
+          >
+        </div>
+      {/if}
     </div>
   </main>
 

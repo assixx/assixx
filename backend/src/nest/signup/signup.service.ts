@@ -7,7 +7,13 @@
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { DatabaseError, type PoolClient, type QueryResultRow } from 'pg';
@@ -25,6 +31,8 @@ import {
   extractDomain,
   validateBusinessEmail,
 } from '../domains/email-validator.js';
+import { TwoFactorAuthService } from '../two-factor-auth/two-factor-auth.service.js';
+import type { LoginResult } from '../two-factor-auth/two-factor-auth.types.js';
 import type { SignupDto, SignupResponseData, SubdomainCheckResponseData } from './dto/index.js';
 
 // ============================================================================
@@ -77,16 +85,40 @@ export class SignupService {
     // DNS-TXT lookup side of that service is exercised from `DomainsService`
     // (Step 2.5). Exported from `DomainsModule` (Step 2.8 wiring).
     private readonly domainVerification: DomainVerificationService,
+    // 2FA email gate — Step 2.5 (ADR-054 / DD-11). Password signups create a
+    // pending user (`is_active = INACTIVE`) and immediately issue an email
+    // challenge. Tokens are NOT minted here; the verify endpoint flips the
+    // user to ACTIVE + mints them. OAuth signup (`registerTenantWithOAuth`)
+    // bypasses this dependency per DD-7 — Azure AD is the trust boundary.
+    private readonly twoFactorAuth: TwoFactorAuthService,
   ) {}
 
   /**
-   * Register a new tenant with admin user
+   * Register a new tenant with admin user (password path).
+   *
+   * Step 2.5 (ADR-054) reshapes the post-tx tail into a 2FA gate:
+   *   1. Validate (e-mail gates → subdomain → availability) — unchanged.
+   *   2. `executeRegistrationTransaction` inserts tenant + pending user
+   *      (`is_active = INACTIVE`) + seeds tenant_domains + activates trial
+   *      addons. Atomic; pre-2FA — no tokens are minted yet.
+   *   3. Issue an email challenge via `TwoFactorAuthService.issueChallenge`.
+   *      Mail send is awaited (DD-14 fail-loud); on success we audit the
+   *      registration and return `{ stage: 'challenge_required', challenge }`.
+   *   4. **DD-14 cleanup**: if the SMTP transport throws, the just-created
+   *      user (and conditionally its tenant — anti subdomain-squatting) are
+   *      deleted in a separate `systemTransaction`, then the original 503 is
+   *      re-thrown so the controller surfaces a retryable error to the user.
+   *
+   * The frontend will pivot from the legacy `SignupResponseData` shape to
+   * the discriminated union in Phase 5 (Step 5.4). Until then the signup
+   * UX is interim-broken — documented in masterplan §Step 2.4 "Known
+   * interim state".
    */
   async registerTenant(
     dto: SignupDto,
     ipAddress?: string,
     userAgent?: string,
-  ): Promise<SignupResponseData> {
+  ): Promise<LoginResult> {
     // Validation (no logging needed - errors throw). Email gates first —
     // cheapest check (synchronous, ~1ms), rejects freemail / disposable /
     // malformed before we touch the DB. Both `email` AND `adminEmail`
@@ -97,39 +129,135 @@ export class SignupService {
     this.validateSubdomainOrThrow(dto.subdomain);
     await this.ensureSubdomainAvailable(dto.subdomain);
 
+    // Step 1: persist tenant + pending user. Generic-error wrap kept for
+    // parity with the pre-2FA contract (callers expected BadRequestException
+    // on any tx-level failure). DD-14 cleanup is NOT triggered here — the
+    // transaction either commits (tenant + user exist) or rolls back (no
+    // rows survived to need cleanup).
+    let txResult: { tenantId: number; userId: number; trialEndsAt: Date };
     try {
-      const result = await this.executeRegistrationTransaction(dto);
-
-      await this.createAuditLog(
-        'register',
-        result.userId,
-        result.tenantId,
-        dto,
-        ipAddress,
-        userAgent,
-      );
-
-      // ONE log per operation - all relevant info in one line
-      this.logger.log(
-        `Tenant registered: "${dto.companyName}" (${dto.subdomain}) | tenant=${result.tenantId} user=${result.userId}`,
-      );
-
-      return {
-        tenantId: result.tenantId,
-        userId: result.userId,
-        subdomain: dto.subdomain,
-        trialEndsAt: result.trialEndsAt.toISOString(),
-        message: 'Registration successful! You can now log in.',
-        // Password signup seeds `tenant_domains(pending)` — user must
-        // complete the DNS-TXT dance before creating more users (§2.8).
-        tenantVerificationRequired: true,
-      };
+      txResult = await this.executeRegistrationTransaction(dto);
     } catch (error: unknown) {
       this.logger.error('Registration failed:', error);
       throw new BadRequestException({
         code: ERROR_CODES.REGISTRATION_FAILED,
         message: 'Failed to complete registration',
       });
+    }
+
+    // Step 2: issue 2FA challenge. SMTP send is awaited inside
+    // `issueChallenge` (DD-14). On transport failure the service throws
+    // `ServiceUnavailableException` AND rolls back its own Redis-side
+    // challenge record — we own the DB-side cleanup here.
+    try {
+      const challenge = await this.twoFactorAuth.issueChallenge(
+        txResult.userId,
+        txResult.tenantId,
+        dto.adminEmail,
+        'signup',
+      );
+
+      // Audit registration only AFTER the challenge mail left the building.
+      // Pre-DD-14-cleanup audit would leave an orphan `register` row pointing
+      // at a tenant we've already deleted.
+      await this.createAuditLog(
+        'register',
+        txResult.userId,
+        txResult.tenantId,
+        dto,
+        ipAddress,
+        userAgent,
+      );
+
+      this.logger.log(
+        `Pending tenant created (2FA challenge issued): "${dto.companyName}" (${dto.subdomain}) | tenant=${txResult.tenantId} user=${txResult.userId}`,
+      );
+
+      return { stage: 'challenge_required', challenge };
+    } catch (error: unknown) {
+      // DD-14: SMTP failure → fail-loud + cleanup. Without tenant cleanup an
+      // attacker could squat any premium subdomain by signup-then-tab-close
+      // (no challenge ever delivered, no reaper in scope yet — Step 2.11).
+      // Cleanup is best-effort: even if it fails, surface the original 503
+      // to the user; the stale-pending reaper (Step 2.11) is the safety net.
+      if (error instanceof ServiceUnavailableException) {
+        await this.cleanupFailedSignup(txResult.tenantId, txResult.userId);
+        throw error;
+      }
+      // Non-SMTP error from `issueChallenge` (e.g. user is locked out — can't
+      // happen for a brand-new userId, defensive). Same cleanup pattern, but
+      // collapse to BadRequestException for the legacy contract.
+      this.logger.error('2FA challenge issuance failed during signup:', error);
+      await this.cleanupFailedSignup(txResult.tenantId, txResult.userId);
+      throw new BadRequestException({
+        code: ERROR_CODES.REGISTRATION_FAILED,
+        message: 'Failed to complete registration',
+      });
+    }
+  }
+
+  /**
+   * DD-14 anti-squat cleanup. Runs in its own `systemTransaction` (BYPASSRLS;
+   * the signup user has no CLS context and the tenant is brand-new).
+   *
+   * **Tenant-erasure semantics (ADR-020 compliant):** the masterplan calls
+   * for "delete both users AND tenants row". We achieve that via tenant
+   * deletion + the existing `users.tenant_id ON DELETE CASCADE` FK — the
+   * user vanishes via cascade, never via direct `DELETE FROM users`. This
+   * keeps `signup.service.ts` outside the `users` hard-delete whitelist
+   * enforced by `shared/src/architectural.test.ts:290` (the ADR-020 +
+   * ADR-045 soft-delete-only rule). DD-14 cleanup IS conceptually a tenant
+   * erasure (the tenant should never have existed; we're rolling back the
+   * insert); cascading the user makes that explicit at the SQL layer.
+   *
+   * The branch on "are there other users on this tenant?" is defensive —
+   * there is no race in practice for a fresh signup (we just inserted the
+   * single root user). The check exists to guard against future codepaths
+   * that might attach to a half-built tenant; in that branch we soft-delete
+   * the orphaned pending user (`is_active = DELETED`) and leave the tenant
+   * + the other users intact.
+   *
+   * Tenant deletion also cascades to `tenant_domains`, `tenant_addons`,
+   * etc. via existing FK ON DELETE CASCADE — no manual sweep required.
+   *
+   * Best-effort: a failure here is logged and swallowed so the original
+   * `ServiceUnavailableException` reaches the caller unchanged. The stale-
+   * pending reaper (Step 2.11) catches anything cleanup misses.
+   */
+  private async cleanupFailedSignup(tenantId: number, userId: number): Promise<void> {
+    try {
+      await this.db.systemTransaction(async (client: PoolClient) => {
+        // Count OTHER users (not this pending one) to decide common vs edge.
+        const otherUsersResult = await client.query<{ count: string }>(
+          'SELECT COUNT(*)::text AS count FROM users WHERE tenant_id = $1 AND id <> $2',
+          [tenantId, userId],
+        );
+        const otherCount = otherUsersResult.rows[0]?.count;
+
+        if (otherCount === '0') {
+          // Common case: tenant erasure rolls back the half-built signup.
+          // FK CASCADE on users.tenant_id removes the pending user row.
+          await client.query('DELETE FROM tenants WHERE id = $1', [tenantId]);
+        } else {
+          // Edge case (defensive — does not arise in practice): another user
+          // is attached to this tenant. Soft-delete the orphaned pending
+          // user and leave the tenant + other users untouched.
+          await client.query(
+            `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW() WHERE id = $1`,
+            [userId],
+          );
+        }
+      });
+      this.logger.warn(
+        `DD-14 cleanup: rolled back pending signup tenant=${tenantId} user=${userId} after SMTP failure`,
+      );
+    } catch (cleanupError: unknown) {
+      // Cleanup itself failed — log for ops, but DO NOT mask the original
+      // SMTP error from the caller. Reaper (Step 2.11) is the safety net.
+      this.logger.error(
+        `DD-14 cleanup failed for tenant=${tenantId} user=${userId}:`,
+        cleanupError,
+      );
     }
   }
 
@@ -419,7 +547,16 @@ export class SignupService {
   }
 
   /**
-   * Create root user for new tenant
+   * Create root user for new tenant.
+   *
+   * Step 2.5 (ADR-054): the row lands at `is_active = INACTIVE` and stays
+   * there until the user passes the email-2FA challenge in
+   * `TwoFactorAuthController.verify` (Step 2.7), which flips it to
+   * `IS_ACTIVE.ACTIVE` + sets `tfa_enrolled_at`. If the user abandons the
+   * flow OR SMTP fails, the row is reaped (DD-14 synchronous cleanup or
+   * Step 2.11 stale-pending reaper). OAuth users go through
+   * `createOAuthRootUser` and start ACTIVE because Azure AD already proved
+   * the email (DD-7 exempt).
    */
   private async createRootUser(
     client: PoolClient,
@@ -431,8 +568,8 @@ export class SignupService {
     const userUuid = uuidv7();
 
     const userRows = await client.query<DbUserResult>(
-      `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number, has_full_access, uuid, uuid_created_at)
-       VALUES ($1, $2, $3, 'root', $4, $5, $6, $7, $8, true, $9, NOW())
+      `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number, has_full_access, is_active, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, 'root', $4, $5, $6, $7, $8, true, ${IS_ACTIVE.INACTIVE}, $9, NOW())
        RETURNING id`,
       [
         dto.adminEmail,

@@ -1,8 +1,8 @@
 # Password Validation System Documentation
 
-**Version:** 2.0.0
-**Last Updated:** 2025-11-21
-**Status:** Production Ready - OPTIMALLY LAZY LOADED ✅
+**Version:** 3.0.0
+**Last Updated:** 2026-04-30
+**Status:** Production Ready — Strict Policy (all 4 categories required) ✅
 
 ## 📋 Table of Contents
 
@@ -50,10 +50,17 @@ The Assixx password validation system implements modern security standards with 
 {
   minLength: 12,           // NIST 800-63B recommendation
   maxLength: 72,           // BCrypt limitation
-  categories: 3 of 4,      // Must have 3 of: uppercase, lowercase, numbers, special chars
+  charset: 'ASCII printable only', // No umlauts, accents, emojis (whitelist refine)
+  categories: 4 of 4,      // ALL 4 required: uppercase, lowercase, numbers, special chars
   specialChars: '!@#$%^&*()_+-=[]{};\':"\\|,.<>/?'
 }
 ```
+
+> **Policy change 2026-04-30:** Tightened from "3 of 4" to "all 4 of 4". Rationale:
+> the prior rule allowed predictable passwords like `Password1234` (no special) or
+> `password123!` (no upper). Forcing all four categories is the minimum-viable honest
+> UX message ("you MUST include each") without introducing zxcvbn / pwned-password
+> gates. All dev/test fixture passwords already satisfy 4/4, no test breakage.
 
 ### Validation Layers
 
@@ -109,39 +116,37 @@ graph TB
 ```typescript
 import { z } from 'zod';
 
+const ALLOWED_PASSWORD_CHARS = /^[A-Za-z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/? ]+$/;
+
 /**
- * Password validation with MODERN security requirements (2024 Standards)
+ * Password validation with strict policy (Assixx 2026-04-30)
  * - Minimum: 12 characters (NIST 800-63B recommendation)
- * - Maximum: 72 characters (BCrypt limitation - truncates at 72 bytes)
- * - Complexity: At least 3 out of 4 character categories
+ * - Maximum: 72 characters (BCrypt limitation — truncates at 72 bytes)
+ * - Charset: ASCII printable only (no umlauts/accents/emojis)
+ * - Complexity: ALL 4 character categories required
  */
 export const PasswordSchema = z
   .string()
   .min(12, 'Password must be at least 12 characters')
   .max(72, 'Password cannot exceed 72 characters (BCrypt limit)')
+  .refine((password) => ALLOWED_PASSWORD_CHARS.test(password), {
+    // Whitelist gate runs BEFORE the category counter so non-ASCII inputs
+    // get a clear error instead of a misleading "missing lowercase" message.
+    message:
+      'Password contains disallowed characters. Only ASCII letters, digits, and the special characters !@#$%^&*()_+-=[]{};\':"\\|,.<>/? are allowed (no umlauts, accents, or emojis).',
+  })
   .refine(
-    (password: string) => {
-      // Count how many character categories are present
+    (password) => {
       let categoriesPresent = 0;
-
-      // Category 1: Uppercase letters
       if (/[A-Z]/.test(password)) categoriesPresent++;
-
-      // Category 2: Lowercase letters
       if (/[a-z]/.test(password)) categoriesPresent++;
-
-      // Category 3: Numbers
       if (/\d/.test(password)) categoriesPresent++;
-
-      // Category 4: Special characters (common set)
       if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) categoriesPresent++;
-
-      // Require at least 3 out of 4 categories
-      return categoriesPresent >= 3;
+      return categoriesPresent === 4;
     },
     {
       message:
-        'Password must contain characters from at least 3 of the following: uppercase, lowercase, numbers, special characters (!@#$%^&*)',
+        'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (!@#$%^&*()_+-=[]{};\':"\\|,.<>/?)',
     },
   );
 ```
@@ -311,7 +316,8 @@ try {
 
   <!-- Error Message -->
   <span class="form-field__message form-field__message--error u-hidden" id="new-password-error">
-    Min. 12 Zeichen, 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+    Min. 12 Zeichen, max. 72 Zeichen. Mindestens 1 Großbuchstabe, 1 Kleinbuchstabe, 1 Zahl und 1 Sonderzeichen
+    (!@#$%^&*()_+-=[]{};':"\|,.&lt;&gt;/?)
   </span>
 
   <!-- Feedback Section -->
@@ -505,13 +511,13 @@ CREATE TABLE `password_history` (
 
 ## Testing Guide
 
-### 1. Valid Password Examples
+### 1. Valid Password Examples (must satisfy ALL 4 categories)
 
 ```javascript
-// Minimum valid (12 chars, 3 categories)
-'SecurePass123'; // ✅ Upper, lower, numbers
-'myPassword2024!'; // ✅ All 4 categories
-'SuperSecret$999'; // ✅ Upper, lower, numbers, special
+// Minimum valid (12 chars, all 4 categories)
+'myPassword2024!'; // ✅ Upper + lower + digit + special
+'SuperSecret$999'; // ✅ Upper + lower + digit + special
+'ApiTest12345!'; // ✅ Dev fixture password (all 4)
 
 // Maximum valid (72 chars)
 'This1sAVeryLongPasswordThatReachesTheMaximumLimitOf72CharactersExactly!'; // ✅
@@ -526,25 +532,52 @@ CREATE TABLE `password_history` (
 // Too long
 'a'.repeat(73); // ❌ 73 characters (exceeds BCrypt limit)
 
-// Not enough categories
-('onlylowercase'); // ❌ Only 1 category
-('ONLYUPPERCASE'); // ❌ Only 1 category
-('12345678901'); // ❌ Only 1 category
-('lower123456'); // ❌ Only 2 categories
+// Missing one or more categories (all rejected under 4-of-4 rule)
+('onlylowercase'); // ❌ 1 category — only lowercase
+('ONLYUPPERCASE'); // ❌ 1 category — only uppercase
+('12345678901'); // ❌ 1 category — only digits
+('lower123456'); // ❌ 2 categories — lower + digit
+('SecurePass123'); // ❌ 3/4 — missing special character
+('SecurePass!!xx'); // ❌ 3/4 — missing digit
+('securepass1!!'); // ❌ 3/4 — missing uppercase
+('SECUREPASS1!!'); // ❌ 3/4 — missing lowercase
+('Test@#$%^&*()123'); // ❌ 3/4 — missing lowercase
 ```
 
 ### 3. Edge Cases
 
 ```javascript
-// Special characters in password
-'Test@#$%^&*()123'; // ✅ Should work
-
-// International characters
-'Prüfung123!'; // ✅ Should work (but counts ü as lowercase)
-
-// Spaces
-'My Secure Pass 1!'; // ✅ Spaces are allowed
+// Spaces are allowed (ASCII printable, included in whitelist)
+'My Secure Pa1!'; // ✅ 14 chars, spaces allowed, all 4 categories present
 ```
+
+### 4. Disallowed Characters (Microsoft-style ASCII-only policy, 2026-04-30)
+
+Passwords MUST contain only ASCII printable characters from the four allowed
+categories (plus space). **Non-ASCII characters are rejected with a dedicated
+error BEFORE the category counter runs** — this gives users a clear "disallowed
+character" message instead of a confusing "missing lowercase" message (the
+category regexes are ASCII-only and would silently ignore umlauts otherwise).
+
+```javascript
+'Prüfung12345!'; // ❌ Umlaut `ü` not allowed
+'Größe1234567!'; // ❌ Multiple non-ASCII chars (`ö`, `ß`)
+'Café1234567!Z'; // ❌ Accent `é` not allowed
+'Naïve1234567!'; // ❌ Diaeresis `ï` not allowed
+'Password1!🔒A'; // ❌ Emoji not allowed
+'Password1!\tA'; // ❌ Tab character not allowed
+```
+
+**Rationale:** cross-component UTF-8 handling (login form ↔ database collation
+↔ bcrypt's 72-BYTE limit ↔ JSON transport) is a recurring source of subtle bugs
+("password works in Postman but not in production"). ASCII-only eliminates this
+entire class of failures. Industry-standard precedent: Microsoft Entra ("Ihr
+Kennwort enthält unzulässige Zeichen"), AWS Cognito, GitHub.
+
+**Pre-whitelist bug uncovered during this hardening:** the prior code silently
+accepted `Prüfung12345!` because `/[a-z]/` is ASCII-only — `ü` was simply
+ignored, neither counted nor rejected, and the rest of the password
+(`P+rfung+12345+!`) accidentally satisfied 4-of-4.
 
 ---
 
@@ -888,6 +921,24 @@ ls dist/js/*.js | wc -l
 ---
 
 ## Changelog
+
+### Version 3.0.0 (2026-04-30)
+
+- 🔒 **POLICY TIGHTENED:** Complexity rule changed from "3 of 4 categories" to "ALL 4 categories required"
+  - Forces every password to contain ≥1 uppercase, ≥1 lowercase, ≥1 digit, ≥1 special character
+  - Eliminates predictable single-class-omission patterns (e.g. `Password1234`, `password123!`)
+- 🛡️ **CHARSET LOCKED:** ASCII-only whitelist refine added BEFORE the category counter
+  - Rejects umlauts (`ü`, `ä`, `ö`, `ß`), accents (`é`, `ï`), emojis, tabs, and all non-ASCII
+  - **Bug fix:** prior code silently accepted `Prüfung12345!` because `/[a-z]/` is ASCII-only and `ü` was simply ignored — the whitelist catches it explicitly with a clear error message
+  - Industry precedent: Microsoft Entra, AWS Cognito, GitHub all enforce ASCII-only
+- ✅ **Backend:** `PasswordSchema` in `backend/src/schemas/common.schema.ts` — added whitelist refine + flipped category check from `>= 3` to `=== 4`
+- ✅ **Backend:** `register.dto.ts` unified onto canonical `PasswordSchema` (was a separate, drift-prone validator)
+- ✅ **Frontend:** all 8 UI hint texts updated (signup, reset-password live checklist, 4× constants.ts, RootUserModal)
+- ✅ **Frontend:** `reset-password/+page.svelte` live-validator gained `hasOnlyAllowedChars` derived + UI checklist item; special-char regex aligned with backend (was narrower → submit button stayed disabled for valid passwords using `_`, `+`, `-`, `=`, etc.)
+- ✅ **Tests:** `common.schema.test.ts` flipped 3-of-4-acceptance cases to expected-failure + 9 new non-ASCII rejection tests (umlauts, accents, emojis, tabs, control chars) + ASCII-space acceptance test
+- ✅ **Tests:** `auth.dto.test.ts` flipped reset-password 3-of-4 case + added umlaut rejection test
+- ✅ **Test fixtures:** verified — all dev/test passwords (`ApiTest12345!`, `TestFirmaA12345!`, `TestFirmaB12345!`, `TestScs12345!`, `Unverified12345!`, `SecurePass123!`) already satisfy 4/4 + ASCII-only
+- ⚠️ **Migration impact:** existing user logins are NOT affected (bcrypt-compare only). Users whose stored hash was created from a 3-of-4 or non-ASCII password keep working until next reset/change.
 
 ### Version 2.0.0 (2025-11-21)
 

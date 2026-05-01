@@ -4,5 +4,6 @@
  */
 
 @import './form.base.css';
+@import './form.otp.css';
 @import './password-toggle.css';
 @import './multi-select.css';

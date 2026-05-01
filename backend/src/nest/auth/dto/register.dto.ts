@@ -7,19 +7,13 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { EmailSchema } from '../../../schemas/common.schema.js';
+import { EmailSchema, PasswordSchema } from '../../../schemas/common.schema.js';
 
-/**
- * Enhanced password schema for registration
- * Requires special character in addition to uppercase, lowercase, and number
- */
-const RegistrationPasswordSchema = z
-  .string()
-  .min(8, 'Password must be at least 8 characters long')
-  .regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!$%&*?@])[\d!$%&*?@A-Za-z]/,
-    'Password must contain at least one uppercase letter, one lowercase letter, one number and one special character',
-  );
+// WHY (2026-04-30): the prior local `RegistrationPasswordSchema` (min(8) + narrow regex
+// `[!$%&*?@]`) duplicated and contradicted the canonical `PasswordSchema` (min(12) +
+// full special-char class). The duplicate let registrations through with weaker passwords
+// than password-reset would accept. Unified onto `PasswordSchema` — single source of truth
+// for the "all 4 categories" policy.
 
 /**
  * Name validation schema
@@ -35,7 +29,7 @@ const NameSchema = z
  */
 export const RegisterSchema = z.object({
   email: EmailSchema,
-  password: RegistrationPasswordSchema,
+  password: PasswordSchema,
   firstName: NameSchema,
   lastName: NameSchema,
   role: z.enum(['employee', 'admin']).default('employee'),

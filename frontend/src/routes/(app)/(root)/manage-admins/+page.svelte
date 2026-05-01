@@ -37,7 +37,7 @@
   } from './_lib/page-actions';
   import RoleChangeModals from './_lib/RoleChangeModals.svelte';
   import SearchResults from './_lib/SearchResults.svelte';
-  import { populateFormFromAdmin } from './_lib/utils';
+  import { ADMINS_PER_PAGE, getVisiblePages, populateFormFromAdmin } from './_lib/utils';
 
   import type { PageData } from './$types';
   import type { StatusFilter, FormIsActiveStatus, AvailabilityStatus } from './_lib/types';
@@ -58,6 +58,7 @@
   const error = $state<string | null>(null);
   let currentStatusFilter = $state<StatusFilter>('active');
   let currentSearchQuery = $state('');
+  let currentPage = $state(1);
   let searchOpen = $state(false);
   let showAdminModal = $state(false);
   let showDeleteModal = $state(false);
@@ -98,6 +99,35 @@
   const filteredAdmins = $derived(
     applyAllFilters(allAdmins, currentStatusFilter, currentSearchQuery),
   );
+
+  // Pagination — slice filtered set into the current page (KISS, mirrors
+  // manage-employees). SearchResults still receives `filteredAdmins` (full
+  // set) so users can jump to a hit on any page.
+  const totalPages = $derived(Math.max(1, Math.ceil(filteredAdmins.length / ADMINS_PER_PAGE)));
+  const paginatedAdmins = $derived(
+    filteredAdmins.slice((currentPage - 1) * ADMINS_PER_PAGE, currentPage * ADMINS_PER_PAGE),
+  );
+  const visiblePages = $derived(getVisiblePages(currentPage, totalPages));
+
+  // Reset to page 1 when filter set changes — prevents user landing on
+  // an empty page after narrowing search/status. Mount-fire is a no-op.
+  $effect(() => {
+    void currentStatusFilter;
+    void currentSearchQuery;
+    currentPage = 1;
+  });
+
+  // Client-side pagination handlers (no URL update — KISS, see utils.ts)
+  function goToPage(p: number): void {
+    if (p >= 1 && p <= totalPages) currentPage = p;
+  }
+  function handlePreviousPage(): void {
+    if (currentPage > 1) currentPage -= 1;
+  }
+  function handleNextPage(): void {
+    if (currentPage < totalPages) currentPage += 1;
+  }
+
   const availabilityAdmin = $derived(
     availabilityAdminId !== null ?
       (allAdmins.find((a) => a.id === availabilityAdminId) ?? null)
@@ -521,7 +551,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each filteredAdmins as admin (admin.id)}
+                {#each paginatedAdmins as admin (admin.id)}
                   <AdminTableRow
                     {admin}
                     {labels}
@@ -540,6 +570,50 @@
               </tbody>
             </table>
           </div>
+          {#if totalPages > 1}
+            <nav
+              class="pagination"
+              id="admins-pagination"
+            >
+              <button
+                type="button"
+                class="pagination__btn pagination__btn--prev"
+                onclick={handlePreviousPage}
+                disabled={currentPage === 1}
+              >
+                <i class="fas fa-chevron-left"></i> Zurück
+              </button>
+              <div class="pagination__pages">
+                {#each visiblePages as page, i (i)}
+                  {#if page.type === 'ellipsis'}
+                    <span class="pagination__ellipsis">...</span>
+                  {:else if page.type === 'page'}
+                    <button
+                      type="button"
+                      class="pagination__page"
+                      class:pagination__page--active={page.active}
+                      onclick={() => {
+                        goToPage(page.value);
+                      }}
+                    >
+                      {page.value}
+                    </button>
+                  {/if}
+                {/each}
+              </div>
+              <span class="pagination__info">
+                Seite {currentPage} von {totalPages} ({filteredAdmins.length} Einträge)
+              </span>
+              <button
+                type="button"
+                class="pagination__btn pagination__btn--next"
+                onclick={handleNextPage}
+                disabled={currentPage === totalPages}
+              >
+                Weiter <i class="fas fa-chevron-right"></i>
+              </button>
+            </nav>
+          {/if}
         </div>
       {/if}
     </div>

@@ -84,23 +84,72 @@
   <!-- ================================================================== -->
   <section>
     <h2>2. Hosting</h2>
+
+    <h3>Hetzner Online GmbH (Deutschland)</h3>
     <p>
-      Wir hosten die Inhalte unserer Website und Plattform bei einem externen Dienstleister
-      (Hoster). Die personenbezogenen Daten, die auf dieser Website und Plattform erfasst werden,
-      werden auf den Servern des Hosters gespeichert. Hierbei kann es sich v.&thinsp;a. um
-      IP-Adressen, Kontaktanfragen, Meta- und Kommunikationsdaten, Vertragsdaten, Kontaktdaten,
-      Namen, Websitezugriffe und sonstige Daten, die über eine Website generiert werden, handeln.
+      Wir hosten die Inhalte unserer Website und der Assixx-Plattform bei der
+      <strong>Hetzner Online GmbH</strong>, Industriestr. 25, 91710 Gunzenhausen, Deutschland
+      (nachfolgend „Hetzner"). Sämtliche Server, Datenbanken und der Object Storage für
+      Datei-Uploads (Dokumente, Avatare, Anhänge) befinden sich in deutschen Rechenzentren von
+      Hetzner — für die Beta-Phase konkret im Rechenzentrumspark
+      <strong>Falkenstein (Sachsen)</strong>. Eine Übermittlung in Drittstaaten findet nicht statt.
     </p>
     <p>
-      Der Einsatz des Hosters erfolgt zum Zwecke der Vertragserfüllung gegenüber unseren
+      Auf den Servern werden insbesondere IP-Adressen, Kontaktanfragen, Meta- und
+      Kommunikationsdaten, Vertragsdaten, Kontaktdaten, Namen, Website-Zugriffe sowie sämtliche
+      Plattformdaten (siehe Abschnitt 5) verarbeitet.
+    </p>
+
+    <h3>Rechtsgrundlagen</h3>
+    <p>
+      Der Einsatz von Hetzner erfolgt zum Zwecke der Vertragserfüllung gegenüber unseren
       potenziellen und bestehenden Kunden (Art. 6 Abs. 1 lit. b DSGVO) und im Interesse einer
       sicheren, schnellen und effizienten Bereitstellung unseres Online-Angebots durch einen
       professionellen Anbieter (Art. 6 Abs. 1 lit. f DSGVO).
     </p>
+
+    <h3>Auftragsverarbeitung (AVV)</h3>
     <p>
-      Unser Hoster wird Ihre Daten nur insoweit verarbeiten, wie dies zur Erfüllung seiner
-      Leistungspflichten erforderlich ist und unsere Weisungen in Bezug auf diese Daten befolgen.
-      Wir haben einen Vertrag über Auftragsverarbeitung (AVV) mit unserem Hoster geschlossen.
+      Mit Hetzner ist ein Vertrag über Auftragsverarbeitung gemäß Art. 28 DSGVO abgeschlossen.
+      Hetzner verarbeitet personenbezogene Daten ausschließlich auf unsere Weisung und
+      ausschließlich nach europäischem Datenschutzrecht. Eine Übermittlung an Konzerngesellschaften
+      außerhalb der EU findet nicht statt.
+    </p>
+
+    <h3>Zertifizierungen und technisch-organisatorische Maßnahmen</h3>
+    <p>Hetzner ist nach folgenden Standards zertifiziert bzw. testiert (Stand 2026):</p>
+    <ul>
+      <li>
+        <strong>DIN ISO/IEC 27001:2022</strong> &mdash; Informationssicherheit, ohne Ausschlüsse der Maßnahmen
+        aus Annex A.
+      </li>
+      <li>
+        <strong>BSI C5 Typ&nbsp;2</strong> &mdash; unabhängig geprüftes Sicherheitstestat für Cloud-Dienste
+        über einen definierten Prüfzeitraum.
+      </li>
+      <li>
+        <strong>KRITIS-V / NIS-2</strong> &mdash; Hetzner ist Betreiber kritischer Infrastrukturen und
+        nach §&thinsp;8a BSIG zertifiziert.
+      </li>
+      <li>
+        <strong>PCI&nbsp;DSS 4.0</strong> &mdash; konform (Zahlungsabwicklung läuft über den zertifizierten
+        Partner Computop, nicht bei Hetzner selbst).
+      </li>
+    </ul>
+    <p>
+      Die technischen und organisatorischen Maßnahmen (TOM) gemäß Anlage&nbsp;2 des AVV werden
+      regelmäßig durch externe Auditoren (TÜV&nbsp;Rheinland) geprüft. Weitere Informationen:
+      <a
+        href="https://www.hetzner.com/cloud-made-in-germany"
+        target="_blank"
+        rel="noopener noreferrer">Cloud Made in Germany</a
+      >
+      und
+      <a
+        href="https://docs.hetzner.com/de/general/company-and-policy/information-security-at-hetzner/"
+        target="_blank"
+        rel="noopener noreferrer">Informationssicherheit bei Hetzner</a
+      >.
     </p>
   </section>
 
@@ -432,8 +481,9 @@
 
     <h3>Datenstandort</h3>
     <p>
-      Alle Daten werden auf Servern innerhalb der Europäischen Union gespeichert und verarbeitet.
-      Eine Übermittlung in Drittstaaten findet nicht statt.
+      Alle Daten werden ausschließlich in <strong>Deutschland</strong> gespeichert und verarbeitet &mdash;
+      auf Servern und im Object Storage der Hetzner Online GmbH (siehe Abschnitt&nbsp;2). Eine Übermittlung
+      in Drittstaaten findet nicht statt; Assixx unterliegt ausschließlich europäischem Datenschutzrecht.
     </p>
   </section>
 
@@ -453,7 +503,7 @@
   <p class="legal-updated">Stand: April 2026</p>
 </main>
 
-<LandingFooter />
+<LandingFooter hideRoadmap />
 
 <style>
   /* Content */

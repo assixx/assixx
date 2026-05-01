@@ -69,6 +69,15 @@
         <i class="fas fa-bug"></i>
         Fehler melden
       </a>
+      <!-- Link to the standalone visual roadmap page (Beta → Alpha → RC → Stable).
+           Surfaces the long-term plan to authenticated users on /versioninfo. -->
+      <a
+        href="/roadmap"
+        class="btn btn-cancel"
+      >
+        <i class="fas fa-route"></i>
+        Roadmap ansehen
+      </a>
     </div>
   </section>
 

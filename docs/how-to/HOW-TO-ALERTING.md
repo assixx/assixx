@@ -145,6 +145,209 @@ Loki shows > 50 errors in 5 min. Real incident.
 
 ---
 
+## 5b. 2FA Saved Loki Queries (ADR-054)
+
+Ad-hoc investigation queries for the mandatory email-2FA layer. Paste into
+Grafana **Explore → Loki** (`grafanacloud-logs` for prod, `loki` for dev).
+
+> **Why a doc, not "saved queries" in Grafana UI?** Grafana Explore stars are
+> UI-only and disappear with browser state — not IaC. Library Panels would be
+> overkill for ad-hoc snippets. Code-tracked here = single source of truth +
+> pasteable + survives Cloud-account migration. Once a query graduates to
+> regular use, promote it to a dashboard panel (`docker/grafana/dashboards/cloud/`).
+
+### Canonical query — all 2FA gating events
+
+```logql
+{service="backend"} | json | resource_type="2fa-challenge" or resource_type="2fa-lockout"
+```
+
+Returns every 2FA challenge issuance, verify success, verify fail, and
+lockout-trip. Driven by the `audit_trail` rows that the audit-trail
+interceptor emits as Pino structured logs (Plan §A8).
+
+### Lockout-only (DD-5/DD-6 — 5-wrong-codes → 15-min lockout)
+
+```logql
+{service="backend"} | json | resource_type="2fa-lockout"
+```
+
+Spike here = brute-force attempt or a UX bug producing wrong codes. Cross-check
+with the SMTP-failure-rate alert (`assixx-smtp-failure-rate`) — high lockout
+volume + low SMTP-fail-rate = brute-force; lockouts + high fail-rate = users
+locked out because mail never arrived (transport bug, not attack).
+
+### Production-only filter (cuts dev-noise)
+
+```logql
+{app="assixx", service="backend", env="production"} | json
+  | resource_type="2fa-challenge" or resource_type="2fa-lockout"
+```
+
+Use this when investigating from Grafana Cloud (`grafanacloud-logs`).
+
+### Per-tenant breakdown
+
+```logql
+sum by (tenant_id) (
+  count_over_time(
+    {service="backend"} | json
+      | resource_type="2fa-challenge" or resource_type="2fa-lockout"
+    [5m]
+  )
+)
+```
+
+Identify which tenant drives 2FA traffic — useful when one tenant onboards
+and floods the SMTP queue.
+
+### Click-through to Tempo (ADR-048)
+
+Every log line carries `trace_id` (Pino otelTraceMixin). In Grafana Loki the
+derived-field for `trace_id` opens the corresponding Tempo trace — handy when
+a 2FA verify failure has a non-obvious upstream cause (DB latency, Redis
+eviction, etc.). See [ADR-048](../infrastructure/adr/ADR-048-distributed-tracing-tempo-otel.md)
+Phase 3 for the wiring.
+
+**Cross-references:** [ADR-054](../infrastructure/adr/ADR-054-mandatory-email-2fa.md) §A8 audit tuples ·
+`docker/grafana/alerts/08-smtp-failure-rate.json` (the SMTP-fail-rate alert
+that complements these queries) · masterplan
+[`docs/FEAT_2FA_EMAIL_MASTERPLAN.md`](../FEAT_2FA_EMAIL_MASTERPLAN.md) Phase 6.
+
+---
+
+## 5c. 2FA Audit-Trail Filter Recipes (ADR-054 / ADR-009)
+
+The `audit_trail` table (ADR-009, monthly-partitioned via pg_partman) is the
+authoritative ground truth for compliance + forensics. Loki is fast for
+investigation; `audit_trail` is durable for the auditor. Use these recipes
+when a Loki retention window has expired, or when you need an SQL-grade
+report (joins to `users`/`tenants`/`addons`, COUNTs, GROUP BYs).
+
+> **Connection:** run as `assixx_user` (BYPASSRLS) for cross-tenant queries,
+> or as `app_user` with `SET app.tenant_id = '<id>'` for tenant-scoped reads.
+> See [DATABASE-MIGRATION-GUIDE.md §RLS](../DATABASE-MIGRATION-GUIDE.md).
+
+### Canonical filter — every 2FA event
+
+```sql
+SELECT created_at, tenant_id, user_id, action, resource_type,
+       resource_id, changes
+FROM audit_trail
+WHERE resource_type IN ('2fa-challenge', '2fa-lockout')
+   OR (action = 'login' AND changes->>'method' = '2fa-email')
+ORDER BY created_at DESC
+LIMIT 100;
+```
+
+The `OR` clause catches the discriminated `LoginResult` branch (ADR-054 DD-7)
+that emits an `action='login'` row with `method=2fa-email` in the `changes`
+JSONB — distinguishes 2FA-gated logins from OAuth-bypass logins (DD-7
+`loginWithVerifiedUser`).
+
+### Lockout report — past 24 h
+
+```sql
+SELECT tenant_id, user_id, COUNT(*) AS lockouts,
+       MIN(created_at) AS first_lockout,
+       MAX(created_at) AS last_lockout
+FROM audit_trail
+WHERE resource_type = '2fa-lockout'
+  AND created_at > NOW() - INTERVAL '24 hours'
+GROUP BY tenant_id, user_id
+HAVING COUNT(*) >= 2
+ORDER BY lockouts DESC;
+```
+
+Users with ≥ 2 lockouts in 24 h are candidates for HOW-TO-2FA-RECOVERY.md
+intervention (forgotten mail address, mailbox down, brute-force target).
+
+### Per-tenant 2FA volume — past 7 days
+
+```sql
+SELECT t.subdomain, t.id AS tenant_id,
+       COUNT(*) FILTER (WHERE a.resource_type = '2fa-challenge') AS challenges,
+       COUNT(*) FILTER (WHERE a.resource_type = '2fa-lockout')   AS lockouts,
+       COUNT(*) FILTER (WHERE a.action = 'login'
+                          AND a.changes->>'method' = '2fa-email') AS verified_logins
+FROM audit_trail a
+JOIN tenants t ON t.id = a.tenant_id
+WHERE a.created_at > NOW() - INTERVAL '7 days'
+  AND (a.resource_type IN ('2fa-challenge', '2fa-lockout')
+       OR (a.action = 'login' AND a.changes->>'method' = '2fa-email'))
+GROUP BY t.id, t.subdomain
+ORDER BY challenges DESC;
+```
+
+Capacity-planning + early SMTP-cost signal. A tenant with `challenges >>
+verified_logins` is leaking codes (mail bounces, user retypes).
+
+### Verify-outcome rate — derive lockout precursors
+
+> **Schema note (ADR-054 §A8):** verify-success and verify-fail rows live under
+> `resource_type='auth', action='login'` (NOT `2fa-challenge`, which is only
+> for challenge issuance + resend + email-change). Distinguish 2FA verify
+> from credential-fail via `changes->>'method'='2fa-email'` (success path) and
+> `changes->>'reason' IN ('wrong-code','expired-challenge')` (fail path).
+
+```sql
+SELECT date_trunc('hour', created_at) AS hour,
+       COUNT(*) FILTER (
+         WHERE status = 'success' AND changes->>'method' = '2fa-email'
+       ) AS verified,
+       COUNT(*) FILTER (
+         WHERE status = 'failure'
+           AND changes->>'reason' IN ('wrong-code', 'expired-challenge')
+       ) AS verify_fails,
+       ROUND(
+         100.0 * COUNT(*) FILTER (
+           WHERE status = 'failure'
+             AND changes->>'reason' IN ('wrong-code', 'expired-challenge')
+         )
+         / NULLIF(
+             COUNT(*) FILTER (
+               WHERE (status = 'success' AND changes->>'method' = '2fa-email')
+                  OR (status = 'failure'
+                      AND changes->>'reason' IN ('wrong-code', 'expired-challenge'))
+             ),
+             0
+           ),
+         2
+       ) AS fail_pct
+FROM audit_trail
+WHERE action = 'login'
+  AND resource_type = 'auth'
+  AND created_at > NOW() - INTERVAL '24 hours'
+GROUP BY hour
+ORDER BY hour DESC;
+```
+
+Trend that complements the SMTP-failure-rate alert (`08-smtp-failure-rate.json`).
+SMTP-fail spikes the transport metric; verify-fail spikes the human-error /
+brute-force metric. Both > baseline = correlated incident worth escalation.
+
+### Compliance export — single user, full 2FA history
+
+```sql
+SELECT created_at, action, resource_type, ip_address, user_agent, changes
+FROM audit_trail
+WHERE user_id = $1
+  AND tenant_id = $2
+  AND (resource_type IN ('2fa-challenge', '2fa-lockout')
+       OR (action = 'login' AND changes->>'method' = '2fa-email'))
+ORDER BY created_at;
+```
+
+GDPR Art.15 access-request answer + lost-mailbox forensics
+(see [HOW-TO-2FA-RECOVERY.md](./HOW-TO-2FA-RECOVERY.md) §2 Szenario A).
+
+**Cross-references:** [ADR-009](../infrastructure/adr/ADR-009-central-audit-logging.md)
+audit-trail interceptor + partitioning · [ADR-054](../infrastructure/adr/ADR-054-mandatory-email-2fa.md)
+§A8 audit tuples · [ADR-029](../infrastructure/adr/ADR-029-pg-partman-partition-management.md)
+pg_partman retention · [HOW-TO-2FA-RECOVERY.md](./HOW-TO-2FA-RECOVERY.md).
+
+---
+
 ## 6. Threshold Tuning
 
 All thresholds are conservative first-pass values. After two weeks of

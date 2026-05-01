@@ -24,10 +24,16 @@ SEED_DB="${POSTGRES_DB:-assixx}"
 SEED_USER="${POSTGRES_USER:-assixx_user}"
 SEED_PASS="${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (use: doppler run -- ./scripts/run-seeds.sh)}"
 
-# When DB_HOST is "postgres" (Docker internal), redirect to localhost
-if [ "${SEED_HOST}" = "postgres" ]; then
-  SEED_HOST="localhost"
-fi
+# When DB_HOST is a Docker-internal hostname (only resolvable inside the
+# compose network), redirect to localhost so the host-side `psql` can reach
+# the postgres container via its mapped port. Doppler dev-config injects
+# `DB_HOST=assixx-postgres` (container_name); legacy compose stacks used
+# the bare service name `postgres`.
+case "${SEED_HOST}" in
+  postgres|assixx-postgres)
+    SEED_HOST="localhost"
+    ;;
+esac
 
 echo "=== Assixx Seed Runner ==="
 echo "Host: ${SEED_HOST}:${SEED_PORT}"

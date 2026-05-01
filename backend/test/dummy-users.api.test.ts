@@ -14,9 +14,10 @@ import {
   authHeaders,
   authOnly,
   ensureTestEmployee,
-  fetchWithRetry,
   flushThrottleKeys,
   loginApitest,
+  loginNonRoot,
+  loginNonRootFull,
 } from './helpers.js';
 
 let adminAuth: AuthState;
@@ -59,19 +60,9 @@ describe('Dummy Users: Auth', () => {
   it('should return 403 for employee role', async () => {
     await ensureTestEmployee(adminAuth.authToken);
 
-    // Login as employee
-    const loginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: 'employee@assixx.com',
-        password: APITEST_PASSWORD,
-      }),
-    });
-    expect(loginRes.ok).toBe(true);
-
-    const loginBody = (await loginRes.json()) as JsonBody;
-    const employeeToken = loginBody.data.accessToken as string;
+    // Login as employee — full 2-step 2FA dance per FEAT_2FA_EMAIL Step 2.4
+    // (helpers.loginNonRoot consolidates the pattern across ~7 api-test files).
+    const employeeToken = await loginNonRoot('employee@assixx.com', APITEST_PASSWORD);
 
     const res = await fetch(`${BASE_URL}/dummy-users`, {
       headers: authOnly(employeeToken),
@@ -224,29 +215,14 @@ describe('Dummy Users: Login & Access', () => {
     accessDummyUuid = body.data.uuid as string;
     accessDummyEmail = body.data.email as string;
 
-    // Flush throttle keys to prevent 429 from accumulated login requests
-    await flushThrottleKeys();
+    // Flush throttle keys to prevent 429 from accumulated login requests.
+    flushThrottleKeys();
 
-    // Login as the dummy user
-    const loginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: accessDummyEmail,
-        password: DUMMY_PASSWORD,
-      }),
-    });
-    if (!loginRes.ok) {
-      throw new Error(`Dummy login failed with status ${loginRes.status}`);
-    }
-    const loginBody = (await loginRes.json()) as JsonBody;
-
-    accessDummyAuth = {
-      authToken: loginBody.data.accessToken as string,
-      refreshToken: loginBody.data.refreshToken as string,
-      userId: loginBody.data.user.id as number,
-      tenantId: loginBody.data.user.tenantId as number,
-    };
+    // Login as the dummy user — full 2-step 2FA dance per FEAT_2FA_EMAIL
+    // Step 2.4. Dummy users have email like `dummy_NNN@<tenant>.display`;
+    // their 2FA mail still lands in Mailpit because the SMTP transport is
+    // address-agnostic in dev (mailpit catches everything).
+    accessDummyAuth = await loginNonRootFull(accessDummyEmail, DUMMY_PASSWORD);
   });
 
   // --- Allowed endpoints (auto-assigned read-only permissions) ---

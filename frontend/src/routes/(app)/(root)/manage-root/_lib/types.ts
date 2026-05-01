@@ -85,3 +85,15 @@ export interface PasswordStrengthResult {
   label: string;
   time: string;
 }
+
+/**
+ * Pagination page item — UI representation of a page-button slot.
+ *
+ * Mirrors manage-admins / manage-employees / /logs so the same design-system
+ * pagination markup can be reused 1:1.
+ *
+ * @see frontend/src/design-system/primitives/navigation/pagination.css
+ */
+export type PaginationPageItem =
+  | { type: 'page'; value: number; active?: boolean }
+  | { type: 'ellipsis' };

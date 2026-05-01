@@ -10,10 +10,11 @@ import { z } from 'zod';
  * Delete area query parameters schema
  */
 export const DeleteAreaQuerySchema = z.object({
-  force: z.preprocess(
-    (val: unknown) => val === 'true' || val === true,
-    z.boolean().optional().default(false),
-  ),
+  // `.default(false)` outside preprocess — Zod 4.x broke
+  // `z.preprocess(fn, z.boolean().optional().default(false))`. ADR-030 §4.
+  // `.default()` already covers the missing-key case (no separate `.optional()`
+  // needed). Same regression that forced the PaginationSchema migration.
+  force: z.preprocess((val: unknown) => val === 'true' || val === true, z.boolean()).default(false),
 });
 
 /**

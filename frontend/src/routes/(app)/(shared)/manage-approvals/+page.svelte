@@ -15,9 +15,11 @@
 
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
+  import { listApprovals } from './_lib/api';
   import RootSelfTerminationCard from './RootSelfTerminationCard.svelte';
 
   import type { PageData } from './$types';
+  import type { ApprovalListItem, PaginatedApprovals } from './_lib/types';
 
   // Sidebar badge clears the moment the user lands on /manage-approvals —
   // both pending self-terminations and addon approvals are visible from
@@ -34,27 +36,6 @@
   const { data }: { data: PageData } = $props();
 
   // =============================================================================
-  // TYPES
-  // =============================================================================
-
-  interface ApprovalItem {
-    uuid: string;
-    addonCode: string;
-    sourceEntityType: string;
-    sourceUuid: string;
-    title: string;
-    description: string | null;
-    requestedByName: string;
-    status: 'pending' | 'approved' | 'rejected';
-    priority: string;
-    decidedByName: string | null;
-    decisionNote: string | null;
-    rewardAmount: number | null;
-    isRead: boolean;
-    createdAt: string;
-  }
-
-  // =============================================================================
   // CLIENT STATE
   // =============================================================================
 
@@ -62,13 +43,20 @@
   let addonFilter = $state('');
   let submitting = $state(false);
 
+  // Server-driven pagination — Phase-2 pattern, mirrors manage-dummies.
+  // SSR loads page 1; clientApprovals overrides once the user navigates.
+  // See docs/how-to/HOW-TO-FIX-MANAGE-PAGINATION.md.
+  let currentPage = $state(1);
+  let clientApprovals = $state<PaginatedApprovals | null>(null);
+  let pageLoading = $state(false);
+
   /** Tracks UUIDs marked as read client-side — survives invalidateAll() */
   const locallyRead: Record<string, boolean> = $state({});
 
   // Modal state
   let showApproveModal = $state(false);
   let showRejectModal = $state(false);
-  let activeApproval = $state<ApprovalItem | null>(null);
+  let activeApproval = $state<ApprovalListItem | null>(null);
   let rejectNote = $state('');
   let approveNote = $state('');
   let selectedRewardAmount = $state<number | null>(null);
@@ -147,13 +135,16 @@
   // =============================================================================
 
   const stats = $derived(data.stats);
-  const approvals = $derived(data.approvals);
-  const items = $derived('items' in approvals ? (approvals.items as ApprovalItem[]) : []);
+  const approvals = $derived(clientApprovals ?? data.approvals);
+  const items = $derived(approvals.items);
   const rewardTiers = $derived(data.rewardTiers);
+  const totalPages = $derived(
+    approvals.pageSize > 0 ? Math.max(1, Math.ceil(approvals.total / approvals.pageSize)) : 1,
+  );
 
-  /** Client-side filtering (SSR already filtered, this is for quick toggling) */
+  /** Client-side filtering (applies to the loaded page only — same UX as manage-dummies). */
   const filteredItems = $derived(
-    items.filter((a: ApprovalItem) => {
+    items.filter((a: ApprovalListItem) => {
       if (statusFilter !== '' && a.status !== statusFilter) return false;
       if (addonFilter !== '' && a.addonCode !== addonFilter) return false;
       return true;
@@ -166,17 +157,17 @@
   // HANDLERS
   // =============================================================================
 
-  function isUnread(approval: ApprovalItem): boolean {
+  function isUnread(approval: ApprovalListItem): boolean {
     return !approval.isRead && !locallyRead[approval.uuid];
   }
 
-  function markAsRead(approval: ApprovalItem): void {
+  function markAsRead(approval: ApprovalListItem): void {
     if (approval.isRead || locallyRead[approval.uuid]) return;
     locallyRead[approval.uuid] = true;
     void fetch(`/api/v2/approvals/${approval.uuid}/read`, { method: 'POST' });
   }
 
-  function openApproveModal(approval: ApprovalItem): void {
+  function openApproveModal(approval: ApprovalListItem): void {
     markAsRead(approval);
     activeApproval = approval;
     approveNote = '';
@@ -184,11 +175,30 @@
     showApproveModal = true;
   }
 
-  function openRejectModal(approval: ApprovalItem): void {
+  function openRejectModal(approval: ApprovalListItem): void {
     markAsRead(approval);
     activeApproval = approval;
     rejectNote = '';
     showRejectModal = true;
+  }
+
+  /**
+   * Re-fetch the requested page from the backend. Phase-2 server-driven
+   * pattern (mirrors manage-dummies). Bounded by `totalPages`; no-op on
+   * same-page click. Toast on failure — currentPage stays put.
+   */
+  async function handlePageChange(page: number): Promise<void> {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    pageLoading = true;
+    try {
+      const result = await listApprovals(page, 20);
+      currentPage = page; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+      clientApprovals = result;
+    } catch {
+      showErrorAlert('Fehler beim Laden der Seite');
+    } finally {
+      pageLoading = false;
+    }
   }
 
   async function handleApprove(): Promise<void> {
@@ -207,6 +217,10 @@
         showSuccessAlert('Freigabe genehmigt');
         showApproveModal = false;
         activeApproval = null; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+        // Drop client-side page override so SSR (page 1) becomes authoritative
+        // again — list shrinks by one row, prevents stale page 5 view.
+        clientApprovals = null;
+        currentPage = 1;
         await invalidateAll();
       } else {
         const body = (await res.json()) as { error?: { message?: string } };
@@ -233,6 +247,8 @@
         showRejectModal = false;
         activeApproval = null; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
         rejectNote = ''; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+        clientApprovals = null;
+        currentPage = 1;
         await invalidateAll();
       } else {
         const body = (await res.json()) as { error?: { message?: string } };
@@ -456,6 +472,57 @@
             </tbody>
           </table>
         </div>
+
+        <!--
+          Pagination — Phase-2 server-driven pattern (mirrors manage-dummies).
+          Backend `/approvals` returns `{ items, total, page, pageSize }`; the
+          handler re-fetches the requested page client-side. Closes the silent
+          truncation bug from HOW-TO-FIX-MANAGE-PAGINATION.md.
+        -->
+        {#if totalPages > 1}
+          <nav
+            class="pagination mt-6"
+            aria-label="Seitennavigation"
+          >
+            <button
+              type="button"
+              class="pagination__btn pagination__btn--prev"
+              disabled={currentPage <= 1 || pageLoading}
+              onclick={() => {
+                void handlePageChange(currentPage - 1);
+              }}
+            >
+              <i class="fas fa-chevron-left"></i>
+              Zurück
+            </button>
+            <div class="pagination__pages">
+              {#each Array.from({ length: totalPages }, (_: unknown, i: number) => i + 1) as page (page)}
+                <button
+                  type="button"
+                  class="pagination__page"
+                  class:pagination__page--active={page === currentPage}
+                  disabled={pageLoading}
+                  onclick={() => {
+                    void handlePageChange(page);
+                  }}
+                >
+                  {page}
+                </button>
+              {/each}
+            </div>
+            <button
+              type="button"
+              class="pagination__btn pagination__btn--next"
+              disabled={currentPage >= totalPages || pageLoading}
+              onclick={() => {
+                void handlePageChange(currentPage + 1);
+              }}
+            >
+              Weiter
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </nav>
+        {/if}
       {/if}
     </div>
   </div>

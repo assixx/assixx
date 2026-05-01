@@ -15,6 +15,7 @@ import {
   authOnly,
   ensureTestEmployee,
   loginApitest,
+  loginNonRoot,
 } from './helpers.js';
 
 let auth: AuthState;
@@ -23,18 +24,10 @@ let employeeToken: string;
 beforeAll(async () => {
   auth = await loginApitest();
 
-  // Create employee + login for role-based access tests
+  // Create employee + login for role-based access tests (full 2FA dance per
+  // FEAT_2FA_EMAIL Step 2.4 — `loginNonRoot` consolidates the pattern).
   await ensureTestEmployee(auth.authToken);
-  const loginRes = await fetch(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: 'employee@assixx.com',
-      password: APITEST_PASSWORD,
-    }),
-  });
-  const loginBody = (await loginRes.json()) as JsonBody;
-  employeeToken = loginBody.data.accessToken as string;
+  employeeToken = await loginNonRoot('employee@assixx.com', APITEST_PASSWORD);
 });
 
 // ─── seq: 1 -- Auth Guard ───────────────────────────────────────────────────

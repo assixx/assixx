@@ -11,6 +11,7 @@
     "**/vendor/**",
     "**/*.min.css",
     "**/*.min.scss",
+    "**/*.html",
     "**/node_modules/**",
     "**/dist/**",
     "**/build/**",

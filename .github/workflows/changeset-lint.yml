@@ -1,0 +1,39 @@
+name: Changeset Lint
+
+# Validates `.changeset/*.md` quality on every PR/push that touches them.
+# Single-purpose workflow — `code-quality-checks.yml` ignores `.changeset/**`
+# (paths-ignore), so changeset-only PRs would otherwise bypass all CI.
+#
+# The lint script uses only Node built-ins (`node:fs`, `node:path`,
+# `node:process`) so no pnpm/install step is needed — keeps this workflow
+# under 10 seconds end-to-end.
+#
+# @see scripts/lint-changesets.mjs — rules + rationale
+# @see docs/how-to/HOW-TO-USE-CHANGESETS.md — contributor guide
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".changeset/**"
+      - "scripts/lint-changesets.mjs"
+  push:
+    branches: [main]
+    paths:
+      - ".changeset/**"
+      - "scripts/lint-changesets.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint .changeset/*.md
+    steps:
+      - uses: actions/checkout@v5
+
+      # No setup-node: ubuntu-latest ships Node ≥20, lint script targets
+      # Node ≥18 (ESM imports + node: scheme), so the runner default works.
+      - name: Validate changesets
+        run: node scripts/lint-changesets.mjs

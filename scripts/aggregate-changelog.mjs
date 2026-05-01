@@ -17,6 +17,11 @@
  *   noise, deduplicates bullets that repeat across packages, and writes a
  *   single human-readable root CHANGELOG.md.
  *
+ *   Since 2026-04-28 the script also RE-SECTIONS bullets by Keep-a-Changelog
+ *   headers (Added/Fixed/Changed/Performance/Docs/Maintenance/Breaking/Other)
+ *   based on the `[Section]` tag written by .changeset/changeset-formatter.cjs.
+ *   Legacy entries without a tag (v0.1.0–v0.4.13) bucket into "Other".
+ *
  * Output contract:
  *   - Re-generated on every `changeset:version` run. Do NOT hand-edit.
  *   - Merge conflicts on this file are resolved by re-running the script,
@@ -25,12 +30,39 @@
  * @see docs/how-to/HOW-TO-USE-CHANGESETS.md
  * @see frontend/src/routes/(app)/versioninfo/+page.server.ts — consumer
  */
+import { execSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { stdout } from 'node:process';
+import { argv, stdout } from 'node:process';
 
 const SOURCES = ['backend/CHANGELOG.md', 'frontend/CHANGELOG.md', 'shared/CHANGELOG.md'];
-const OUTPUT = 'CHANGELOG.md';
-const SECTION_ORDER = ['Major Changes', 'Minor Changes', 'Patch Changes'];
+const DEFAULT_OUTPUT = 'CHANGELOG.md';
+
+// Keep-a-Changelog section order for the user-facing root CHANGELOG.
+// `Breaking` first (loudest signal). `Other` last (catch-all for legacy
+// entries written before .changeset/changeset-formatter.cjs existed).
+const SECTION_ORDER = [
+  'Breaking',
+  'Added',
+  'Changed',
+  'Fixed',
+  'Performance',
+  'Docs',
+  'Maintenance',
+  'Other',
+];
+
+// Matches the `[Section] ` tag that .changeset/changeset-formatter.cjs writes
+// at the start of every bullet. Captured group is the KaC section name.
+// Bullets without this tag (legacy v0.1.0–v0.4.13) bucket into "Other".
+const SECTION_TAG_RE = /^- \[(Breaking|Added|Changed|Fixed|Performance|Docs|Maintenance|Other)\] /;
+
+// CLI: `--dry-run [path]` writes to a different path (defaults to /tmp)
+// without touching CHANGELOG.md. Used to preview output before committing
+// the regenerated root CHANGELOG. See HOW-TO-USE-CHANGESETS.md.
+const args = argv.slice(2);
+const dryRunIdx = args.indexOf('--dry-run');
+const isDryRun = dryRunIdx !== -1;
+const OUTPUT = isDryRun ? (args[dryRunIdx + 1] ?? '/tmp/CHANGELOG-preview.md') : DEFAULT_OUTPUT;
 
 const HEADER = `# Assixx
 
@@ -53,16 +85,28 @@ function parseChangelog(raw) {
     const firstNewline = block.indexOf('\n');
     const version = block.slice(0, firstNewline).trim();
     const body = block.slice(firstNewline + 1);
-    const sections = new Map();
-    // Split body on "### <sectionName>".
+    // Bump-type sections (Patch/Minor/Major Changes) are flattened — we
+    // re-bucket bullets by their leading `[Section]` tag instead, since
+    // user-facing changelog cares about Added/Fixed/Changed/etc., not
+    // about whether it was a patch or minor bump.
+    const allBullets = new Set();
     const sectionBlocks = body.split(/^### /m);
     for (const s of sectionBlocks) {
       const match = /^(Patch Changes|Minor Changes|Major Changes)\n([\s\S]*)/.exec(s);
       if (match === null) continue;
-      const sectionName = match[1];
-      const bullets = extractBullets(match[2]);
-      if (!sections.has(sectionName)) sections.set(sectionName, new Set());
-      for (const b of bullets) sections.get(sectionName).add(b);
+      for (const b of extractBullets(match[2])) allBullets.add(b);
+    }
+
+    // Route each bullet into its KaC section based on the `[Section]` tag
+    // written by .changeset/changeset-formatter.cjs. Legacy entries without
+    // a tag fall through to "Other" — preserves history without rewrite.
+    const sections = new Map();
+    for (const bullet of allBullets) {
+      const tagMatch = SECTION_TAG_RE.exec(bullet);
+      const kacSection = tagMatch !== null ? tagMatch[1] : 'Other';
+      const cleaned = bullet.replace(SECTION_TAG_RE, '- ');
+      if (!sections.has(kacSection)) sections.set(kacSection, new Set());
+      sections.get(kacSection).add(cleaned);
     }
     // Always record the version, even if empty — prevents "missing" rows.
     versions.set(version, sections);
@@ -72,22 +116,54 @@ function parseChangelog(raw) {
 
 /**
  * Group body lines into top-level bullets (each starting with "- " at col 0).
- * Continuation lines (indented or blank within a group) attach to the
- * current bullet. Bullets that turn into pure dependency noise after
- * normalization are dropped.
+ *
+ * Continuation rules (Markdown-correct, fixed 2026-04-28):
+ *   - A blank line is NOT a terminator on its own — it's only meaningful
+ *     when the next non-blank line is non-indented and non-bullet.
+ *   - An indented non-blank line (space/tab prefix) attaches to the current
+ *     bullet, preserving any pending blank line(s) for paragraph spacing.
+ *   - A non-indented, non-bullet, non-blank line terminates the current
+ *     bullet (separator before a new section).
+ *
+ * Why this matters: Changesets-default + .changeset/changeset-formatter.cjs
+ * emit multi-line bodies as `- header\n\n  body line 1\n  body line 2`.
+ * The previous loop terminated on the first blank line, dropping the body
+ * entirely (visible regression: v0.4.13 fix-bullet body went missing in
+ * root CHANGELOG.md). Bullets with pure dependency noise after
+ * normalization are still dropped.
  */
 function extractBullets(body) {
   const groups = [];
+  const lines = body.split('\n');
   let current = null;
-  for (const line of body.split('\n')) {
+  let pendingBlanks = 0;
+
+  for (const line of lines) {
     if (/^- /.test(line)) {
       if (current !== null) groups.push(current);
       current = line;
-    } else if (current !== null && (line.startsWith(' ') || line.startsWith('\t'))) {
+      pendingBlanks = 0;
+    } else if (
+      current !== null &&
+      (line.startsWith(' ') || line.startsWith('\t')) &&
+      line.trim() !== ''
+    ) {
+      // Indented continuation — restore any deferred blank lines for
+      // paragraph spacing, then append this line.
+      while (pendingBlanks > 0) {
+        current += '\n';
+        pendingBlanks -= 1;
+      }
       current += '\n' + line;
     } else if (line.trim() === '' && current !== null) {
+      // Defer decision — could be paragraph break (next line indented)
+      // or terminator (next line is a new bullet or unrelated content).
+      pendingBlanks += 1;
+    } else if (current !== null) {
+      // Non-indented, non-bullet, non-blank → terminator.
       groups.push(current);
       current = null;
+      pendingBlanks = 0;
     }
   }
   if (current !== null) groups.push(current);
@@ -113,9 +189,13 @@ function extractBullets(body) {
 function normalize(bullet) {
   const lines = bullet.split('\n');
   const firstLine = lines[0].trim();
-  // Drop auto-generated top-level bullets entirely.
-  if (/^- Updated dependencies(\s*\[[a-f0-9]+\])?$/.test(firstLine)) return null;
-  if (/^- (@assixx\/shared|assixx-backend|assixx-frontend)@\d/.test(firstLine)) return null;
+  // Drop auto-generated top-level bullets entirely. The `\[\w+\] ?` branch
+  // is defense-in-depth: scripts/backfill-legacy-tags.mjs has already
+  // un-tagged these via its self-heal branch, but if a future regression
+  // tags them again, this filter still drops them.
+  if (/^- (?:\[\w+\] )?Updated dependencies(\s*\[[a-f0-9]+\])?$/.test(firstLine)) return null;
+  if (/^- (?:\[\w+\] )?(@assixx\/shared|assixx-backend|assixx-frontend)@\d/.test(firstLine))
+    return null;
   // Strip nested "  - @assixx/shared@X.Y.Z" / "  - assixx-backend@X.Y.Z" lines,
   // then remove the leading "<hash>: " prefix Changesets writes per bullet.
   const kept = lines
@@ -137,6 +217,36 @@ function compareVersions(a, b) {
     if (da !== db) return db - da;
   }
   return 0;
+}
+
+/**
+ * Resolves the release date for a version by querying the matching git
+ * tag's commit date. Falls back to today's date if the tag does not exist
+ * (the in-progress version inside `pnpm changeset:version`, before
+ * `pnpm changeset:tag` runs) or if git is unavailable (e.g. tarball
+ * checkout). YYYY-MM-DD ISO format.
+ *
+ * Why fallback to today: when `changeset version` runs, the new version
+ * has no tag yet — but the release IS happening today. Tag is created
+ * minutes later. CHANGELOG.md committed in step 2 of the release flow
+ * (see HOW-TO-USE-CHANGESETS.md) gets today's date; the actual tag-date
+ * matches within minutes. For all OLDER versions the tag exists, so we
+ * get the real historical release date.
+ *
+ * @param {string} version e.g. "0.4.13"
+ * @returns {string} YYYY-MM-DD
+ */
+function getReleaseDate(version) {
+  try {
+    const out = execSync(`git log -1 --format=%aI "v${version}"`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'], // silence stderr from missing tags
+    }).trim();
+    if (out !== '') return out.split('T')[0];
+  } catch {
+    // Tag missing or git unavailable — fall through to today.
+  }
+  return new Date().toISOString().split('T')[0];
 }
 
 // --- Main ---
@@ -163,7 +273,7 @@ for (const version of sortedVersions) {
   const hasContent = [...merged.values()].some((s) => s.size > 0);
   if (!hasContent) continue;
 
-  out += `## ${version}\n\n`;
+  out += `## ${version} — ${getReleaseDate(version)}\n\n`;
   for (const name of SECTION_ORDER) {
     const bullets = merged.get(name);
     if (bullets === undefined || bullets.size === 0) continue;

@@ -53,7 +53,10 @@ export const load: PageServerLoad = async ({ cookies, fetch, url }) => {
 
   // Parallel fetch: admins + areas + departments + positions
   const [adminsData, areasData, departmentsData, positionsData] = await Promise.all([
-    apiFetch<Admin[]>('/users?role=admin', token, fetch),
+    // limit=100 = backend cap (PaginationSchema.max). For tenants with > 100
+    // admins we need server-driven pagination (Phase 2) — current scope is
+    // client-side pagination on the loaded set (KISS, mirrors manage-employees).
+    apiFetch<Admin[]>('/users?role=admin&limit=100', token, fetch),
     apiFetch<Area[]>('/areas', token, fetch),
     apiFetch<Department[]>('/departments', token, fetch),
     apiFetch<{ id: string; name: string; roleCategory: string }[]>(

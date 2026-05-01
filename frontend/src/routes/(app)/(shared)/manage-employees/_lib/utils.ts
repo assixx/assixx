@@ -23,6 +23,7 @@ import type {
   IsActiveStatus,
   AvailabilityStatus,
   BadgeInfo,
+  PaginationPageItem,
   PasswordStrengthResult,
   FormIsActiveStatus,
 } from './types';
@@ -713,4 +714,55 @@ export function buildAvailabilityPayload(data: AvailabilityFormData): Availabili
     availabilityReason: data.reason !== '' ? data.reason : undefined,
     availabilityNotes: data.notes !== '' ? data.notes : undefined,
   };
+}
+
+// =============================================================================
+// PAGINATION
+// =============================================================================
+
+/**
+ * Page size for client-side pagination of employees.
+ *
+ * 25 = good UX trade-off between scroll-length and page-button-count for
+ * tenants up to ~100 employees (4 pages). Backend cap is 100
+ * (PaginationSchema.max in common.schema.ts) — for larger tenants we will
+ * need server-driven pagination (TODO Phase 2).
+ */
+export const EMPLOYEES_PER_PAGE = 25;
+
+/**
+ * Compute visible page-button slots with ellipsis gaps.
+ *
+ * Window of 5 pages around the current page; renders "1 … N-2 N-1 N N+1 N+2 … TOTAL"
+ * at the edges. Mirrors the helper used by the /logs page so the design-system
+ * pagination markup stays identical across the app.
+ *
+ * @see frontend/src/design-system/primitives/navigation/pagination.css
+ */
+export function getVisiblePages(currentPage: number, totalPages: number): PaginationPageItem[] {
+  const pages: PaginationPageItem[] = [];
+
+  let startPage = Math.max(1, currentPage - 2);
+  const endPage = Math.min(totalPages, startPage + 4);
+  startPage = Math.max(1, endPage - 4);
+
+  if (startPage > 1) {
+    pages.push({ type: 'page', value: 1 });
+    if (startPage > 2) {
+      pages.push({ type: 'ellipsis' });
+    }
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push({ type: 'page', value: i, active: i === currentPage });
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) {
+      pages.push({ type: 'ellipsis' });
+    }
+    pages.push({ type: 'page', value: totalPages });
+  }
+
+  return pages;
 }

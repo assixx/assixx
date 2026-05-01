@@ -12,6 +12,8 @@ Permission denied for any git or rm commands. Tell user to do it!
 
 **Hierarchy Labels Warning (ADR-034):** Custom labels can rename DB entities in the UI — e.g. a tenant can rename `area` to "Abteilungen", but in the DB it remains `areas`/`area_id`, NOT `departments`/`department_id`. Always trust DB column names and URL paths (`/manage-areas`), never the UI label text.
 
+**Greenfield-Production (since 2026-04-19):** No live prod tenants. Breaking changes without backwards-compat shims allowed; no customer-data migration or comms needed at cutover. Status falls the moment the first paying tenant goes live. See [ADR-050 §"Deployment Context: Greenfield Launch"](./docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md).
+
 ---
 
 ## Required Reading

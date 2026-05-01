@@ -44,7 +44,7 @@ export const MESSAGES = {
   currentPasswordWrong: 'Aktuelles Passwort ist falsch',
   passwordMismatch: 'Passwörter stimmen nicht überein',
   passwordRequirements:
-    'Min. 12 Zeichen, 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)',
+    'Min. 12 Zeichen, alle 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)',
 
   // Approvals
   approvalApproved: 'Löschung genehmigt',
@@ -54,9 +54,9 @@ export const MESSAGES = {
   pendingStatus: 'Ausstehend',
 } as const;
 
-/** Password tooltip text */
+/** Password tooltip text — policy tightened 2026-04-30 to require ALL 4 categories */
 export const PASSWORD_TOOLTIP =
-  'Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)';
+  'Min. 12 Zeichen, max. 72 Zeichen. Mindestens 1 Großbuchstabe, 1 Kleinbuchstabe, 1 Zahl und 1 Sonderzeichen (!@#$%^&* () _ + - = [ ] { } ; \' " \\ | , . < > / ?)';
 
 // =============================================================================
 // SELF-TERMINATION MESSAGES (FEAT_ROOT_ACCOUNT_PROTECTION §5.1, German UX)

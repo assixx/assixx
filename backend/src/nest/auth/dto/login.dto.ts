@@ -7,14 +7,38 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import { EmailSchema, PasswordSchema } from '../../../schemas/common.schema.js';
+import { EmailSchema } from '../../../schemas/common.schema.js';
+
+/**
+ * Login password schema — intentionally lightweight.
+ *
+ * WHY (ADR-056, 2026-04-30): the strict `PasswordSchema` from common.schema.ts
+ * (4-of-4 categories + ASCII whitelist + min 12) MUST NOT be applied at login.
+ * Login is a bcrypt-compare path and never sets a password — re-validating the
+ * plaintext at this gate breaks two contracts:
+ *
+ *   1. Anti-enumeration (FEAT_2FA_EMAIL §R10): wrong-password and unknown-email
+ *      must both return 401 with an identical envelope. A 400 here would leak
+ *      the password policy and create a distinguishable signal an attacker can
+ *      probe ("did the validator reject me, or did auth?").
+ *
+ *   2. Legacy-user login (ADR-056 R4 "No regression for existing users"):
+ *      any pre-policy password (3-of-4 or non-ASCII) would be permanently
+ *      locked out at 400 — the user could never authenticate again.
+ *
+ * Bound only at the bcrypt input limit (72 bytes / chars — ASCII-equivalent
+ * here since we never see the plaintext past auth.service.ts) as a DoS guard
+ * against mega-payloads. No min — empty string falls through to bcrypt-compare
+ * which returns false → 401, preserving R10 symmetry.
+ */
+const LoginPasswordSchema = z.string().max(72, 'Password cannot exceed 72 characters');
 
 /**
  * Login request body schema
  */
 export const LoginSchema = z.object({
   email: EmailSchema,
-  password: PasswordSchema,
+  password: LoginPasswordSchema,
 });
 
 /**

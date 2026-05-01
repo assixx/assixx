@@ -23,8 +23,27 @@
 
 const STORAGE_KEY = '__assixx_e2e_pw_bridge';
 
-/** Store the login password for consumption by E2E initialization */
+/**
+ * Store the login password for consumption by E2E initialization.
+ *
+ * Empty-string guard (security): if a caller hands us `''`, we silently
+ * drop it. Why this matters — `e2e-state.svelte.ts:resolveOrRecoverKey`
+ * branches on `loginPassword !== null`, NOT on truthiness; an empty-string
+ * bridge value would still trigger `tryCreateEscrow('')`, which feeds an
+ * empty password to Argon2id and produces a deterministic wrapping key
+ * that any attacker with the DB dump can re-derive trivially.
+ *
+ * Reachable scenario: user reaches the 2FA verify stage (challengeToken
+ * cookie set), reloads the tab (or opens a fresh tab while the cookie is
+ * still valid), and the parent component's `password = $state('')`
+ * remounts empty. Verify still succeeds because the cookie persists, and
+ * without this guard the verify-success branch would bridge `''` and burn
+ * the user's escrow with a worthless wrapping key.
+ *
+ * @see docs/infrastructure/adr/ADR-022-e2e-key-escrow.md §Threat-Model
+ */
 export function setLoginPassword(password: string): void {
+  if (password === '') return;
   if (typeof sessionStorage !== 'undefined') {
     sessionStorage.setItem(STORAGE_KEY, password);
   }
@@ -33,13 +52,19 @@ export function setLoginPassword(password: string): void {
 /**
  * Consume the stored password (one-time use).
  * Returns null if no password was stored or it was already consumed.
+ *
+ * Empty-string guard (security): treats `''` as `null` so any storage
+ * tampering or pre-guard legacy entries that left an empty value cannot
+ * sneak past `e2e-state.svelte.ts`'s `loginPassword !== null` check
+ * and trigger an empty-password Argon2id derivation. See `setLoginPassword`
+ * docblock above for the full threat-model rationale.
  */
 export function consumeLoginPassword(): string | null {
   if (typeof sessionStorage === 'undefined') return null;
 
   const pw = sessionStorage.getItem(STORAGE_KEY);
   sessionStorage.removeItem(STORAGE_KEY);
-  return pw;
+  return pw === '' ? null : pw;
 }
 
 /** Force-clear the stored password (safety net) */

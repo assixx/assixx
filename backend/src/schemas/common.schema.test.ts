@@ -103,22 +103,37 @@ describe('EmailSchema', () => {
 // =============================================================
 
 describe('PasswordSchema', () => {
-  it('should accept valid password with 3 categories (lower+upper+number)', () => {
-    const result = PasswordSchema.safeParse('SecurePass123');
-
-    expect(result.success).toBe(true);
-  });
-
-  it('should accept valid password with 3 categories (lower+upper+special)', () => {
-    expect(PasswordSchema.safeParse('SecurePass!!xx').success).toBe(true);
-  });
-
-  it('should accept valid password with 3 categories (lower+number+special)', () => {
-    expect(PasswordSchema.safeParse('securepass1!!').success).toBe(true);
-  });
+  // Policy tightened 2026-04-30: ALL 4 categories required (uppercase + lowercase + digit + special).
+  // Previously was 3-of-4. WHY: see WHY-comment on PasswordSchema in common.schema.ts.
 
   it('should accept valid password with all 4 categories', () => {
     expect(PasswordSchema.safeParse('SecurePass1!!').success).toBe(true);
+  });
+
+  it('should accept all dev-tenant fixture passwords (4/4 categories)', () => {
+    // Smoke test: every seed password from database/seeds/002_test-tenants-dev-only.sql
+    // and backend/test/helpers.ts must remain valid under the tightened rule.
+    expect(PasswordSchema.safeParse('ApiTest12345!').success).toBe(true);
+    expect(PasswordSchema.safeParse('TestFirmaA12345!').success).toBe(true);
+    expect(PasswordSchema.safeParse('TestFirmaB12345!').success).toBe(true);
+    expect(PasswordSchema.safeParse('TestScs12345!').success).toBe(true);
+    expect(PasswordSchema.safeParse('Unverified12345!').success).toBe(true);
+  });
+
+  it('should reject password missing special character (3 of 4: U+l+d)', () => {
+    expect(PasswordSchema.safeParse('SecurePass123').success).toBe(false);
+  });
+
+  it('should reject password missing digit (3 of 4: U+l+special)', () => {
+    expect(PasswordSchema.safeParse('SecurePass!!xx').success).toBe(false);
+  });
+
+  it('should reject password missing uppercase (3 of 4: l+d+special)', () => {
+    expect(PasswordSchema.safeParse('securepass1!!').success).toBe(false);
+  });
+
+  it('should reject password missing lowercase (3 of 4: U+d+special)', () => {
+    expect(PasswordSchema.safeParse('SECUREPASS1!!').success).toBe(false);
   });
 
   it('should fail for password shorter than 12 characters', () => {
@@ -137,6 +152,49 @@ describe('PasswordSchema', () => {
 
   it('should fail with only 1 category (all lowercase)', () => {
     expect(PasswordSchema.safeParse('alllowercase!').success).toBe(false);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Non-ASCII whitelist (Microsoft-style ASCII-only policy, added 2026-04-30)
+  // WHY: cross-component UTF-8 handling causes "works in dev, fails in prod"
+  // bugs. Whitelist refine runs BEFORE the category counter so users get a
+  // clear "disallowed character" error instead of a confusing "missing lower-
+  // case" error (since /[a-z]/ silently ignores umlauts).
+  // ---------------------------------------------------------------------------
+
+  it('should reject password with German umlaut (ü)', () => {
+    // Pre-whitelist bug: this used to pass silently because P+rfng matched
+    // /[a-z]/ and ü was simply ignored, satisfying 4/4 by accident.
+    expect(PasswordSchema.safeParse('Prüfung12345!').success).toBe(false);
+  });
+
+  it('should reject password with multiple German umlauts (ö, ß)', () => {
+    expect(PasswordSchema.safeParse('Größe1234567!').success).toBe(false);
+  });
+
+  it('should reject password with French accent (é)', () => {
+    expect(PasswordSchema.safeParse('Café1234567!Z').success).toBe(false);
+  });
+
+  it('should reject password with diaeresis (ï)', () => {
+    expect(PasswordSchema.safeParse('Naïve1234567!').success).toBe(false);
+  });
+
+  it('should reject password with emoji', () => {
+    expect(PasswordSchema.safeParse('Password1!🔒A').success).toBe(false);
+  });
+
+  it('should reject password with tab character', () => {
+    expect(PasswordSchema.safeParse('Password1!\tA').success).toBe(false);
+  });
+
+  it('should reject password with non-printable control character', () => {
+    expect(PasswordSchema.safeParse('Password1!A').success).toBe(false);
+  });
+
+  it('should accept password with ASCII space (printable, in whitelist)', () => {
+    // 14 chars, U=M+S+P, l=ye+ec+ass, d=1, special=! → 4/4 valid, all ASCII printable
+    expect(PasswordSchema.safeParse('My Secure Pa1!').success).toBe(true);
   });
 });
 
