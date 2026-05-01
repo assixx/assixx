@@ -56,4 +56,4 @@ Title prefix drives auto-label (see .github/workflows/pr-auto-label.yml):
 
 ---
 
-> Reference: [HOW-TO-TEST](../docs/how-to/HOW-TO-TEST.md) · [Changesets](../docs/how-to/HOW-TO-USE-CHANGESETS.md)
+> Reference: [HOW-TO-TEST](https://github.com/assixx/assixx/blob/main/docs/how-to/HOW-TO-TEST.md) · [Changesets](https://github.com/assixx/assixx/blob/main/docs/how-to/HOW-TO-USE-CHANGESETS.md) · [HOW-TO Index](https://github.com/assixx/assixx/blob/main/docs/how-to/README.md) · [ADR Index](https://github.com/assixx/assixx/blob/main/docs/infrastructure/adr/README.md)
