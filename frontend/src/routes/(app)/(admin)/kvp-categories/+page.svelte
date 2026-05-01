@@ -290,7 +290,9 @@
         </div>
         <div class="card__body">
           <div class="table-responsive">
-            <table class="data-table data-table--hover data-table--striped">
+            <table
+              class="data-table data-table--hover data-table--striped data-table--actions-hover"
+            >
               <thead>
                 <tr>
                   <th scope="col">#</th>
@@ -380,7 +382,9 @@
         <div class="card__body">
           {#if data.categories.custom.length > 0}
             <div class="table-responsive">
-              <table class="data-table data-table--hover data-table--striped">
+              <table
+                class="data-table data-table--hover data-table--striped data-table--actions-hover"
+              >
                 <thead>
                   <tr>
                     <th scope="col">{LABELS.COL_NAME}</th>

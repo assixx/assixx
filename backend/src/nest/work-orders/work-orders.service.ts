@@ -81,6 +81,9 @@ interface ListQuery {
   assigneeUuid?: string | undefined;
   isActive?: string | undefined;
   overdue?: 'true' | undefined;
+  // Phase 1.2a-B (2026-05-01): server-side title/description ILIKE search.
+  // Undefined/empty ⇒ no WHERE clause (backwards-compat invariant).
+  search?: string | undefined;
   page?: number | undefined;
   limit?: number | undefined;
 }
@@ -129,6 +132,13 @@ function appendQueryFilters(
   }
   if (query.overdue === 'true') {
     conditions.push(`wo.due_date < CURRENT_DATE AND wo.status IN ('open', 'in_progress')`);
+  }
+  // Phase 1.2a-B: case-insensitive title/description substring search.
+  // Single bound param reused twice via $${idx} → $${idx} (one push, one increment).
+  if (query.search !== undefined && query.search !== '') {
+    conditions.push(`(wo.title ILIKE $${idx} OR wo.description ILIKE $${idx})`);
+    params.push(`%${query.search}%`);
+    idx++;
   }
   return idx;
 }

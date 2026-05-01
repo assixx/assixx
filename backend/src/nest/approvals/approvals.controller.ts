@@ -27,10 +27,11 @@ import type { ReadTrackingConfig } from '../common/services/read-tracking.servic
 import { ReadTrackingService } from '../common/services/read-tracking.service.js';
 import { ApprovalsConfigService } from './approvals-config.service.js';
 import { ApprovalsService } from './approvals.service.js';
-import type { Approval, ApprovalConfig, ApprovalStats, ApprovalStatus } from './approvals.types.js';
+import type { Approval, ApprovalConfig, ApprovalStats } from './approvals.types.js';
 import {
   ApproveApprovalDto,
   CreateApprovalDto,
+  ListApprovalsQueryDto,
   RejectApprovalDto,
   UpsertApprovalConfigDto,
 } from './dto/index.js';
@@ -47,15 +48,6 @@ const APPROVAL_READ_CONFIG: ReadTrackingConfig = {
   entityTable: 'approvals',
   entityUuidColumn: 'uuid',
 };
-
-/** Query DTO for list endpoints */
-interface ListApprovalsQuery {
-  status?: ApprovalStatus;
-  addonCode?: string;
-  priority?: string;
-  page?: string;
-  limit?: string;
-}
 
 @Controller('approvals')
 export class ApprovalsController {
@@ -100,12 +92,15 @@ export class ApprovalsController {
   async getAssigned(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
-    @Query() query: ListApprovalsQuery,
+    @Query() query: ListApprovalsQueryDto,
   ): Promise<ReturnType<ApprovalsService['findByAssignee']>> {
+    // ListApprovalsQueryDto accepts search/addonCode/priority for the shared shape,
+    // but the assignee-list service intentionally ignores them — same as the legacy
+    // inline interface (Phase 1.2b). Only status + pagination are forwarded.
     return await this.approvalsService.findByAssignee(user.id, tenantId, {
       status: query.status,
-      page: query.page !== undefined ? Number(query.page) : undefined,
-      limit: query.limit !== undefined ? Number(query.limit) : undefined,
+      page: query.page,
+      limit: query.limit,
     });
   }
 
@@ -124,15 +119,16 @@ export class ApprovalsController {
   async listAll(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
-    @Query() query: ListApprovalsQuery,
+    @Query() query: ListApprovalsQueryDto,
   ): Promise<ReturnType<ApprovalsService['findAll']>> {
     return await this.approvalsService.findAll(
       {
         status: query.status,
         addonCode: query.addonCode,
         priority: query.priority,
-        page: query.page !== undefined ? Number(query.page) : undefined,
-        limit: query.limit !== undefined ? Number(query.limit) : undefined,
+        search: query.search,
+        page: query.page,
+        limit: query.limit,
       },
       user.id,
       tenantId,

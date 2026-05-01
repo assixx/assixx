@@ -184,7 +184,7 @@
 <style>
   .sidebar-footer {
     position: relative;
-    margin: 0 8px 30px;
+    margin: 0 8px 40px;
     border: var(--glass-border);
     border-radius: var(--radius-xl);
     background: var(--glass-bg);

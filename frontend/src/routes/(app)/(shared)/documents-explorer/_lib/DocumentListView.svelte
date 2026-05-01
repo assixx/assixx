@@ -39,7 +39,9 @@
 </script>
 
 <div class="overflow-x-auto">
-  <table class="data-table data-table--striped data-table--hover data-table--bordered">
+  <table
+    class="data-table data-table--striped data-table--hover data-table--bordered data-table--actions-hover"
+  >
     <thead>
       <tr>
         <th>{MESSAGES.TH_NAME}</th>

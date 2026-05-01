@@ -46,6 +46,14 @@ export interface CardListFilter {
   intervalType?: TpmIntervalType;
   cardRole?: TpmCardRole;
   cardCategory?: TpmCardCategory;
+  /**
+   * Phase 1.2a-B (2026-05-01): case-insensitive substring search on `c.title`.
+   * Undefined/empty string ⇒ no WHERE clause emitted (backwards-compat invariant).
+   * Only consumed by `GET /tpm/cards` — the board endpoint (BoardQueryDto) leaves
+   * this unset, which is correct: board lookups are scoped to one plan and don't
+   * need a name search.
+   */
+  search?: string;
 }
 
 /** Paginated card list response */
@@ -570,6 +578,12 @@ function buildFilterClauses(
   if (filters.cardCategory !== undefined) {
     whereClauses.push(`c.card_categories @> ARRAY[$${idx}]::tpm_card_category[]`);
     params.push(filters.cardCategory);
+    idx++;
+  }
+  // Phase 1.2a-B: case-insensitive title substring search (single bound param).
+  if (filters.search !== undefined && filters.search !== '') {
+    whereClauses.push(`c.title ILIKE $${idx}`);
+    params.push(`%${filters.search}%`);
     idx++;
   }
 

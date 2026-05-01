@@ -49,7 +49,7 @@ describe('UpdateDocumentDto schema', () => {
 });
 
 // =============================================================
-// listDocumentsQuerySchema (via ListDocumentsQueryDto.schema)
+// ListDocumentsQuerySchema (via ListDocumentsQueryDto.schema)
 // =============================================================
 
 describe('ListDocumentsQueryDto schema', () => {

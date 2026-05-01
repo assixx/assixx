@@ -364,6 +364,63 @@ describe('ApprovalsService', () => {
       const countCall = mockClient.query.mock.calls[0] as [string, unknown[]];
       expect(countCall[1]).toEqual(['pending', 'kvp', 'high']);
     });
+
+    // -----------------------------------------------------------
+    // search filter (Phase 1.2b — D3 convention, ILIKE on title OR description)
+    // -----------------------------------------------------------
+
+    it('should apply search filter (ILIKE on title OR description)', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [makeApprovalListRow({ title: 'Wartung Pumpe 3' })],
+      });
+
+      const result = await service.findAll({ search: 'Wartung' }, 5, 10);
+
+      expect(result.items).toHaveLength(1);
+
+      // COUNT call must contain ILIKE pattern + the wrapped search term as the only filter param.
+      const countCall = mockClient.query.mock.calls[0] as [string, unknown[]];
+      expect(countCall[0]).toContain('ILIKE');
+      expect(countCall[0]).toContain('a.title');
+      expect(countCall[0]).toContain('a.description');
+      expect(countCall[1]).toEqual(['%Wartung%']);
+    });
+
+    it('should drop search WHERE clause when search is empty string', async () => {
+      // Backwards-compat invariant: empty string === undefined (no filter applied).
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await service.findAll({ search: '' }, 5, 10);
+
+      const countCall = mockClient.query.mock.calls[0] as [string, unknown[]];
+      expect(countCall[0]).not.toContain('ILIKE');
+      expect(countCall[1]).toEqual([]);
+    });
+
+    it('should combine search with other filters in correct param order', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [makeApprovalListRow()],
+      });
+
+      await service.findAll(
+        {
+          status: 'pending',
+          addonCode: 'kvp',
+          priority: 'high',
+          search: 'urgent',
+        },
+        5,
+        10,
+      );
+
+      const countCall = mockClient.query.mock.calls[0] as [string, unknown[]];
+      // Order matches push order: status, addonCode, priority, search.
+      expect(countCall[1]).toEqual(['pending', 'kvp', 'high', '%urgent%']);
+      expect(countCall[0]).toContain('ILIKE');
+    });
   });
 
   // =============================================================

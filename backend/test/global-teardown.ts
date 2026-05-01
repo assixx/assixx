@@ -158,6 +158,16 @@ BEGIN
   GET DIAGNOSTICS _deleted = ROW_COUNT;
   _total := _total + _deleted;
 
+  -- Hierarchy labels: organigram.api.test.ts seq 4 PATCHes
+  -- tenants.settings.orgHierarchy.levels (e.g. team='Teams', area='Werke'),
+  -- which persists across runs and pollutes the dev UI for the assixx tenant
+  -- (visible at /settings/organigram/positions). The whitelist above only
+  -- covers transient TABLES — JSONB sub-paths inside tenants.settings need
+  -- explicit cleanup. Dropping the whole orgHierarchy key restores the
+  -- DEFAULT_HIERARCHY_LABELS fallback (ADR-034). Other settings keys
+  -- (positionOptions, swapRequestsEnabled, ...) stay intact.
+  UPDATE tenants SET settings = settings #- '{orgHierarchy}' WHERE id = _tenant_id;
+
   -- NOTE (2026-04-23, updated 2026-04-26): Accumulating role=admin/employee
   -- test users are NOT cleaned here, by design.
   --

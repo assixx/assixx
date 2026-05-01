@@ -6,6 +6,8 @@
  */
 import { z } from 'zod';
 
+import { PaginationSchema } from '../../../schemas/common.schema.js';
+
 // ── Path Parameter Schemas ──────────────────────────────────────
 
 export const UuidParamSchema = z.object({
@@ -40,12 +42,14 @@ export const InventoryFieldTypeSchema = z.enum(['text', 'number', 'date', 'boole
 
 // ── Query Schemas ───────────────────────────────────────────────
 
-export const ItemsQuerySchema = z.object({
+// Phase 1.2a (2026-05-01): extends PaginationSchema (ADR-030 §4 + audit D1).
+// limit default 50 (inventory-domain higher-than-default; D1 — preserve per-endpoint).
+// search.max tightened 255 → 100 per D3 convention; matches KVP/Blackboard.
+export const ItemsQuerySchema = PaginationSchema.extend({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
   listId: z.uuid('Ungültige Listen-UUID'),
   status: InventoryItemStatusSchema.optional(),
-  search: z.string().trim().max(255).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  search: z.string().trim().max(100).optional(),
 });
 
 // ── Custom Value Schema (embedded in item create/update) ────────

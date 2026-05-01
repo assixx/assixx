@@ -64,6 +64,9 @@ export class SurveysService {
     userRole: string,
     query: {
       status?: string | undefined;
+      // Phase 1.2a-B (2026-05-01): server-side title/description ILIKE search.
+      // Undefined/empty ⇒ no WHERE clause (backwards-compat invariant).
+      search?: string | undefined;
       page?: number | undefined;
       limit?: number | undefined;
       manage?: boolean | undefined;
@@ -88,6 +91,7 @@ export class SurveysService {
       offset,
       hasUnrestrictedAccess,
       query.manage === true,
+      query.search,
     );
     await this.accessService.attachAssignmentsToSurveys(surveys, tenantId);
 

@@ -165,7 +165,7 @@ export class TpmPlansController {
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
   ): Promise<PaginatedPlans> {
-    return await this.plansService.listPlans(tenantId, query.page, query.limit, user);
+    return await this.plansService.listPlans(tenantId, query.page, query.limit, user, query.search);
   }
 
   /** GET /tpm/plans/interval-matrix — Card counts per plan × interval type (scoped) */

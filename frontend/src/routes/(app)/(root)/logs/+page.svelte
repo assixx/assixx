@@ -8,7 +8,10 @@
    */
   import { invalidateAll } from '$app/navigation';
 
-  import { showSuccessAlert } from '$lib/utils';
+  import { showErrorAlert, showSuccessAlert } from '$lib/utils';
+  // getApiErrorMessage extracts user-facing text from ApiError (e.g. 401 → "Invalid password")
+  // so the toast surfaces the backend's UNAUTHORIZED message instead of a generic fallback.
+  import { getApiErrorMessage } from '$lib/utils/api-client.types';
   import { createLogger } from '$lib/utils/logger';
 
   import { deleteLogs, fetchLogs } from './_lib/api';
@@ -157,7 +160,11 @@
       await loadLogs();
     } catch (err: unknown) {
       log.error({ err }, 'Error deleting logs');
-      error = MESSAGES.ERROR_DELETING;
+      // Surface backend message in a toast so the user knows WHY the delete failed
+      // (e.g. 401 UNAUTHORIZED → "Invalid password"). Without this, the modal stayed
+      // open with no feedback because `error` only renders in the empty-state when
+      // the logs array is empty — and on a successful page load it never is.
+      showErrorAlert(getApiErrorMessage(err, MESSAGES.ERROR_DELETING));
     }
   }
 

@@ -476,8 +476,8 @@ describe('getMenuItemsForRole', () => {
       areaLeadPrefix: 'Werks',
       department: 'Segmente',
       departmentLeadPrefix: 'Segment',
-      team: 'Crews',
-      teamLeadPrefix: 'Crew',
+      team: 'Teams',
+      teamLeadPrefix: 'Team',
       asset: 'Maschinen',
     };
     const items = getMenuItemsForRole('root', customLabels);

@@ -208,33 +208,38 @@ export class TpmPlansService {
     return mapPlanRowToApi(row);
   }
 
-  /** List plans with pagination, scoped by user's teams for non-full-access users */
+  /**
+   * List plans with pagination, scoped by user's teams for non-full-access users.
+   *
+   * Phase 1.2a-B (2026-05-01): optional `search` adds case-insensitive ILIKE on
+   * `p.name` (column is `name`, not `title`). Undefined/empty string ⇒ no WHERE
+   * clause emitted (backwards-compat invariant). The dynamic-clause builder
+   * factors out the duplicated COUNT vs SELECT param-index logic so this method
+   * stays under the 60-line function budget despite the new optional filter.
+   */
   async listPlans(
     tenantId: number,
     page: number = 1,
     pageSize: number = 20,
     user: NestAuthUser,
+    search?: string,
   ): Promise<PaginatedPlans> {
     const offset = (page - 1) * pageSize;
     const teamIds = await this.resolveScopeTeamIds(user);
 
-    // Dynamic scope filter: when teamIds is set, restrict to plans whose asset is linked to those teams
-    const scopeClause =
-      teamIds !== null ?
-        `AND EXISTS (SELECT 1 FROM asset_teams ats WHERE ats.asset_id = p.asset_id AND ats.team_id = ANY($4::int[]))`
-      : '';
-    const baseParams: unknown[] = [tenantId, pageSize, offset];
-    const allParams = teamIds !== null ? [...baseParams, teamIds] : baseParams;
-
+    // COUNT query: $1=tenantId, then optional $2…N for search/teamIds in declaration order.
+    const countQ = buildListPlansClauses(2, teamIds, search);
     const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM tpm_maintenance_plans p
        WHERE p.tenant_id = $1 AND p.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
-       ${teamIds !== null ? `AND EXISTS (SELECT 1 FROM asset_teams ats WHERE ats.asset_id = p.asset_id AND ats.team_id = ANY($2::int[]))` : ''}`,
-      teamIds !== null ? [tenantId, teamIds] : [tenantId],
+       ${countQ.clauses}`,
+      [tenantId, ...countQ.params],
     );
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
+    // SELECT query: $1=tenantId, $2=pageSize, $3=offset, then optional $4…N for search/teamIds.
+    const selectQ = buildListPlansClauses(4, teamIds, search);
     const rows = await this.db.tenantQuery<TpmPlanJoinRow>(
       `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name,
               latest_approval.approval_status,
@@ -258,10 +263,10 @@ export class TpmPlansService {
          LIMIT 1
        ) latest_approval ON true
        WHERE p.tenant_id = $1 AND p.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
-       ${scopeClause}
+       ${selectQ.clauses}
        ORDER BY p.is_active ASC, p.name ASC
        LIMIT $2 OFFSET $3`,
-      allParams,
+      [tenantId, pageSize, offset, ...selectQ.params],
     );
 
     return {
@@ -698,4 +703,49 @@ export class TpmPlansService {
     }
     return row;
   }
+}
+
+// ============================================================================
+// Module-level helpers (pure, no DI)
+// ============================================================================
+
+/**
+ * Build dynamic WHERE-clause additions + matching params for the listPlans
+ * COUNT and SELECT queries (Phase 1.2a-B, 2026-05-01).
+ *
+ * Returns a `clauses` string already prefixed with leading spaces and `AND` so it
+ * can be inlined into a SQL template. Returns matching `params` ordered to be
+ * spread after the caller's fixed-position params (tenantId for COUNT;
+ * tenantId+pageSize+offset for SELECT).
+ *
+ * `startIdx` is the FIRST `$N` placeholder this builder will emit. For COUNT
+ * pass 2 (after $1=tenantId); for SELECT pass 4 (after $1=tenantId, $2=pageSize,
+ * $3=offset). The builder appends the search clause first, then teamIds, so the
+ * resulting `params` array matches the same order.
+ */
+function buildListPlansClauses(
+  startIdx: number,
+  teamIds: number[] | null,
+  search: string | undefined,
+): { clauses: string; params: unknown[] } {
+  const fragments: string[] = [];
+  const params: unknown[] = [];
+  let idx = startIdx;
+
+  // Search: case-insensitive ILIKE on plan name. Empty/undefined ⇒ no clause.
+  if (search !== undefined && search !== '') {
+    fragments.push(`AND p.name ILIKE $${idx}`);
+    params.push(`%${search}%`);
+    idx++;
+  }
+
+  // Scope filter: when teamIds is set, restrict to plans whose asset is linked to those teams.
+  if (teamIds !== null) {
+    fragments.push(
+      `AND EXISTS (SELECT 1 FROM asset_teams ats WHERE ats.asset_id = p.asset_id AND ats.team_id = ANY($${idx}::int[]))`,
+    );
+    params.push(teamIds);
+  }
+
+  return { clauses: fragments.join(' '), params };
 }

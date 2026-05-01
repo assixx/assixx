@@ -219,11 +219,14 @@ function buildFilters(source: {
   intervalType?: TpmIntervalType | undefined;
   cardRole?: TpmCardRole | undefined;
   cardCategory?: TpmCardCategory | undefined;
+  // Phase 1.2a-B (2026-05-01): forward optional title-search to the service layer.
+  search?: string | undefined;
 }): CardListFilter {
   const filters: CardListFilter = {};
   if (source.status !== undefined) filters.status = source.status;
   if (source.intervalType !== undefined) filters.intervalType = source.intervalType;
   if (source.cardRole !== undefined) filters.cardRole = source.cardRole;
   if (source.cardCategory !== undefined) filters.cardCategory = source.cardCategory;
+  if (source.search !== undefined && source.search !== '') filters.search = source.search;
   return filters;
 }

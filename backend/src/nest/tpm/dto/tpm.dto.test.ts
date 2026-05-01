@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { TpmDefectItemSchema, TpmDefectsArraySchema } from './common.dto.js';
 import { CompleteCardSchema } from './complete-card.dto.js';
 import { CreateExecutionSchema } from './create-execution.dto.js';
+import { ListPlansQuerySchema } from './list-plans-query.dto.js';
 
 const VALID_UUID = '019c9547-9fc0-771a-b022-3767e233d6f3';
 
@@ -280,5 +281,63 @@ describe('CompleteCardSchema', () => {
         defects: [{ title: '' }],
       }).success,
     ).toBe(false);
+  });
+});
+
+// =============================================================
+// ListPlansQuerySchema (Phase 1.2a-B, 2026-05-01)
+// Pagination via PaginationSchema (default page=1, limit=20, max=100 — D2).
+// Search field: D3 convention .trim().max(100).optional().
+// =============================================================
+
+describe('ListPlansQuerySchema', () => {
+  it('should accept empty query and apply defaults (limit=20 override, D2 max=100)', () => {
+    const result = ListPlansQuerySchema.parse({});
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(20);
+    expect(result.search).toBeUndefined();
+  });
+
+  it('should coerce page + limit from strings (HTTP query params)', () => {
+    const result = ListPlansQuerySchema.parse({ page: '3', limit: '50' });
+    expect(result.page).toBe(3);
+    expect(result.limit).toBe(50);
+  });
+
+  it('should accept limit=100 (boundary)', () => {
+    const result = ListPlansQuerySchema.parse({ limit: '100' });
+    expect(result.limit).toBe(100);
+  });
+
+  it('should reject limit=101 (D2 cap, was 500 in local LimitSchema)', () => {
+    expect(ListPlansQuerySchema.safeParse({ limit: '101' }).success).toBe(false);
+  });
+
+  it('should reject page=0', () => {
+    expect(ListPlansQuerySchema.safeParse({ page: '0' }).success).toBe(false);
+  });
+
+  // ----- search field (D3 convention) -----
+
+  it('should accept search string', () => {
+    const result = ListPlansQuerySchema.parse({ search: 'Hydraulik' });
+    expect(result.search).toBe('Hydraulik');
+  });
+
+  it('should trim whitespace from search', () => {
+    const result = ListPlansQuerySchema.parse({ search: '  trimmed  ' });
+    expect(result.search).toBe('trimmed');
+  });
+
+  it('should accept search at exactly 100 chars (boundary)', () => {
+    expect(ListPlansQuerySchema.safeParse({ search: 'A'.repeat(100) }).success).toBe(true);
+  });
+
+  it('should reject search longer than 100 chars', () => {
+    expect(ListPlansQuerySchema.safeParse({ search: 'A'.repeat(101) }).success).toBe(false);
+  });
+
+  it('should accept empty search string (service treats as no filter)', () => {
+    expect(ListPlansQuerySchema.safeParse({ search: '' }).success).toBe(true);
   });
 });
